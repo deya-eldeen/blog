@@ -17,6 +17,10 @@ You can go fork and star _HardCandy-Jekyll_ too! 😉
 
 <!--more-->
 
+<a href="https://voidbooks.gumroad.com/l/byte_magic_in_swift" target="_blank">
+  <button style="padding: 10px 20px; font-size: 16px;">Buy on Gumroad</button>
+</a>
+
 ## How does it work?
 
 Basically you need to add just one thing, the color:
