@@ -13,22 +13,19 @@ tags:
   - "interface-builder"
   - "programming"
   - "swift"
+permalink: /easily-tiling-images-in-interface-builder-without-code
+excerpt_separator: <!--more-->
 ---
 
-<figure>
+Tiling images in interface builder directly without code is easy...  
+<!--more-->
 
 ![](images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png)
 
-<figcaption>
 
 images, with and without tiling
 
-</figcaption>
 
-</figure>
-
-Tiling images in interface builder directly without code is easy...  
-  
 1- add an image into assets catalogue.  
 2- select the asset, go to "editor" menu, then choose "Show Slicing".  
 3- the asset image will show up as darker, with a button labeled "Start Slicing", and you will be able to select the slicing type.

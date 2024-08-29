@@ -10,12 +10,13 @@ tags:
   - "development"
   - "programming"
   - "swift"
+permalink: /swift-any-anyobject
+excerpt_separator: <!--more-->
 ---
 
-![](images/anonymity.png)
-
 Although in normal cases, you should be specific in defining data types, swift offers **Any**, **AnyObject**, and **AnyHashable**.  
-  
+<!--more-->
+
 **Any** can represent an instance of any type, including functions, instance of a class, struct, or enum, it's more general than **AnyObject**, where **AnyObject** is a protocol all classes indirectly conform to.  
   
 **AnyObject** is useful when using Objetive-C / Swift, some parts of Objective-C use this protocol to enhance compatibility with Swift, it's equivelant to 'id' in Objective-C.  

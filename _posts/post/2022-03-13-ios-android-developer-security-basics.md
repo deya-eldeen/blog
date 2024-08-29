@@ -10,26 +10,19 @@ categories:
   - "xcode"
 tags: 
   - "swift"
+permalink: /ios-android-developer-security-basics
+excerpt_separator: <!--more-->
 ---
 
-<figure>
-
-![](images/security.jpg)
-
-<figcaption>
-
-Unsplash.com
-
-</figcaption>
-
-</figure>
-
 I couldn't find a single place that covers the mobile developer security (must know) basics, this will be again like a chat between two developers **(Lulu 👩🏼‍💻)** and **(Sam 🦖)**  
-  
+<!--more-->
+
 **👩🏼‍💻**: What are the risks of not having good security precautions? I can see we spend big money on security.  
 **🦖**: There are over 500 reported incidents of data-breach each year, It's estimated that each incident costs 3.5M~5.0M USD on average.  
 If you look at statistics, you can see that remote jobs increased these costs by 15%, since attackers would have more opportunities of attacking a target that is spread on different locations.  
-  
+
+
+
 **👩🏼‍💻**: When people talk about security, the server is being presented as the main defense line, why would a mobile developer be concerned with security if the server/website is secure?  
 **🦖**: Even if a website is securely developed and maintained, mobile apps still need to implement security best practices, while the server plays an important role, the client-side code in a mobile app can potentially expose users to risks if not developed securely, if the client is poorly written, you should expect a lot of attacks on the server.  
   

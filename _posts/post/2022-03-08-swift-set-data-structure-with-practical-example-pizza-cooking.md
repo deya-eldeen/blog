@@ -14,22 +14,12 @@ tags:
   - "math"
   - "programming"
   - "swift"
+permalink: /swift-set-data-structure-with-practical-example-pizza-cooking
+excerpt_separator: <!--more-->
 ---
-
-<figure>
-
-![](images/pizza.jpeg)
-
-<figcaption>
-
-Unsplash.com
-
-</figcaption>
-
-</figure>
-
 Swift provides three main collection types, **Arrays**, **Sets**, and **Dictionaries**..  
-  
+<!--more-->
+
 A set is a collection of unique and unordered data, simply, the data elements has no order. and it's guaranteed to have non-duplicate values.
 
 > You use a set instead of an array when you need to test efficiently for membership and you aren't concerned with the order of the elements in the collection, or when you need to ensure that each element appears only once in a collection.

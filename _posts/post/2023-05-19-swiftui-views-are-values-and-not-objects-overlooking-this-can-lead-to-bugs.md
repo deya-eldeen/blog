@@ -2,11 +2,14 @@
 layout: post
 title: "SwiftUI views are values and not objects!"
 date: "2023-05-19"
+permalink: /swiftui-views-are-values-and-not-objects-overlooking-this-can-lead-to-bugs
+excerpt_separator: <!--more-->
+author: deyaeldeen
+
 ---
 
-![](images/dream_TradingCard-53-627x1024.jpg)
-
 In SwiftUI, views are value types rather than traditional objects 🧐, this design approach is a fundamental aspect of SwiftUI's declarative programming model and is aligned with the Swift language's emphasis on value semantics.
+<!--more-->
 
 As value types, views in SwiftUI are immutable and are copied when needed, resulting in predictable behavior and easy management of state and data flow, this means that when you modify a view, you are actually creating a new instance with the desired changes, rather than mutating the existing view, this immutability allows SwiftUI to efficiently track changes and perform targeted updates to the user interface.
 

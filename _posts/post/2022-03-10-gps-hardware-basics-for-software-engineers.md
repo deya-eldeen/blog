@@ -14,17 +14,18 @@ tags:
   - "ios"
   - "programming"
   - "swift"
+permalink: /gps-hardware-basics-for-software-engineers
+excerpt_separator: <!--more-->
 ---
-
-![](images/tobias-rademacher-p79nyt2CUj4-unsplash.jpg)
-
   
 Mobile software engineers (iOS and Android), are normally not familiar with how GPS works, instead of just getting Lat/Lon readings, and doing geo operations with it, why not become familiar with how GPS works? 🤓
+<!--more-->
 
 This will not be a lengthy article, it will be a chat between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻).**
 
 👨🏻‍💻: So what does GPS stand for?  
 👩🏼‍💻: It stands for (Global Positioning System).
+
 
 👨🏻‍💻: Who created it? and what for?  
 👩🏼‍💻: The GPS project was launched in the USA back in 1973 due to limitations of old navigation systems.

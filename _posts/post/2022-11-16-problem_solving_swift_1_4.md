@@ -2,31 +2,24 @@
 layout: post
 title: "Refresher: Problem Solving (1-4)"
 date: "2022-11-16"
+permalink: /problem_solving_swift_1_4
+excerpt_separator: <!--more-->
 ---
-
-![](images/blank_tradingcard-61-edited.jpg)
 
 After reading the very popular book, grokking algorithms,  
 Will be blogging about algorithms and data structures… the book is very informative and easy to digest.
-
-<figure>
+<!--more-->
 
 ![](images/grokking.jpeg)
-
-<figcaption>
-
 Grokking Algorithms book  
 
-
-</figcaption>
-
-</figure>
-
 It’s advised you get yourself familiar with data structures before starting to solve problems… I will not go into details, my advice is to try to solve the problems without looking at the solutions  
-  
+
 **Problem: 1  
 **return a pair of 2 distinct values (if any) that sum up to a target number, from a nonempty array that has distinct integers.  
-  
+
+<!--more-->
+
 Different Solutions with different time complexities
 
 ```

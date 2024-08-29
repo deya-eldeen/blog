@@ -2,16 +2,18 @@
 layout: post
 title: "Test Doubles In Swift (Part 1)"
 date: "2023-10-25"
----
+permalink: /test-doubles-in-swift-part-1
+excerpt_separator: <!--more-->
+author: deyaeldeen
 
-![Test doubles name is inspired by "stunt doubles"](images/Six-Hands-Chalk-2-1024x349.png)
+---
 
 _Test doubles name is inspired by "stunt doubles"_ from movies industry.
 
 Testing is an essential part of software development, allowing us to ensure the correctness and reliability of our code.  
-  
+<!--more-->
 However, when it comes to writing tests, one concept that often perplexes developers is the use of test doubles, test doubles are objects that replace dependencies in our code during testing, enabling us to isolate and verify specific behaviors.  
-  
+
 In general, there are various types of test doubles, such as dummies, fakes, stubs, spies, and mocks, understanding when and how to use each type can greatly enhance the effectiveness of our tests and improve the overall quality of our code.  
 
 In this blog post series, we will delve into the world of test doubles in Swift, exploring their purpose, distinctions, and practical examples, by the end, you'll have a solid understanding of how to leverage test doubles to write comprehensive and reliable tests.  

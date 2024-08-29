@@ -10,15 +10,16 @@ tags:
   - "development"
   - "programming"
   - "swift"
+permalink: /swift-pros-over-obj-c
+excerpt_separator: <!--more-->
 ---
 
-![](images/ideas.png)
-
 Obj-C development dates back to 1980s, Swift came with a lot of significant improvements in clarity, performance, safety, and more.
+<!--more-->
 
 **1- Swift is easier to read and maintain**  
 Swift drops legacy conventions, using semicolons to end lines are not needed, also parenthesis are not needed around (conditional expressions), no bracket hell needed for method calls, two-file requirement is dropped by swift, the LLVM compiler can figure out dependencies automatically...  
-  
+
 for example, swift adopts modern programming language features like concatenation of two strings together with a "+" operator, along with string interpolation which makes things easier and safer, instead of memorizing special tokens  (`%s`, `%d`, `%@`), that can be a source of crashes!
 
 **2- Swift is more safe, and have better memory management**  
@@ -30,17 +31,8 @@ In contrast to swift, in Objective-C, ARC is not available for procedural C and 
   
 A lot of people made benchmarks, concluding swift being faster and more performant than Obj-C.
 
-<figure>
-
 ![](images/speed.jpeg)
-
-<figcaption>
-
 a benchmark made by apple.
-
-</figcaption>
-
-</figure>
 
 Obj-C lacked name-spacing, to overcome this issue, a common practice was using a few letters as a prefix, for example NSArray (after NextStep, a company by Steve Jobs), or NSString, ... etc.  
   

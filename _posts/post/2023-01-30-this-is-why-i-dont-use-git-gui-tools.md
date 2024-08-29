@@ -2,24 +2,18 @@
 layout: post
 title: "This is why I don't use GIT GUI tools."
 date: "2023-01-30"
+permalink: /this-is-why-i-dont-use-git-gui-tools
+excerpt_separator: <!--more-->
+author: deyaeldeen
+
 ---
 
 Any seasoned iOS engineer who uses Xcode can see that it lacks a lot of git features, which is OK as it's not mainly a source control application.  
-  
+<!--more-->
 We can see only primitive features there, which may suffice for personal or small projects, but if you are working on a larger team, you will find it very difficult and sometimes impossible to use source control using the IDE only.
 
-<figure>
-
 ![](images/image-3.png)
-
-<figcaption>
-
 Xcode's Source Control
-
-</figcaption>
-
-</figure>
-
   
 Some Engineers may also notice that markers near files like "A", "M" and "C" etc.. are stuck most of the time too, so you wont be able to directly tell about file statuses if they are added, modified, conflicting, etc..  
   

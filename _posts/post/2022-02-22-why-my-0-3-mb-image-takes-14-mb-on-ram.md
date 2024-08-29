@@ -12,10 +12,13 @@ tags:
   - "ios"
   - "programming"
   - "swift"
+permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram
+excerpt_separator: <!--more-->
 ---
 
 You are writing an application that has a long list of entries, with each entry containing an image, the total download size of all images is about 10 MB, but the images take around 200 ~ 300 MB on RAM, you wonder why 🧐?  
-  
+<!--more-->
+
 RAM normally does not understand images that are compressed, they are stored as raw bitmaps, even if the image is compressed, it gets inflated into memory as a raw image.  
   
 Image Size on RAM = (pixels height × pixels width × color depth bytes)  

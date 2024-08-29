@@ -2,26 +2,17 @@
 layout: post
 title: "Gentle Introduction To Unit Testing."
 date: "2023-01-16"
+permalink: /gentle-introduction-to-unit-testing
+excerpt_separator: <!--more-->
 ---
 
-<figure>
-
-![](images/testing_cover-edited.jpg)
-
-<figcaption>
-
-Gentle Introduction To Unit Testing (created with AI)
-
-</figcaption>
-
-</figure>
-
 One Monday morning, some new developer (Penguin 🐧) started their first new job as a software engineer, the chat between two developers **(Penguin 🐧)** and their team leader **(Rex 🦖)** went like this.  
-  
+<!--more-->
+
 _**(Penguin 🐧)**:_ I have noticed that we have test cases written for almost all features in our mobile app, why would we write unit tests if we have QA team that does the testing and quality assurance?  
   
 _**(Rex 🦖)**:_ Yes, writing unit tests does not only guarantee that features behave correctly just after being developed / shipped, it also guarantees that when someone write any relevant code of new feature, it does not break any existing or any piece of code.  
-  
+
 the QA team can never test everything all over again when some new feature is introduced, it's like an investment, you spend extra time writing unit tests during developing a feature, but prevent any potential bugs from happening in the future.  
   
 A CI/CD job running all tests will prevent any developer from merging a code that breaks an existing feature (in case that feature has well written tests), there are other benefits, like tests can be a good documentation too for anyone intending to read your code.  

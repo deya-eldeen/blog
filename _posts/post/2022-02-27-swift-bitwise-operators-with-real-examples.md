@@ -12,13 +12,15 @@ tags:
   - "math"
   - "programming"
   - "swift"
+permalink: /swift-bitwise-operators-with-real-examples
+excerpt_separator: <!--more-->
 ---
-
-![](images/binary-code.png)
 
 **Bitwise operators** are rarely used in everyday swift programming  
 ⚠️ : not to be confused by Logical Operators like **"&&"** and **"||"**  
-  
+
+<!--more-->
+
 It's mainly used to perform operations on individual bits,  they are extremely useful and used in **Flags**, **Graphics**, **Networking**, **Encryption**...
 
 <figure>

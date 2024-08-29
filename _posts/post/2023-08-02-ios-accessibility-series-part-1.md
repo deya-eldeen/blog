@@ -2,12 +2,16 @@
 layout: post
 title: "iOS Accessibility Series (Part 1)"
 date: "2023-08-02"
+permalink: /ios-accessibility-series-part-1
+excerpt_separator: <!--more-->
+author: deyaeldeen
+
 ---
 
-![](images/dream_TradingCard-5-627x1024.jpg)
+iOS accessibility, from a developer's point of view, refers to the set of tools, technologies, and guidelines [provided by Apple](https://developer.apple.com/accessibility/) to ensure that iOS applications are usable and inclusive for people with disabilities. 
+<!--more-->
+As a developer, incorporating accessibility features into your iOS app involves considering the diverse needs of users with visual, auditory, motor, cognitive, and any other impairments. (_see table below for a list of most common impairments and disabilities_)  
 
-iOS accessibility, from a developer's point of view, refers to the set of tools, technologies, and guidelines [provided by Apple](https://developer.apple.com/accessibility/) to ensure that iOS applications are usable and inclusive for people with disabilities, as a developer, incorporating accessibility features into your iOS app involves considering the diverse needs of users with visual, auditory, motor, cognitive, and any other impairments. (_see table below for a list of most common impairments and disabilities_)  
-  
 Many developers and businesses do not prioritize making their applications accessible for several reasons, first, there is often a lack of awareness about the significance of accessibility and the benefits it brings to a broader user base, second, some developers perceive accessibility implementation as a complex and time-consuming task, leading them to prioritize other features instead, there are also other concerns about additional costs, limited resources, the assumption that their target audience does not include people with disabilities can deter developers from investing in accessibility.  
   
 Legal enforcement of accessibility regulations may be weak or inconsistent in some regions, reducing the incentive to comply, moreover, the emphasis on aesthetics over accessibility, inadequate training on accessibility best practices, and resistance to change can further hinder the adoption of accessible design, despite these challenges, raising awareness and promoting the positive impact of accessibility remain crucial in encouraging developers to make their applications inclusive and accessible to all users.
