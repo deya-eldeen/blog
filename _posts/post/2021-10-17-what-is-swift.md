@@ -14,13 +14,16 @@ tags:
   - "swift"
 permalink: /what-is-swift
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/swift.jpg"
+
 ---
 
 Swift is apple’s new open source programming language, that was introduced at Apple’s 2014 Worldwide Developers Conference (WWDC), it’s used to develop for iOS, macOS, watchOS and tvOS, mainly to work with Apple’s Cocoa and Cocoa Touch frameworks, it quickly became one of the fastest growing languages nowadays, hence open source under the [Apache 2.0 license](https://swift.org/LICENSE.txt), other uses appeared including writing backend server side code using vapor framework.
 <!--more-->
+![](images/swift_full.png)
 
 
-![](images/swift.png)
+![](images/covers/swift_full.jpg)
 
 
 The main focus with swift is to be **concise,** **more expressive, fast** and less prone to error (**safer**) than Objective-C, with modern features language.  

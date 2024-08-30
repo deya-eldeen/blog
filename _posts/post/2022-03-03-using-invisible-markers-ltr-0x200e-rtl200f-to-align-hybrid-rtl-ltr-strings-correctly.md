@@ -15,10 +15,13 @@ tags:
   - "swift"
 permalink: /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/arrows.jpg"
+
 ---
 
 So you have some text that contains both Arabic and English languages at the same time? and having difficulty aligning it because sometimes it starts with english, and other times it starts with Arabic?  
 <!--more-->
+![](images/covers/arrows_full.jpg)
 
 The following example illustrates  
 \- this problem 🐛  

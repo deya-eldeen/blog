@@ -12,10 +12,13 @@ tags:
   - "swift"
 permalink: /swift-style-guides
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/styleguides.jpg"
+
 ---
 
 You most probably was working on an open source project, and must have noticed projects are usually organized and consistent 🧐, this is due to following a code style, and you must have noticed that some projects are messy, ugly and inconsistent 🤮.  
 <!--more-->
+![](images/covers/styleguides_full.jpg)
 
 There are different Swift Code Styles, one by [Apple](https://www.swift.org/documentation/api-design-guidelines/), [Google](https://google.github.io/swift/), [Ray Wenderlich](https://github.com/raywenderlich/swift-style-guide), [Linkedin](https://github.com/linkedin/swift-style-guide) and [AirBNB](https://github.com/airbnb/swift), and others, preferring a code style over another is subjective, I recommend inspecting different styles and adopt one according to the project needs.  
   

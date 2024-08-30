@@ -6,10 +6,19 @@ permalink: /significant-network-problems-on-macbooks-with-m1-m2-chips-with-propo
 excerpt_separator: <!--more-->
 author: deyaeldeen
 
+# feature-img: "images/covers/network_fix.jpg"
+thumbnail: "images/covers/network_fix.jpg"
+tags: [Highlight, Markdown]
+# color: rgb(88,88,88)
+
+
 ---
 
 As Apple's M1/M2 processors got significant attention lately, different users reported **_significant stability issues & network performance issues_**, specially when using Wi-Fi on the 2.4 GHz band or connecting via a USB dongle for LAN.
 <!--more-->
+
+![](images/covers/network_fix_full.jpg)
+
 One common complaint is sudden long drops in transfer rates, often resulting in frustrating experiences for users. These issues can be attributed to the design of the network card in these devices, which may struggle to maintain consistent performance under certain conditions.
 
 When operating on the 2.4 GHz band, devices with M1 or M2 processors may experience very low transfer rates like 0.5 mbps transfer rate 😱, significantly lower than expected, not all the devices are necessarily affected, but a lot of complaints about this can be found.  

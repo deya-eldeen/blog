@@ -5,11 +5,14 @@ date: "2023-01-30"
 permalink: /this-is-why-i-dont-use-git-gui-tools
 excerpt_separator: <!--more-->
 author: deyaeldeen
+thumbnail: "images/covers/git_cli.jpg"
 
 ---
 
 Any seasoned iOS engineer who uses Xcode can see that it lacks a lot of git features, which is OK as it's not mainly a source control application.  
 <!--more-->
+![](images/covers/git_cli_full.jpg)
+
 We can see only primitive features there, which may suffice for personal or small projects, but if you are working on a larger team, you will find it very difficult and sometimes impossible to use source control using the IDE only.
 
 ![](images/image-3.png)

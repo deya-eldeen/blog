@@ -16,9 +16,12 @@ tags:
   - "swift"
 permalink: /swift-set-data-structure-with-practical-example-pizza-cooking
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/pizza.jpg"
+
 ---
 Swift provides three main collection types, **Arrays**, **Sets**, and **Dictionaries**..  
 <!--more-->
+![](images/covers/pizza_full.jpg)
 
 A set is a collection of unique and unordered data, simply, the data elements has no order. and it's guaranteed to have non-duplicate values.
 

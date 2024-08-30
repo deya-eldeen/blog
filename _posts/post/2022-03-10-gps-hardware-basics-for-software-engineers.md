@@ -16,10 +16,13 @@ tags:
   - "swift"
 permalink: /gps-hardware-basics-for-software-engineers
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/gps.jpg"
+
 ---
   
 Mobile software engineers (iOS and Android), are normally not familiar with how GPS works, instead of just getting Lat/Lon readings, and doing geo operations with it, why not become familiar with how GPS works? 🤓
 <!--more-->
+![](images/covers/gps_full.jpg)
 
 This will not be a lengthy article, it will be a chat between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻).**
 

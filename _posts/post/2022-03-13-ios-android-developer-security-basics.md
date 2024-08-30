@@ -12,10 +12,13 @@ tags:
   - "swift"
 permalink: /ios-android-developer-security-basics
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/security_basics.jpg"
+
 ---
 
 I couldn't find a single place that covers the mobile developer security (must know) basics, this will be again like a chat between two developers **(Lulu 👩🏼‍💻)** and **(Sam 🦖)**  
 <!--more-->
+![](images/covers/security_basics_full.jpg)
 
 **👩🏼‍💻**: What are the risks of not having good security precautions? I can see we spend big money on security.  
 **🦖**: There are over 500 reported incidents of data-breach each year, It's estimated that each incident costs 3.5M~5.0M USD on average.  

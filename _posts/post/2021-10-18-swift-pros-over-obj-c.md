@@ -12,10 +12,13 @@ tags:
   - "swift"
 permalink: /swift-pros-over-obj-c
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/swift_objc.jpg"
+
 ---
 
 Obj-C development dates back to 1980s, Swift came with a lot of significant improvements in clarity, performance, safety, and more.
 <!--more-->
+![](images/covers/swift_objc_full.jpg)
 
 **1- Swift is easier to read and maintain**  
 Swift drops legacy conventions, using semicolons to end lines are not needed, also parenthesis are not needed around (conditional expressions), no bracket hell needed for method calls, two-file requirement is dropped by swift, the LLVM compiler can figure out dependencies automatically...  

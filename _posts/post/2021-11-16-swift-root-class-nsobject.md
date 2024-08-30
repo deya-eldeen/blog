@@ -4,10 +4,13 @@ title: "Swift Root/Base Class & NSObject"
 date: "2021-11-16"
 permalink: /swift-root-class-nsobject
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/nsobject.jpg"
+
 ---
 
 "Base class" is usually interchangeable with "superclass" (the normal ObjC terminology) when talking about a particular object's design and inheritance.
 <!--more-->
+![](images/covers/nsobject_full.jpg)
 
 A root class in ObjC is a class which has no superclass, it is the absolute base class from which other classes are derived.  
   

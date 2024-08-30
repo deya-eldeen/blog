@@ -14,12 +14,15 @@ tags:
   - "swift"
 permalink: /swift-lexical-structure
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/lexical.jpg"
+
 ---
 
 Swift lexical structure, consists of valid tokens (lowest-level building blocks) that form the structure of any swift program, these tokens describe the rest of whole swift language...  
   
 A token consists of an identifier, keyword, punctuation, literal, or operator.  
 <!--more-->
+![](images/covers/lexical_full.jpg)
 
 **1) Identifiers:  
 **An example of an identifier is a variable name, for example here "pet" is an identifier.  

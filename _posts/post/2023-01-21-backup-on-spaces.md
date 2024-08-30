@@ -5,10 +5,12 @@ date: "2023-01-21"
 permalink: /backup-on-spaces
 excerpt_separator: <!--more-->
 author: deyaeldeen
+thumbnail: "images/covers/do_space.jpg"
 
 ---
 This is not directly related to swift or iOS, but thought it's worth sharing, since I couldn't find any article that mention such way to backup files.  
 <!--more-->
+![](images/covers/do_space_full.jpg)
 
 I'm one of the people who once used floppies to backup html pages, (3DMax Tutorials back then) from internet caf'es back in 2003, then came CDs, then came DVDs, I also remember the first flash drive my father got me as a teenager, it was 128 MB, this was not affordable for most of the people, now more than 1000x sized SSDs are way cheaper.  
   

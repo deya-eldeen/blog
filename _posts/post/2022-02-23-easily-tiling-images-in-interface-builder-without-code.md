@@ -15,10 +15,13 @@ tags:
   - "swift"
 permalink: /easily-tiling-images-in-interface-builder-without-code
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/tiling.jpg"
+
 ---
 
 Tiling images in interface builder directly without code is easy...  
 <!--more-->
+![](images/covers/tiling_full.jpg)
 
 ![](images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png)
 

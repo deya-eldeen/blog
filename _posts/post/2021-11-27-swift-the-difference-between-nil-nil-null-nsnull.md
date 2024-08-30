@@ -12,10 +12,13 @@ tags:
   - "swift"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/nil.jpg"
+
 ---
 
 As a programmer, sometimes you will need to define "nothingness"... 🧐  
 <!--more-->
+![](images/covers/nil_full.jpg)
 
 Data stores can have a value, or simply be nothing, this **nothing** comes in different flavors (nil, Nil, Null, NSNull) which all came to be called "null".
 

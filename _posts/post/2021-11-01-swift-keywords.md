@@ -12,10 +12,13 @@ tags:
   - "swift"
 permalink: /swift-keywords
 excerpt_separator: <!--more-->
+thumbnail: "images/covers/keywords.jpg"
+
 ---
 
 A reserved word is **a word that cannot be used as an identifier**, this is a syntactic definition, as mentioned before in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-structure/), all lists below are written alphabetically.
 <!--more-->
+![](images/covers/keywords_full.jpg)
 
 - Keywords used in declarations: 
 
