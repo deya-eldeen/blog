@@ -7,11 +7,13 @@ categories:
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Objective-C"
 tags: 
   - "Development"
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Objective-C"
 permalink: /what-is-swift
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/swift.jpg"

@@ -3,15 +3,15 @@ layout: post
 title: "Swift Lexical Structure"
 date: "2021-11-01"
 categories: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 tags: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 permalink: /swift-lexical-structure
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/lexical.jpg"
