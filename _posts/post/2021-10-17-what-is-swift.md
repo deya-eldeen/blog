@@ -54,6 +54,24 @@ To facilitate onboarding for newcomers, `Swift` can be used in various environme
 
 `Swift` is a type-safe, **general-purpose**, and **multi-paradigm** language. It supports a wide range of programming paradigms, including **object-oriented**, **functional**, and **generic** programming. This flexibility allows developers to use the most suitable style for a given problem, recognizing that no single paradigm is perfect for all use cases. `Swift` provides its own versions of common `C` and `Objective-C` types, alongside powerful data structures such as Arrays, Sets, and Dictionaries. Moreover, it includes unique types like tuples, which enable the passing of grouped values—a feature not available in `Objective-C`.
 
+## Security & Swift/Objective-C
+
+While both `Swift` and `Objective-C` can be used to develop secure iOS applications, `Swift` offers several security advantages due to its modern language design:
+
+- **Type Safety and Optionals**: `Swift` enforces strict type safety, reducing the risk of type-related errors that can lead to security vulnerabilities. Its use of optionals requires developers to handle `nil` values explicitly, minimizing the risk of runtime crashes or unexpected behavior, unlike `Objective-C` where `nil` values can silently fail.
+
+- **Memory Management**: Both `Swift` and `Objective-C` use Automatic Reference Counting (ARC) for memory management, but `Swift`'s syntax and stricter rules make it easier to avoid common pitfalls like retain cycles and dangling pointers. `Objective-C`'s more permissive nature increases the potential for memory-related errors.
+
+- **Bounds Checking**: `Swift` automatically performs bounds checking on arrays and collections, which helps prevent buffer overflow vulnerabilities. In `Objective-C`, developers need to manually ensure that data access stays within valid bounds, increasing the risk of out-of-bounds errors.
+
+- **Immutable by Default**: `Swift` encourages safer code by making constants (`let`) immutable by default. `Objective-C` requires the use of specific class types for immutability (e.g., `NSString` vs. `NSMutableString`), making the codebase more prone to unintended modifications if not carefully managed.
+
+- **Reduced Use of Unsafe Code**: `Swift` avoids certain low-level operations, such as direct memory manipulation with pointers, that are more prevalent in `Objective-C`. This reduces the attack surface for exploits like buffer overflows and memory corruption.
+
+- **Enhanced Privacy and Security Practices**: `Swift`’s language features align well with modern privacy regulations (e.g., `GDPR`, `CCPA`), supporting secure coding practices more intuitively and allowing developers to implement security measures more easily compared to `Objective-C`.
+
+These features make `Swift` a more secure choice for developing `iOS` applications, as it reduces common programming errors and provides built-in safeguards against many vulnerabilities.
+
 ### Swift Projects and Ecosystem
 
 The `Swift` programming language is made up of several key components, each of which contributes to its versatility and power. According to [Swift.org](https://swift.org), these include:
