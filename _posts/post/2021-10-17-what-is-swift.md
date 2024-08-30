@@ -26,7 +26,7 @@ thumbnail: "images/covers/swift.jpg"
  include centered-image.html 
  image_path="images/covers/swift_full.jpg"
  alt_text="Swift" 
- caption="Swift"
+ caption=""
 %}
 
 ## Key Features of Swift
