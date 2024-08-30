@@ -3,13 +3,15 @@ layout: post
 title: "Swift Pros over Obj-C"
 date: "2021-10-18"
 categories: 
-  - "development"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 tags: 
-  - "development"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 permalink: /swift-pros-over-obj-c
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/swift_objc.jpg"

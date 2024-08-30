@@ -3,22 +3,22 @@ layout: post
 title: "What is Swift Programming Language?"
 date: "2021-10-18"
 categories: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 tags: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 permalink: /what-is-swift
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/swift.jpg"
 
 ---
 
-`Swift` is Apple’s modern, open-source programming language, introduced at Apple’s 2014 Worldwide Developers Conference (WWDC). Designed to be the successor to `Objective-C`, `Swift` is used for developing applications across all of Apple’s platforms, including iOS, macOS, watchOS, and tvOS. It primarily works with Apple’s `Cocoa` and `Cocoa Touch` frameworks. Since its introduction, `Swift` has rapidly become one of the fastest-growing programming languages. As an open-source language licensed under the [Apache 2.0 license](https://swift.org/LICENSE.txt), `Swift` has extended beyond Apple's ecosystem, finding use in other areas such as backend server development with frameworks like `Vapor`.
+`Swift` is Apple’s modern, open-source programming language, introduced at Apple’s 2014 Worldwide Developers Conference (WWDC). Designed to be the successor to `Objective-C`, `Swift` is used for developing applications across all of Apple’s platforms, including iOS, macOS, watchOS, and tvOS. 
 
 <!--more-->
 
@@ -28,6 +28,8 @@ thumbnail: "images/covers/swift.jpg"
  alt_text="Swift" 
  caption=""
 %}
+
+It primarily works with Apple’s `Cocoa` and `Cocoa Touch` frameworks. Since its introduction, `Swift` has rapidly become one of the fastest-growing programming languages. As an open-source language licensed under the [Apache 2.0 license](https://swift.org/LICENSE.txt), `Swift` has extended beyond Apple's ecosystem, finding use in other areas such as backend server development with frameworks like `Vapor`.
 
 ## Key Features of Swift
 
@@ -46,11 +48,11 @@ Chris Lattner, the principal designer of `Swift`, was a key figure at Apple Inc.
 
 ### Swift’s Versatility and Ease of Learning
 
-To facilitate onboarding for newcomers, `Swift` can be used in various environments. One of the most accessible is the `Swift` Playgrounds, an interactive environment in Xcode, or through a web-based REPL (Read-Eval-Print Loop) like [this one](https://replit.com/languages/swift). A REPL provides a command-line interface that allows developers to experiment with `Swift` in an interpreted-like environment, making it easy to learn and test new code snippets quickly.
+To facilitate onboarding for newcomers, `Swift` can be used in various environments. One of the most accessible is the `Swift` Playgrounds, an interactive environment in Xcode, or through a web-based `REPL` (Read-Eval-Print Loop) like [this one](https://replit.com/languages/swift). A `REPL` provides a command-line interface that allows developers to experiment with `Swift` in an interpreted-like environment, making it easy to learn and test new code snippets quickly.
 
 ## Swift: A General-Purpose, Multi-Paradigm Language
 
-Swift is a type-safe, **general-purpose**, and **multi-paradigm** language. It supports a wide range of programming paradigms, including **object-oriented**, **functional**, and **generic** programming. This flexibility allows developers to use the most suitable style for a given problem, recognizing that no single paradigm is perfect for all use cases. `Swift` provides its own versions of common C and Objective-C types, alongside powerful data structures such as Arrays, Sets, and Dictionaries. Moreover, it includes unique types like tuples, which enable the passing of grouped values—a feature not available in Objective-C.
+`Swift` is a type-safe, **general-purpose**, and **multi-paradigm** language. It supports a wide range of programming paradigms, including **object-oriented**, **functional**, and **generic** programming. This flexibility allows developers to use the most suitable style for a given problem, recognizing that no single paradigm is perfect for all use cases. `Swift` provides its own versions of common `C` and `Objective-C` types, alongside powerful data structures such as Arrays, Sets, and Dictionaries. Moreover, it includes unique types like tuples, which enable the passing of grouped values—a feature not available in `Objective-C`.
 
 ### Swift Projects and Ecosystem
 
