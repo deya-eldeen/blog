@@ -6,13 +6,26 @@ permalink: /ios-accessibility-series-part-1
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/a11y.jpg"
-tags: [Highlight, Markdown]
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags:
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 iOS accessibility, from a developer's point of view, refers to the set of tools, technologies, and guidelines [provided by Apple](https://developer.apple.com/accessibility/) to ensure that iOS applications are usable and inclusive for people with disabilities. 
 <!--more-->
-![](images/covers/a11y_full.jpg)
-
+{%
+ include centered-image.html 
+ image_path="images/covers/a11y_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 As a developer, incorporating accessibility features into your iOS app involves considering the diverse needs of users with visual, auditory, motor, cognitive, and any other impairments. (_see table below for a list of most common impairments and disabilities_)  
 
 Many developers and businesses do not prioritize making their applications accessible for several reasons, first, there is often a lack of awareness about the significance of accessibility and the benefits it brings to a broader user base, second, some developers perceive accessibility implementation as a complex and time-consuming task, leading them to prioritize other features instead, there are also other concerns about additional costs, limited resources, the assumption that their target audience does not include people with disabilities can deter developers from investing in accessibility.  

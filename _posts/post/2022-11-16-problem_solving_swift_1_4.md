@@ -5,13 +5,31 @@ date: "2022-11-16"
 permalink: /problem_solving_swift_1_4
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/algo.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Math"
+  - "Algorithms"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Math"
+  - "Algorithms"
 ---
 
 After reading the very popular book, grokking algorithms,  
 Will be blogging about algorithms and data structures… the book is very informative and easy to digest.
 <!--more-->
-![](images/covers/algo_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/algo_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 ![](images/grokking.jpeg)
 

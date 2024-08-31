@@ -2,19 +2,19 @@
 layout: post  
 title: "Mastering Swift Style Guides: Elevate Your Code to the Next Level"  
 date: "2021-11-10"  
-categories:  
-  - Development  
-  - iOS  
-  - Programming  
-  - Swift  
-tags:  
-  - Development  
-  - iOS  
-  - Programming  
-  - Swift  
 permalink: /swift-style-guides  
 excerpt_separator: <!--more-->  
 thumbnail: "images/covers/styleguides.jpg"
+categories:  
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags:
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 Have you ever dived into an open-source project and marveled at the elegance and consistency of the codebase? 🧐 It's no coincidence. 

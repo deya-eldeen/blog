@@ -2,24 +2,27 @@
 layout: post
 title: "Understanding Swift Variables and Constants: A Dive into Mutability"
 date: "2021-11-14"
-categories: 
-  - Development  
-  - iOS  
-  - Programming  
-  - Swift  
-tags: 
-  - Development  
-  - iOS  
-  - Programming  
-  - Swift  
 permalink: /swift-variables-and-constants
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/varlet.jpg"
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Objective-C"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Objective-C"
 ---
 
-In every programming language, the ability to store and manage data is fundamental. In `Swift`, the distinction between variables and constants is both clear and essential, influencing how you write and optimize your code. This blog post explores the concepts of mutability in `Swift`, comparing them to `Objective-C`, and discussing the broader implications of mutability in programming.
-
+In every programming language, the ability to store and manage data is fundamental. In `Swift`, the distinction between variables and constants is both clear and essential, influencing how you write and optimize your code. 
 <!--more-->
+
+This blog post explores the concepts of mutability in `Swift`, comparing them to `Objective-C`, and discussing the broader implications of mutability in programming.
 
 {%
  include centered-image.html  

@@ -2,27 +2,32 @@
 layout: post
 title: "Swift Bitwise Operators (with a couple of practical examples)"
 date: "2022-02-27"
-categories: 
-  - "development"
-  - "math"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "math"
-  - "programming"
-  - "swift"
 permalink: /swift-bitwise-operators-with-real-examples
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/bitwise.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 **Bitwise operators** are rarely used in everyday swift programming  
 ⚠️ : not to be confused by Logical Operators like **"&&"** and **"||"**  
 
 <!--more-->
-![](images/covers/bitwise_full.jpg)
+
+{%
+ include centered-image.html 
+ image_path="images/covers/bitwise_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 It's mainly used to perform operations on individual bits,  they are extremely useful and used in **Flags**, **Graphics**, **Networking**, **Encryption**...
 

@@ -5,19 +5,28 @@ date: "2024-02-02"
 permalink: /significant-network-problems-on-macbooks-with-m1-m2-chips-with-proposed-solutions
 excerpt_separator: <!--more-->
 author: deyaeldeen
-
-# feature-img: "images/covers/network_fix.jpg"
 thumbnail: "images/covers/network_fix.jpg"
-tags: [Highlight, Markdown]
-# color: rgb(88,88,88)
-
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags:
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 As Apple's M1/M2 processors got significant attention lately, different users reported **_significant stability issues & network performance issues_**, specially when using Wi-Fi on the 2.4 GHz band or connecting via a USB dongle for LAN.
 <!--more-->
 
-![](images/covers/network_fix_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/network_fix_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 One common complaint is sudden long drops in transfer rates, often resulting in frustrating experiences for users. These issues can be attributed to the design of the network card in these devices, which may struggle to maintain consistent performance under certain conditions.
 

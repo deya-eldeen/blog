@@ -2,6 +2,9 @@
 layout: post
 title: "Advantages of Swift Over Objective-C"
 date: "2021-10-18"
+permalink: /swift-pros-over-obj-c
+excerpt_separator: <!--more-->
+thumbnail: "images/covers/swift_objc.jpg"
 categories: 
   - "Development"
   - "iOS"
@@ -14,9 +17,6 @@ tags:
   - "Programming"
   - "Swift"
   - "Objective-C"
-permalink: /swift-pros-over-obj-c
-excerpt_separator: <!--more-->
-thumbnail: "images/covers/swift_objc.jpg"
 ---
 
 `Objective-C`, developed in the early 1980s, has long been the backbone of `iOS` and `macOS` development. Its deep integration with Apple's ecosystem made it a preferred choice for developers working on these platforms for decades. However, with the introduction of `Swift` in 2014, Apple provided a modern alternative that addresses many of the limitations and complexities of `Objective-C`.

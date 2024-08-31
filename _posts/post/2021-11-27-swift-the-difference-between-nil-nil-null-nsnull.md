@@ -2,23 +2,29 @@
 layout: post
 title: "Swift: the difference between nil, Nil, NULL, NSNull"
 date: "2021-11-27"
-categories: 
-  - "development"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "programming"
-  - "swift"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/nil.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift" 
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 As a programmer, sometimes you will need to define "nothingness"... 🧐  
 <!--more-->
-![](images/covers/nil_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/nil_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 Data stores can have a value, or simply be nothing, this **nothing** comes in different flavors (nil, Nil, Null, NSNull) which all came to be called "null".
 

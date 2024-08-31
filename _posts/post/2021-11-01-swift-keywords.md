@@ -2,6 +2,9 @@
 layout: post
 title: "Swift Reserved Keywords, with brief explanations."
 date: "2021-11-01"
+permalink: /swift-keywords
+excerpt_separator: <!--more-->
+thumbnail: "images/covers/keywords.jpg"
 categories: 
   - "Development"
   - "iOS"
@@ -12,10 +15,6 @@ tags:
   - "iOS"
   - "Programming"
   - "Swift"
-permalink: /swift-keywords
-excerpt_separator: <!--more-->
-thumbnail: "images/covers/keywords.jpg"
-
 ---
 
 A reserved word is **a term designated by the programming language that cannot be used as an identifier**. This restriction is a syntactic rule that helps prevent conflicts and ambiguities in the code. 

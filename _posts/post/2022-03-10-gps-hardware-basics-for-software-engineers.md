@@ -2,27 +2,34 @@
 layout: post
 title: "GPS Hardware basics for mobile developers."
 date: "2022-03-10"
-categories: 
-  - "development"
-  - "hardware"
-  - "ios"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "hardware"
-  - "ios"
-  - "programming"
-  - "swift"
 permalink: /gps-hardware-basics-for-software-engineers
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/gps.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Hardware"
+  - "Math"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Hardware"
+  - "Math"
 ---
   
 Mobile software engineers (iOS and Android), are normally not familiar with how GPS works, instead of just getting Lat/Lon readings, and doing geo operations with it, why not become familiar with how GPS works? 🤓
 <!--more-->
-![](images/covers/gps_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/gps_full.jpg"
+ alt_text="" 
+ caption=""
+%}
+
 
 This will not be a lengthy article, it will be a chat between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻).**
 

@@ -2,6 +2,9 @@
 layout: post
 title: "What is Swift Programming Language?"
 date: "2021-10-18"
+permalink: /what-is-swift
+excerpt_separator: <!--more-->
+thumbnail: "images/covers/swift.jpg"
 categories: 
   - "Development"
   - "iOS"
@@ -14,10 +17,6 @@ tags:
   - "Programming"
   - "Swift"
   - "Objective-C"
-permalink: /what-is-swift
-excerpt_separator: <!--more-->
-thumbnail: "images/covers/swift.jpg"
-
 ---
 
 `Swift` is Apple’s modern, open-source programming language, introduced at Apple’s 2014 Worldwide Developers Conference (WWDC). Designed to be the successor to `Objective-C`, `Swift` is used for developing applications across all of Apple’s platforms, including iOS, macOS, watchOS, and tvOS. 

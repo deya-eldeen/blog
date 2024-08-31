@@ -2,23 +2,29 @@
 layout: post
 title: "Swift: Any/ AnyObject/ AnyHashable Differences"
 date: "2021-11-26"
-categories: 
-  - "development"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "programming"
-  - "swift"
 permalink: /swift-any-anyobject
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/any.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 Although in normal cases, you should be specific in defining data types, swift offers **Any**, **AnyObject**, and **AnyHashable**.  
 <!--more-->
-![](images/covers/any_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/any_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 **Any** can represent an instance of any type, including functions, instance of a class, struct, or enum, it's more general than **AnyObject**, where **AnyObject** is a protocol all classes indirectly conform to.  
   

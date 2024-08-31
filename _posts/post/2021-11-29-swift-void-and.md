@@ -3,22 +3,29 @@ layout: post
 title: "Swift: The Difference Between Void and ()"
 date: "2021-11-29"
 categories: 
-  - "development"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "programming"
-  - "swift"
 permalink: /swift-void-and
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/void.jpg"
-
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 Void is a data type that is common across a lot of programming languages, in Swift's standard library, it's simply an empty tuple, it's used for for functions that return nothing, when defining a function, if you don't specify a return type, you get a function that return Void, this is how it's defined in standard library.
 <!--more-->
-![](images/covers/void_full.jpg)
+
+{%
+ include centered-image.html 
+ image_path="images/covers/void_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 ```
 public typealias Void = ()

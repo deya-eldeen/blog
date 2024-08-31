@@ -5,9 +5,17 @@ date: "2023-10-25"
 permalink: /test-doubles-in-swift-part-1
 excerpt_separator: <!--more-->
 author: deyaeldeen
-
 thumbnail: "images/covers/test_doubles.jpg"
-tags: [Highlight, Markdown]
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags:
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 _Test doubles name is inspired by "stunt doubles"_ from movies industry.
@@ -15,7 +23,12 @@ _Test doubles name is inspired by "stunt doubles"_ from movies industry.
 Testing is an essential part of software development, allowing us to ensure the correctness and reliability of our code.  
 <!--more-->
 
-![](images/covers/test_doubles_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/test_doubles_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 However, when it comes to writing tests, one concept that often perplexes developers is the use of test doubles, test doubles are objects that replace dependencies in our code during testing, enabling us to isolate and verify specific behaviors.  
 

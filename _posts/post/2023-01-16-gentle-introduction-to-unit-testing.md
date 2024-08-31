@@ -5,12 +5,26 @@ date: "2023-01-16"
 permalink: /gentle-introduction-to-unit-testing
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/unit_testing_intro.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags:
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 One Monday morning, some new developer (Penguin 🐧) started their first new job as a software engineer, the chat between two developers **(Penguin 🐧)** and their team leader **(Rex 🦖)** went like this.  
 <!--more-->
-![](images/covers/unit_testing_intro_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/unit_testing_intro_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 _**(Penguin 🐧)**:_ I have noticed that we have test cases written for almost all features in our mobile app, why would we write unit tests if we have QA team that does the testing and quality assurance?  
   

@@ -2,26 +2,33 @@
 layout: post
 title: "Easily Tiling Images in interface builder, without code !"
 date: "2022-02-23"
-categories: 
-  - "development"
-  - "interface-builder"
-  - "programming"
-  - "swift"
-  - "xcode"
-tags: 
-  - "development"
-  - "interface-builder"
-  - "programming"
-  - "swift"
 permalink: /easily-tiling-images-in-interface-builder-without-code
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/tiling.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Interface-Builder"
+  - "Xcode"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Interface-Builder"
+  - "Xcode"
 ---
 
-Tiling images in interface builder directly without code is easy...  
+Tiling `images` in interface builder directly without code is easy...  
 <!--more-->
-![](images/covers/tiling_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/tiling_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 ![](images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png)
 

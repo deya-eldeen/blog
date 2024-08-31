@@ -2,26 +2,33 @@
 layout: post
 title: "Using unicode markers (LTR: 0x200E, RTL:200F) to align \"hybrid RTL/LTR strings\" correctly."
 date: "2022-03-03"
-categories: 
-  - "development"
-  - "interface-builder"
-  - "ios"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "interface-builder"
-  - "programming"
-  - "swift"
 permalink: /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/arrows.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Interface-Builder"
+  - "Xcode"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+  - "Interface-Builder"
+  - "Xcode"
 ---
 
 So you have some text that contains both Arabic and English languages at the same time? and having difficulty aligning it because sometimes it starts with english, and other times it starts with Arabic?  
 <!--more-->
-![](images/covers/arrows_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/arrows_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 The following example illustrates  
 \- this problem 🐛  

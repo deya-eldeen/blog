@@ -2,25 +2,29 @@
 layout: post
 title: "Why my 0.3 MB image occupies around 10 MB on RAM?"
 date: "2022-02-22"
-categories: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
-tags: 
-  - "development"
-  - "ios"
-  - "programming"
-  - "swift"
 permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram
 excerpt_separator: <!--more-->
 thumbnail: "images/covers/imagesize.jpg"
-
+categories: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
+tags: 
+  - "Development"
+  - "iOS"
+  - "Programming"
+  - "Swift"
 ---
 
 You are writing an application that has a long list of entries, with each entry containing an image, the total download size of all images is about 10 MB, but the images take around 200 ~ 300 MB on RAM, you wonder why 🧐?  
 <!--more-->
-![](images/covers/imagesize_full.jpg)
+{%
+ include centered-image.html 
+ image_path="images/covers/imagesize_full.jpg"
+ alt_text="" 
+ caption=""
+%}
 
 RAM normally does not understand images that are compressed, they are stored as raw bitmaps, even if the image is compressed, it gets inflated into memory as a raw image.  
   

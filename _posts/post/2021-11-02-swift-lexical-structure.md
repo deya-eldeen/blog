@@ -2,6 +2,9 @@
 layout: post
 title: "Swift Lexical Structure"
 date: "2021-11-01"
+permalink: /swift-lexical-structure
+excerpt_separator: <!--more-->
+thumbnail: "images/covers/lexical.jpg"
 categories: 
   - "Development"
   - "iOS"
@@ -14,10 +17,6 @@ tags:
   - "Programming"
   - "Swift"
   - "Syntax"
-permalink: /swift-lexical-structure
-excerpt_separator: <!--more-->
-thumbnail: "images/covers/lexical.jpg"
-
 ---
 
 The `Swift` lexical structure consists of valid tokens (the lowest-level building blocks) that form the structure of any `Swift` program. These tokens describe the entirety of the `Swift` language.
