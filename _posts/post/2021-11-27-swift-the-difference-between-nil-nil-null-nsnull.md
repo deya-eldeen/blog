@@ -20,8 +20,11 @@ tags:
   - "Objective-C"
 ---
 
-As a programmer, sometimes you will need to define "nothingness"... 🧐  
+As a programmer, you will often need to represent the concept of "nothingness." In Swift and Objective-C, this idea manifests in various forms: `nil`, `Nil`, `NULL`, and `NSNull`. 
 <!--more-->
+
+Each of these serves a distinct purpose and is used in different contexts. This blog post will explore the differences between them and provide clarity on when and how to use each one.
+
 {%
  include centered-image.html 
  image_path="images/covers/nil_full.jpg"
@@ -29,19 +32,38 @@ As a programmer, sometimes you will need to define "nothingness"... 🧐
  caption=""
 %}
 
-Data stores can have a value, or simply be nothing. This **nothing** comes in different flavors: `nil`, `Nil`, `NULL`, and `NSNull`, which all fall under the umbrella of "null".
+## Understanding the Keywords
+
+Data stores can have a value or simply represent nothing. This "nothing" comes in different flavors: `nil`, `Nil`, `NULL`, and `NSNull`, which all fall under the umbrella of "null."
 
 | Keyword | Meaning                                      |
-|-------|----------------------------------------------|
-| NULL  | Literal null value for C pointers            |
-| nil   | Literal null value for Objective-C objects   |
-| Nil   | Literal null value for Objective-C classes   |
-| NSNull| Singleton object used to represent null      |
+|---------|----------------------------------------------|
+| NULL    | Literal null value for C pointers            |
+| nil     | Literal null value for Objective-C objects   |
+| Nil     | Literal null value for Objective-C classes   |
+| NSNull  | Singleton object used to represent null      |
 
-  
-In Swift, you will not be able to deal directly with `NULL` and `Nil`.
+### NULL
 
-Say you have this code in Objective C
+`NULL` is a macro defined in C and Objective-C to represent a null pointer to a memory address. It is typically used with non-object pointers, such as pointers to primitive types or structs. In Objective-C, `NULL` is equivalent to `(void *)0`.
+
+### nil
+
+In Objective-C, `nil` is used to represent a null pointer to an object. It is defined as `#define nil NULL`, making it functionally equivalent to `NULL` but specifically for Objective-C object pointers. When you send a message to `nil`, it is a no-op (no operation), meaning it does nothing and returns `0` or `nil` based on the return type.
+
+### Nil
+
+`Nil` is similar to `nil`, but it is used for class pointers instead of object pointers. It represents the absence of a class in Objective-C.
+
+### NSNull
+
+`NSNull` is a class in Foundation framework that acts as a singleton object used to represent null values in collection objects like `NSArray`, `NSDictionary`, and `NSSet`, which do not allow `nil` values. For example, if you need to insert a null value in an `NSArray`, you can use `[NSNull null]`.
+
+## Swift and Objective-C Interoperability
+
+In Swift, you will not directly deal with `NULL` or `Nil`. However, understanding these concepts is crucial when working with Objective-C code or when bridging between Swift and Objective-C.
+
+Consider the following Objective-C code:
 
 ```objectivec
 // Machine.h
@@ -71,13 +93,12 @@ Say you have this code in Objective C
     NSLog(@"Label2 = %@",label2);
     NSLog(@"Label3 = %@",label3);
     NSLog(@"Label4 = %@",label4);
-    NSLog(@"Label4 = %@",label5);
+    NSLog(@"Label5 = %@",label5);
 }
 @end
 ```
 
-
-after preparing the bridging header, you will be able to create Machine Objects
+After preparing the bridging header, you can create and interact with `Machine` objects in Swift:
 
 ```swift
 let OC_Machine = Machine()
@@ -86,31 +107,30 @@ OC_Machine.serialNumber = 21
 OC_Machine.serialNumber = nil
 OC_Machine.serialNumber = NSNull()
 //OC_Machine.serialNumber = Nil
-//OC_Machine.serialNumber = Null
+//OC_Machine.serialNumber = NULL
 print(OC_Machine.serialNumber)
 ```
 
-As you can see, the commented lines will not compile in swift, but should be running ok in `Objective-C`, you will see this output  
-  
+The commented lines will not compile in Swift, but they would work in Objective-C. The output of this code is:
+
 ```
 Label1 = label1  
 Label2 = (null)  
 Label3 = <null>  
 Label4 = (null)  
-Label4 = (null)  
+Label5 = (null)  
 Optional(<null>)  
 ```
 
-`[NSNull null]` is a wrapper for nil  
-  
-`nil` is defined as : `#define nil NULL` and is `Objective-C` equivalent for C `NULL`  
-  
-`Nil` is for object pointers, NULL is for non pointers, Null and Nil both defined to be equal to the value zero.  
-  
-`NULL` is a `void *`, `nil` is an `id`, and `Nil` is a Class pointer, `NULL` is used for **non-object pointer** (like a `C` pointer) in `Objective-C`. Like `nil`, `NULL` got no value nor address (used to check if a struct is empty).  
-  
-keep in mind:
+## Summary of Key Points
 
-> In `Objective-C`: nil is a pointer to a non-existent object. In `Swift`: nil is not a pointer, it's the absence of a value of a certain type.
+- `NULL` is used for non-object pointers in C and Objective-C.
+- `nil` is used for object pointers in Objective-C.
+- `Nil` is used for class pointers in Objective-C.
+- `NSNull` is a singleton used to represent null values in collections that do not allow `nil`.
 
-> `NULL` and `nil` are equal to each other, but `nil` is an object value while `NULL` is a generic pointer value (`(void*)0`, to be specific). `[NSNull null]` is an object that's meant to stand in for `nil` in situations where `nil` isn't allowed. For example, you can't have a `nil` value in an `NSArray`. So if you need to represent a `nil`, you can use `[NSNull null]`.
+In Swift, `nil` is not a pointer but the absence of a value of a specific type. It's essential to understand these differences, especially when working on projects that involve both Swift and Objective-C.
+
+> In Objective-C, `nil` is a pointer to a non-existent object. In Swift, `nil` is the absence of a value.
+
+> `NULL` and `nil` are equal to each other, but `nil` is an object value while `NULL` is a generic pointer value (`(void*)0`). `[NSNull null]` is an object that's meant to stand in for `nil` in situations where `nil` isn't allowed, such as in `NSArray`.
