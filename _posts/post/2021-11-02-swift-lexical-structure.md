@@ -8,13 +8,11 @@ author: deyaeldeen
 thumbnail: "images/covers/lexical.jpg"
 categories: 
   - "Development"
-  - "iOS"
   - "Programming"
   - "Swift"
   - "Syntax"
 tags: 
   - "Development"
-  - "iOS"
   - "Programming"
   - "Swift"
   - "Syntax"

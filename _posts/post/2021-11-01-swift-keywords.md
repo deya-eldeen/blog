@@ -8,12 +8,10 @@ author: deyaeldeen
 thumbnail: "images/covers/keywords.jpg"
 categories: 
   - "Development"
-  - "iOS"
   - "Programming"
   - "Swift"
 tags: 
   - "Development"
-  - "iOS"
   - "Programming"
   - "Swift"
 ---
