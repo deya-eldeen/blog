@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Swift Bitwise Operators (with a couple of practical examples)"
+title: "Mastering Swift Bitwise Operators: Theory and Practical Examples"
 date: "2022-02-27"
 permalink: /swift-bitwise-operators-with-real-examples
 excerpt_separator: <!--more-->
@@ -11,48 +11,53 @@ categories:
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Bitwise"
 tags: 
   - "Development"
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Bitwise"
 ---
 
-**Bitwise operators** are rarely used in everyday swift programming  
-⚠️ : not to be confused by Logical Operators like **"&&"** and **"||"**  
+**Bitwise operators** are a powerful yet often underutilized feature in Swift. Unlike logical operators like `"&&"` and `||`, which operate on entire values, bitwise operators perform operations on individual bits within a value. This post explores the different bitwise operators available in Swift, their theoretical underpinnings, and practical examples to demonstrate their utility in real-world scenarios.
 
 <!--more-->
 
 {%
  include centered-image.html 
  image_path="images/covers/bitwise_full.jpg"
- alt_text="" 
+ alt_text="Tiling Images in Interface Builder" 
  caption=""
 %}
 
-It's mainly used to perform operations on individual bits,  they are extremely useful and used in **Flags**, **Graphics**, **Networking**, **Encryption**...
+## Overview of Bitwise Operators
 
-| **Operator**           | **Description**                   |
-|------------------------|-----------------------------------|
-| &                      | Binary AND                        |
-| \|                     | Binary OR                         |
-| ^                      | Binary XOR                        |
-| ~                      | Binary One's Complement           |
-| <<                     | Binary Shift Left                 |
-| >>                     | Binary Shift Right                |
+Bitwise operators are crucial in low-level programming tasks such as manipulating flags, performing graphics operations, networking, and encryption. Here's a summary of the primary bitwise operators in Swift:
 
-## Swift Bitwise Operators
+| **Operator**  | **Description**                   |
+|---------------|-----------------------------------|
+| `&`           | Binary AND                        |
+| `\|`          | Binary OR                         |
+| `^`           | Binary XOR                        |
+| `~`           | Binary One's Complement           |
+| `<<`          | Binary Shift Left                 |
+| `>>`          | Binary Shift Right                |
 
-First, a refresher on the truth table of XOR, it gives True if both A and B are Different, this is XOR Truth Table
+### Truth Table for XOR
 
-| A      | B      | Result |
+The XOR (exclusive OR) operator is particularly interesting. It compares corresponding bits of two operands and returns `1` if the bits are different, and `0` if they are the same. Here’s the truth table for XOR:
+
+| A      | B      | A ^ B  |
 |--------|--------|--------|
 | TRUE   | TRUE   | FALSE  |
 | TRUE   | FALSE  | TRUE   |
 | FALSE  | TRUE   | TRUE   |
 | FALSE  | FALSE  | FALSE  |
 
-The basic code to represent integers as bits, and each operator and it's result ... 🧐
+## Bitwise Operations in Swift
+
+Let’s start by exploring how to represent integers as binary strings in Swift, and then apply various bitwise operators to them:
 
 ```swift
 extension Int {
@@ -68,44 +73,46 @@ extension Int {
     }
 }
 
-func bitwise_example() {
+func bitwiseExample() {
     let x1 = 0x1
     let x2 = 0x2
-    print("x1\t", x1.binaryDescription )
-    print("x2\t", x2.binaryDescription )
-    let binary_and = (x1 & x2)
-    let binary_or = (x1 | x2)
-    let binary_xor = (x1 ^ x2)
-    let binary_complement = (~x1)
-    let binary_shiftL = (x1 << 1)
-    let binary_shiftR = (x1 >> 1)
-    print("&\t",  binary_and.binaryDescription )
-    print("|\t", binary_or.binaryDescription )
-    print("^\t", binary_xor.binaryDescription )
-    print("~\t", binary_complement.binaryDescription )
-    print("<<\t", binary_shiftL.binaryDescription )
-    print(">>\t", binary_shiftR.binaryDescription )
+    print("x1	", x1.binaryDescription )
+    print("x2	", x2.binaryDescription )
+    let binaryAnd = (x1 & x2)
+    let binaryOr = (x1 | x2)
+    let binaryXor = (x1 ^ x2)
+    let binaryComplement = (~x1)
+    let binaryShiftL = (x1 << 1)
+    let binaryShiftR = (x1 >> 1)
+    print("&	", binaryAnd.binaryDescription )
+    print("|	", binaryOr.binaryDescription )
+    print("^	", binaryXor.binaryDescription )
+    print("~	", binaryComplement.binaryDescription )
+    print("<<	", binaryShiftL.binaryDescription )
+    print(">>	", binaryShiftR.binaryDescription )
 }
 ```
 
-Output:
+When executed, this code will output:
 
 ```
-x1	 0b 0000000000000000000000000000000000000000000000000000000000000001
-x2	 0b 0000000000000000000000000000000000000000000000000000000000000010
-&	 0b 0000000000000000000000000000000000000000000000000000000000000000
-|	 0b 0000000000000000000000000000000000000000000000000000000000000011
-^	 0b 0000000000000000000000000000000000000000000000000000000000000011
-~	 0b 1111111111111111111111111111111111111111111111111111111111111110
-<<	 0b 0000000000000000000000000000000000000000000000000000000000000010
->>	 0b 0000000000000000000000000000000000000000000000000000000000000000
+x1  0b 0000000000000000000000000000000000000000000000000000000000000001
+x2  0b 0000000000000000000000000000000000000000000000000000000000000010
+&   0b 0000000000000000000000000000000000000000000000000000000000000000
+|   0b 0000000000000000000000000000000000000000000000000000000000000011
+^   0b 0000000000000000000000000000000000000000000000000000000000000011
+~   0b 1111111111111111111111111111111111111111111111111111111111111110
+<<  0b 0000000000000000000000000000000000000000000000000000000000000010
+>>  0b 0000000000000000000000000000000000000000000000000000000000000000
 ```
 
-## Real Life Usage for them
-  
-### 1- Color Format Conversion 
+## Practical Applications of Bitwise Operators
 
-Most probably, you would have such an extension in your boilerplate iOS app, it converts HEX colors into UIColor.
+Bitwise operators are not just theoretical—they have practical uses in many areas of programming. Here are some real-world examples:
+
+### 1. Color Format Conversion
+
+A common use case for bitwise operators is converting a HEX color value into its RGB components in iOS development:
 
 ```swift
 extension UIColor {
@@ -127,65 +134,75 @@ extension UIColor {
 }
 ```
 
-### 2- Quick & Dirty hashing
+### 2. Quick & Dirty Hashing
+
+Bitwise operations can also be used to create simple hash functions. The `chaoticHash` function computes a chaotic hash value for a given string by mixing the ASCII values of its characters using bitwise operations and arithmetic. It starts with a prime constant to enhance distribution and applies multiple transformations to ensure that small changes in the input result in significantly different hash outputs. 
+
 
 ```swift
-let a = 4012
-let b = 8102
-let c = 9101
+func chaoticHash(input: String) -> Int {
+    var hashValue = 31 // Starting with a prime constant for better distribution
+    for character in input {
+        let asciiValue = Int(character.asciiValue ?? 0)
+        hashValue ^= (asciiValue * 31)
+        hashValue = (hashValue << 5) | (hashValue >> (32 - 5))
+        hashValue += asciiValue
+        hashValue ^= (hashValue >> 13)
+    }
+    return hashValue
+}
+let inputString = "SwiftByDeya"
+let hashValue = chaoticHash(input: inputString)
+print("Chaotic Hash Value: \(hashValue)")
+// Outputs the computed chaotic hash value 3637872018676935840
+```
 
-func dirtyHash(a: Int, b: Int, c: Int) -> Int{
-    return ( a ^ b ^ c ^ 9999)
+> Note: This hash function is not secure and should not be used in production environments.
+
+
+### 3. Base64 Encoding
+
+Base64 encoding involves converting a series of 8-bit bytes into 6-bit character lookup indexes. Bitwise operators like SHIFT, AND, OR, and NOT are crucial in performing these operations efficiently.
+
+### 4. Checking if a Number is Odd/Even
+
+You can quickly check if a number is odd or even using the following bitwise operations:
+
+```swift
+func isEven(number: Int) -> Bool {
+    return (number & 0x1) == 0
+}
+
+func isOdd(number: Int) -> Bool {
+    return (number & 0x1) > 0
 }
 ```
 
-### 3- Base64 Encoding
-  
-Base64 encoding converts a series of 8 bit bytes into 6 bit character lookup indexes. (SHIFT)ing, (AND)ing, (OR)ing, (NOT)ing are used for implementing the bit operations necessary for Base64 encode/decode.  
-  
-### 4- Checking if a number is Odd/Even
-[](https://stackoverflow.com/posts/2097299/timeline)
+### 5. Efficiently Swapping Two Variables
+
+Bitwise XOR can be used to swap the values of two variables without using a temporary variable:
 
 ```swift
-func isEven(number: Int) -> Bool{
-    return ((number & 0x1) == 0)
-}
+var a = 5
+var b = 10
 
-func isOdd(number: Int) -> Bool{
-    return ((number & 0x1) > 0)
-}
+a = a ^ b
+b = a ^ b
+a = a ^ b
 ```
 
-### 5- Solving Problems efficiently and in a performant way  
-Write a program to swap the value of two variable.
+### 6. Network Address Calculations
 
-Using temporary variable
+Bitwise operations are vital in calculating valid network addresses, subnet masks, and broadcast addresses in networking.
 
-```swift
-c =  a; a = b; b = c; 
-```
+### 7. Role-Based Access Control (RBAC)
 
-Without using temporary variable
+In role-based access control systems, bitwise operations are often used to calculate and manage permissions efficiently.
 
-```swift
-a = a+b; b = a-b; a = a-b; 
-```
+### 8. Fast Inverse Square Root
 
-Using bitwise operator
+A famous example of bitwise operations is the fast inverse square root, used in graphics programming. The original implementation can be found [here](http://h14s.p5r.org/2012/09/0x5f3759df.html).
 
-```swift
-a = a^b; b = a^b; a = a^b; 
-```
+## Conclusion
 
-### 6- Calculating valid network addresses for a subnet  
-  
-### 7- Calculating Permission in Role-based access control systems, RBAC.
-
-### 8- Calculating Inverse Square Root very fastly
-[http://h14s.p5r.org/2012/09/0x5f3759df.html](http://h14s.p5r.org/2012/09/0x5f3759df.html)  
-  
-Also:
-
-Some people use bitwise operators to handle multiple error code together, each bit can hold a separate value.  
-  
-N-bitmap can be a really cool and compact data structure.
+Bitwise operators are a versatile tool in a Swift programmer’s toolkit. From manipulating individual bits to optimizing performance in specific tasks, understanding and leveraging bitwise operators can help you write more efficient and powerful code.

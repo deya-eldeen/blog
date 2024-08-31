@@ -22,8 +22,10 @@ tags:
   - "Xcode"
 ---
 
-So you have some text that contains both Arabic and English languages at the same time? and having difficulty aligning it because sometimes it starts with english, and other times it starts with Arabic?  
+So you have some text that contains both Arabic and English languages at the same time and are having difficulty aligning it? Sometimes it starts with English, and other times it starts with Arabic.
+
 <!--more-->
+
 {%
  include centered-image.html 
  image_path="images/covers/arrows_full.jpg"
@@ -31,44 +33,43 @@ So you have some text that contains both Arabic and English languages at the sam
  caption=""
 %}
 
-The following example illustrates  
-\- this problem 🐛  
-\- some hacky way to solve it 👺  
-\- and the correct way to solve it 🧐.
+## Working With Multiple Languages
+It's common to encounter text that combines multiple languages, such as Arabic and English. However, this can lead to alignment issues, especially when the text direction changes unexpectedly. In this post, we'll explore how these challenges arise, examine a couple of solutions, and ultimately reveal the most effective method for ensuring proper text alignment using Unicode markers. Let's dive in! This introduction sets the stage for the discussion by highlighting the relevance of the topic and outlining what the reader can expect to learn.
 
-<figure>
 
-![](images/image-2.png)
+### The following example illustrates
+- This problem 🐛  
+- A hacky way to solve it 👺  
+- The correct way to solve it 🧐
 
-<figcaption>
+{%
+ include centered-image.html 
+ image_path="images/rtl_ltr.png"
+ alt_text="" 
+ caption=""
+%}
 
-3 example labels
+#### Top line
+Shows a line rendered incorrectly because the first word is Arabic, and it does not align as expected on the left 🤦🏻.
 
-</figcaption>
+#### Middle line
+One hacky solution is to always start your text with a left-to-right (LTR) word, like `text`, but this is not the best approach 👺.
 
-</figure>
+#### Bottom line
+This line displays correctly because it uses Unicode markers. The Unicode character set offers two markers: LTR (`0x200E`) and RTL (`0x200F`). These characters are invisible but control text direction. You can add `\u{200E}` to force the wrapping direction. ✅
 
-**Top line:** shows a line that is being rendered incorrectly, because the first word is Arabic, and you are expecting it to show up on the left, but it's not 🤦🏻.
+## Playground example
 
-**Middle line:** one hacky way to solve this, is to start your text all the time with a LTR word, not the best solution 👺
-
-**Bottom line:** this is showing up correctly, because it's adjusted using unicode markers.  
-Unicode characters set offers two marker characters (**LTR: 0x200E, RTL:200F)**. These are invisible, but control the direction, I just need to add this `**\u{200E}**` to force the wrapping direction.  
-  
-Playground example:
-
-```
+```swift
 import UIKit
 import PlaygroundSupport
 
 extension String {
-
     func withHighlighted(word: String) -> NSMutableAttributedString {
         let attributes = [
             [NSAttributedString.Key.foregroundColor:UIColor.blue],
             [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 14)]
         ]
-        
         let range = (self as NSString).range(of: word)
         let result = NSMutableAttributedString(string: self)
         for attribute in attributes {
@@ -76,36 +77,28 @@ extension String {
         }
         return result
     }
-    
 }
 
 class MyViewController : UIViewController {
     
     override func loadView() {
-        
         let view = UIView()
         let topLabel = UILabel()
         let middleLabel = UILabel()
         let bottomLabel = UILabel()
-
         topLabel.frame = CGRect(x: 40, y: 40, width: 300, height: 20)
         middleLabel.frame = CGRect(x: 40, y: 80, width: 300, height: 20)
         bottomLabel.frame = CGRect(x: 40, y: 120, width: 300, height: 20)
-        
         let word1 = "عبد الله"
         let word2 = "added a new comment"
         let adjustor = "\u{200E}"
-        
         topLabel.attributedText = "\(word1) \(word2)".withHighlighted(word: word1)
         middleLabel.attributedText = "note: \(word1) \(word2)".withHighlighted(word: word1)
         bottomLabel.attributedText = "\(adjustor) \(word1) \(word2)".withHighlighted(word: word1)
-        
         view.addSubview(topLabel)
         view.addSubview(middleLabel)
         view.addSubview(bottomLabel)
-
         self.view = view
-        
     }
     
 }
