@@ -22,7 +22,9 @@ tags:
   - "Math"
 ---
 Swift provides three main collection types, **Arrays**, **Sets**, and **Dictionaries**..  
+
 <!--more-->
+
 {%
  include centered-image.html 
  image_path="images/covers/pizza_full.jpg"
@@ -38,21 +40,18 @@ A set is a collection of unique and unordered data, simply, the data elements ha
 
 Asking about the importance of sets is like asking about the importance of the alphabet, [set theory](https://en.wikipedia.org/wiki/Set_theory "set theory") is the basic to so much math, any practical application of anything in math is normally an application of set theory.
 
-<figure>
-
-![](images/220px-Venn_A_intersect_B.svg.png)
-
-<figcaption>
+{%
+ include centered-image.html 
+ image_path="images/220px-Venn_A_intersect_B.svg.png"
+ alt_text="" 
+ caption=""
+%}
 
 a Venn diagram, showing the intersection of two sets (Wikipedia)
 
-</figcaption>
-
-</figure>
-
 The basic operations on sets are Union, Intersection, Difference, isSubset, isSuperset.. but swift provide a lot of functions, you can perform set operations with another set, an array, or any other sequence type 🧐, you can use higher order functions like map and filter... etc.
 
-```
+```swift
 func filter
 func isSubset
 func isSuperset
@@ -115,7 +114,7 @@ func merging
 
 let's start with a simple example
 
-```
+```swift
 // Data
 var myKitchenItemsSet: Set = ["Mozzarella","Mushrooms","Pineapples","Tomatoes","Mushrooms","Garlic"]
 let shoppingListItemsSet: Set = ["Olives", "Tomatoes","Sourdough"]
@@ -151,8 +150,7 @@ We can add the items needed into my kitchen items, notice that how duplicate ite
   
 Say you want to make a pizza for Justin Bieber?
 
-```
-
+```swift
 var pizzaIngredientsForJustinSet: Set = ["Sourdough","Mozzarella","Tomatoes","Olives","Amanita phalloides"]
 
 print("can I make Pizza for the Justin?",pizzaIngredientsForJustinSet.isSubset(of: myKitchenItemsSet))
