@@ -32,42 +32,29 @@ tags:
 
 It's mainly used to perform operations on individual bits,  they are extremely useful and used in **Flags**, **Graphics**, **Networking**, **Encryption**...
 
-<figure>
+| **Operator**           | **Description**                   |
+|------------------------|-----------------------------------|
+| &                      | Binary AND                        |
+| \|                     | Binary OR                         |
+| ^                      | Binary XOR                        |
+| ~                      | Binary One's Complement           |
+| <<                     | Binary Shift Left                 |
+| >>                     | Binary Shift Right                |
 
-<table><tbody><tr><td><strong>Operato</strong>r</td><td></td><td><strong>Description</strong></td></tr><tr><td>&amp;&nbsp;</td><td></td><td>Binary AND</td></tr><tr><td>|&nbsp; &nbsp;</td><td></td><td>Binary OR</td></tr><tr><td>^&nbsp; &nbsp;</td><td></td><td>Binary XOR</td></tr><tr><td>~&nbsp; &nbsp;</td><td></td><td>Binary One's Complement</td></tr><tr><td>&lt;&lt;&nbsp; &nbsp;</td><td></td><td>Binary Shift Left</td></tr><tr><td>&gt;&gt;&nbsp; &nbsp;</td><td></td><td>Binary Shift Right</td></tr></tbody></table>
+## Swift Bitwise Operators
 
-<figcaption>
+First, a refresher on the truth table of XOR, it gives True if both A and B are Different, this is XOR Truth Table
 
-Swift Bitwise Operators
+| A      | B      | Result |
+|--------|--------|--------|
+| TRUE   | TRUE   | FALSE  |
+| TRUE   | FALSE  | TRUE   |
+| FALSE  | TRUE   | TRUE   |
+| FALSE  | FALSE  | FALSE  |
 
-</figcaption>
-
-
-
-</figure>
-
-  
-  
-First, a refresher on the truth table of XOR, it gives True if both A and B are Different
-
-<figure>
-
-<table><tbody><tr><td>A</td><td>B</td><td>Result</td></tr><tr><td>TRUE</td><td>TRUE</td><td>FALSE</td></tr><tr><td>TRUE</td><td>FALSE</td><td>TRUE</td></tr><tr><td>FALSE</td><td>TRUE</td><td>TRUE</td></tr><tr><td>FALSE</td><td>FALSE</td><td>FALSE</td></tr></tbody></table>
-
-<figcaption>
-
-XOR Truth Table
-
-</figcaption>
-
-
-
-</figure>
-
-  
 The basic code to represent integers as bits, and each operator and it's result ... 🧐
 
-```
+```swift
 extension Int {
     
     var binaryDescription: String {
@@ -79,36 +66,29 @@ extension Int {
         }
         return "0b " + binaryString
     }
-    
 }
 
 func bitwise_example() {
-    
     let x1 = 0x1
     let x2 = 0x2
-
     print("x1\t", x1.binaryDescription )
     print("x2\t", x2.binaryDescription )
-    
     let binary_and = (x1 & x2)
     let binary_or = (x1 | x2)
     let binary_xor = (x1 ^ x2)
     let binary_complement = (~x1)
     let binary_shiftL = (x1 << 1)
     let binary_shiftR = (x1 >> 1)
-
     print("&\t",  binary_and.binaryDescription )
     print("|\t", binary_or.binaryDescription )
-    
     print("^\t", binary_xor.binaryDescription )
     print("~\t", binary_complement.binaryDescription )
     print("<<\t", binary_shiftL.binaryDescription )
     print(">>\t", binary_shiftR.binaryDescription )
-    
 }
 ```
 
-Output
+Output:
 
 ```
 x1	 0b 0000000000000000000000000000000000000000000000000000000000000001
@@ -121,12 +101,13 @@ x2	 0b 0000000000000000000000000000000000000000000000000000000000000010
 >>	 0b 0000000000000000000000000000000000000000000000000000000000000000
 ```
 
-Real Life Usage for them:  
+## Real Life Usage for them
   
-**1- Color Format Conversion  
-**Most probably, you would have such an extension in your boilerplate iOS app, it converts HEX colors into UIColor.
+### 1- Color Format Conversion 
 
-```
+Most probably, you would have such an extension in your boilerplate iOS app, it converts HEX colors into UIColor.
+
+```swift
 extension UIColor {
    convenience init(red: Int, green: Int, blue: Int) {
        assert(red >= 0 && red <= 255, "Invalid red component")
@@ -146,9 +127,9 @@ extension UIColor {
 }
 ```
 
-**2- Quick & Dirty hashing**
+### 2- Quick & Dirty hashing
 
-```
+```swift
 let a = 4012
 let b = 8102
 let c = 9101
@@ -158,14 +139,14 @@ func dirtyHash(a: Int, b: Int, c: Int) -> Int{
 }
 ```
 
-**3- Base64 Encoding**  
+### 3- Base64 Encoding
   
 Base64 encoding converts a series of 8 bit bytes into 6 bit character lookup indexes. (SHIFT)ing, (AND)ing, (OR)ing, (NOT)ing are used for implementing the bit operations necessary for Base64 encode/decode.  
   
-**4- Checking if a number is Odd/Even.**  
+### 4- Checking if a number is Odd/Even
 [](https://stackoverflow.com/posts/2097299/timeline)
 
-```
+```swift
 func isEven(number: Int) -> Bool{
     return ((number & 0x1) == 0)
 }
@@ -175,36 +156,36 @@ func isOdd(number: Int) -> Bool{
 }
 ```
 
-**5- Solving Problems efficiently and in a performant way.  
-**Write a program to swap the value of two variable.
+### 5- Solving Problems efficiently and in a performant way  
+Write a program to swap the value of two variable.
 
 Using temporary variable
 
-```
+```swift
 c =  a; a = b; b = c; 
 ```
 
 Without using temporary variable
 
-```
+```swift
 a = a+b; b = a-b; a = a-b; 
 ```
 
-_**Using bitwise operator**_
+Using bitwise operator
 
-```
+```swift
 a = a^b; b = a^b; a = a^b; 
 ```
 
-**6- Calculating valid network addresses for a subnet  
-**  
-**7- Calculating Permission in Role-based access control systems, RBAC.**
+### 6- Calculating valid network addresses for a subnet  
+  
+### 7- Calculating Permission in Role-based access control systems, RBAC.
 
-**8- Calculating Inverse Square Root very fastly**  
+### 8- Calculating Inverse Square Root very fastly
 [http://h14s.p5r.org/2012/09/0x5f3759df.html](http://h14s.p5r.org/2012/09/0x5f3759df.html)  
   
-Also:  
-  
+Also:
+
 Some people use bitwise operators to handle multiple error code together, each bit can hold a separate value.  
   
 N-bitmap can be a really cool and compact data structure.

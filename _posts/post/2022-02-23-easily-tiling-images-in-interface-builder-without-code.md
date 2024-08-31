@@ -22,7 +22,7 @@ tags:
   - "Xcode"
 ---
 
-Tiling images directly within Interface Builder, without writing a single line of code, can save time and simplify your UI design process. This post will guide you through the steps and provide additional tips to enhance your tiling experience.
+Tiling images directly within Interface Builder, without writing code, can save time and simplify your UI design process. This post will guide you through the steps and provide additional tips to enhance your image tiling experience.
 
 <!--more-->
 
@@ -36,6 +36,13 @@ Tiling images directly within Interface Builder, without writing a single line o
 ## Why Tile Images?
 
 Tiling images is a technique used to create repeating patterns or backgrounds in your app’s user interface. It’s particularly useful for creating seamless backgrounds or filling areas with a pattern that can expand or contract based on the device’s screen size.
+
+{%
+ include centered-image.html 
+ image_path="images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png"
+ alt_text="" 
+ caption=""
+%}
 
 ## Step-by-Step Guide to Tiling Images
 
@@ -53,13 +60,6 @@ Once your image is in the asset catalog:
 
 The image will now appear with a darker overlay and a "Start Slicing" button. This mode allows you to specify how the image should be sliced for tiling.
 
-{%
- include centered-image.html 
- image_path="images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png"
- alt_text="" 
- caption=""
-%}
-
 ### 3. Configure Slicing for Tiling
 
 Click "Start Slicing" and select the appropriate slicing type. The slicing tool allows you to define insets for the image, which determine how the image is stretched or tiled.
@@ -71,9 +71,9 @@ In most cases, you’ll want the Left, Right, Top, and Bottom insets to be zero,
 
 {%
  include centered-image.html 
- image_path="images/image-993x1024.png"
- alt_text="Tiling Configuration" 
- caption="Tiling Configuration"
+ image_path="images/slicing.png"
+ alt_text="Slicing Interface" 
+ caption="Slicing Interface"
 %}
 
 ### 4. Adjust Content Mode for Proper Tiling
@@ -82,11 +82,10 @@ To ensure your image tiles correctly, set the image view’s content mode to `Fi
 
 {%
  include centered-image.html 
- image_path="images/slicing.png"
- alt_text="Slicing Interface" 
- caption="Slicing Interface"
+ image_path="images/image-993x1024.png"
+ alt_text="Tiling Configuration" 
+ caption="Tiling Configuration"
 %}
-
 
 ## Tips for Effective Tiling
 
