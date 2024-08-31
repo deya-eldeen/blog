@@ -45,9 +45,83 @@ let mixedArray: [Any] = [1, "Hello", 3.14, [1, 2, 3]]
 
 In this example, `mixedArray` can store any combination of types, from integers to strings and arrays. This can be particularly useful in scenarios where type flexibility is essential, but it should be used sparingly due to the loss of type safety.
 
+#### Real-World Use Cases for Any in Swift
+
+1. Handling Mixed-Type Data Collections
+- Use `Any` to create an array that holds various data types, which is useful for data parsing from APIs.
+  
+```swift
+  var things: [Any] = []
+  things.append(0)                // Int
+  things.append(3.14)             // Double
+  things.append("Hello, World!")  // String
+  things.append((3.0, 5.0))       // Tuple
+```
+
+2. Dynamic Function Handling
+Store function types in a collection, allowing for dynamic function calls.
+
+```swift
+let functions: [Any] = [
+    { (name: String) -> String in "Hello, $$name)" },
+    { (x: Int) -> Int in x * 2 }
+]
+```
+
+or this detailed Example 
+
+```swift
+protocol AnyFunction {
+    func call(with input: Any) -> Any
+}
+
+let functions: [AnyFunction] = [
+    AnyFunctionWrapper { (name: String) -> String in "Hello, \(name)" },
+    AnyFunctionWrapper { (x: Int) -> Int in x * 2 }
+]
+
+struct AnyFunctionWrapper: AnyFunction {
+    private let _call: (Any) -> Any
+
+    init<T, R>(_ function: @escaping (T) -> R) {
+        _call = { input in
+            if let typedInput = input as? T {
+                return function(typedInput)
+            }
+            return "Invalid input type"
+        }
+    }
+
+    func call(with input: Any) -> Any {
+        return _call(input)
+    }
+}
+
+let greetingResult = functions[0].call(with: "Alice")
+print(greetingResult) // Output: Hello, Alice
+
+let doublingResult = functions[1].call(with: 5)
+print(doublingResult) // Output: 10
+
+let invalidResult = functions[0].call(with: 42)
+print(invalidResult) // Output: Invalid input type
+```
+
+3. Interfacing with `Objective-C` APIs
+Use Any to handle untyped objects returned by `Objective-C` methods, facilitating seamless interaction.
+
+4. Generic Programming
+Accept or return any type in generic programming, simplifying function signatures when specific types are not essential.
+
+5. Temporary Data Structures
+Build temporary data structures for algorithms, allowing storage of various types without creating multiple collections.
+
+Caution in Usage:
+> While `Any` offers flexibility, it can lead to loss of type safety and increased complexity. Use more specific types whenever possible to maintain clarity and safety in your codebase.
+
 ### AnyObject
 
-`AnyObject` is a protocol that all `class` types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like structs or enums. `AnyObject` is commonly used in scenarios where `Swift` interacts with `Objective-C`, especially because `Objective-C` types are generally class-based.
+`AnyObject` is a protocol that all `class` types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like `struct`s or `enum`s. `AnyObject` is commonly used in scenarios where `Swift` interacts with `Objective-C`, especially because `Objective-C` types are generally class-based.
 
 ```swift
 let objectArray: [AnyObject] = [NSString(string: "Hello"), NSNumber(value: 42)]
@@ -55,7 +129,56 @@ let objectArray: [AnyObject] = [NSString(string: "Hello"), NSNumber(value: 42)]
 
 Here, `objectArray` holds instances that are guaranteed to be `class` types. This makes `AnyObject` a safer option when you’re dealing with `class` instances, especially in mixed-language projects involving both Swift and `Objective-C`.
 
-## The Difference Between`Any and AnyObject in Swift
+#### Real-World Use Cases for AnyObject in Swift
+
+`AnyObject` allows you to work with instances of any class type. Here are some real-world scenarios where it can be beneficial:
+
+1. Interacting with `Objective-C` `API`s
+- Use `AnyObject` to handle untyped objects from `Objective-C` methods and properties, facilitating seamless interaction with these `API`s.
+
+2. Parsing Mixed-Type `JSON` Data
+- Store parsed `JSON` data containing a mix of types (strings, numbers, booleans) in a flexible way using `AnyObject`.
+
+3. Creating Heterogeneous Collections
+- Create arrays or dictionaries that hold instances of different class types, allowing for storage of diverse objects together.
+
+4. Bridging `Objective-C` Classes to Swift
+- Use `AnyObject` for properties, method parameters, and return values when bridging `Objective-C` classes, enabling interaction without knowing specific types.
+
+5. Implementing Dynamic Behavior
+- Leverage `AnyObject` to call any `Objective-C` method, creating flexible and extensible `API`s.
+
+Note:
+> While `AnyObject` is useful, it's important to prioritize type safety and performance by using more specific types whenever possible.
+
+### AnyHashable
+
+`AnyHashable` is a type in Swift that allows you to store values of different types that conform to the `Hashable` protocol in a single collection. This is particularly useful when you need a heterogeneous collection of hashable types, such as when using a dictionary or a set.
+
+#### Key Features
+
+- **Type Erasure**: `AnyHashable` provides a way to erase the specific type of a hashable value while still maintaining its hashability.
+- **Interoperability**: It can be used in collections like `Set` or `Dictionary` where the key types might differ.
+
+#### Example Usage
+
+Here’s a simple example demonstrating how to use `AnyHashable`:
+
+```swift
+let intKey: AnyHashable = AnyHashable(42)
+let stringKey: AnyHashable = AnyHashable("Hello")
+
+let dictionary: [AnyHashable: String] = [
+    intKey: "This is an integer key",
+    stringKey: "This is a string key"
+]
+
+for (key, value) in dictionary {
+    print("\(key): \(value)")
+}
+```
+
+## The Difference Between Any and AnyObject in Swift
 
 `Any` and `AnyObject` are two special types in Swift used for type erasure, allowing you to work with values of unknown or mixed types. Here are the key differences:
 
@@ -64,21 +187,21 @@ Here, `objectArray` holds instances that are guaranteed to be `class` types. Thi
 - Can be used to store heterogeneous collections of values.
 - Example usage:
 ```swift
-  let mixedArray: [Any] = [1, "Hello", true, 2.0]
-  for item in mixedArray {
-      switch item {
-      case let x as Int:
-          print("Int: $$x)")
-      case let x as String:
-          print("String: $$x)")
-      case let x as Bool:
-          print("Bool: $$x)")
-      case let x as Double:
-          print("Double: $$x)")
-      default:
-          print("Unknown type")
-      }
-  }
+let mixedArray: [Any] = [1, "Hello", true, 2.0]
+for item in mixedArray {
+    switch item {
+    case let x as Int:
+        print("Int: \(x)")
+    case let x as String:
+        print("String: \(x)")
+    case let x as Bool:
+        print("Bool: \(x)")
+    case let x as Double:
+        print("Double: \(x)")
+    default:
+        print("Unknown type")
+    }
+}
 ```
 
 ### AnyObject
@@ -101,7 +224,7 @@ for item in objectsArray {
     }
 }
 ```
-## When to Use `Any` vs. `AnyObject`
+## When to Use Any vs. AnyObject
 
 - Use `Any`:
   - When your collection or variable needs to handle multiple types, including value types like `Int`, `String`, and `Array`.
@@ -112,21 +235,25 @@ for item in objectsArray {
   - When you specifically need to work with reference types.
   - When your data will interact with `Objective-C` code or when you specifically need to constrain your data to `class` types.
 
-### AnyHashable
+## AnyHashable
 
-`AnyHashable` is a type-erased wrapper that can hold any value conforming to the `Hashable` protocol. Introduced in `Swift` 3, it allows you to store heterogeneously-typed values in collections that require a hashable type, such as sets or dictionaries.
+As mentioned earlier, `AnyHashable` is a type-erased wrapper that can hold any value conforming to the `Hashable` protocol. It allows you to store heterogeneously-typed values in collections that require a hashable type, such as sets or dictionaries.
 
 ```swift
+import Foundation
+
 let anyHashableDict: [AnyHashable: Any] = [
     "key1": "value1",
     42: "value2",
     UUID(): "value3"
 ]
+
+print(anyHashableDict)
 ```
 
 In this example, `anyHashableDict` can have keys of different types, as long as those types conform to the `Hashable` protocol. `AnyHashable` is particularly useful when dealing with untyped sets or dictionaries coming from `Objective-C`, as it provides the necessary flexibility while maintaining type safety within Swift.
 
-### Practical Example: Notification Structure
+<!-- #### Practical Example: Notification Structure
 
 A common use of `AnyHashable` is in the `Notification` structure, which is frequently used in iOS development to manage broadcasted messages within an app.
 
@@ -137,8 +264,8 @@ public struct Notification : ReferenceConvertible, Equatable, Hashable {
 }
 ```
 
-In this context, `AnyHashable` allows the `userInfo` dictionary to store keys of any hashable type, providing the necessary flexibility for different kinds of data to be passed along with the notification.
+In this context, `AnyHashable` allows the `userInfo` dictionary to store keys of any hashable type, providing the necessary flexibility for different kinds of data to be passed along with the notification. -->
 
 ## Conclusion
 
-Understanding when to use `Any`, `AnyObject`, and `AnyHashable` can greatly enhance your flexibility and interoperability in Swift development. While these types provide powerful tools for working with a wide range of data, it's important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your Swift code is both robust and adaptable.
+Understanding when to use `Any`, `AnyObject`, and `AnyHashable` can greatly enhance your flexibility and interoperability in `Swift` development. While these types provide powerful tools for working with a wide range of data, it's important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your `Swift` code is both robust and adaptable.

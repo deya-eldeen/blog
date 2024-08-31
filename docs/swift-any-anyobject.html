@@ -59,16 +59,167 @@
 
 <p>In this example, <code class="language-plaintext highlighter-rouge">mixedArray</code> can store any combination of types, from integers to strings and arrays. This can be particularly useful in scenarios where type flexibility is essential, but it should be used sparingly due to the loss of type safety.</p>
 
+<h4 id="real-world-use-cases-for-any-in-swift">Real-World Use Cases for Any in Swift</h4>
+
+<ol>
+  <li>Handling Mixed-Type Data Collections
+    <ul>
+      <li>Use <code class="language-plaintext highlighter-rouge">Any</code> to create an array that holds various data types, which is useful for data parsing from APIs.</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">var</span> <span class="nv">things</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="n">things</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>                <span class="c1">// Int</span>
+  <span class="n">things</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mf">3.14</span><span class="p">)</span>             <span class="c1">// Double</span>
+  <span class="n">things</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"Hello, World!"</span><span class="p">)</span>  <span class="c1">// String</span>
+  <span class="n">things</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">))</span>       <span class="c1">// Tuple</span>
+</code></pre></div></div>
+
+<ol>
+  <li>Dynamic Function Handling
+Store function types in a collection, allowing for dynamic function calls.</li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">functions</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span> <span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">in</span> <span class="s">"Hello, $$name)"</span> <span class="p">},</span>
+    <span class="p">{</span> <span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div></div>
+
+<p>or this detailed Example</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">AnyFunction</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">call</span><span class="p">(</span><span class="n">with</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Any</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">functions</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyFunction</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="kt">AnyFunctionWrapper</span> <span class="p">{</span> <span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">in</span> <span class="s">"Hello, </span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s">"</span> <span class="p">},</span>
+    <span class="kt">AnyFunctionWrapper</span> <span class="p">{</span> <span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">}</span>
+<span class="p">]</span>
+
+<span class="kd">struct</span> <span class="kt">AnyFunctionWrapper</span><span class="p">:</span> <span class="kt">AnyFunction</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">_call</span><span class="p">:</span> <span class="p">(</span><span class="kt">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Any</span>
+
+    <span class="kd">init</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">,</span> <span class="kt">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">function</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">R</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">_call</span> <span class="o">=</span> <span class="p">{</span> <span class="n">input</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">typedInput</span> <span class="o">=</span> <span class="n">input</span> <span class="k">as?</span> <span class="kt">T</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nf">function</span><span class="p">(</span><span class="n">typedInput</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="s">"Invalid input type"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">call</span><span class="p">(</span><span class="n">with</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Any</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">_call</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">greetingResult</span> <span class="o">=</span> <span class="n">functions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="nf">call</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="s">"Alice"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">greetingResult</span><span class="p">)</span> <span class="c1">// Output: Hello, Alice</span>
+
+<span class="k">let</span> <span class="nv">doublingResult</span> <span class="o">=</span> <span class="n">functions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="nf">call</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">doublingResult</span><span class="p">)</span> <span class="c1">// Output: 10</span>
+
+<span class="k">let</span> <span class="nv">invalidResult</span> <span class="o">=</span> <span class="n">functions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="nf">call</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">invalidResult</span><span class="p">)</span> <span class="c1">// Output: Invalid input type</span>
+</code></pre></div></div>
+
+<ol>
+  <li>
+    <p>Interfacing with <code class="language-plaintext highlighter-rouge">Objective-C</code> APIs
+Use Any to handle untyped objects returned by <code class="language-plaintext highlighter-rouge">Objective-C</code> methods, facilitating seamless interaction.</p>
+  </li>
+  <li>
+    <p>Generic Programming
+Accept or return any type in generic programming, simplifying function signatures when specific types are not essential.</p>
+  </li>
+  <li>
+    <p>Temporary Data Structures
+Build temporary data structures for algorithms, allowing storage of various types without creating multiple collections.</p>
+  </li>
+</ol>
+
+<p>Caution in Usage:</p>
+<blockquote>
+  <p>While <code class="language-plaintext highlighter-rouge">Any</code> offers flexibility, it can lead to loss of type safety and increased complexity. Use more specific types whenever possible to maintain clarity and safety in your codebase.</p>
+</blockquote>
+
 <h3 id="anyobject">AnyObject</h3>
 
-<p><code class="language-plaintext highlighter-rouge">AnyObject</code> is a protocol that all <code class="language-plaintext highlighter-rouge">class</code> types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like structs or enums. <code class="language-plaintext highlighter-rouge">AnyObject</code> is commonly used in scenarios where <code class="language-plaintext highlighter-rouge">Swift</code> interacts with <code class="language-plaintext highlighter-rouge">Objective-C</code>, especially because <code class="language-plaintext highlighter-rouge">Objective-C</code> types are generally class-based.</p>
+<p><code class="language-plaintext highlighter-rouge">AnyObject</code> is a protocol that all <code class="language-plaintext highlighter-rouge">class</code> types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like <code class="language-plaintext highlighter-rouge">struct</code>s or <code class="language-plaintext highlighter-rouge">enum</code>s. <code class="language-plaintext highlighter-rouge">AnyObject</code> is commonly used in scenarios where <code class="language-plaintext highlighter-rouge">Swift</code> interacts with <code class="language-plaintext highlighter-rouge">Objective-C</code>, especially because <code class="language-plaintext highlighter-rouge">Objective-C</code> types are generally class-based.</p>
 
 <div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">objectArray</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyObject</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kt">NSString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Hello"</span><span class="p">),</span> <span class="kt">NSNumber</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">42</span><span class="p">)]</span>
 </code></pre></div></div>
 
 <p>Here, <code class="language-plaintext highlighter-rouge">objectArray</code> holds instances that are guaranteed to be <code class="language-plaintext highlighter-rouge">class</code> types. This makes <code class="language-plaintext highlighter-rouge">AnyObject</code> a safer option when you’re dealing with <code class="language-plaintext highlighter-rouge">class</code> instances, especially in mixed-language projects involving both Swift and <code class="language-plaintext highlighter-rouge">Objective-C</code>.</p>
 
-<h2 id="the-difference-betweenany-and-anyobject-in-swift">The Difference Between`Any and AnyObject in Swift</h2>
+<h4 id="real-world-use-cases-for-anyobject-in-swift">Real-World Use Cases for AnyObject in Swift</h4>
+
+<p><code class="language-plaintext highlighter-rouge">AnyObject</code> allows you to work with instances of any class type. Here are some real-world scenarios where it can be beneficial:</p>
+
+<ol>
+  <li>Interacting with <code class="language-plaintext highlighter-rouge">Objective-C</code> <code class="language-plaintext highlighter-rouge">API</code>s
+    <ul>
+      <li>Use <code class="language-plaintext highlighter-rouge">AnyObject</code> to handle untyped objects from <code class="language-plaintext highlighter-rouge">Objective-C</code> methods and properties, facilitating seamless interaction with these <code class="language-plaintext highlighter-rouge">API</code>s.</li>
+    </ul>
+  </li>
+  <li>Parsing Mixed-Type <code class="language-plaintext highlighter-rouge">JSON</code> Data
+    <ul>
+      <li>Store parsed <code class="language-plaintext highlighter-rouge">JSON</code> data containing a mix of types (strings, numbers, booleans) in a flexible way using <code class="language-plaintext highlighter-rouge">AnyObject</code>.</li>
+    </ul>
+  </li>
+  <li>Creating Heterogeneous Collections
+    <ul>
+      <li>Create arrays or dictionaries that hold instances of different class types, allowing for storage of diverse objects together.</li>
+    </ul>
+  </li>
+  <li>Bridging <code class="language-plaintext highlighter-rouge">Objective-C</code> Classes to Swift
+    <ul>
+      <li>Use <code class="language-plaintext highlighter-rouge">AnyObject</code> for properties, method parameters, and return values when bridging <code class="language-plaintext highlighter-rouge">Objective-C</code> classes, enabling interaction without knowing specific types.</li>
+    </ul>
+  </li>
+  <li>Implementing Dynamic Behavior
+    <ul>
+      <li>Leverage <code class="language-plaintext highlighter-rouge">AnyObject</code> to call any <code class="language-plaintext highlighter-rouge">Objective-C</code> method, creating flexible and extensible <code class="language-plaintext highlighter-rouge">API</code>s.</li>
+    </ul>
+  </li>
+</ol>
+
+<p>Note:</p>
+<blockquote>
+  <p>While <code class="language-plaintext highlighter-rouge">AnyObject</code> is useful, it’s important to prioritize type safety and performance by using more specific types whenever possible.</p>
+</blockquote>
+
+<h3 id="anyhashable">AnyHashable</h3>
+
+<p><code class="language-plaintext highlighter-rouge">AnyHashable</code> is a type in Swift that allows you to store values of different types that conform to the <code class="language-plaintext highlighter-rouge">Hashable</code> protocol in a single collection. This is particularly useful when you need a heterogeneous collection of hashable types, such as when using a dictionary or a set.</p>
+
+<h4 id="key-features">Key Features</h4>
+
+<ul>
+  <li><strong>Type Erasure</strong>: <code class="language-plaintext highlighter-rouge">AnyHashable</code> provides a way to erase the specific type of a hashable value while still maintaining its hashability.</li>
+  <li><strong>Interoperability</strong>: It can be used in collections like <code class="language-plaintext highlighter-rouge">Set</code> or <code class="language-plaintext highlighter-rouge">Dictionary</code> where the key types might differ.</li>
+</ul>
+
+<h4 id="example-usage">Example Usage</h4>
+
+<p>Here’s a simple example demonstrating how to use <code class="language-plaintext highlighter-rouge">AnyHashable</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">intKey</span><span class="p">:</span> <span class="kt">AnyHashable</span> <span class="o">=</span> <span class="kt">AnyHashable</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">stringKey</span><span class="p">:</span> <span class="kt">AnyHashable</span> <span class="o">=</span> <span class="kt">AnyHashable</span><span class="p">(</span><span class="s">"Hello"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">dictionary</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyHashable</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="nv">intKey</span><span class="p">:</span> <span class="s">"This is an integer key"</span><span class="p">,</span>
+    <span class="nv">stringKey</span><span class="p">:</span> <span class="s">"This is a string key"</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">in</span> <span class="n">dictionary</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">key</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="the-difference-between-any-and-anyobject-in-swift">The Difference Between Any and AnyObject in Swift</h2>
 
 <p><code class="language-plaintext highlighter-rouge">Any</code> and <code class="language-plaintext highlighter-rouge">AnyObject</code> are two special types in Swift used for type erasure, allowing you to work with values of unknown or mixed types. Here are the key differences:</p>
 
@@ -79,18 +230,18 @@
   <li>Example usage:
     <div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">mixedArray</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s">"Hello"</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">item</span> <span class="k">in</span> <span class="n">mixedArray</span> <span class="p">{</span>
-    <span class="k">switch</span> <span class="n">item</span> <span class="p">{</span>
-    <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Int</span><span class="p">:</span>
-        <span class="nf">print</span><span class="p">(</span><span class="s">"Int: $$x)"</span><span class="p">)</span>
-    <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span>
-        <span class="nf">print</span><span class="p">(</span><span class="s">"String: $$x)"</span><span class="p">)</span>
-    <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Bool</span><span class="p">:</span>
-        <span class="nf">print</span><span class="p">(</span><span class="s">"Bool: $$x)"</span><span class="p">)</span>
-    <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Double</span><span class="p">:</span>
-        <span class="nf">print</span><span class="p">(</span><span class="s">"Double: $$x)"</span><span class="p">)</span>
-    <span class="k">default</span><span class="p">:</span>
-        <span class="nf">print</span><span class="p">(</span><span class="s">"Unknown type"</span><span class="p">)</span>
-    <span class="p">}</span>
+  <span class="k">switch</span> <span class="n">item</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Int</span><span class="p">:</span>
+      <span class="nf">print</span><span class="p">(</span><span class="s">"Int: </span><span class="se">\(</span><span class="n">x</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+  <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span>
+      <span class="nf">print</span><span class="p">(</span><span class="s">"String: </span><span class="se">\(</span><span class="n">x</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+  <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Bool</span><span class="p">:</span>
+      <span class="nf">print</span><span class="p">(</span><span class="s">"Bool: </span><span class="se">\(</span><span class="n">x</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+  <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span> <span class="k">as</span> <span class="kt">Double</span><span class="p">:</span>
+      <span class="nf">print</span><span class="p">(</span><span class="s">"Double: </span><span class="se">\(</span><span class="n">x</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+  <span class="k">default</span><span class="p">:</span>
+      <span class="nf">print</span><span class="p">(</span><span class="s">"Unknown type"</span><span class="p">)</span>
+  <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>    </div>
   </li>
@@ -115,7 +266,7 @@ Example usage:</p>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div></div>
-<h2 id="when-to-use-any-vs-anyobject">When to Use <code class="language-plaintext highlighter-rouge">Any</code> vs. <code class="language-plaintext highlighter-rouge">AnyObject</code></h2>
+<h2 id="when-to-use-any-vs-anyobject">When to Use Any vs. AnyObject</h2>
 
 <ul>
   <li>Use <code class="language-plaintext highlighter-rouge">Any</code>:
@@ -133,34 +284,39 @@ Example usage:</p>
   </li>
 </ul>
 
-<h3 id="anyhashable">AnyHashable</h3>
+<h2 id="anyhashable-1">AnyHashable</h2>
 
-<p><code class="language-plaintext highlighter-rouge">AnyHashable</code> is a type-erased wrapper that can hold any value conforming to the <code class="language-plaintext highlighter-rouge">Hashable</code> protocol. Introduced in <code class="language-plaintext highlighter-rouge">Swift</code> 3, it allows you to store heterogeneously-typed values in collections that require a hashable type, such as sets or dictionaries.</p>
+<p>As mentioned earlier, <code class="language-plaintext highlighter-rouge">AnyHashable</code> is a type-erased wrapper that can hold any value conforming to the <code class="language-plaintext highlighter-rouge">Hashable</code> protocol. It allows you to store heterogeneously-typed values in collections that require a hashable type, such as sets or dictionaries.</p>
 
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">anyHashableDict</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyHashable</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="k">let</span> <span class="nv">anyHashableDict</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyHashable</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s">"key1"</span><span class="p">:</span> <span class="s">"value1"</span><span class="p">,</span>
     <span class="mi">42</span><span class="p">:</span> <span class="s">"value2"</span><span class="p">,</span>
     <span class="kt">UUID</span><span class="p">():</span> <span class="s">"value3"</span>
 <span class="p">]</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="n">anyHashableDict</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>In this example, <code class="language-plaintext highlighter-rouge">anyHashableDict</code> can have keys of different types, as long as those types conform to the <code class="language-plaintext highlighter-rouge">Hashable</code> protocol. <code class="language-plaintext highlighter-rouge">AnyHashable</code> is particularly useful when dealing with untyped sets or dictionaries coming from <code class="language-plaintext highlighter-rouge">Objective-C</code>, as it provides the necessary flexibility while maintaining type safety within Swift.</p>
 
-<h3 id="practical-example-notification-structure">Practical Example: Notification Structure</h3>
+<!-- #### Practical Example: Notification Structure
 
-<p>A common use of <code class="language-plaintext highlighter-rouge">AnyHashable</code> is in the <code class="language-plaintext highlighter-rouge">Notification</code> structure, which is frequently used in iOS development to manage broadcasted messages within an app.</p>
+A common use of `AnyHashable` is in the `Notification` structure, which is frequently used in iOS development to manage broadcasted messages within an app.
 
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">Notification</span> <span class="p">:</span> <span class="kt">ReferenceConvertible</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Hashable</span> <span class="p">{</span>
-    <span class="c1">/// Storage for values or objects related to this notification.</span>
-    <span class="kd">public</span> <span class="k">var</span> <span class="nv">userInfo</span><span class="p">:</span> <span class="p">[</span><span class="kt">AnyHashable</span> <span class="p">:</span> <span class="kt">Any</span><span class="p">]?</span>
-<span class="p">}</span>
-</code></pre></div></div>
+```swift
+public struct Notification : ReferenceConvertible, Equatable, Hashable {
+    /// Storage for values or objects related to this notification.
+    public var userInfo: [AnyHashable : Any]?
+}
+```
 
-<p>In this context, <code class="language-plaintext highlighter-rouge">AnyHashable</code> allows the <code class="language-plaintext highlighter-rouge">userInfo</code> dictionary to store keys of any hashable type, providing the necessary flexibility for different kinds of data to be passed along with the notification.</p>
+In this context, `AnyHashable` allows the `userInfo` dictionary to store keys of any hashable type, providing the necessary flexibility for different kinds of data to be passed along with the notification. -->
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>Understanding when to use <code class="language-plaintext highlighter-rouge">Any</code>, <code class="language-plaintext highlighter-rouge">AnyObject</code>, and <code class="language-plaintext highlighter-rouge">AnyHashable</code> can greatly enhance your flexibility and interoperability in Swift development. While these types provide powerful tools for working with a wide range of data, it’s important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your Swift code is both robust and adaptable.</p>
+<p>Understanding when to use <code class="language-plaintext highlighter-rouge">Any</code>, <code class="language-plaintext highlighter-rouge">AnyObject</code>, and <code class="language-plaintext highlighter-rouge">AnyHashable</code> can greatly enhance your flexibility and interoperability in <code class="language-plaintext highlighter-rouge">Swift</code> development. While these types provide powerful tools for working with a wide range of data, it’s important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your <code class="language-plaintext highlighter-rouge">Swift</code> code is both robust and adaptable.</p>
 
     
     </section>

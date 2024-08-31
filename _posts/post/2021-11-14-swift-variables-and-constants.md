@@ -32,7 +32,7 @@ This blog post explores the concepts of mutability in `Swift`, comparing them to
  caption="The Power of Mutability in Swift"  
 %}
 
-### Swift Variables and Constants: The Basics
+## Swift Variables and Constants: The Basics
 
 In `Swift`, the way you store data hinges on two keywords: `let` for constants and `var` for variables. This distinction is not just syntactical but plays a critical role in ensuring the safety, performance, and clarity of your code.
 
@@ -51,13 +51,13 @@ In this example:
 - `id` and `birthdate` are constants (`let`), meaning once they are set, they cannot be changed.
 - `balance` is a variable (`var`), meaning it can be modified after its initial assignment.
 
-### Why Use Constants?
+## Why Use Constants?
 
 Constants in `Swift` are more than just a way to store unchangeable data. They offer several advantages:
 1. **Safety**: By marking a value as constant, you prevent accidental modifications, which can lead to bugs and unintended behavior in your program.
 2. **Performance**: Constants can be optimized by the compiler for better performance. Since their values don’t change, the compiler can make assumptions that lead to faster code execution.
 
-### Mutability in Objective-C vs. Swift
+## Mutability in Objective-C vs. Swift
 
 Swift’s clear distinction between `let` and `var` is a marked improvement over `Objective-C`, where mutability is less explicit. In `Objective-C`, immutability is often enforced through class hierarchies (e.g., `NSString` vs. `NSMutableString`) rather than syntax. This can lead to confusion, as the mutability of an object isn’t always immediately apparent from its declaration.
 
@@ -72,7 +72,7 @@ In the above Objective-C example:
 
 Swift, by contrast, makes mutability explicit with `let` and `var`. This clarity reduces the cognitive load on the developer, making the code easier to read, understand, and maintain.
 
-### The Broader Implications of Mutability
+## The Broader Implications of Mutability
 
 Mutability is a key concept not just in `Swift`, but in programming in general. When designing systems, deciding whether an object should be mutable or immutable has far-reaching consequences:
 
@@ -82,7 +82,7 @@ Mutability is a key concept not just in `Swift`, but in programming in general. 
 
 In `Swift`, leveraging constants wherever possible can lead to more robust and maintainable code. By defaulting to `let` and only using `var` when necessary, you reduce the potential for bugs and make your intentions clear to others reading your code.
 
-### Conclusion: Mastering Mutability in Swift
+## Conclusion:
 
 Understanding and utilizing `Swift’s` approach to variables and constants is crucial for writing clean, efficient, and reliable code. By explicitly defining mutability with `let` and `var`, `Swift` encourages best practices and helps you avoid common pitfalls that can occur in languages with less clear mutability rules.
 
