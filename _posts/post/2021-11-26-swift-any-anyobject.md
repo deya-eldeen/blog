@@ -11,11 +11,13 @@ categories:
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Objective-C"
 tags: 
   - "Development"
   - "iOS"
   - "Programming"
   - "Swift"
+  - "Objective-C"
 ---
 
 When working with `Swift`, one of the key decisions you’ll often face is how to represent data types. While specificity in defining data types is generally encouraged, `Swift` offers three flexible type options: `Any`, `AnyObject`, and `AnyHashable`. 
