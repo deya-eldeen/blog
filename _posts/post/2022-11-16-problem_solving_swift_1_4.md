@@ -4,6 +4,7 @@ title: "Refresher: Problem Solving (1-4)"
 date: "2022-11-16"
 permalink: /problem_solving_swift_1_4
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/algo.jpg"
 categories: 
   - "Development"

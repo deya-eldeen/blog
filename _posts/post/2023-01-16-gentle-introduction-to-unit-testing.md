@@ -4,6 +4,7 @@ title: "Gentle Introduction To Unit Testing."
 date: "2023-01-16"
 permalink: /gentle-introduction-to-unit-testing
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/unit_testing_intro.jpg"
 categories: 
   - "Development"

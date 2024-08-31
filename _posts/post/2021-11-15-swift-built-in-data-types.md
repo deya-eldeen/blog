@@ -4,6 +4,7 @@ title: "Swift Basic Data Types & Type Inference"
 date: "2021-11-15"
 permalink: /swift-built-in-data-types
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/inference.jpg"
 categories: 
   - "Development"

@@ -4,6 +4,7 @@ title: "Understanding Swift Variables and Constants: A Dive into Mutability"
 date: "2021-11-14"
 permalink: /swift-variables-and-constants
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/varlet.jpg"
 categories: 
   - "Development"

@@ -4,6 +4,7 @@ title: "Why my 0.3 MB image occupies around 10 MB on RAM?"
 date: "2022-02-22"
 permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/imagesize.jpg"
 categories: 
   - "Development"

@@ -4,6 +4,7 @@ title: "Swift Bitwise Operators (with a couple of practical examples)"
 date: "2022-02-27"
 permalink: /swift-bitwise-operators-with-real-examples
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/bitwise.jpg"
 categories: 
   - "Development"

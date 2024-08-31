@@ -4,6 +4,7 @@ title: "GPS Hardware basics for mobile developers."
 date: "2022-03-10"
 permalink: /gps-hardware-basics-for-software-engineers
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/gps.jpg"
 categories: 
   - "Development"

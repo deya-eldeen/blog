@@ -4,6 +4,7 @@ title: "Swift: the difference between nil, Nil, NULL, NSNull"
 date: "2021-11-27"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/nil.jpg"
 categories: 
   - "Development"

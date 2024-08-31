@@ -4,6 +4,7 @@ title: "iOS/Android Developer Security Basics"
 date: "2022-03-13"
 permalink: /ios-android-developer-security-basics
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/security_basics.jpg"
 categories: 
   - "Development"

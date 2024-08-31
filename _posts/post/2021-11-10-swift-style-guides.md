@@ -3,7 +3,8 @@ layout: post
 title: "Mastering Swift Style Guides: Elevate Your Code to the Next Level"  
 date: "2021-11-10"  
 permalink: /swift-style-guides  
-excerpt_separator: <!--more-->  
+excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/styleguides.jpg"
 categories:  
   - "Development"

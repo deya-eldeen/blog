@@ -4,6 +4,7 @@ title: "Swift Lexical Structure"
 date: "2021-11-01"
 permalink: /swift-lexical-structure
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/lexical.jpg"
 categories: 
   - "Development"

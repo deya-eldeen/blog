@@ -4,6 +4,7 @@ title: "Swift Reserved Keywords, with brief explanations."
 date: "2021-11-01"
 permalink: /swift-keywords
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/keywords.jpg"
 categories: 
   - "Development"

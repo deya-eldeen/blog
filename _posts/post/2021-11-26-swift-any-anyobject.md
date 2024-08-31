@@ -4,6 +4,7 @@ title: "Swift: Any/ AnyObject/ AnyHashable Differences"
 date: "2021-11-26"
 permalink: /swift-any-anyobject
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/any.jpg"
 categories: 
   - "Development"

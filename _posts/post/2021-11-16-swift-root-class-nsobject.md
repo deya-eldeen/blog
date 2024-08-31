@@ -4,6 +4,7 @@ title: "Swift Root/Base Class & NSObject"
 date: "2021-11-16"
 permalink: /swift-root-class-nsobject
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/nsobject.jpg"
 categories: 
   - "Development"

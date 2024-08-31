@@ -4,6 +4,7 @@ title: "Never Use Floating-Point / Double Data types for Money Calculations!"
 date: "2022-02-12"
 permalink: /never-use-floating-point-double-data-types-for-monetary-calculations
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/money.jpg"
 categories: 
   - "Development"

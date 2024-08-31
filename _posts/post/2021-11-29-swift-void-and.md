@@ -2,10 +2,11 @@
 layout: post
 title: "Swift: The Difference Between Void and ()"
 date: "2021-11-29"
-categories: 
 permalink: /swift-void-and
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/void.jpg"
+categories:
   - "Development"
   - "iOS"
   - "Programming"

@@ -4,6 +4,7 @@ title: "Using unicode markers (LTR: 0x200E, RTL:200F) to align \"hybrid RTL/LTR 
 date: "2022-03-03"
 permalink: /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/arrows.jpg"
 categories: 
   - "Development"

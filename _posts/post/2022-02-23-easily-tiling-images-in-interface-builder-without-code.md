@@ -4,6 +4,7 @@ title: "Easily Tiling Images in interface builder, without code !"
 date: "2022-02-23"
 permalink: /easily-tiling-images-in-interface-builder-without-code
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/tiling.jpg"
 categories: 
   - "Development"

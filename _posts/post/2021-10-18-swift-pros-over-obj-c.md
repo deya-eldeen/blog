@@ -4,6 +4,7 @@ title: "Advantages of Swift Over Objective-C"
 date: "2021-10-18"
 permalink: /swift-pros-over-obj-c
 excerpt_separator: <!--more-->
+author: deyaeldeen
 thumbnail: "images/covers/swift_objc.jpg"
 categories: 
   - "Development"
