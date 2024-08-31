@@ -18,7 +18,7 @@ tags:
   - "Swift"
 ---
 
-Swift offers a variety of built-in data types that cater to different kinds of data. Understanding these types is essential for writing efficient and bug-free code. 
+`Swift` offers a variety of built-in data types that cater to different kinds of data. Understanding these types is essential for writing efficient and bug-free code. 
 
 <!--more-->
 {%
@@ -29,7 +29,7 @@ Swift offers a variety of built-in data types that cater to different kinds of d
 %}
 
 ## Swift's Basic Data Types
-Below is an overview of the primary data types available in Swift:
+Below is an overview of the primary data types available in `Swift`:
 
 | **Type**   | **Description**                                                                 |
 |------------|---------------------------------------------------------------------------------|
@@ -54,17 +54,17 @@ On 32-bit devices, the `Int` type has the size of `Int32`, while on 64-bit devic
 
 ## Type Inference in Swift
 
-One of Swift's powerful features is type inference, which allows the compiler to automatically determine the type of a variable based on the value assigned to it. This can significantly reduce the amount of boilerplate code and make the code more readable.
+One of `Swift`'s powerful features is type inference, which allows the compiler to automatically determine the type of a variable based on the value assigned to it. This can significantly reduce the amount of boilerplate code and make the code more readable.
 
 ### Example of Type Inference
 
-Consider the following example, where the type of the variable `level` is inferred by Swift:
+Consider the following example, where the type of the variable `level` is inferred by `Swift`:
 
 ```
 var level = 12
 ```
 
-Here, Swift automatically infers that `level` is of type `Int` because 12 is an integer. The compiler's ability to infer types simplifies the code, especially in cases where the type is obvious from the context.
+Here, `Swift` automatically infers that `level` is of type `Int` because `12` is an integer. The compiler's ability to infer types simplifies the code, especially in cases where the type is obvious from the context.
 
 
 ### Explicit Type Annotation
@@ -75,19 +75,19 @@ While type inference is a valuable feature, there are scenarios where explicitly
 var level: Int = 17
 ```
 
-In this case, even though the type could be inferred, declaring it explicitly as Int improves clarity, particularly in larger codebases where understanding the intent behind each variable is crucial.
+In this case, even though the type could be inferred, declaring it explicitly as `Int` improves clarity, particularly in larger codebases where understanding the intent behind each variable is crucial.
 
 ## The Impact of Type Inference on Performance
 
-Type inference in Swift, while primarily aimed at improving code readability and reducing boilerplate, also has implications for performance. The Swift compiler is designed to be highly efficient, and type inference plays a role in this efficiency. However, understanding when and how type inference affects performance can help developers make informed decisions in critical parts of their code.
+Type inference in `Swift`, while primarily aimed at improving code readability and reducing boilerplate, also has implications for performance. The `Swift` compiler is designed to be highly efficient, and type inference plays a role in this efficiency. However, understanding when and how type inference affects performance can help developers make informed decisions in critical parts of their code.
 
 ### Compilation Performance
 
-One area where type inference can impact performance is during the compilation process. When Swift infers types, the compiler has to analyze the code more extensively to deduce the correct types, which can slightly increase compilation times, especially in large codebases with complex type relationships. While this overhead is generally minimal, it can become noticeable in very large projects or in code that makes heavy use of generic types and protocols.
+One area where type inference can impact performance is during the compilation process. When `Swift` infers types, the compiler has to analyze the code more extensively to deduce the correct types, which can slightly increase compilation times, especially in large codebases with complex type relationships. While this overhead is generally minimal, it can become noticeable in very large projects or in code that makes heavy use of generic types and protocols.
 
 ### Runtime Performance
 
-At runtime, Swift’s type inference has little to no impact on the performance of the compiled code. The inferred types are determined at compile time, meaning that by the time your application is running, the types are already fixed and optimized by the compiler. This ensures that the performance of your application is consistent, regardless of whether types were inferred or explicitly declared.
+At runtime, `Swift`’s type inference has little to no impact on the performance of the compiled code. The inferred types are determined at compile time, meaning that by the time your application is running, the types are already fixed and optimized by the compiler. This ensures that the performance of your application is consistent, regardless of whether types were inferred or explicitly declared.
 
 ### Best Practices for Performance
 
@@ -97,9 +97,46 @@ To optimize both compile-time and runtime performance, consider the following be
 - **Avoid Overuse of Type Inference in Critical Paths**: In performance-critical code, such as in tight loops or algorithms, explicit types can sometimes lead to more predictable and optimized compiled code.
 - **Balance Readability and Performance**: While type inference makes code more concise, always balance this with the need for clarity and performance. In complex or critical sections of your code, it might be beneficial to favor explicit type declarations.
 
-By being mindful of when and where to rely on type inference, you can write Swift code that is both efficient and maintainable, ensuring that your applications perform optimally without sacrificing code quality.
+By being mindful of when and where to rely on type inference, you can write `Swift` code that is both efficient and maintainable, ensuring that your applications perform optimally without sacrificing code quality.
 
-## Extra Tip: CGFloat
+## Unsafe Types in Swift
+
+In addition to the safe and type-safe data types that `Swift` provides, there are also "unsafe" types that allow developers to work with memory directly. These types are primarily used in scenarios where performance is critical, or when interfacing with lower-level `API`s, such as `C` libraries. While they offer greater flexibility and control, they come with increased risks, as they bypass `Swift`'s safety features.
+
+### 1. UnsafePointer
+
+`UnsafePointer` is a type that provides a pointer to a memory location. It allows you to read values from memory without the safety guarantees that `Swift` typically enforces. Here's an example of how to use `UnsafePointer`:
+
+```swift
+let numbers: [Int] = [1, 2, 3, 4, 5]
+let pointer = UnsafePointer(numbers)
+
+print(pointer[0]) // Access the first element
+```
+
+### 2. UnsafeMutablePointer
+`UnsafeMutablePointer` allows both reading and writing of values at a specific memory location. This is useful when you need to modify the contents of an array or a buffer directly:
+
+```swift
+var mutableNumbers: [Int] = [1, 2, 3, 4, 5]
+let mutablePointer = UnsafeMutablePointer(&mutableNumbers)
+
+mutablePointer[0] = 10 // Change the first element to 10
+print(mutableNumbers) // Output: [10, 2, 3, 4, 5]
+```
+
+### 3. UnsafeRawPointer
+UnsafeRawPointer is a pointer that points to raw memory without any type information. This can be useful for low-level operations, such as when working with binary data or interfacing with `C` `API`s:
+
+```swift
+var mutableNumbers: [Int] = [1, 2, 3, 4, 5]
+let mutablePointer = UnsafeMutablePointer(&mutableNumbers)
+let rawPointer = UnsafeRawPointer(mutablePointer)
+let intPointer = rawPointer.assumingMemoryBound(to: Int.self)
+print(intPointer[0]) // Access the first element as an Int
+```
+
+## CGFloat: A Special Case
 
 A noteworthy data type in `Swift` is `CGFloat`, which is particularly relevant when dealing with graphical calculations in `iOS` and `macOS` applications. `CGFloat` can represent either a 32-bit or 64-bit floating-point number, depending on the device's `CPU` architecture. This makes it a versatile choice for applications that require precise and scalable graphical calculations, such as in drawing operations or animations.
 
