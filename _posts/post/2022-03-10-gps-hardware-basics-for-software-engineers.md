@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "GPS Hardware basics for mobile developers."
+title: "Understanding GPS Hardware Basics for Mobile Developers"
 date: "2022-03-10"
 permalink: /gps-hardware-basics-for-software-engineers
 excerpt_separator: <!--more-->
@@ -22,82 +22,77 @@ tags:
   - "Math"
 ---
   
-Mobile software engineers (iOS and Android), are normally not familiar with how GPS works, instead of just getting Lat/Lon readings, and doing geo operations with it, why not become familiar with how GPS works? 🤓
+Mobile software developers, whether working on iOS or Android, often use GPS functionality in their apps without fully understanding how GPS works. This article is designed to give you a basic understanding of GPS hardware, so you can appreciate the underlying technology and improve your app's location-based features.
 
 <!--more-->
 
-{%
- include centered-image.html 
- image_path="images/covers/gps_full.jpg"
- alt_text="" 
- caption=""
-%}
+{% include centered-image.html image_path="images/covers/gps_full.jpg" alt_text="" caption="" %}
 
-This will not be a lengthy article, it will be a chat between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻).**
+This article is structured as a conversation between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻)**. Through their dialogue, we'll explore the fundamentals of GPS technology.
+
+## The Basics of GPS
 
 👨🏻‍💻: So what does GPS stand for?  
-👩🏼‍💻: It stands for (Global Positioning System).
+👩🏼‍💻: It stands for **Global Positioning System**.
 
-👨🏻‍💻: Who created it? and what for?  
-👩🏼‍💻: The GPS project was launched in the USA back in 1973 due to limitations of old navigation systems.
+👨🏻‍💻: Who created it, and for what purpose?  
+👩🏼‍💻: The GPS project was launched by the United States in 1973 to overcome the limitations of earlier navigation systems.
 
-👨🏻‍💻: I know it works without internet, but do I need cellular service to use GPS?  
-👩🏼‍💻: No.
+👨🏻‍💻: I know GPS works without an internet connection, but do I need cellular service to use GPS?  
+👩🏼‍💻: No, you don't need cellular service either.
 
-👨🏻‍💻: How come it works without internet or cellular service?  
-👩🏼‍💻: You get readings from satellites, there are about 24 artificial satellites in 6 orbits.
+## How GPS Works Without Internet or Cellular Service
 
-👨🏻‍💻: So a mobile needs to connect to all of these?  
-👩🏼‍💻: Of course not, when you are stationary, you need to be exposed to 3 of them, when you are moving, you will need to be exposed to 4.
+👨🏻‍💻: How does GPS work without internet or cellular service?  
+👩🏼‍💻: Your device receives signals from satellites. There are about 24 operational satellites in six orbital planes.
 
-{%
- include centered-image.html 
- image_path="images/ConstellationGPS.gif"
- alt_text="" 
- caption="GPS Satellites animation (Wikipedia)"
-%}
+👨🏻‍💻: Does my mobile need to connect to all of these satellites?  
+👩🏼‍💻: No, when stationary, your device only needs to receive signals from at least three satellites. When moving, it needs signals from four satellites for accurate positioning.
 
-👨🏻‍💻: So how come it identifies me? and send me data?  
-👩🏼‍💻: The Satellites don't identify you, **they only emit synchronous pulses all the time everywhere.**  
-  
-👨🏻‍💻: And how does my mobile give me back the (latitude, longitude, and altitude)?  
-👩🏼‍💻: It compares the receive time of these pulses from each satellite, and use calculations to determine a point on earth, since the distance between these satellites is constant, and they have atomic clocks, the calculations will not be difficult.  
+{% include centered-image.html image_path="images/ConstellationGPS.gif" alt_text="GPS Satellites" caption="GPS Satellites in Orbit (Source: Wikipedia)" %}
 
-{%
- include centered-image.html 
- image_path="images/GPS-satellite-position-calculations-3.png"
- alt_text="" 
- caption="GPS Satellites Position Calculation"
-%}
+👨🏻‍💻: How does the GPS system identify me and send data back?  
+👩🏼‍💻: The satellites don't identify you. **They continuously emit synchronized pulses everywhere.** Your device simply receives these signals.
 
-👨🏻‍💻: The service is totally free, and I don't have any subscription for GPS, how?  
-👩🏼‍💻: GPS is not the only service for (Global Navigation Satellite Systems), there are many like (GLONASS, BeiDou, Galileo...), there are other commercial solutions that I don't know much about, there are a lot of details, I heard retail GPS receivers are designed to not work if the tracked object is moving fastly, you get the idea 🧐?  
-👨🏻‍💻: ah! yes.  
+## Calculating Your Position
 
-{%
- include centered-image.html 
- image_path="images/Beidou_Navigation_Satellite_System_2012.png"
- alt_text="" 
- caption="BeiDou doesn't have full earth coverage."
-%}
-  
-👨🏻‍💻: What is the error margin?  
-👩🏼‍💻: It's variable, but you can say between 15 to 50 meters, some commercial systems use other inertial systems to give more accurate estimations.  
-  
-👨🏻‍💻: What is the minimum detectable value?  
-👩🏼‍💻: You mean the resolution? theoretically, as far as I know, it's one inch, but practically it's about 3 meters.  
-  
-👨🏻‍💻: I once tried to use the GPS inside a big hospital, it didn't serve any purpose, the readings were not accurate.  
-👩🏼‍💻: GPS does not work indoors.
+👨🏻‍💻: How does my mobile determine my latitude, longitude, and altitude?  
+👩🏼‍💻: Your device compares the time it receives signals from each satellite. By calculating the time differences, it can determine your position on Earth. The satellites have highly accurate atomic clocks, which make these calculations possible.
 
-👨🏻‍💻: But I saw some readings on my maps application.  
-👩🏼‍💻: it's the last point that was read, some devices like Huawei also augment (Accel/Gyro) sensor data, to mimic a basic INS to give your readings inside buildings, but it's not reliable.  
-  
-👨🏻‍💻: And what is used for indoor navigation systems?  
-👩🏼‍💻: They use beacons and Bluetooth and other technologies, read about apple air tags!  
-  
-👨🏻‍💻: You mentioned sensors, why can't we use the basic sensors like accelerometer/gyroscope of the mobile to calculate the position?  
-👩🏼‍💻: when you "integrate" the acceleration twice, the error will explode fastly, and it will become useless in a short time of movement, even if this works, this will not give you an absolute position, and you have to deal with drifting and gimbal lock and a lot of complexities.  
-  
-👨🏻‍💻: That was a lot of information, thank you.  
-👩🏼‍💻: Welcome!, see you soon.
+{% include centered-image.html image_path="images/GPS-satellite-position-calculations-3.png" alt_text="GPS Position Calculation" caption="Calculating Position Using GPS Satellites" %}
+
+👨🏻‍💻: If the service is free and I don't have a subscription for GPS, how is it funded?  
+👩🏼‍💻: GPS is one of several **Global Navigation Satellite Systems (GNSS)**. Others include GLONASS, BeiDou, and Galileo. These systems are funded by governments and sometimes private entities. Commercial GPS receivers might have restrictions, like not functioning at high speeds.
+
+{% include centered-image.html image_path="images/Beidou_Navigation_Satellite_System_2012.png" alt_text="BeiDou Navigation System" caption="BeiDou GNSS, which doesn't have full Earth coverage" %}
+
+## Accuracy and Limitations of GPS
+
+👨🏻‍💻: What is the typical error margin of GPS?  
+👩🏼‍💻: The error margin varies but is typically between 15 to 50 meters. Some systems use additional inertial sensors to provide more accurate positioning.
+
+👨🏻‍💻: What is the minimum detectable distance?  
+👩🏼‍💻: Theoretically, the resolution is as fine as one inch, but in practice, it's about three meters.
+
+## Challenges of Using GPS Indoors
+
+👨🏻‍💻: I tried using GPS inside a large hospital, but the readings were inaccurate.  
+👩🏼‍💻: GPS signals do not work well indoors because they require a clear line of sight to the satellites.
+
+👨🏻‍💻: But I still got some readings on my maps app indoors.  
+👩🏼‍💻: That's likely the last known location. Some devices, like those from Huawei, augment GPS data with accelerometer and gyroscope data to simulate basic indoor navigation, but it's not reliable.
+
+👨🏻‍💻: What technologies are used for indoor navigation systems?  
+👩🏼‍💻: Indoor navigation typically uses beacons, Bluetooth, and other technologies. You might want to look into Apple AirTags for more information.
+
+## Using Sensors for Positioning
+
+👨🏻‍💻: Why can't we just use the accelerometer and gyroscope in our phones to calculate position?  
+👩🏼‍💻: While you can derive some positional data from these sensors, they are prone to significant errors over time due to factors like drift and gimbal lock. Accelerometers and gyroscopes alone can't provide absolute positioning, and their errors accumulate quickly.
+
+👨🏻‍💻: That was a lot of information. Thanks for the explanation.  
+👩🏼‍💻: You're welcome! See you soon.
+
+## Conclusion
+
+Understanding how GPS works can help mobile developers better utilize location services in their apps. Whether you're developing a navigation app or just curious about the technology behind the blue dot on your map, a basic knowledge of GPS hardware can enhance your approach to location-based features.
