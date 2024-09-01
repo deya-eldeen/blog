@@ -22,8 +22,8 @@ tags:
   - "Algorithms"
 ---
 
-After reading the very popular book, grokking algorithms,  
-Will be blogging about algorithms and data structures… the book is very informative and easy to digest.
+After reading the very popular book, Grokking Algorithms, I decided to blog about algorithms and data structures. I find the book is very informative and easy to digest.
+
 <!--more-->
 {%
  include centered-image.html 
@@ -39,12 +39,12 @@ Will be blogging about algorithms and data structures… the book is very inform
  caption="Grokking Algorithms book"
 %}
 
-It’s advised you get yourself familiar with data structures before starting to solve problems… I will not go into details, my advice is to try to solve the problems without looking at the solutions  
+Understanding data structures is essential before diving into problem-solving. While I won't go into detailed explanations here, I recommend attempting to solve the problems on your own without immediately referring to the solutions.
 
 ## Problem 1  
-**return a pair of 2 distinct values (if any) that sum up to a target number, from a nonempty array that has distinct integers.  
+**Return a pair of two distinct values (if any) that sum up to a target number, from a nonempty array that contains distinct integers.**
 
-Different Solutions with different time complexities
+Here are different solutions with varying time complexities:
 
 ```swift
 // Time: O(n^2)
@@ -103,12 +103,17 @@ func solution4(_ array: [Int], _ targetSum: Int) -> [Int] {
 }
 ```
 
-I’m not going to explain each code, you comment here if you have a question, will leave the analysis to you, doing a simple benchmark on a 100,000 values array, we can see these results  
+### Analysis:
 
-solution1: 31.88 s.  
-solution2: 18.41 s.  
-solution3: 0.38 s.  
-solution4: 0.20 s. 🏆
+Each solution has its trade-offs in terms of time complexity. Running a simple benchmark on an array with 100,000 values yields the following results:
+
+- solution1: 31.88 s.
+- solution2: 18.41 s.
+- solution3: 0.38 s.
+- solution4: 0.20 s. 🏆
+
+As you can see, solution 4 is the most efficient in this case, with a time complexity of O(n).
+
 {%
  include centered-image.html 
  image_path="images/prob_001_graph-1024x687.png"
@@ -116,7 +121,7 @@ solution4: 0.20 s. 🏆
  caption=""
 %}
   
-functions used for benchmarking
+The functions used for benchmarking are:
 
 ```swift
 func printTimeElapsedWhenRunningCode(title:String, operation:()->()) {
@@ -132,23 +137,22 @@ func timeElapsedInSecondsWhenRunningCode(operation: ()->()) -> Double {
     return Double(timeElapsed)
 }
 ```
-## Problem 2
-Given 2 non empty arrays, write a function that determines if the second array is a subsequence of array 1.
 
-⚠️: Keep in mind, subsequence is not the same as subarray.
+## Problem 2
+Given two non-empty arrays, write a function that determines if the second array is a subsequence of the first array.
+
+> Keep in mind that a subsequence is not the same as a subarray.
+
 ```swift
 // Time: O(n)
 func isValidSubsequence_solution1(_ array: [Int], _ sequence: [Int]) -> Bool {
-    // sequence is empty
-    if (sequence.count == 0) {
-      return false
+    if sequence.isEmpty {
+        return false
     }
-    // if arrays are equal, directly return true.
-    if (array == sequence) {
+    if array == sequence {
         return true
     }
-    // the sequence is larger than the array, return false.
-    if (sequence.count > array.count) {
+    if sequence.count > array.count {
         return false
     }
     var arrIdx = 0
@@ -164,16 +168,13 @@ func isValidSubsequence_solution1(_ array: [Int], _ sequence: [Int]) -> Bool {
 
 // Time: O(n)
 func isValidSubsequence_solution2(_ array: [Int], _ sequence: [Int]) -> Bool {
-    // sequence is empty
-    if (sequence.count == 0) {
-      return false
+    if sequence.isEmpty {
+        return false
     }
-    // if arrays are equal, directly return true.
-    if (array == sequence) {
+    if array == sequence {
         return true
     }
-    // the sequence is larger than the array, return false.
-    if (sequence.count > array.count) {
+    if sequence.count > array.count {
         return false
     }
     var seqIdx = 0
@@ -189,22 +190,28 @@ func isValidSubsequence_solution2(_ array: [Int], _ sequence: [Int]) -> Bool {
 }
 ```
 
-test results for these arrays
+### Test Results:
 
+Using these arrays:
+
+```swift
 let myArray1 = Array(stride(from: -900005, through: 900005, by: 1))
 let myArray2 = Array(stride(from: -900000, through: 900000, by: 1))
+```
 
-> Time elapsed for solution1: 28.102 s. <br>
-Time elapsed for solution2: 14.446 s. 🏆
+The results were:
+- Time elapsed for solution1: 28.102 s.
+- Time elapsed for solution2: 14.446 s. 🏆
 
-can you guess why Solution 2 is better, even though they have same time complexity? 🤓
+Solution 2 is more efficient, even though both solutions have the same time complexity. Can you guess why? 🤓
 
 ## Problem 3
-Write a function that takes in a non-empty array of integers that are sorted in ascending order and returns a new array with the squares of the original integers also sorted in ascending order.
+Write a function that takes in a non-empty array of integers sorted in ascending order and returns a new array with the squares of the original integers, also sorted in ascending order.
 
-let me add 4 solutions along with explanation.
+Here are four solutions along with explanations:
+
 ```swift
-// Bad solution, appending is expensive, it's better to init an array with the length
+// Bad solution, appending is expensive; it's better to initialize an array with the required length.
 func sortedSquaredArray_solution1(_ array: [Int]) -> [Int] {
     var sortedSquares = [Int]()
     for value in array {
@@ -220,15 +227,15 @@ func sortedSquaredArray_solution2(_ array: [Int]) -> [Int] {
     }
     return sortedSquares.sorted()
 }
-// same as before, but higher order functions is tuned for high performance
+// Using higher-order functions for high performance.
 func sortedSquaredArray_solution3(_ array: [Int]) -> [Int] {
     return array.map { $0 * $0 }.sorted()
 }
 // Time: O(n) | Space O(n)
 func sortedSquaredArray_solution4(_ array: [Int]) -> [Int] {
     var sortedSquares = Array(repeating: 0, count: array.count)
-    var smallerValueIdx : Int = 0
-    var largerValueIdx : Int = array.count - 1
+    var smallerValueIdx = 0
+    var largerValueIdx = array.count - 1
     for idx in stride(from: array.count - 1, through: 0, by: -1) {
         let smallerValue = array[smallerValueIdx]
         let largerValue = array[largerValueIdx]
@@ -244,37 +251,40 @@ func sortedSquaredArray_solution4(_ array: [Int]) -> [Int] {
 }
 ```
 
-for the following input
+### Benchmarking:
+
+For the input:
 
 ```swift
 let myArraySortedSquares = Array(stride(from: -5000000, through: 5000000, by: 1))
 ```
 
-> Time elapsed for solution1: 6.786 s.<br>
-Time elapsed for solution2: 6.275 s.<br>
-Time elapsed for solution3: 5.106 s.<br>
-Time elapsed for solution4: 1.637 s. 🥇
+- Time elapsed for solution1: 6.786 s.
+- Time elapsed for solution2: 6.275 s.
+- Time elapsed for solution3: 5.106 s.
+- Time elapsed for solution4: 1.637 s. 🥇
 
 ## Problem 4
 
-2 chess teams, competed for 1,000,000 times 🧐
+Given a 2D array of matches `[host, guest]` and an array of results where 1 means the host team won, determine the player with the most wins.
 
-given a 2D array of matches [host, guest]
+Example:
 
-Example
+```swift
+let matches = [
+    ["Nepomniachtchi", "Grischuk"],
+    ["Karjakin", "Grischuk"],
+    ["Nepomniachtchi", "Keymer"],
+    ["Ding Liren", "Grischuk"],
+    ["Karjakin", "Andreikin"],
+    ["Carlsen", "Gukesh D"],
+    ["Aronian", "Gukesh D"],
+    ["Carlsen", "Andreikin"],
+    ["Nepomniachtchi", "Gukesh D"],
+    ["Aronian", "Gukesh D"]
+]
+let results = [1, 1, 0, 0, 0, 0, 0, 1, 1, 1]
 ```
-[[“Nepomniachtchi”, “Grischuk”], [“Karjakin”, “Grischuk”], [“Nepomniachtchi”, “Keymer”], [“Ding Liren”, “Grischuk”], [“Karjakin”, “Andreikin”], [“Carlsen”, “Gukesh D”], [“Aronian”, “Gukesh D”], [“Carlsen”, “Andreikin”], [“Nepomniachtchi”, “Gukesh D”], [“Aronian”, “Gukesh D”]]
-```
-
-and an array of results, where 1 means host team won
-Example
-```
-[1, 1, 0, 0, 0, 0, 0, 1, 1, 1]
-```
-
-find the winning player, 
-
-** for sake of simplicity, assume there is no draw in total points between players.
 
 ```swift
 import Foundation
@@ -296,6 +306,9 @@ func chessWinner(_ matches: [[String]], _ results: [Int]) -> String {
     }
     return bestPlayer
 }
+```
+
+```swift
 func generateData() -> ([[String]] , [Int]) {
     let players1 = ["Carlsen", "Ding Liren", "Nepomniachtchi", "Karjakin", "Aronian"]
     let players2 = ["Keymer", "Vitiugov", "Gukesh D", "Andreikin", "Grischuk"]
