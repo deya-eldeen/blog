@@ -23,7 +23,9 @@ tags:
 ---
   
 Mobile software engineers (iOS and Android), are normally not familiar with how GPS works, instead of just getting Lat/Lon readings, and doing geo operations with it, why not become familiar with how GPS works? 🤓
+
 <!--more-->
+
 {%
  include centered-image.html 
  image_path="images/covers/gps_full.jpg"
@@ -31,12 +33,10 @@ Mobile software engineers (iOS and Android), are normally not familiar with how 
  caption=""
 %}
 
-
 This will not be a lengthy article, it will be a chat between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻).**
 
 👨🏻‍💻: So what does GPS stand for?  
 👩🏼‍💻: It stands for (Global Positioning System).
-
 
 👨🏻‍💻: Who created it? and what for?  
 👩🏼‍💻: The GPS project was launched in the USA back in 1973 due to limitations of old navigation systems.
@@ -50,17 +50,12 @@ This will not be a lengthy article, it will be a chat between an **iOS developer
 👨🏻‍💻: So a mobile needs to connect to all of these?  
 👩🏼‍💻: Of course not, when you are stationary, you need to be exposed to 3 of them, when you are moving, you will need to be exposed to 4.
 
-<figure>
-
-![](images/ConstellationGPS.gif)
-
-<figcaption>
-
-GPS Satellites animation (Wikipedia)
-
-</figcaption>
-
-</figure>
+{%
+ include centered-image.html 
+ image_path="images/ConstellationGPS.gif"
+ alt_text="" 
+ caption="GPS Satellites animation (Wikipedia)"
+%}
 
 👨🏻‍💻: So how come it identifies me? and send me data?  
 👩🏼‍💻: The Satellites don't identify you, **they only emit synchronous pulses all the time everywhere.**  
@@ -68,25 +63,23 @@ GPS Satellites animation (Wikipedia)
 👨🏻‍💻: And how does my mobile give me back the (latitude, longitude, and altitude)?  
 👩🏼‍💻: It compares the receive time of these pulses from each satellite, and use calculations to determine a point on earth, since the distance between these satellites is constant, and they have atomic clocks, the calculations will not be difficult.  
 
-![](images/GPS-satellite-position-calculations-3.png)
+{%
+ include centered-image.html 
+ image_path="images/GPS-satellite-position-calculations-3.png"
+ alt_text="" 
+ caption="GPS Satellites Position Calculation"
+%}
 
 👨🏻‍💻: The service is totally free, and I don't have any subscription for GPS, how?  
 👩🏼‍💻: GPS is not the only service for (Global Navigation Satellite Systems), there are many like (GLONASS, BeiDou, Galileo...), there are other commercial solutions that I don't know much about, there are a lot of details, I heard retail GPS receivers are designed to not work if the tracked object is moving fastly, you get the idea 🧐?  
 👨🏻‍💻: ah! yes.  
-  
 
-<figure>
-
-![](images/Beidou_Navigation_Satellite_System_2012.png)
-
-<figcaption>
-
-BeiDou doesn't have full earth coverage.
-
-</figcaption>
-
-</figure>
-
+{%
+ include centered-image.html 
+ image_path="images/Beidou_Navigation_Satellite_System_2012.png"
+ alt_text="" 
+ caption="BeiDou doesn't have full earth coverage."
+%}
   
 👨🏻‍💻: What is the error margin?  
 👩🏼‍💻: It's variable, but you can say between 15 to 50 meters, some commercial systems use other inertial systems to give more accurate estimations.  
@@ -95,7 +88,8 @@ BeiDou doesn't have full earth coverage.
 👩🏼‍💻: You mean the resolution? theoretically, as far as I know, it's one inch, but practically it's about 3 meters.  
   
 👨🏻‍💻: I once tried to use the GPS inside a big hospital, it didn't serve any purpose, the readings were not accurate.  
-👩🏼‍💻: GPS does not work indoors.  
+👩🏼‍💻: GPS does not work indoors.
+
 👨🏻‍💻: But I saw some readings on my maps application.  
 👩🏼‍💻: it's the last point that was read, some devices like Huawei also augment (Accel/Gyro) sensor data, to mimic a basic INS to give your readings inside buildings, but it's not reliable.  
   
