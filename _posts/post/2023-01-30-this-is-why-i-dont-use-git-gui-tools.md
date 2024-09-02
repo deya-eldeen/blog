@@ -29,8 +29,13 @@ Any seasoned iOS engineer who uses Xcode can see that it lacks a lot of git feat
 
 We can see only primitive features there, which may suffice for personal or small projects, but if you are working on a larger team, you will find it very difficult and sometimes impossible to use source control using the IDE only.
 
-![](images/image-3.png)
-Xcode's Source Control
+{%
+ include centered-image.html 
+ image_path="images/image-3.png"
+ alt_text="" 
+ caption="Xcode's Source Control
+"
+%}
   
 Some Engineers may also notice that markers near files like "A", "M" and "C" etc.. are stuck most of the time too, so you wont be able to directly tell about file statuses if they are added, modified, conflicting, etc..  
   
@@ -55,16 +60,53 @@ GIT GUI tools were meant to mitigate complexity, but to me, they seem to add mor
   
 PS: the only real use of source control in Xcode is the diffing tools, it visualizes diffs perfectly. 🤓
 
-<figure>
+Here is the table in Markdown format:
 
-<table><tbody><tr><td>git add</td></tr><tr><td>git annotate</td></tr><tr><td>git bisect</td></tr><tr><td>git blame</td></tr><tr><td>git checkout</td></tr><tr><td>git checkout -b</td></tr><tr><td>git cherry-pick</td></tr><tr><td>git clean -fdx</td></tr><tr><td>git clone</td></tr><tr><td>git clone --single-branch</td></tr><tr><td>git commit</td></tr><tr><td>git commit --amend -m "New commit message."</td></tr><tr><td>git config</td></tr><tr><td>git diff</td></tr><tr><td>git diff --check</td></tr><tr><td>git fetch</td></tr><tr><td>git gc</td></tr><tr><td>git init</td></tr><tr><td>git log</td></tr><tr><td>git log --all</td></tr><tr><td>git log --oneline</td></tr><tr><td>git log --summary</td></tr><tr><td>git log -p</td></tr><tr><td>git merge</td></tr><tr><td>git pull --rebase</td></tr><tr><td>git push</td></tr><tr><td>git push --set-upstream origin</td></tr><tr><td>git push -u origin feature_branch_name</td></tr><tr><td>git rebase</td></tr><tr><td>git remote -av</td></tr><tr><td>git remote add</td></tr><tr><td>git reset --hard</td></tr><tr><td>git restore</td></tr><tr><td>git revert</td></tr><tr><td>git rm</td></tr><tr><td>git shortlog</td></tr><tr><td>git show</td></tr><tr><td>git stash</td></tr><tr><td>git stash list</td></tr><tr><td>git stash pop</td></tr><tr><td>git status</td></tr><tr><td>git tag</td></tr><tr><td>git worktree</td></tr></tbody></table>
-
-<figcaption>
+| Command                                                                                                                     |
+|---------------------------------------------------------------------------------------------------------------------------|
+| git add                                                                                                                 |
+| git annotate                                                                                                            |
+| git bisect                                                                                                              |
+| git blame                                                                                                               |
+| git checkout                                                                                                            |
+| git checkout -b                                                                                                        |
+| git cherry-pick                                                                                                        |
+| git clean -fdx                                                                                                         |
+| git clone                                                                                                               |
+| git clone --single-branch                                                                                              |
+| git commit                                                                                                              |
+| git commit --amend -m "New commit message."                                                                            |
+| git config                                                                                                              |
+| git diff                                                                                                                |
+| git diff --check                                                                                                       |
+| git fetch                                                                                                               |
+| git gc                                                                                                                  |
+| git init                                                                                                                |
+| git log                                                                                                                 |
+| git log --all                                                                                                          |
+| git log --oneline                                                                                                      |
+| git log --summary                                                                                                      |
+| git log -p                                                                                                              |
+| git merge                                                                                                               |
+| git pull --rebase                                                                                                      |
+| git push                                                                                                                |
+| git push --set-upstream origin                                                                                         |
+| git push -u origin feature_branch_name                                                                                 |
+| git rebase                                                                                                              |
+| git remote -av                                                                                                         |
+| git remote add                                                                                                         |
+| git reset --hard                                                                                                       |
+| git restore                                                                                                             |
+| git revert                                                                                                              |
+| git rm                                                                                                                  |
+| git shortlog                                                                                                            |
+| git show                                                                                                                |
+| git stash                                                                                                               |
+| git stash list                                                                                                         |
+| git stash pop                                                                                                          |
+| git status                                                                                                              |
+| git tag                                                                                                                 |
+| git worktree                                                                                                            |
 
 common git commands that I use (sorted alphabetically)
 
-</figcaption>
-
-
-
-</figure>
