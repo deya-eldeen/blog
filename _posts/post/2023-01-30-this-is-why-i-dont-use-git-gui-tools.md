@@ -1,12 +1,12 @@
 ---
 layout: post
-title: "This is why I don't use GIT GUI tools."
+title: "This is Why I Don't Use Git GUI Tools"
 date: "2023-01-30"
 permalink: /this-is-why-i-dont-use-git-gui-tools
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/git_cli.jpg"
-categories: 
+categories:
   - "Development"
   - "iOS"
   - "Programming"
@@ -18,52 +18,64 @@ tags:
   - "Swift"
 ---
 
-Any seasoned iOS engineer who uses Xcode can see that it lacks a lot of git features, which is OK as it's not mainly a source control application.  
-<!--more-->
-{%
- include centered-image.html 
- image_path="images/covers/git_cli_full.jpg"
- alt_text="" 
- caption=""
-%}
-
-We can see only primitive features there, which may suffice for personal or small projects, but if you are working on a larger team, you will find it very difficult and sometimes impossible to use source control using the IDE only.
+Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it's primarily a development environment rather than a dedicated source control application. 
 
 {%
- include centered-image.html 
- image_path="images/image-3.png"
- alt_text="" 
- caption="Xcode's Source Control
-"
+include centered-image.html
+image_path="images/covers/git_cli_full.jpg"
+alt_text=""
+caption=""
 %}
-  
-Some Engineers may also notice that markers near files like "A", "M" and "C" etc.. are stuck most of the time too, so you wont be able to directly tell about file statuses if they are added, modified, conflicting, etc..  
-  
-Convincing backend engineers to use the terminal will be easier, because GUI will not automatically update repo's trunk on a server daily at 1:30 AM, but a cronjob that deals with the CLI can easily do this, on the other hand, convincing a mobile developer about this can be a bit more more difficult, because the need for this is not easily demonstrated.  
-  
-I will start directly with discussing few real life examples.. I'm sure I can think of dozens of cases, but let's keep this post small.. I will list the commands I use, so you can have an idea about the more power we can have in terminal.  
-  
-**1- PR Reverts:** a feature introduced by Github, PR reverts, say you have an already merged pull request, and you want to revert it before a tight-deadline like a branch cut, using Github's revert feature will not ask about details of commits to be removed, it most probably will remove commits that were merged in the PR, so you may easily end up removing extra stuff that is irrelevant by accident.  
-  
-But using such command, you will have fine-grained control about what commit to remove or keep.  
-  
-`git revert --no-commit someHash   `  
-**2- Submodules:** if you have nested git repos (submodules), such feature maybe not be existent in most GUI tools.  
-  
-I normally have terminal open all day, and I can't live without it 🧐, I hate to push buttons without knowing exactly what each button does, tools can come and go, the CLI will be always what GUI tools are built on.  
-  
-It's convenient to set up install scripts, build scripts, deploy scripts, etc.. when working on a large team, one will have no idea what **_exactly_** happens in the GUI based app, and in the old times I've seen colleagues do bad things impossible to restore without the CLI 🤦🏻.  
-  
-I feel several times faster using the command line than clicking through with a mouse.  
-  
-GIT GUI tools were meant to mitigate complexity, but to me, they seem to add more complexity if the project is large, I once seen non-git standard terminology, which normally makes things harder in general.  
-  
-PS: the only real use of source control in Xcode is the diffing tools, it visualizes diffs perfectly. 🤓
 
-Here is the table in Markdown format:
+The features available in Xcode may suffice for personal or small projects, but when working within a larger team, relying solely on the IDE can lead to significant challenges in managing source control effectively.
+
+{%
+include centered-image.html
+image_path="images/image-3.png"
+alt_text=""
+caption="Xcode's Source Control"
+%}
+
+Many engineers have also observed that file status markers like "A" (added), "M" (modified), and "C" (conflicted) often remain stuck, making it difficult to determine the current state of files at a glance.
+
+Convincing backend engineers to use the terminal is relatively straightforward, as GUI tools do not automatically update the repository's trunk on a server daily at 1:30 AM. However, a cron job that utilizes the CLI can easily perform this task. On the other hand, persuading mobile developers may be more challenging since the need for terminal usage is not always immediately apparent.
+
+## Real-Life Examples of Using the Git CLI
+
+Let’s explore a few real-life examples that highlight the advantages of using the Git CLI over GUI tools. While I could list numerous cases, I will keep this post concise by focusing on a couple of key commands that illustrate the power of the terminal.
+
+### 1. PR Reverts
+
+GitHub introduced a feature for reverting pull requests (PRs). If you have an already merged PR and need to revert it before a tight deadline, using GitHub's built-in revert feature does not provide details about which commits will be removed. This can lead to accidentally removing unrelated commits. 
+
+By contrast, using the command:
+
+```bash
+git revert --no-commit someHash
+```
+
+gives you fine-grained control over which commits to remove or retain, allowing for a more precise and safe rollback.
+
+### 2. Submodules
+
+When dealing with nested Git repositories (submodules), many GUI tools lack robust support for managing these structures. The Git CLI, however, provides comprehensive commands to add, update, and manage submodules effectively.
+
+I typically keep the terminal open throughout the day; I can't imagine working without it. I prefer understanding exactly what each command does rather than relying on button clicks in a GUI. While tools may come and go, the CLI remains the foundation upon which GUI tools are built.
+
+## The Benefits of Using the Git CLI
+
+Using the command line allows for the convenient setup of install scripts, build scripts, deployment scripts, and more. In a large team setting, it is often unclear what exactly happens within a GUI-based application. I've witnessed colleagues make irreversible mistakes that could only be rectified using the CLI.
+
+I find that I am several times more productive using the command line compared to navigating through menus with a mouse. While Git GUI tools aim to simplify the process, they can inadvertently add complexity, especially in larger projects. I've encountered non-standard terminology in some GUI tools that can make understanding Git more difficult.
+
+Xcode comes with a diffing tool, which visualize differences effectively. However, for serious Git users, mastering the command line is crucial. It provides the flexibility, control, and efficiency needed to manage complex projects and collaborate effectively with team members.
+
+## Common Git Commands
+
+Here is a table of common Git commands that I frequently use, sorted alphabetically:
 
 | Command                                                                                                                     |
-|---------------------------------------------------------------------------------------------------------------------------|
+|-----------------------------------------------------------------------------------------------------------------------------|
 | git add                                                                                                                 |
 | git annotate                                                                                                            |
 | git bisect                                                                                                              |
@@ -107,6 +119,3 @@ Here is the table in Markdown format:
 | git status                                                                                                              |
 | git tag                                                                                                                 |
 | git worktree                                                                                                            |
-
-common git commands that I use (sorted alphabetically)
-
