@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Why I prefer to store my files on a digital ocean space & not google drive or dropbox."
+title: "Why I Prefer To Store My Files On A Digital Ocean Space & Not Google Drive Or Dropbox."
 date: "2023-01-21"
 permalink: /backup-on-spaces
 excerpt_separator: <!--more-->

@@ -19,7 +19,7 @@ tags:
 ---
 
 Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it's primarily a development environment rather than a dedicated source control application. 
-
+<!--more-->
 {%
 include centered-image.html
 image_path="images/covers/git_cli_full.jpg"
