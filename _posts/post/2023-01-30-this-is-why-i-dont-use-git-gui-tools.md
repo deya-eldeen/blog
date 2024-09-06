@@ -72,50 +72,50 @@ Xcode comes with a diffing tool, which visualize differences effectively. Howeve
 
 ## Common Git Commands
 
-Here is a table of common Git commands that I frequently use, sorted alphabetically:
+Here is a table of common Git commands that I frequently use, sorted alphabetically, along with their descriptions:
 
-| Command                                                                                                                     |
-|-----------------------------------------------------------------------------------------------------------------------------|
-| git add                                                                                                                 |
-| git annotate                                                                                                            |
-| git bisect                                                                                                              |
-| git blame                                                                                                               |
-| git checkout                                                                                                            |
-| git checkout -b                                                                                                        |
-| git cherry-pick                                                                                                        |
-| git clean -fdx                                                                                                         |
-| git clone                                                                                                               |
-| git clone --single-branch                                                                                              |
-| git commit                                                                                                              |
-| git commit --amend -m "New commit message."                                                                            |
-| git config                                                                                                              |
-| git diff                                                                                                                |
-| git diff --check                                                                                                       |
-| git fetch                                                                                                               |
-| git gc                                                                                                                  |
-| git init                                                                                                                |
-| git log                                                                                                                 |
-| git log --all                                                                                                          |
-| git log --oneline                                                                                                      |
-| git log --summary                                                                                                      |
-| git log -p                                                                                                              |
-| git merge                                                                                                               |
-| git pull --rebase                                                                                                      |
-| git push                                                                                                                |
-| git push --set-upstream origin                                                                                         |
-| git push -u origin feature_branch_name                                                                                 |
-| git rebase                                                                                                              |
-| git remote -av                                                                                                         |
-| git remote add                                                                                                         |
-| git reset --hard                                                                                                       |
-| git restore                                                                                                             |
-| git revert                                                                                                              |
-| git rm                                                                                                                  |
-| git shortlog                                                                                                            |
-| git show                                                                                                                |
-| git stash                                                                                                               |
-| git stash list                                                                                                         |
-| git stash pop                                                                                                          |
-| git status                                                                                                              |
-| git tag                                                                                                                 |
-| git worktree                                                                                                            |
+| Command                                                                                                                     | Description                                                                                                  |
+|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `git add`                                                                                                                 | Stages changes in your working directory for the next commit.                                               |
+| `git annotate`                                                                                                            | Displays the last modification of each line in a file, showing who made the change and when.                |
+| `git bisect`                                                                                                              | Uses binary search to find the commit that introduced a bug.                                               |
+| `git blame`                                                                                                               | Shows what revision and author last modified each line of a file.                                          |
+| `git checkout`                                                                                                            | Switches branches or restores working tree files.                                                           |
+| `git checkout -b`                                                                                                        | Creates a new branch and switches to it.                                                                    |
+| `git cherry-pick`                                                                                                        | Applies the changes introduced by an existing commit to your current branch.                                |
+| `git clean -fdx`                                                                                                         | Removes untracked files from your working directory, including ignored files.                               |
+| `git clone`                                                                                                               | Creates a copy of a remote repository on your local machine.                                               |
+| `git clone --single-branch`                                                                                              | Clones only the specified branch from a remote repository.                                                  |
+| `git commit`                                                                                                              | Records changes to the repository with a descriptive message.                                              |
+| `git commit --amend -m "New commit message."`                                                                            | Modifies the most recent commit with a new commit message.                                                 |
+| `git config`                                                                                                              | Configures Git settings, such as user information and repository-specific options.                          |
+| `git diff`                                                                                                                | Shows changes between commits, commit and working tree, etc.                                               |
+| `git diff --check`                                                                                                       | Checks for whitespace errors in the changes.                                                                |
+| `git fetch`                                                                                                               | Downloads objects and refs from another repository without merging.                                         |
+| `git gc`                                                                                                                  | Cleans up unnecessary files and optimizes the local repository.                                            |
+| `git init`                                                                                                                | Initializes a new Git repository in the current directory.                                                 |
+| `git log`                                                                                                                 | Displays the commit history for the current branch.                                                         |
+| `git log --all`                                                                                                          | Shows the commit history for all branches.                                                                  |
+| `git log --oneline`                                                                                                      | Displays a simplified view of the commit history, showing one line per commit.                             |
+| `git log --summary`                                                                                                      | Provides a summary of changes made in each commit, including file additions and deletions.                  |
+| `git log -p`                                                                                                              | Shows the patch (diff) introduced in each commit.                                                          |
+| `git merge`                                                                                                               | Combines changes from different branches into the current branch.                                           |
+| `git pull --rebase`                                                                                                      | Fetches changes from a remote repository and rebases your current branch on top of them.                   |
+| `git push`                                                                                                                | Uploads local repository content to a remote repository.                                                   |
+| `git push --set-upstream origin`                                                                                         | Sets the default remote branch for the current local branch.                                               |
+| `git push -u origin feature_branch_name`                                                                                 | Pushes the local branch to the remote repository and sets it to track the remote branch.                   |
+| `git rebase`                                                                                                              | Reapplies commits on top of another base tip, allowing for a cleaner project history.                       |
+| `git remote -av`                                                                                                         | Displays the remote repositories associated with the local repository.                                      |
+| `git remote add`                                                                                                         | Adds a new remote repository to your local Git configuration.                                               |
+| `git reset --hard`                                                                                                       | Resets the current branch to the specified state, discarding all changes in the working directory.          |
+| `git restore`                                                                                                             | Restores files in the working directory to their last committed state.                                      |
+| `git revert`                                                                                                              | Creates a new commit that undoes the changes made by a previous commit.                                    |
+| `git rm`                                                                                                                  | Removes files from the working directory and stages the removal for the next commit.                       |
+| `git shortlog`                                                                                                            | Summarizes the commit history, grouped by author.                                                          |
+| `git show`                                                                                                                | Displays information about a specific commit, including changes and commit message.                        |
+| `git stash`                                                                                                               | Temporarily saves changes in your working directory that are not ready to be committed.                    |
+| `git stash list`                                                                                                         | Lists all stashed changes.                                                                                    |
+| `git stash pop`                                                                                                          | Restores the most recently stashed changes and removes them from the stash list.                           |
+| `git status`                                                                                                              | Displays the state of the working directory and the staging area, showing which files are staged, modified, or untracked. |
+| `git tag`                                                                                                                 | Creates a tag reference for a specific commit, often used for marking release points.                      |
+| `git worktree`                                                                                                            | Manages multiple working trees attached to the same repository, allowing you to work on different branches simultaneously. |

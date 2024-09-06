@@ -1,8 +1,8 @@
 ---
 layout: post
-title: "iOS Accessibility Series (Part 1)"
+title: "iOS Accessibility"
 date: "2023-08-02"
-permalink: /ios-accessibility-series-part-1
+permalink: /ios-accessibility
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/a11y.jpg"
@@ -16,6 +16,8 @@ tags:
   - "iOS"
   - "Programming"
   - "Swift"
+redirect_from:
+  - /ios-accessibility-series-part-1
 ---
 
 iOS accessibility, from a developer's point of view, refers to the set of tools, technologies, and guidelines [provided by Apple](https://developer.apple.com/accessibility/) to ensure that iOS applications are usable and inclusive for people with disabilities. 
