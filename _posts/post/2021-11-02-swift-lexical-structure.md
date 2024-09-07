@@ -18,7 +18,7 @@ tags:
   - "Syntax"
 ---
 
-The `Swift` lexical structure consists of valid tokens (the lowest-level building blocks) that form the structure of any `Swift` program. These tokens describe the entirety of the `Swift` language.
+The Swift lexical structure consists of valid tokens (the lowest-level building blocks) that form the structure of any Swift program. These tokens describe the entirety of the Swift language.
 
 A token consists of an identifier, keyword, punctuation, literal, or operator.
 <!--more-->

@@ -20,7 +20,7 @@ tags:
   - "Objective-C"
 ---
 
-When working with `Swift`, one of the key decisions you’ll often face is how to represent data types. While specificity in defining data types is generally encouraged, `Swift` offers three flexible type options: `Any`, `AnyObject`, and `AnyHashable`. 
+When working with Swift, one of the key decisions you’ll often face is how to represent data types. While specificity in defining data types is generally encouraged, Swift offers three flexible type options: `Any`, `AnyObject`, and `AnyHashable`. 
 
 <!--more-->
 
@@ -31,15 +31,15 @@ When working with `Swift`, one of the key decisions you’ll often face is how t
  caption="Exploring Swift's Flexible Type System"
 %}
 
-Understanding when and how to use these types is crucial for developing robust and interoperable `Swift` applications.  
+Understanding when and how to use these types is crucial for developing robust and interoperable Swift applications.  
 
 ## Introduction to Any, AnyObject, and AnyHashable
 
-`Swift` is a strongly typed language, meaning that every variable, constant, or expression must have a clearly defined type. However, there are situations where the exact type might not be known until runtime, or where flexibility in type is required. This is where `Any`, `AnyObject`, and `AnyHashable` come into play.
+Swift is a strongly typed language, meaning that every variable, constant, or expression must have a clearly defined type. However, there are situations where the exact type might not be known until runtime, or where flexibility in type is required. This is where `Any`, `AnyObject`, and `AnyHashable` come into play.
 
 ### Any
 
-The `Any` type represents an instance of any type at all, including `function` types, `class` instances, `struct`s, and `enum`s. It’s the most general type in `Swift`, allowing you to work with values without needing to know their specific types in advance.
+The `Any` type represents an instance of any type at all, including `function` types, `class` instances, `struct`s, and `enum`s. It’s the most general type in Swift, allowing you to work with values without needing to know their specific types in advance.
 
 ```swift
 let mixedArray: [Any] = [1, "Hello", 3.14, [1, 2, 3]]
@@ -109,8 +109,8 @@ let invalidResult = functions[0].call(with: 42)
 print(invalidResult) // Output: Invalid input type
 ```
 
-3. Interfacing with `Objective-C` APIs
-Use Any to handle untyped objects returned by `Objective-C` methods, facilitating seamless interaction.
+3. Interfacing with Objective-C APIs
+Use Any to handle untyped objects returned by Objective-C methods, facilitating seamless interaction.
 
 4. Generic Programming
 Accept or return any type in generic programming, simplifying function signatures when specific types are not essential.
@@ -123,20 +123,20 @@ Caution in Usage:
 
 ### AnyObject
 
-`AnyObject` is a protocol that all `class` types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like `struct`s or `enum`s. `AnyObject` is commonly used in scenarios where `Swift` interacts with `Objective-C`, especially because `Objective-C` types are generally class-based.
+`AnyObject` is a protocol that all `class` types implicitly conform to. It’s used when you need to work specifically with instances of classes rather than value types like `struct`s or `enum`s. `AnyObject` is commonly used in scenarios where Swift interacts with Objective-C, especially because Objective-C types are generally class-based.
 
 ```swift
 let objectArray: [AnyObject] = [NSString(string: "Hello"), NSNumber(value: 42)]
 ```
 
-Here, `objectArray` holds instances that are guaranteed to be `class` types. This makes `AnyObject` a safer option when you’re dealing with `class` instances, especially in mixed-language projects involving both Swift and `Objective-C`.
+Here, `objectArray` holds instances that are guaranteed to be `class` types. This makes `AnyObject` a safer option when you’re dealing with `class` instances, especially in mixed-language projects involving both Swift and Objective-C.
 
 #### Real-World Use Cases for AnyObject in Swift
 
 `AnyObject` allows you to work with instances of any class type. Here are some real-world scenarios where it can be beneficial:
 
-1. Interacting with `Objective-C` `API`s
-- Use `AnyObject` to handle untyped objects from `Objective-C` methods and properties, facilitating seamless interaction with these `API`s.
+1. Interacting with Objective-C `API`s
+- Use `AnyObject` to handle untyped objects from Objective-C methods and properties, facilitating seamless interaction with these `API`s.
 
 2. Parsing Mixed-Type `JSON` Data
 - Store parsed `JSON` data containing a mix of types (strings, numbers, booleans) in a flexible way using `AnyObject`.
@@ -144,11 +144,11 @@ Here, `objectArray` holds instances that are guaranteed to be `class` types. Thi
 3. Creating Heterogeneous Collections
 - Create arrays or dictionaries that hold instances of different class types, allowing for storage of diverse objects together.
 
-4. Bridging `Objective-C` Classes to Swift
-- Use `AnyObject` for properties, method parameters, and return values when bridging `Objective-C` classes, enabling interaction without knowing specific types.
+4. Bridging Objective-C Classes to Swift
+- Use `AnyObject` for properties, method parameters, and return values when bridging Objective-C classes, enabling interaction without knowing specific types.
 
 5. Implementing Dynamic Behavior
-- Leverage `AnyObject` to call any `Objective-C` method, creating flexible and extensible `API`s.
+- Leverage `AnyObject` to call any Objective-C method, creating flexible and extensible `API`s.
 
 Note:
 > While `AnyObject` is useful, it's important to prioritize type safety and performance by using more specific types whenever possible.
@@ -230,12 +230,12 @@ for item in objectsArray {
 
 - Use `Any`:
   - When your collection or variable needs to handle multiple types, including value types like `Int`, `String`, and `Array`.
-  - When your data will be used exclusively in `Swift` code, allowing you to include both value and reference types.
+  - When your data will be used exclusively in Swift code, allowing you to include both value and reference types.
   
 - Use `AnyObject`:
-  - When dealing with APIs that expect class types, such as when interfacing with `Objective-C` code.
+  - When dealing with APIs that expect class types, such as when interfacing with Objective-C code.
   - When you specifically need to work with reference types.
-  - When your data will interact with `Objective-C` code or when you specifically need to constrain your data to `class` types.
+  - When your data will interact with Objective-C code or when you specifically need to constrain your data to `class` types.
 
 ## AnyHashable
 
@@ -253,7 +253,7 @@ let anyHashableDict: [AnyHashable: Any] = [
 print(anyHashableDict)
 ```
 
-In this example, `anyHashableDict` can have keys of different types, as long as those types conform to the `Hashable` protocol. `AnyHashable` is particularly useful when dealing with untyped sets or dictionaries coming from `Objective-C`, as it provides the necessary flexibility while maintaining type safety within Swift.
+In this example, `anyHashableDict` can have keys of different types, as long as those types conform to the `Hashable` protocol. `AnyHashable` is particularly useful when dealing with untyped sets or dictionaries coming from Objective-C, as it provides the necessary flexibility while maintaining type safety within Swift.
 
 <!-- #### Practical Example: Notification Structure
 
@@ -270,4 +270,4 @@ In this context, `AnyHashable` allows the `userInfo` dictionary to store keys of
 
 ## Conclusion
 
-Understanding when to use `Any`, `AnyObject`, and `AnyHashable` can greatly enhance your flexibility and interoperability in `Swift` development. While these types provide powerful tools for working with a wide range of data, it's important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your `Swift` code is both robust and adaptable.
+Understanding when to use `Any`, `AnyObject`, and `AnyHashable` can greatly enhance your flexibility and interoperability in Swift development. While these types provide powerful tools for working with a wide range of data, it's important to use them judiciously to maintain the clarity and safety of your code. By carefully choosing the appropriate type based on the needs of your application, you can ensure that your Swift code is both robust and adaptable.

@@ -30,7 +30,7 @@ A reserved word is **a term designated by the programming language that cannot b
 As detailed in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-structure/), these reserved words are integral to the language's syntax and functionality. For convenience, all lists of reserved words provided below are arranged alphabetically, facilitating quick and easy reference.
 
 ## Keywords used in declarations
-Keywords for defining types, methods, and essential elements in `Swift`, including `classe`s, `struct`s, `enum`s, `protocol`s, and properties, along with access control and initialization behavior.
+Keywords for defining types, methods, and essential elements in `Swift`, including classes, structs, enums, protocols, and properties, along with access control and initialization behavior.
 
 | Reserved Word | Details |
 | --- | --- |
@@ -120,7 +120,7 @@ Compile-time literals and directives providing information about the source code
 | `#available` | Used to determine the availability of APIs at runtime |
 | `#colorLiteral` | Used to make the XCode IDE to display a color swatch 🟥 |
 | `#column` | column number of the line where it is being run. |
-| `#dsohandle` | \- |
+| `#dsohandle` | Represents the dynamic shared object handle, which is used in low-level programming contexts, particularly when dealing with dynamic libraries. It is not commonly used in everyday Swift development. |
 | `#elseif` | Literal conditional statement |
 | `#else` | Literal else statement. |
 | `#endif` | Literal marker for closing an a literal if statement |
@@ -132,10 +132,10 @@ Compile-time literals and directives providing information about the source code
 | `#function` | Outputs the name of the function where code belongs. |
 | `#if` | Literal if statement. |
 | `#imageLiteral` | Used to make the XCode IDE to display an image. |
-| `#keyPath` | \- |
+| `#keyPath` | Used to refer to properties in a type-safe manner, allowing for dynamic key paths in Swift. This is particularly useful in conjunction with KVO (Key-Value Observing) and other reactive programming paradigms. |
 | `#line` | line number where it is being run. |
-| `#selector` | \- |
-| `#sourceLocation` | \- |
+| `#selector` | Used to refer to a method that can be called by Objective-C runtime. This is essential for methods that are intended to be used as selectors in target-action patterns or notifications. |
+| `#sourceLocation` | Allows developers to specify the source location for logging purposes, which can be helpful in tracing back to the original source of a log message. This can be particularly useful in large projects. |
 | `#warning` | will cause Xcode to display a warning with the given message.  |
 
 ## Keywords reserved in particular contexts
@@ -146,7 +146,7 @@ Keywords with specific meanings in certain contexts, such as defining operator b
 | `associativity` | defines how operators of the same precedence are grouped together. |
 | `convenience` | Convenience modifier placed before the init keyword. |
 | `didSet` | A property observer |
-| `dynamic` | A declaration modifier used to make use of `Objective-C`'s dynamism. |
+| `dynamic` | A declaration modifier used to make use of Objective-C's dynamism. |
 | `final` | One of Swift's access modifiers. |
 | `get` | Used when getting a computed property. |
 | `indirect` | Used for recursive Enums |
@@ -155,8 +155,8 @@ Keywords with specific meanings in certain contexts, such as defining operator b
 | `left` | Used to specify the associativity of a custom operator |
 | `mutating` | Functions marked as mutating can change any property within its enclosing value |
 | `none` | Used to specify the associativity of a custom operator |
-| `nonmutating` | \- |
-| `optional` | \- |
+| `nonmutating` | Indicates that a method does not modify the instance it belongs to. This is important for maintaining immutability in certain contexts. |
+| `optional` | Indicates that a value may be absent, allowing for the representation of the absence of a value in a type-safe manner. This is a core feature of Swift's type system. |
 | `override` | Used for overriding child classes. |
 | `postfix` | Used in creating custom functions, it's mathematical notation in which operators follow operands. |
 | `precedence` | Operator precedence is a set of rules that determine which operator is executed before another. |

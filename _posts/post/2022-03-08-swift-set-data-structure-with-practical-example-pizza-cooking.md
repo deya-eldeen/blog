@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Mastering Swift Sets: Basics and Practical Example with Pizza Cooking"
+title: "Swift Sets: Basics and Practical Examples"
 date: "2022-03-08"
 permalink: /swift-set-data-structure-with-practical-example-pizza-cooking
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/pizza.jpg"
+thumbnail: "images/covers/venn.jpg"
 categories: 
   - "Development"
   - "iOS"
@@ -27,9 +27,9 @@ Swift provides three main collection types: **Arrays**, **Sets**, and **Dictiona
 
 {% 
 include centered-image.html
-image_path="images/covers/pizza_full.jpg"
-alt_text="Swift Sets and Pizza Cooking"
-caption="" 
+image_path="images/covers/venn_full.jpg"
+alt_text=""
+caption="John Venn" 
 %}
 
 ## What is a Set?

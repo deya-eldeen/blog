@@ -35,7 +35,7 @@ you might have an image file that is only 0.3 MB on disk, yet it occupies around
  caption=""
 %}
 
-## Why Is There a Discrepancy?
+## Root Of Discrepancy?
 The primary reason for this discrepancy lies in how images are stored on disk versus how they are represented in memory. Images on disk are often compressed using formats like `JPEG` or `PNG`, which reduce file size by storing data more efficiently. However, when an image is loaded into RAM, it must be decompressed and converted into a raw bitmap format that the system can render on the screen. This raw format requires significantly more memory.
 
 ### The Formula for Memory Usage
