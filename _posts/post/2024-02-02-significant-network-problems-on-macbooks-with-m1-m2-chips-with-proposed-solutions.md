@@ -3,7 +3,7 @@ layout: post
 title: "Significant Network Problems on MacBooks with Silicon Chips and Proposed Solutions"
 date: "2024-02-02"
 last_modified_at: "2024-09-08"
-permalink: /significant-network-problems-on-macbooks-with-m1-m2-chips-with-proposed-solutions
+permalink: /significant-network-problems-on-macbooks-with-m1-m2-chips-with-proposed-solutions/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/network_fix.jpg"

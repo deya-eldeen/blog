@@ -1,13 +1,20 @@
 ---
 layout: page
-title: About
-permalink: /about/
+title: About Me
 feature-img: "assets/img/pexels/travel.jpeg"
-tags: [Page]
+tags: [About]
+position: 1
 permalink: /about-me
+redirect_from:
+  - /contact
 ---
 
-## About Me
+{%
+ include centered-image.html 
+ image_path="images/deya_256.png"
+ alt_text="Swift" 
+ caption=""
+%}
 
 I'm Deya Eldeen, a mechatronic engineer with a deep passion for programming 👨🏻‍💻, design, and engineering 🚀. This blog serves as a platform for me to share my insights and experiences related to Swift programming 🧐. Here, you'll find discussions on various topics, including algorithms, data structures, design patterns, and different programming paradigms.
 
@@ -34,3 +41,10 @@ I encourage you to reach out with any questions or feedback regarding my work. I
 [Download Resume](assets/cv_2024_q2.pdf)
 
 I hope you enjoy exploring Swift By Deya! 🚀
+
+#### Contact
+
+**My Email:** deyaeldeenk@gmail.com<br>
+**Twitter:** twitter.com/deya_eldeen<br>
+**Github:** github.com/deya-eldeen<br>
+**Telegram:** @deyaeldeen
