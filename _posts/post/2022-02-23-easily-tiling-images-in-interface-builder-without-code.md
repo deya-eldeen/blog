@@ -2,6 +2,7 @@
 layout: post
 title: "Easily Tiling Images in Interface Builder Without Code"
 date: "2022-02-23"
+last_modified_at: "2024-09-08"
 permalink: /easily-tiling-images-in-interface-builder-without-code
 excerpt_separator: <!--more-->
 author: deyaeldeen

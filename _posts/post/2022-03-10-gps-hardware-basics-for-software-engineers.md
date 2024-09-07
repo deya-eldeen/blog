@@ -2,6 +2,7 @@
 layout: post
 title: "Understanding GPS Hardware Basics for Mobile Developers"
 date: "2022-03-10"
+last_modified_at: "2024-09-08"
 permalink: /gps-hardware-basics-for-software-engineers
 excerpt_separator: <!--more-->
 author: deyaeldeen

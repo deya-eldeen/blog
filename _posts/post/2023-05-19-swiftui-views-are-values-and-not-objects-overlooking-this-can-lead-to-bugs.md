@@ -2,6 +2,7 @@
 layout: post
 title: "SwiftUI Views Are Values, Not Objects: Understanding the Implications"
 date: "2023-05-19"
+last_modified_at: "2024-09-08"
 permalink: /swiftui-views-are-values-and-not-objects-overlooking-this-can-lead-to-bugs
 excerpt_separator: <!--more-->
 author: deyaeldeen

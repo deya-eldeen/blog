@@ -2,6 +2,7 @@
 layout: post
 title: "What is Swift Programming Language?"
 date: "2021-10-18"
+last_modified_at: "2024-09-08"
 permalink: /what-is-swift
 excerpt_separator: <!--more-->
 author: deyaeldeen

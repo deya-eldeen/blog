@@ -2,6 +2,7 @@
 layout: post
 title: "Swift Lexical Structure"
 date: "2021-11-01"
+last_modified_at: "2024-09-08"
 permalink: /swift-lexical-structure
 excerpt_separator: <!--more-->
 author: deyaeldeen

@@ -2,6 +2,7 @@
 layout: post
 title: "Advantages of Swift Over Objective-C"
 date: "2021-10-18"
+last_modified_at: "2024-09-08"
 permalink: /swift-pros-over-obj-c
 excerpt_separator: <!--more-->
 author: deyaeldeen

@@ -2,6 +2,7 @@
 layout: post
 title: "Understanding Swift: Differences Between Any, AnyObject, and AnyHashable"
 date: "2021-11-26"
+last_modified_at: "2024-09-08"
 permalink: /swift-any-anyobject
 excerpt_separator: <!--more-->
 author: deyaeldeen

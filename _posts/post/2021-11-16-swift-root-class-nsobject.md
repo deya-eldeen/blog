@@ -2,6 +2,7 @@
 layout: post
 title: "Swift Root/Base Class & NSObject: A Quick Look"
 date: "2021-11-16"
+last_modified_at: "2024-09-08"
 permalink: /swift-root-class-nsobject
 excerpt_separator: <!--more-->
 author: deyaeldeen
