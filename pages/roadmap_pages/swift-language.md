@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Language"
-permalink: /swift-language
+permalink: /swift-language/
 hide: true
 excluded: true
 ---

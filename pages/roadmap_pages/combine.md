@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Combine"
-permalink: /combine
+permalink: /combine/
 hide: true
 excluded: true
 ---

@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Data Structures and algorithms"
-permalink: /swift-data-structures-and-algorithms
+permalink: /swift-data-structures-and-algorithms/
 hide: true
 excluded: true
 ---

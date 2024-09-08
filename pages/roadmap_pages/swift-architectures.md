@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Architectures"
-permalink: /swift-architectures
+permalink: /swift-architectures/
 hide: true
 excluded: true
 ---

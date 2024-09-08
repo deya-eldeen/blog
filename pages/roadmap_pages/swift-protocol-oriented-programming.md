@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Protocol Oriented Programming"
-permalink: /swift-protocol-oriented-programming
+permalink: /swift-protocol-oriented-programming/
 hide: true
 excluded: true
 ---

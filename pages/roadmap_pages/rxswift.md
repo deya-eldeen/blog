@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "RXSwift"
-permalink: /rxswift
+permalink: /rxswift/
 hide: true
 excluded: true
 ---

@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Design Patterns"
-permalink: /swift-design-patterns
+permalink: /swift-design-patterns/
 hide: true
 excluded: true
 ---

@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Different Topics"
-permalink: /swift-different-topics
+permalink: /swift-different-topics/
 hide: true
 excluded: true
 ---

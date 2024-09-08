@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Object Oriented Programming"
-permalink: /swift-object-oriented-programming
+permalink: /swift-object-oriented-programming/
 hide: true
 excluded: true
 ---

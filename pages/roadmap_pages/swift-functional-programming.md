@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Swift Functional Programming"
-permalink: /swift-functional-programming
+permalink: /swift-functional-programming/
 hide: true
 excluded: true
 ---
