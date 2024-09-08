@@ -4,7 +4,7 @@ title: About Me
 feature-img: "assets/img/pexels/travel.jpeg"
 tags: [About]
 position: 1
-permalink: /about-me
+permalink: /about-me/
 redirect_from:
   - /contact
 ---

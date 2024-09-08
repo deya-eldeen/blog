@@ -3,7 +3,7 @@ layout: post
 title: "This is Why I Don't Use Git GUI Tools"
 date: "2023-01-30"
 last_modified_at: "2024-09-08"
-permalink: /this-is-why-i-dont-use-git-gui-tools
+permalink: /this-is-why-i-dont-use-git-gui-tools/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/git_cli.jpg"

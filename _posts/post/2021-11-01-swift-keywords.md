@@ -3,7 +3,7 @@ layout: post
 title: "Swift Reserved Keywords, with brief explanations."
 date: "2021-11-01"
 last_modified_at: "2024-09-08"
-permalink: /swift-keywords
+permalink: /swift-keywords/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/keywords.jpg"

@@ -3,7 +3,7 @@ layout: post
 title: "Swift's Basic Data Types & Type Inference"
 date: "2021-11-15"
 last_modified_at: "2024-09-08"
-permalink: /swift-built-in-data-types
+permalink: /swift-built-in-data-types/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/inference.jpg"

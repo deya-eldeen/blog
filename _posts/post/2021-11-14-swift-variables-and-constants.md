@@ -3,7 +3,7 @@ layout: post
 title: "Understanding Swift Variables and Constants: A Dive into Mutability"
 date: "2021-11-14"
 last_modified_at: "2024-09-08"
-permalink: /swift-variables-and-constants
+permalink: /swift-variables-and-constants/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/varlet.jpg"

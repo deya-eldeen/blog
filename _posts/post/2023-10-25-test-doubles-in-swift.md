@@ -3,7 +3,7 @@ layout: post
 title: "Test Doubles In Swift"
 date: "2023-10-25"
 last_modified_at: "2024-09-08"
-permalink: /test-doubles-in-swift
+permalink: /test-doubles-in-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/test_doubles.jpg"

@@ -3,7 +3,7 @@ layout: post
 title: "Swift: The Difference Between nil, Nil, NULL, NSNull"
 date: "2021-11-27"
 last_modified_at: "2024-09-08"
-permalink: /swift-the-difference-between-nil-nil-null-nsnull
+permalink: /swift-the-difference-between-nil-nil-null-nsnull/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/nil.jpg"

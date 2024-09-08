@@ -2,7 +2,7 @@
 layout: page
 title: Roadmaps
 # subtitle: From the pexels folder
-permalink: /ios-road-map
+permalink: /ios-road-map/
 gallery_path: "assets/img/pexels"
 # excluded: true
 position: 0

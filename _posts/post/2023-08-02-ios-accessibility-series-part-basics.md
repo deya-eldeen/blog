@@ -3,7 +3,7 @@ layout: post
 title: "iOS Accessibility Basics"
 date: "2023-08-02"
 last_modified_at: "2024-09-08"
-permalink: /ios-accessibility
+permalink: /ios-accessibility/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/a11y.jpg"

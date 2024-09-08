@@ -3,7 +3,7 @@ layout: post
 title: "Why my 0.3 MB image occupies around 10 MB on RAM?"
 date: "2022-02-22"
 last_modified_at: "2024-09-08"
-permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram
+permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/imagesize.jpg"

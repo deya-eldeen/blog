@@ -2,7 +2,7 @@
 layout: page
 title: Books
 # subtitle: From the pexels folder
-permalink: /books
+permalink: /books/
 gallery_path: "assets/img/pexels"
 # excluded: true
 position: 0
