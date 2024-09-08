@@ -6,7 +6,7 @@ tags: [About]
 position: 1
 permalink: /about-me/
 redirect_from:
-  - /contact
+  - /contact/
 ---
 
 {%
