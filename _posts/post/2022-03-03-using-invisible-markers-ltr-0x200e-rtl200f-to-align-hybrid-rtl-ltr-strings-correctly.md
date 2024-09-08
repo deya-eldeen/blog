@@ -45,7 +45,7 @@ It's common to encounter text that combines multiple languages, such as Arabic a
 
 {%
  include centered-image.html 
- image_path="images/rtl_ltr.png"
+ image_path="/images/rtl_ltr.png"
  alt_text="" 
  caption=""
 %}

@@ -55,7 +55,12 @@ This article is structured as a conversation between an **iOS developer (Alex �
 👨🏻‍💻: Does my mobile need to connect to all of these satellites?  
 👩🏼‍💻: No, when stationary, your device only needs to receive signals from at least three satellites. When moving, it needs signals from four satellites for accurate positioning.
 
-{% include centered-image.html image_path="images/ConstellationGPS.gif" alt_text="GPS Satellites" caption="GPS Satellites in Orbit (Source: Wikipedia)" %}
+{% 
+include centered-image.html
+image_path="/images/ConstellationGPS.gif"
+alt_text="GPS Satellites"
+caption="GPS Satellites in Orbit (Source: Wikipedia)" 
+%}
 
 👨🏻‍💻: How does the GPS system identify me and send data back?  
 👩🏼‍💻: The satellites don't identify you. **They continuously emit synchronized pulses everywhere.** Your device simply receives these signals.
@@ -65,12 +70,22 @@ This article is structured as a conversation between an **iOS developer (Alex �
 👨🏻‍💻: How does my mobile determine my latitude, longitude, and altitude?  
 👩🏼‍💻: Your device compares the time it receives signals from each satellite. By calculating the time differences, it can determine your position on Earth. The satellites have highly accurate atomic clocks, which make these calculations possible.
 
-{% include centered-image.html image_path="images/GPS-satellite-position-calculations-3.png" alt_text="GPS Position Calculation" caption="Calculating Position Using GPS Satellites" %}
+{% 
+include centered-image.html
+image_path="/images/GPS-satellite-position-calculations-3.png"
+alt_text="GPS Position Calculation"
+caption="Calculating Position Using GPS Satellites"
+%}
 
 👨🏻‍💻: If the service is free and I don't have a subscription for GPS, how is it funded?  
 👩🏼‍💻: GPS is one of several **Global Navigation Satellite Systems (GNSS)**. Others include GLONASS, BeiDou, and Galileo. These systems are funded by governments and sometimes private entities. Commercial GPS receivers might have restrictions, like not functioning at high speeds.
 
-{% include centered-image.html image_path="images/Beidou_Navigation_Satellite_System_2012.png" alt_text="BeiDou Navigation System" caption="BeiDou GNSS, which doesn't have full Earth coverage" %}
+{% 
+include centered-image.html
+image_path="/images/Beidou_Navigation_Satellite_System_2012.png"
+alt_text="BeiDou Navigation System" 
+caption="BeiDou GNSS, which doesn't have full Earth coverage" 
+%}
 
 ## Accuracy and Limitations of GPS
 

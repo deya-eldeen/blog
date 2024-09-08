@@ -54,7 +54,7 @@ The following image takes around 131 KB on disk and has an `sRGB` color profile,
 
 {%
  include centered-image.html 
- image_path="images/roman.jpg"
+ image_path="/images/roman.jpg"
  alt_text="" 
  caption=""
 %}

@@ -98,7 +98,12 @@ caption="JomJom!"
 🥸: And what about sensitive static strings?  
 💀: Never store sensitive strings in plist or other asset files. They are easily accessible and can expose your app to risks.
 
-{% include centered-image.html image_path="images/facebookstring-1024x695.jpeg" alt_text="Strings Tool" caption="This is usage of the `strings` tool, on macos, scanning some APK." %}
+{% 
+include centered-image.html
+image_path="/images/facebookstring-1024x695.jpeg"
+alt_text="Strings Tool"
+caption="This is usage of the `strings` tool, on macos, scanning some APK." 
+%}
 
 ## The Risks of Third-Party Libraries
 

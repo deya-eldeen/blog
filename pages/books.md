@@ -19,7 +19,7 @@ tags: [Books]
 
 {%
  include centered-image.html 
- image_path="images/books/byte_magic_in_swift.png"
+ image_path="/images/books/byte_magic_in_swift.png"
  alt_text="Swift" 
  caption=""
 %}

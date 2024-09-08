@@ -11,7 +11,7 @@ redirect_from:
 
 {%
  include centered-image.html 
- image_path="images/deya_256.png"
+ image_path="/images/deya_256.png"
  alt_text="Swift" 
  caption=""
 %}

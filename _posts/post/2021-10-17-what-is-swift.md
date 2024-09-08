@@ -44,7 +44,7 @@ Chris Lattner, the principal designer of Swift, was a key figure at Apple Inc., 
 
 {%
  include centered-image.html 
- image_path="images/chris.webp"
+ image_path="/images/chris.webp"
  alt_text="Chris Lattner" 
  caption="Chris Lattner (Twitter @clattner\_llvm)"
 %}

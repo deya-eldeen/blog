@@ -56,7 +56,7 @@ Benchmarks have consistently shown that Swift performs faster than Objective-C, 
 
 {%
  include centered-image.html 
- image_path="images/speed.jpeg"
+ image_path="/images/speed.jpeg"
  alt_text="" 
  caption="An example of a benchmark conducted by Apple."
 %}

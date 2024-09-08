@@ -40,7 +40,7 @@ Tiling images is a technique used to create repeating patterns or backgrounds in
 
 {%
  include centered-image.html 
- image_path="images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png"
+ image_path="/images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png"
  alt_text="" 
  caption=""
 %}
@@ -72,7 +72,7 @@ In most cases, you’ll want the Left, Right, Top, and Bottom insets to be zero,
 
 {%
  include centered-image.html 
- image_path="images/slicing.png"
+ image_path="/images/slicing.png"
  alt_text="Slicing Interface" 
  caption="Slicing Interface"
 %}
@@ -83,7 +83,7 @@ To ensure your image tiles correctly, set the image view’s content mode to `Fi
 
 {%
  include centered-image.html 
- image_path="images/image-993x1024.png"
+ image_path="/images/image-993x1024.png"
  alt_text="Tiling Configuration" 
  caption="Tiling Configuration"
 %}
@@ -98,7 +98,12 @@ To ensure your image tiles correctly, set the image view’s content mode to `Fi
 
 Tiling offers endless possibilities for creativity in your app design. By experimenting with different images and configurations, you can create visually stunning interfaces. Below is an example of a simple pattern tiled across a view:
 
-{% include centered-image.html image_path="images/image-2-1024x1011.png" alt_text="Tiled Image Example" caption="Example of Tiled Images in Interface Builder" %}
+{% 
+include centered-image.html
+image_path="/images/image-2-1024x1011.png"
+alt_text="Tiled Image Example"
+caption="Example of Tiled Images in Interface Builder" 
+%}
 
 ## Conclusion
 

@@ -35,7 +35,7 @@ After reading the very popular book, Grokking Algorithms, I decided to blog abou
 
 {%
  include centered-image.html 
- image_path="images/grokking.jpeg"
+ image_path="/images/grokking.jpeg"
  alt_text="" 
  caption="Grokking Algorithms book"
 %}
@@ -117,7 +117,7 @@ As you can see, solution 4 is the most efficient in this case, with a time compl
 
 {%
  include centered-image.html 
- image_path="images/prob_001_graph-1024x687.png"
+ image_path="/images/prob_001_graph-1024x687.png"
  alt_text="" 
  caption=""
 %}

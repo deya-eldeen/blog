@@ -452,7 +452,7 @@ It's best to use a real project to test our the code, you can download the sourc
 
 {%
  include centered-image.html 
- image_path="images/auth_screen.png"
+ image_path="/images/auth_screen.png"
  alt_text="" 
  caption="Simple SwiftUI Screen"
 %}

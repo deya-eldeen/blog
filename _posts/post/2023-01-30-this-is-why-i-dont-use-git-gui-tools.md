@@ -32,7 +32,7 @@ The features available in Xcode may suffice for personal or small projects, but 
 
 {%
 include centered-image.html
-image_path="images/image-3.png"
+image_path="/images/image-3.png"
 alt_text=""
 caption="Xcode's Source Control"
 %}
