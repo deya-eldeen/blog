@@ -2,14 +2,13 @@
 layout: categories
 title: Categories
 permalink: /category/
-# hide: true
+hide: true
 excluded: true
 showCounts: true
 redirect_from:
-  - /category/swift
-  - /category/ios
-  - /category/xcode
-  - /category/uncategorized
-
-  
+  - /category/swift/
+  - /category/ios/
+  - /category/xcode/
+  - /category/uncategorized/
+  - /category/interface-builder/
 ---
