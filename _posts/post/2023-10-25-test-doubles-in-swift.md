@@ -18,7 +18,7 @@ tags:
   - "Programming"
   - "Swift"
 redirect_from:
-  - /test-doubles-in-swift-part-1
+  - /test-doubles-in-swift-part-1/
 ---
 The term **test doubles** draws inspiration from **stunt doubles** in the movie industry, where a stunt double steps in to perform dangerous or complex tasks, allowing the actor to focus on their role. Similarly, in software testing, test doubles step in to replace real components, making testing simpler, faster, and more reliable.
 

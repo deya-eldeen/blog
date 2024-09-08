@@ -18,7 +18,7 @@ tags:
   - "Programming"
   - "Swift"
 redirect_from:
-  - /ios-accessibility-series-part-1
+  - /ios-accessibility-series-part-1/
 ---
 
 ## Introduction to iOS Accessibility

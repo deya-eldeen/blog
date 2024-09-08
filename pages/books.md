@@ -6,7 +6,9 @@ permalink: /books/
 gallery_path: "assets/img/pexels"
 # excluded: true
 position: 0
-tags: [Books]
+tags: 
+- Books
+- iOS
 ---
 
 # Books
@@ -28,5 +30,18 @@ Pages: 170+
 Examples: 95+
 
 [Download Digital Copy](https://voidbooks.io/l/byte_magic_in_swift)
+
+## iOS Security By Defensive Techniques, Vol 1
+
+**Authors:** Deya Eldeen Elkhawaldeh & Dave Poirer
+
+{%
+ include centered-image.html 
+ image_path="/images/books/ios_security_defensive_vol1.png"
+ alt_text="Swift" 
+ caption=""
+%}
+
+**Download Digital Copy**: SOON
 
 <!-- {% include gallery.html gallery_path=page.gallery_path %} -->
