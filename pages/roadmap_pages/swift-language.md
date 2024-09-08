@@ -16,7 +16,7 @@ excluded: true
 – [Never Use Floating-Point / Double Data types for Monetary Calculations!]({{ site.url }}/never-use-floating-point-double-data-types-for-monetary-calculations)<br>
 – [Any / AnyObject / AnyHashable]({{ site.url }}/swift-any-anyobject)<br>
 – [Void / Void()]({{ site.url }}/swift-void-and)<br>
-– Optionals<br>
+– [Optionals]({{ site.url }}/swift-optionals)<br>
 – [nil, Null, NSNull]({{ site.url }}/swift-the-difference-between-nil-nil-null-nsnull)<br>
 – Basic Operators<br>
 – [Bitwise Operators]({{ site.url }}/swift-bitwise-operators-with-real-examples)<br>
@@ -49,6 +49,7 @@ excluded: true
 – Access Control<br>
 – Advanced Operators<br>
 – Memory Management<br>
+
 – Concurrency<br>
 – Dynamic Dispatch / Static Dispatch / Virtual Dispatch<br>
 – Method Swizzling<br>
