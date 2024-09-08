@@ -6,23 +6,23 @@ hide: true
 excluded: true
 ---
 
-– [What is swift?]({{ site.baseurl }}/what-is-swift)<br>
-– [Swift Pros over Obj-C]({{ site.baseurl }}/swift-pros-over-obj-c)<br>
-– [Swift Lexical Structure]({{ site.baseurl }}/swift-lexical-structure)<br>
-– [Swift Reserved Keywords]({{ site.baseurl }}/swift-keywords)<br>
-– [Swift Style Guides]({{ site.baseurl }}/swift-style-guides)<br>
-– [Variables and Constants]({{ site.baseurl }}/swift-variables-and-constants)<br>
-– [Swift Basic Data Types & Type Inference]({{ site.baseurl }}/swift-built-in-data-types)<br>
-– [Never Use Floating-Point / Double Data types for Monetary Calculations!]({{ site.baseurl }}/never-use-floating-point-double-data-types-for-monetary-calculations)<br>
-– [Any / AnyObject / AnyHashable]({{ site.baseurl }}/swift-any-anyobject)<br>
-– [Void / Void()]({{ site.baseurl }}/swift-void-and)<br>
+– [What is swift?]({{ site.url }}/what-is-swift)<br>
+– [Swift Pros over Obj-C]({{ site.url }}/swift-pros-over-obj-c)<br>
+– [Swift Lexical Structure]({{ site.url }}/swift-lexical-structure)<br>
+– [Swift Reserved Keywords]({{ site.url }}/swift-keywords)<br>
+– [Swift Style Guides]({{ site.url }}/swift-style-guides)<br>
+– [Variables and Constants]({{ site.url }}/swift-variables-and-constants)<br>
+– [Swift Basic Data Types & Type Inference]({{ site.url }}/swift-built-in-data-types)<br>
+– [Never Use Floating-Point / Double Data types for Monetary Calculations!]({{ site.url }}/never-use-floating-point-double-data-types-for-monetary-calculations)<br>
+– [Any / AnyObject / AnyHashable]({{ site.url }}/swift-any-anyobject)<br>
+– [Void / Void()]({{ site.url }}/swift-void-and)<br>
 – Optionals<br>
-– [nil, Null, NSNull]({{ site.baseurl }}/swift-the-difference-between-nil-nil-null-nsnull)<br>
+– [nil, Null, NSNull]({{ site.url }}/swift-the-difference-between-nil-nil-null-nsnull)<br>
 – Basic Operators<br>
-– [Bitwise Operators]({{ site.baseurl }}/swift-bitwise-operators-with-real-examples)<br>
+– [Bitwise Operators]({{ site.url }}/swift-bitwise-operators-with-real-examples)<br>
 – Strings and Characters<br>
 – Collection Types<br>
-– [Dealing With Sets]({{ site.baseurl }}/swift-set-data-structure-with-practical-example-pizza-cooking)<br>
+– [Dealing With Sets]({{ site.url }}/swift-set-data-structure-with-practical-example-pizza-cooking)<br>
 – Control Flow<br>
 – Functions<br>
 – Closures (escaping closures) & (capturing)<br>
@@ -32,7 +32,7 @@ excluded: true
 – Methods<br>
 – Subscripts<br>
 – Inheritance<br>
-– [Swift Root Class & NSObject]({{ site.baseurl }}/swift-root-class-nsobject)<br>
+– [Swift Root Class & NSObject]({{ site.url }}/swift-root-class-nsobject)<br>
 – Initialization<br>
 – De-initialization<br>
 – Optional Chaining<br>

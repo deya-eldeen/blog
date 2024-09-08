@@ -6,7 +6,7 @@ hide: true
 excluded: true
 ---
 
-[Algorithms & Data structures]({{ site.baseurl }}/problem_solving_swift_1_4)<br>
+[Algorithms & Data structures]({{ site.url }}/problem_solving_swift_1_4)<br>
 
 – Intro to data structures and algorithms<br>
 – Array, Dictionary, Set,<br>
