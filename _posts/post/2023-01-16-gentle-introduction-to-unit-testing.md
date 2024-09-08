@@ -25,7 +25,7 @@ One Monday morning, a new developer, nicknamed Penguin 🐧, started their first
 
 {%
  include centered-image.html 
- image_path="images/covers/unit_testing_intro_full.jpg"
+ image_path="../images/covers/unit_testing_intro_full.jpg"
  alt_text="" 
  caption=""
 %}

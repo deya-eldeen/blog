@@ -27,7 +27,7 @@ This post explores the intricacies of `Void` in Swift, how it relates to the emp
 
 {%
  include centered-image.html 
- image_path="images/covers/void_full.jpg"
+ image_path="../images/covers/void_full.jpg"
  alt_text="" 
  caption=""
 %}

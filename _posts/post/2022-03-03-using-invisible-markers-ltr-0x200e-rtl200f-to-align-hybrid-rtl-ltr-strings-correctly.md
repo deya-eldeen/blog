@@ -29,7 +29,7 @@ So you have some text that contains both Arabic and English languages at the sam
 
 {%
  include centered-image.html 
- image_path="images/covers/arrows_full.jpg"
+ image_path="../images/covers/arrows_full.jpg"
  alt_text="" 
  caption=""
 %}

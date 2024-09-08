@@ -25,7 +25,7 @@ In SwiftUI, views are fundamentally designed as value types rather than traditio
 
 {%
  include centered-image.html 
- image_path="images/covers/swiftui_inside_full.jpg"
+ image_path="../images/covers/swiftui_inside_full.jpg"
  alt_text="" 
  caption=""
 %}

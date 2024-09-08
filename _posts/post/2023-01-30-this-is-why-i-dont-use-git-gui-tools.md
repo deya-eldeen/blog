@@ -23,7 +23,7 @@ Almost anyone who uses Xcode can quickly notice that it lacks many essential Git
 <!--more-->
 {%
 include centered-image.html
-image_path="images/covers/git_cli_full.jpg"
+image_path="../images/covers/git_cli_full.jpg"
 alt_text=""
 caption=""
 %}

@@ -28,7 +28,7 @@ After reading the very popular book, Grokking Algorithms, I decided to blog abou
 <!--more-->
 {%
  include centered-image.html 
- image_path="images/covers/algo_full.jpg"
+ image_path="../images/covers/algo_full.jpg"
  alt_text="" 
  caption=""
 %}

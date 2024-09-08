@@ -29,7 +29,7 @@ iOS accessibility, from a developer's perspective, refers to the set of tools, t
 
 {%
  include centered-image.html 
- image_path="images/covers/a11y_full.jpg"
+ image_path="../images/covers/a11y_full.jpg"
  alt_text="" 
  caption=""
 %}

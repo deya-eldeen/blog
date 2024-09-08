@@ -26,14 +26,14 @@ The term **test doubles** draws inspiration from **stunt doubles** in the movie 
 
 {%
  include centered-image.html 
- image_path="images/covers/test_doubles_full.jpg"
+ image_path="../images/covers/test_doubles_full.jpg"
  alt_text="" 
  caption=""
 %}
 
 Testing is an essential part of software development, ensuring the correctness and reliability of our code. However, when we test systems with many dependencies—like databases, web services, or external APIs—writing reliable tests can become challenging. This is where test doubles come in handy.
 
-It's important to understand the basics of unit testing, see this blog post [Gentle Introduction to Unit Testing]({{ site.baseurl }}/gentle-introduction-to-unit-testing), especially since certain architectural patterns, like MVC can introduce complexities that make them less testable. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
+It's important to understand the basics of unit testing, see this blog post [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/), especially since certain architectural patterns, like MVC can introduce complexities that make them less testable. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
 
 In this post, we’ll explore the different types of test doubles, their purpose, and practical examples. By the end, you’ll be able to confidently use them to create more effective, reliable tests.
 

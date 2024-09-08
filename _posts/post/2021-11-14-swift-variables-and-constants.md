@@ -28,7 +28,7 @@ This blog post explores the concepts of mutability in Swift, comparing them to O
 
 {%
  include centered-image.html  
- image_path="images/covers/varlet_full.jpg"  
+ image_path="../images/covers/varlet_full.jpg"  
  alt_text="Understanding Swift Variables and Constants"  
  caption="The Power of Mutability in Swift"  
 %}

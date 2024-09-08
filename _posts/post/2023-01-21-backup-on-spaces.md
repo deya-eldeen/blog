@@ -24,7 +24,7 @@ This is not directly related to swift or iOS, but thought it's worth sharing, si
 
 {%
  include centered-image.html 
- image_path="images/covers/do_space_full.jpg"
+ image_path="../images/covers/do_space_full.jpg"
  alt_text="" 
  caption=""
 %}

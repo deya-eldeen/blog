@@ -29,7 +29,7 @@ Tiling images directly within Interface Builder, without writing code, can save 
 
 {%
  include centered-image.html 
- image_path="images/covers/tiling_full.jpg"
+ image_path="../images/covers/tiling_full.jpg"
  alt_text="Tiling Images in Interface Builder" 
  caption=""
 %}

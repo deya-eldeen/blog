@@ -26,7 +26,7 @@ A token consists of an identifier, keyword, punctuation, literal, or operator.
 
 {%
  include centered-image.html 
- image_path="images/covers/lexical_full.jpg"
+ image_path="../images/covers/lexical_full.jpg"
  alt_text="" 
  caption=""
 %}

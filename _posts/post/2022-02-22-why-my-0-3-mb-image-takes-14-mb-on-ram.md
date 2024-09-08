@@ -31,7 +31,7 @@ you might have an image file that is only 0.3 MB on disk, yet it occupies around
 
 {%
  include centered-image.html 
- image_path="images/covers/imagesize_full.jpg"
+ image_path="../images/covers/imagesize_full.jpg"
  alt_text="" 
  caption=""
 %}

@@ -27,7 +27,12 @@ Mobile software developers, whether working on iOS or Android, often use GPS fun
 
 <!--more-->
 
-{% include centered-image.html image_path="images/covers/gps_full.jpg" alt_text="" caption="" %}
+{% 
+include centered-image.html 
+image_path="../images/covers/gps_full.jpg"
+alt_text="" 
+caption="" 
+%}
 
 This article is structured as a conversation between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻)**. Through their dialogue, we'll explore the fundamentals of GPS technology.
 

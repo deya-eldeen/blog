@@ -27,7 +27,7 @@ Swift is Apple’s modern, open-source programming language, introduced at Apple
 
 {%
  include centered-image.html 
- image_path="images/covers/swift_full.jpg"
+ image_path="../images/covers/swift_full.jpg"
  alt_text="Swift" 
  caption=""
 %}

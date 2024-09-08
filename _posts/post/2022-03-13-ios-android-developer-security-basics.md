@@ -27,7 +27,12 @@ Mobile app security is a critical concern for both iOS and Android developers. T
 
 <!--more-->
 
-{% include centered-image.html image_path="images/covers/security_basics_full.jpg" alt_text="Mobile Security Basics" caption="JomJom!" %}
+{% 
+include centered-image.html
+image_path="../images/covers/security_basics_full.jpg"
+alt_text="Mobile Security Basics"
+caption="JomJom!" 
+%}
 
 ## The Importance of Security in Mobile Development
 

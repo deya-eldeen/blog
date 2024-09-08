@@ -27,7 +27,7 @@ As a programmer, you will often need to represent the concept of "nothingness." 
 
 {%
  include centered-image.html 
- image_path="images/covers/nil_full.jpg"
+ image_path="../images/covers/nil_full.jpg"
  alt_text="" 
  caption=""
 %}

@@ -33,7 +33,7 @@ Moreover, Swift's open-source nature has fostered a vibrant and growing communit
 
 {%
  include centered-image.html 
- image_path="images/covers/swift_objc_full.jpg"
+ image_path="../images/covers/swift_objc_full.jpg"
  alt_text="" 
  caption=""
 %}

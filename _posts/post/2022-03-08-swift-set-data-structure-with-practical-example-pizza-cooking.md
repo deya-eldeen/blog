@@ -28,7 +28,7 @@ Swift provides three main collection types: **Arrays**, **Sets**, and **Dictiona
 
 {% 
 include centered-image.html
-image_path="images/covers/venn_full.jpg"
+image_path="../images/covers/venn_full.jpg"
 alt_text=""
 caption="John Venn" 
 %}

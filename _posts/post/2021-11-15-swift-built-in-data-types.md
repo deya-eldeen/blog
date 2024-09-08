@@ -24,7 +24,7 @@ Swift offers a variety of built-in data types that cater to different kinds of d
 <!--more-->
 {%
  include centered-image.html 
- image_path="images/covers/inference_full.jpg"
+ image_path="../images/covers/inference_full.jpg"
  alt_text="" 
  caption=""
 %}

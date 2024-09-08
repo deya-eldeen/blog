@@ -28,7 +28,7 @@ In this post, we'll dive deep into the role of the root class in Swift and its r
 
 {%
  include centered-image.html 
- image_path="images/covers/nsobject_full.jpg"
+ image_path="../images/covers/nsobject_full.jpg"
  alt_text="NSObject - The Root Class in Objective-C"
  caption=""
 %}

@@ -27,7 +27,7 @@ When working with Swift, one of the key decisions you’ll often face is how to 
 
 {%
  include centered-image.html 
- image_path="images/covers/any_full.jpg"
+ image_path="../images/covers/any_full.jpg"
  alt_text="A conceptual image representing Swift type systems." 
  caption="Exploring Swift's Flexible Type System"
 %}

@@ -27,7 +27,7 @@ tags:
 
 {%
  include centered-image.html 
- image_path="images/covers/bitwise_full.jpg"
+ image_path="../images/covers/bitwise_full.jpg"
  alt_text="Tiling Images in Interface Builder" 
  caption=""
 %}

@@ -27,7 +27,7 @@ What’s the difference? It often boils down to one crucial element: the presenc
 
 {%
  include centered-image.html  
- image_path="images/covers/styleguides_full.jpg"  
+ image_path="../images/covers/styleguides_full.jpg"  
  alt_text="A comprehensive look at Swift style guides"  
  caption="Crafting Consistency with Swift Style Guides"  
 %}
