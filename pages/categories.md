@@ -11,4 +11,5 @@ redirect_from:
   - /category/xcode/
   - /category/uncategorized/
   - /category/interface-builder/
+  - /category/programming/
 ---

@@ -10,5 +10,6 @@ redirect_from:
   - /tag/xcode/
   - /tag/uncategorized/
   - /tag/interface-builder/
+  - /tag/programming/
 ---
 
