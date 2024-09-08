@@ -11,19 +11,19 @@ tags: [RoadMap]
 
 ## Swift Roadmap:
 
-[Swift Language]({{ site.baseurl }}/swift-language)<br>
-[Swift Object Oriented Programming]({{ site.baseurl }}/swift-object-oriented-programming)<br>
+[Swift Language]({{ site.url }}/swift-language/)<br>
+[Swift Object Oriented Programming]({{ site.url }}/swift-object-oriented-programming/)<br>
 Swift Networking<br>
 Swift Concurrency<br>
-[Swift Protocol Oriented Programming]({{ site.baseurl }}/swift-protocol-oriented-programming)<br>
-[Swift Design Patterns]({{ site.baseurl }}/swift-design-patterns)<br>
-[Swift Data Structures and Algorithms]({{ site.baseurl }}/swift-data-structures-and-algorithms)<br>
-[Swift Functional Programming]({{ site.baseurl }}/swift-functional-programming)<br>
-[Swift Architectures]({{ site.baseurl }}/swift-architectures)<br>
-[RXSwift]({{ site.baseurl }}/rxswift)<br>
-[Combine]({{ site.baseurl }}/combine)<br>
+[Swift Protocol Oriented Programming]({{ site.url }}/swift-protocol-oriented-programming/)<br>
+[Swift Design Patterns]({{ site.url }}/swift-design-patterns/)<br>
+[Swift Data Structures and Algorithms]({{ site.url }}/swift-data-structures-and-algorithms/)<br>
+[Swift Functional Programming]({{ site.url }}/swift-functional-programming/)<br>
+[Swift Architectures]({{ site.url }}/swift-architectures/)<br>
+[RXSwift]({{ site.url }}/rxswift/)<br>
+[Combine]({{ site.url }}/combine/)<br>
 Unit Testing<br>
-[Swift Different Topics]({{ site.baseurl }}/swift-different-topics)<br>
+[Swift Different Topics]({{ site.url }}/swift-different-topics/)<br>
 
 ## iOS Road Map:
 
