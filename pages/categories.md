@@ -1,8 +1,15 @@
 ---
 layout: categories
 title: Categories
-permalink: /categories/
-hide: true
+permalink: /category/
+# hide: true
 excluded: true
-showCounts: false
+showCounts: true
+redirect_from:
+  - /category/swift
+  - /category/ios
+  - /category/xcode
+  - /category/uncategorized
+
+  
 ---

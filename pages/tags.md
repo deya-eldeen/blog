@@ -1,7 +1,7 @@
 ---
 layout: tags
 title: Tags
-permalink: /tags/
+permalink: /tag/
 icon: "fa-tags"
 position: 5
 ---
