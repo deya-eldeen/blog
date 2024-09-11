@@ -3,5 +3,5 @@ rm -rf .jekyll-cache
 rm -rf docs
 echo "swiftbydeya.com" > docs/CNAME
 
-echo "-------- building"
+echo "-------- building "
 bundle exec jekyll build --verbose
