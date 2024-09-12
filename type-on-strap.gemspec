@@ -30,5 +30,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "jekyll-paginate", "~> 1.1.0"
   spec.add_runtime_dependency "jekyll-seo-tag", ">= 2.7.1", "<= 2.8"
   spec.add_dependency "jekyll-redirect-from"
+  spec.add_dependency "jekyll-sitemap"
 
 end
