@@ -34,7 +34,7 @@ The features available in Xcode may suffice for personal or small projects, but 
 
 {%
 include centered-image.html
-image_path="/images/image-3.webp"
+image_path="/images/posts/image-3.webp"
 alt_text=""
 caption="Xcode's Source Control"
 %}

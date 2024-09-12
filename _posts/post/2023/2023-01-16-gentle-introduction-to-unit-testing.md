@@ -90,7 +90,7 @@ The F.I.R.S.T criteria for unit tests is a set of principles designed to promote
 
 {%
  include centered-image.html 
- image_path="/images/test_doubles.webp"
+ image_path="/images/posts/test_doubles.webp"
  alt_text="" 
  caption="(test doubles) term is derived from (stunt doubles)"
 %}

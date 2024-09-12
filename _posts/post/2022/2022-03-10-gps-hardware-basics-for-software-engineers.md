@@ -74,7 +74,7 @@ caption="GPS Satellites in Orbit (Source: Wikipedia)"
 
 {% 
 include centered-image.html
-image_path="/images/GPS-satellite-position-calculations-3.webp"
+image_path="/images/posts/GPS-satellite-position-calculations-3.webp"
 alt_text="GPS Position Calculation"
 caption="Calculating Position Using GPS Satellites"
 %}
@@ -84,7 +84,7 @@ caption="Calculating Position Using GPS Satellites"
 
 {% 
 include centered-image.html
-image_path="/images/Beidou_Navigation_Satellite_System_2012.webp"
+image_path="/images/posts/Beidou_Navigation_Satellite_System_2012.webp"
 alt_text="BeiDou Navigation System" 
 caption="BeiDou GNSS, which doesn't have full Earth coverage" 
 %}
