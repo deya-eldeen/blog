@@ -30,6 +30,8 @@ As a programmer, you will often need to represent the concept of "nothingness." 
  image_path="../images/covers/nil_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Understanding the Keywords

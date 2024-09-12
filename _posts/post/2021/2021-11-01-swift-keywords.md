@@ -26,6 +26,8 @@ A reserved word is **a term designated by the programming language that cannot b
  image_path="../images/covers/keywords_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 As detailed in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-structure/), these reserved words are integral to the language's syntax and functionality. For convenience, all lists of reserved words provided below are arranged alphabetically, facilitating quick and easy reference.

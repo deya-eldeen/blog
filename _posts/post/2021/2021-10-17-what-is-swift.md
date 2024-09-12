@@ -30,6 +30,8 @@ Swift is Apple’s modern, open-source programming language, introduced at Apple
  image_path="../images/covers/swift_full.webp"
  alt_text="Swift" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 It primarily works with Apple’s `Cocoa` and `Cocoa Touch` frameworks. Since its introduction, Swift has rapidly become one of the fastest-growing programming languages. As an open-source language licensed under the [Apache 2.0 license](https://swift.org/LICENSE.txt), Swift has extended beyond Apple's ecosystem, finding use in other areas such as backend server development with frameworks like `Vapor`.

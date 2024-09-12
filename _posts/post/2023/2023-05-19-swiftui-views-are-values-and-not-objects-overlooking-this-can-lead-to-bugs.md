@@ -28,6 +28,8 @@ In SwiftUI, views are fundamentally designed as value types rather than traditio
  image_path="../images/covers/swiftui_inside_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## The Nature of Value Types in SwiftUI

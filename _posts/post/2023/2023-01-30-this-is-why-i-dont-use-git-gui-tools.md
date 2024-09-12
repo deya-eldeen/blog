@@ -26,6 +26,8 @@ include centered-image.html
 image_path="../images/covers/git_cli_full.webp"
 alt_text=""
 caption=""
+ width="960" 
+ height="1568"
 %}
 
 The features available in Xcode may suffice for personal or small projects, but when working within a larger team, relying solely on the IDE can lead to significant challenges in managing source control effectively.

@@ -31,6 +31,8 @@ After reading the very popular book, Grokking Algorithms, I decided to blog abou
  image_path="../images/covers/algo_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 {%

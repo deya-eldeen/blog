@@ -29,6 +29,8 @@ The term **test doubles** draws inspiration from **stunt doubles** in the movie 
  image_path="../images/covers/test_doubles_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 Testing is an essential part of software development, ensuring the correctness and reliability of our code. However, when we test systems with many dependencies—like databases, web services, or external APIs—writing reliable tests can become challenging. This is where test doubles come in handy.

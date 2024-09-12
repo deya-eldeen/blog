@@ -28,6 +28,8 @@ As Apple's Silicon processors have gained significant attention, many users have
  image_path="../images/covers/network_fix_full.webp"
  alt_text="Network Performance Issues" 
  caption="Network Performance Issues on M1/M2 MacBooks"
+ width="960" 
+ height="1568"
 %}
 
 ## Overview of Network Issues

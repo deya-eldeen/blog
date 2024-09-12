@@ -31,6 +31,8 @@ This blog post explores the concepts of mutability in Swift, comparing them to O
  image_path="../images/covers/varlet_full.webp"  
  alt_text="Understanding Swift Variables and Constants"  
  caption="The Power of Mutability in Swift"  
+ width="960" 
+ height="1568"
 %}
 
 ## Swift Variables and Constants: The Basics

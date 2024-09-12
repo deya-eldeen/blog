@@ -32,6 +32,8 @@ Tiling images directly within Interface Builder, without writing code, can save 
  image_path="../images/covers/tiling_full.webp"
  alt_text="Tiling Images in Interface Builder" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Why Tile Images?

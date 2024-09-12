@@ -32,6 +32,8 @@ iOS accessibility, from a developer's perspective, refers to the set of tools, t
  image_path="../images/covers/a11y_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Why Accessibility Matters

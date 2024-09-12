@@ -27,6 +27,8 @@ Swift offers a variety of built-in data types that cater to different kinds of d
  image_path="../images/covers/inference_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Swift's Basic Data Types

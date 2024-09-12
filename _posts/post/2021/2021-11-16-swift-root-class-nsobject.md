@@ -31,6 +31,8 @@ In this post, we'll dive deep into the role of the root class in Swift and its r
  image_path="../images/covers/nsobject_full.webp"
  alt_text="NSObject - The Root Class in Objective-C"
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Understanding the Concept of a Root Class

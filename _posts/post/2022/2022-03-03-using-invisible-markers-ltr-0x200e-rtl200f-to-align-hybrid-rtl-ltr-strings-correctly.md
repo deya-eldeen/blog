@@ -32,6 +32,8 @@ So you have some text that contains both Arabic and English languages at the sam
  image_path="../images/covers/arrows_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Working With Multiple Languages

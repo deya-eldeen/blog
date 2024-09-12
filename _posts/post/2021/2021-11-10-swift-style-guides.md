@@ -30,6 +30,8 @@ What’s the difference? It often boils down to one crucial element: the presenc
  image_path="../images/covers/styleguides_full.webp"  
  alt_text="A comprehensive look at Swift style guides"  
  caption="Crafting Consistency with Swift Style Guides"  
+ width="960" 
+ height="1568"
 %}
 
 ## The Importance of Code Style Guides

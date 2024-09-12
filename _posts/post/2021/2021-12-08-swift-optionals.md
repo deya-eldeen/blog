@@ -28,6 +28,8 @@ In Swift, **optionals** play a crucial role in managing situations where a value
  image_path="../images/covers/optionals_full.webp"
  alt_text="Swift Optionals" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## What are Optionals?

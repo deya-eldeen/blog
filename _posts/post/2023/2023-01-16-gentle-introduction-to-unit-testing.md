@@ -28,6 +28,8 @@ One Monday morning, a new developer, nicknamed Penguin 🐧, started their first
  image_path="../images/covers/unit_testing_intro_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 **Penguin 🐧:** I've noticed that we have test cases written for almost all features in our mobile app. Why would we write unit tests if we have a QA team that does testing and quality assurance?

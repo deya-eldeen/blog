@@ -30,6 +30,8 @@ This post explores the intricacies of `Void` in Swift, how it relates to the emp
  image_path="../images/covers/void_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## What is Void in Swift?

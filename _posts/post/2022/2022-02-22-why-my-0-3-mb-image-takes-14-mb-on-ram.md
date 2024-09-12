@@ -57,6 +57,8 @@ The following image takes around 131 KB on disk and has an `sRGB` color profile,
  image_path="/images/roman.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 The size of the image on the RAM would be:

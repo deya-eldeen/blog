@@ -27,10 +27,12 @@ Swift provides three main collection types: **Arrays**, **Sets**, and **Dictiona
 <!--more-->
 
 {% 
-include centered-image.html
-image_path="../images/covers/venn_full.webp"
-alt_text=""
-caption="John Venn" 
+  include centered-image.html
+ image_path="../images/covers/venn_full.webp"
+ alt_text=""
+ caption="John Venn" 
+ width="960" 
+ height="1568"
 %}
 
 ## What is a Set?

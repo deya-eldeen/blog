@@ -29,6 +29,8 @@ A token consists of an identifier, keyword, punctuation, literal, or operator.
  image_path="../images/covers/lexical_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Swift Lexical Structure

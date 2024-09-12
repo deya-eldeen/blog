@@ -24,10 +24,12 @@ Handling money in software is a task that requires precision, especially when de
 <!--more-->
 
 {% 
-include centered-image.html 
-image_path="../images/covers/money_full.webp" 
-alt_text="Money and Code" 
-caption="Avoid Floating-Point for Monetary Values" 
+ include centered-image.html 
+ image_path="../images/covers/money_full.webp" 
+ alt_text="Money and Code" 
+ caption="Avoid Floating-Point for Monetary Values" 
+ width="960" 
+ height="1568"
 %}
 
 ## The Problem with Floating-Point Arithmetic

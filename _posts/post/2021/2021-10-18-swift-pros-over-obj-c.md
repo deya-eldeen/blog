@@ -30,6 +30,8 @@ Objective-C, developed in the early 1980s, has long been the backbone of iOS and
  image_path="../images/covers/swift_objc_full.webp"
  alt_text="" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 

@@ -30,6 +30,8 @@ tags:
  image_path="../images/covers/bitwise_full.webp"
  alt_text="Tiling Images in Interface Builder" 
  caption=""
+ width="960" 
+ height="1568"
 %}
 
 ## Overview of Bitwise Operators
