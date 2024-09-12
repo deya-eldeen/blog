@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /ios-accessibility/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/a11y.jpg"
+thumbnail: "images/covers/a11y.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -29,7 +29,7 @@ iOS accessibility, from a developer's perspective, refers to the set of tools, t
 
 {%
  include centered-image.html 
- image_path="../images/covers/a11y_full.jpg"
+ image_path="../images/covers/a11y_full.webp"
  alt_text="" 
  caption=""
 %}

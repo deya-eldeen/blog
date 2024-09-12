@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-style-guides/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/styleguides.jpg"
+thumbnail: "images/covers/styleguides.webp"
 categories:  
   - "Development"
   - "Programming"
@@ -27,7 +27,7 @@ What’s the difference? It often boils down to one crucial element: the presenc
 
 {%
  include centered-image.html  
- image_path="../images/covers/styleguides_full.jpg"  
+ image_path="../images/covers/styleguides_full.webp"  
  alt_text="A comprehensive look at Swift style guides"  
  caption="Crafting Consistency with Swift Style Guides"  
 %}

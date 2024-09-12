@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /gentle-introduction-to-unit-testing/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/unit_testing_intro.jpg"
+thumbnail: "images/covers/unit_testing_intro.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -25,7 +25,7 @@ One Monday morning, a new developer, nicknamed Penguin 🐧, started their first
 
 {%
  include centered-image.html 
- image_path="../images/covers/unit_testing_intro_full.jpg"
+ image_path="../images/covers/unit_testing_intro_full.webp"
  alt_text="" 
  caption=""
 %}
@@ -88,7 +88,7 @@ The F.I.R.S.T criteria for unit tests is a set of principles designed to promote
 
 {%
  include centered-image.html 
- image_path="/images/test_doubles.jpg"
+ image_path="/images/test_doubles.webp"
  alt_text="" 
  caption="(test doubles) term is derived from (stunt doubles)"
 %}

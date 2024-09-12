@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /significant-network-problems-on-macbooks-with-m1-m2-chips-with-proposed-solutions/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/network_fix.jpg"
+thumbnail: "images/covers/network_fix.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -25,7 +25,7 @@ As Apple's Silicon processors have gained significant attention, many users have
 
 {%
  include centered-image.html 
- image_path="../images/covers/network_fix_full.jpg"
+ image_path="../images/covers/network_fix_full.webp"
  alt_text="Network Performance Issues" 
  caption="Network Performance Issues on M1/M2 MacBooks"
 %}

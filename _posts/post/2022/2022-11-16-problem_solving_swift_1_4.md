@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /problem_solving_swift_1_4/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/algo.jpg"
+thumbnail: "images/covers/algo.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -28,14 +28,14 @@ After reading the very popular book, Grokking Algorithms, I decided to blog abou
 <!--more-->
 {%
  include centered-image.html 
- image_path="../images/covers/algo_full.jpg"
+ image_path="../images/covers/algo_full.webp"
  alt_text="" 
  caption=""
 %}
 
 {%
  include centered-image.html 
- image_path="/images/grokking.jpeg"
+ image_path="/images/grokking.webp"
  alt_text="" 
  caption="Grokking Algorithms book"
 %}
@@ -117,7 +117,7 @@ As you can see, solution 4 is the most efficient in this case, with a time compl
 
 {%
  include centered-image.html 
- image_path="/images/prob_001_graph-1024x687.png"
+ image_path="/images/prob_001_graph-1024x687.webp"
  alt_text="" 
  caption=""
 %}

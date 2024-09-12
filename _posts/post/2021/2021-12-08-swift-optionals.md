@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-optionals/  
 excerpt_separator: <!--more-->  
 author: deyaeldeen  
-thumbnail: "images/covers/optionals.jpg"  
+thumbnail: "images/covers/optionals.webp"  
 categories:  
   - "Development"  
   - "iOS"  
@@ -25,7 +25,7 @@ In Swift, **optionals** play a crucial role in managing situations where a value
 
 {%
  include centered-image.html
- image_path="../images/covers/optionals_full.jpg"
+ image_path="../images/covers/optionals_full.webp"
  alt_text="Swift Optionals" 
  caption=""
 %}

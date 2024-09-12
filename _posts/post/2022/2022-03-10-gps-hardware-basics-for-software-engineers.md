@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /gps-hardware-basics-for-software-engineers/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/gps.jpg"
+thumbnail: "images/covers/gps.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -29,7 +29,7 @@ Mobile software developers, whether working on iOS or Android, often use GPS fun
 
 {% 
 include centered-image.html 
-image_path="../images/covers/gps_full.jpg"
+image_path="../images/covers/gps_full.webp"
 alt_text="" 
 caption="" 
 %}
@@ -72,7 +72,7 @@ caption="GPS Satellites in Orbit (Source: Wikipedia)"
 
 {% 
 include centered-image.html
-image_path="/images/GPS-satellite-position-calculations-3.png"
+image_path="/images/GPS-satellite-position-calculations-3.webp"
 alt_text="GPS Position Calculation"
 caption="Calculating Position Using GPS Satellites"
 %}
@@ -82,7 +82,7 @@ caption="Calculating Position Using GPS Satellites"
 
 {% 
 include centered-image.html
-image_path="/images/Beidou_Navigation_Satellite_System_2012.png"
+image_path="/images/Beidou_Navigation_Satellite_System_2012.webp"
 alt_text="BeiDou Navigation System" 
 caption="BeiDou GNSS, which doesn't have full Earth coverage" 
 %}

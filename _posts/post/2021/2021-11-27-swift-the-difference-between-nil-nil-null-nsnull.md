@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/nil.jpg"
+thumbnail: "images/covers/nil.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -27,7 +27,7 @@ As a programmer, you will often need to represent the concept of "nothingness." 
 
 {%
  include centered-image.html 
- image_path="../images/covers/nil_full.jpg"
+ image_path="../images/covers/nil_full.webp"
  alt_text="" 
  caption=""
 %}

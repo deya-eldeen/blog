@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-lexical-structure/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/lexical.jpg"
+thumbnail: "images/covers/lexical.webp"
 categories: 
   - "Development"
   - "Programming"
@@ -26,7 +26,7 @@ A token consists of an identifier, keyword, punctuation, literal, or operator.
 
 {%
  include centered-image.html 
- image_path="../images/covers/lexical_full.jpg"
+ image_path="../images/covers/lexical_full.webp"
  alt_text="" 
  caption=""
 %}

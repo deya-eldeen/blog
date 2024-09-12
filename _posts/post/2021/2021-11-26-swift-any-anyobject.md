@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-any-anyobject/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/any.jpg"
+thumbnail: "images/covers/any.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -27,7 +27,7 @@ When working with Swift, one of the key decisions you’ll often face is how to 
 
 {%
  include centered-image.html 
- image_path="../images/covers/any_full.jpg"
+ image_path="../images/covers/any_full.webp"
  alt_text="A conceptual image representing Swift type systems." 
  caption="Exploring Swift's Flexible Type System"
 %}

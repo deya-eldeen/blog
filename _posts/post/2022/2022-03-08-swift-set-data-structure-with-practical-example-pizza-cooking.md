@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-set-data-structure-with-practical-example-pizza-cooking/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/venn.jpg"
+thumbnail: "images/covers/venn.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -28,7 +28,7 @@ Swift provides three main collection types: **Arrays**, **Sets**, and **Dictiona
 
 {% 
 include centered-image.html
-image_path="../images/covers/venn_full.jpg"
+image_path="../images/covers/venn_full.webp"
 alt_text=""
 caption="John Venn" 
 %}
@@ -44,7 +44,7 @@ Sets are fundamental in many areas of mathematics and computer science, particul
 
 {% 
 include centered-image.html
-image_path="/images/220px-Venn_A_intersect_B.svg.png"
+image_path="/images/220px-Venn_A_intersect_B.svg.webp"
 alt_text="Venn Diagram"
 caption="A Venn diagram showing the intersection of two sets (Source: Wikipedia)" 
 %}

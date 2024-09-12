@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /this-is-why-i-dont-use-git-gui-tools/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/git_cli.jpg"
+thumbnail: "images/covers/git_cli.webp"
 categories:
   - "Development"
   - "iOS"
@@ -23,7 +23,7 @@ Almost anyone who uses Xcode can quickly notice that it lacks many essential Git
 <!--more-->
 {%
 include centered-image.html
-image_path="../images/covers/git_cli_full.jpg"
+image_path="../images/covers/git_cli_full.webp"
 alt_text=""
 caption=""
 %}
@@ -32,7 +32,7 @@ The features available in Xcode may suffice for personal or small projects, but 
 
 {%
 include centered-image.html
-image_path="/images/image-3.png"
+image_path="/images/image-3.webp"
 alt_text=""
 caption="Xcode's Source Control"
 %}

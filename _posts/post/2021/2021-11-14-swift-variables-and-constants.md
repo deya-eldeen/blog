@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-variables-and-constants/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/varlet.jpg"
+thumbnail: "images/covers/varlet.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -28,7 +28,7 @@ This blog post explores the concepts of mutability in Swift, comparing them to O
 
 {%
  include centered-image.html  
- image_path="../images/covers/varlet_full.jpg"  
+ image_path="../images/covers/varlet_full.webp"  
  alt_text="Understanding Swift Variables and Constants"  
  caption="The Power of Mutability in Swift"  
 %}

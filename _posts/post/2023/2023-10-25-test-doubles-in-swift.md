@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /test-doubles-in-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/test_doubles.jpg"
+thumbnail: "images/covers/test_doubles.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -26,7 +26,7 @@ The term **test doubles** draws inspiration from **stunt doubles** in the movie 
 
 {%
  include centered-image.html 
- image_path="../images/covers/test_doubles_full.jpg"
+ image_path="../images/covers/test_doubles_full.webp"
  alt_text="" 
  caption=""
 %}
@@ -452,7 +452,7 @@ It's best to use a real project to test our the code, you can download the sourc
 
 {%
  include centered-image.html 
- image_path="/images/auth_screen.png"
+ image_path="/images/auth_screen.webp"
  alt_text="" 
  caption="Simple SwiftUI Screen"
 %}

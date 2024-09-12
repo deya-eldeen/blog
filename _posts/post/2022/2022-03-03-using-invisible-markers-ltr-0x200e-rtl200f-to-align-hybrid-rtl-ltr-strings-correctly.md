@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/arrows.jpg"
+thumbnail: "images/covers/arrows.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -29,7 +29,7 @@ So you have some text that contains both Arabic and English languages at the sam
 
 {%
  include centered-image.html 
- image_path="../images/covers/arrows_full.jpg"
+ image_path="../images/covers/arrows_full.webp"
  alt_text="" 
  caption=""
 %}
@@ -45,7 +45,7 @@ It's common to encounter text that combines multiple languages, such as Arabic a
 
 {%
  include centered-image.html 
- image_path="/images/rtl_ltr.png"
+ image_path="/images/rtl_ltr.webp"
  alt_text="" 
  caption=""
 %}

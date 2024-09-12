@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-void-and/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/void.jpg"
+thumbnail: "images/covers/void.webp"
 categories:
   - "Development"
   - "iOS"
@@ -27,7 +27,7 @@ This post explores the intricacies of `Void` in Swift, how it relates to the emp
 
 {%
  include centered-image.html 
- image_path="../images/covers/void_full.jpg"
+ image_path="../images/covers/void_full.webp"
  alt_text="" 
  caption=""
 %}

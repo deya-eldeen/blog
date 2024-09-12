@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-keywords/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/keywords.jpg"
+thumbnail: "images/covers/keywords.webp"
 categories: 
   - "Development"
   - "Programming"
@@ -23,7 +23,7 @@ A reserved word is **a term designated by the programming language that cannot b
 
 {%
  include centered-image.html 
- image_path="../images/covers/keywords_full.jpg"
+ image_path="../images/covers/keywords_full.webp"
  alt_text="" 
  caption=""
 %}

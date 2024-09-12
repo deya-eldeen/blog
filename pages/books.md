@@ -21,7 +21,7 @@ tags:
 
 {%
  include centered-image.html 
- image_path="/images/books/byte_magic_in_swift.png"
+ image_path="/images/books/byte_magic_in_swift.webp"
  alt_text="Swift" 
  caption=""
 %}
@@ -37,7 +37,7 @@ Examples: 95+
 
 {%
  include centered-image.html 
- image_path="/images/books/ios_security_defensive_vol1.png"
+ image_path="/images/books/ios_security_defensive_vol1.webp"
  alt_text="Swift" 
  caption=""
 %}

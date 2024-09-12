@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /backup-on-spaces/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/do_space.jpg"
+thumbnail: "images/covers/do_space.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -24,7 +24,7 @@ This is not directly related to swift or iOS, but thought it's worth sharing, si
 
 {%
  include centered-image.html 
- image_path="../images/covers/do_space_full.jpg"
+ image_path="../images/covers/do_space_full.webp"
  alt_text="" 
  caption=""
 %}
@@ -36,7 +36,7 @@ In the realm of cloud storage, common solutions like Google Drive and Dropbox of
 
 {%
  include centered-image.html 
- image_path="/images/image-2.png"
+ image_path="/images/image-2.webp"
  alt_text="" 
  caption="Cyberduck, showing a Digital Ocean drive"
 %}

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-pros-over-obj-c/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_objc.jpg"
+thumbnail: "images/covers/swift_objc.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -25,18 +25,19 @@ Objective-C, developed in the early 1980s, has long been the backbone of iOS and
 
 <!--more-->  
 
+{%
+ include centered-image.html 
+ image_path="../images/covers/swift_objc_full.webp"
+ alt_text="" 
+ caption=""
+%}
+
+
 ## Swift Pros
 
 Swift, designed from the ground up to be faster, safer, and more efficient, has quickly gained popularity among developers. It brings several significant improvements, including enhanced readability through a more concise and expressive syntax, superior performance optimizations that leverage modern hardware, and advanced safety features that help developers write more reliable code with fewer bugs. Swift's design is influenced by modern programming paradigms, making it not only easier to learn for new developers but also more powerful for seasoned professionals looking to build robust and scalable applications.
 
 Moreover, Swift's open-source nature has fostered a vibrant and growing community, contributing to its rapid evolution and adoption across various platforms beyond iOS and macOS, such as Linux and even Windows. This has expanded Swift's appeal beyond traditional Apple developers to a broader audience, enhancing its ecosystem with a wealth of libraries, tools, and frameworks that further accelerate development and innovation.
-
-{%
- include centered-image.html 
- image_path="../images/covers/swift_objc_full.jpg"
- alt_text="" 
- caption=""
-%}
 
 ### 1. Swift is Easier to Read and Maintain
 
@@ -56,7 +57,7 @@ Benchmarks have consistently shown that Swift performs faster than Objective-C, 
 
 {%
  include centered-image.html 
- image_path="/images/speed.jpeg"
+ image_path="/images/speed.webp"
  alt_text="" 
  caption="An example of a benchmark conducted by Apple."
 %}

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /ios-android-developer-security-basics/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/security_basics.jpg"
+thumbnail: "images/covers/security_basics.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -29,7 +29,7 @@ Mobile app security is a critical concern for both iOS and Android developers. T
 
 {% 
 include centered-image.html
-image_path="../images/covers/security_basics_full.jpg"
+image_path="../images/covers/security_basics_full.webp"
 alt_text="Mobile Security Basics"
 caption="JomJom!" 
 %}
@@ -100,7 +100,7 @@ caption="JomJom!"
 
 {% 
 include centered-image.html
-image_path="/images/facebookstring-1024x695.jpeg"
+image_path="/images/facebookstring-1024x695.webp"
 alt_text="Strings Tool"
 caption="This is usage of the `strings` tool, on macos, scanning some APK." 
 %}

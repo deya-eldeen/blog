@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /what-is-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift.jpg"
+thumbnail: "images/covers/swift.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -27,7 +27,7 @@ Swift is Apple’s modern, open-source programming language, introduced at Apple
 
 {%
  include centered-image.html 
- image_path="../images/covers/swift_full.jpg"
+ image_path="../images/covers/swift_full.webp"
  alt_text="Swift" 
  caption=""
 %}

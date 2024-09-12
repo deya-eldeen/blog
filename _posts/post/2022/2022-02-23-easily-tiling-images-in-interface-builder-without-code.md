@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /easily-tiling-images-in-interface-builder-without-code/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/tiling.jpg"
+thumbnail: "images/covers/tiling.webp"
 categories:
   - "Development"
   - "iOS"
@@ -29,7 +29,7 @@ Tiling images directly within Interface Builder, without writing code, can save 
 
 {%
  include centered-image.html 
- image_path="../images/covers/tiling_full.jpg"
+ image_path="../images/covers/tiling_full.webp"
  alt_text="Tiling Images in Interface Builder" 
  caption=""
 %}
@@ -40,7 +40,7 @@ Tiling images is a technique used to create repeating patterns or backgrounds in
 
 {%
  include centered-image.html 
- image_path="/images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.png"
+ image_path="/images/Screen-Shot-2022-02-23-at-11.29.34-AM-915x1024.webp"
  alt_text="" 
  caption=""
 %}
@@ -72,7 +72,7 @@ In most cases, you’ll want the Left, Right, Top, and Bottom insets to be zero,
 
 {%
  include centered-image.html 
- image_path="/images/slicing.png"
+ image_path="/images/slicing.webp"
  alt_text="Slicing Interface" 
  caption="Slicing Interface"
 %}
@@ -83,7 +83,7 @@ To ensure your image tiles correctly, set the image view’s content mode to `Fi
 
 {%
  include centered-image.html 
- image_path="/images/image-993x1024.png"
+ image_path="/images/image-993x1024.webp"
  alt_text="Tiling Configuration" 
  caption="Tiling Configuration"
 %}
@@ -100,7 +100,7 @@ Tiling offers endless possibilities for creativity in your app design. By experi
 
 {% 
 include centered-image.html
-image_path="/images/image-2-1024x1011.png"
+image_path="/images/image-2-1024x1011.webp"
 alt_text="Tiled Image Example"
 caption="Example of Tiled Images in Interface Builder" 
 %}

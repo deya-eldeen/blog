@@ -1,7 +1,7 @@
 ---
 layout: page
 title: About Me
-feature-img: "assets/img/pexels/travel.jpeg"
+feature-img: "assets/img/pexels/travel.webp"
 tags: [About]
 position: 1
 permalink: /about-me/
@@ -11,7 +11,7 @@ redirect_from:
 
 {%
  include centered-image.html 
- image_path="/images/deya_256.png"
+ image_path="/images/deya_256.webp"
  alt_text="Swift" 
  caption=""
 %}

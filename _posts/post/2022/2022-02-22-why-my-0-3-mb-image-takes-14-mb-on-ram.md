@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/imagesize.jpg"
+thumbnail: "images/covers/imagesize.webp"
 categories: 
   - "Development"
   - "iOS"
@@ -31,7 +31,7 @@ you might have an image file that is only 0.3 MB on disk, yet it occupies around
 
 {%
  include centered-image.html 
- image_path="../images/covers/imagesize_full.jpg"
+ image_path="../images/covers/imagesize_full.webp"
  alt_text="" 
  caption=""
 %}
@@ -54,7 +54,7 @@ The following image takes around 131 KB on disk and has an `sRGB` color profile,
 
 {%
  include centered-image.html 
- image_path="/images/roman.jpg"
+ image_path="/images/roman.webp"
  alt_text="" 
  caption=""
 %}
