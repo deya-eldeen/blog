@@ -46,7 +46,7 @@ Sets are fundamental in many areas of mathematics and computer science, particul
 
 {% 
 include centered-image.html
-image_path="/images/220px-Venn_A_intersect_B.svg.webp"
+image_path="/images/posts/220px-Venn_A_intersect_B.svg.webp"
 alt_text="Venn Diagram"
 caption="A Venn diagram showing the intersection of two sets (Source: Wikipedia)" 
 %}

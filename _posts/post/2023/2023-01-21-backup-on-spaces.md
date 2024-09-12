@@ -38,7 +38,7 @@ In the realm of cloud storage, common solutions like Google Drive and Dropbox of
 
 {%
  include centered-image.html 
- image_path="/images/image-2.webp"
+ image_path="/images/posts/image-2.webp"
  alt_text="" 
  caption="Cyberduck, showing a Digital Ocean drive"
 %}

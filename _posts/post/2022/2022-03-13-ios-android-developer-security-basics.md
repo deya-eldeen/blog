@@ -102,7 +102,7 @@ Mobile app security is a critical concern for both iOS and Android developers. T
 
 {% 
 include centered-image.html
-image_path="/images/facebookstring-1024x695.webp"
+image_path="/images/posts/facebookstring-1024x695.webp"
 alt_text="Strings Tool"
 caption="This is usage of the `strings` tool, on macos, scanning some APK." 
 %}
