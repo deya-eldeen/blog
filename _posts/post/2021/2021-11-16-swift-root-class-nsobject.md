@@ -21,10 +21,11 @@ tags:
 
 In the world of object-oriented programming (OOP), the concept of a root or base class is foundational for understanding class inheritance and the relationships between different classes. 
 
-<!--more-->
-Whether you're building an app in Swift or working with legacy Objective-C code, grasping the role of the root class is key to designing robust, scalable software. 
 In this post, we'll dive deep into the role of the root class in Swift and its relationship with `NSObject` within the context of Objective-C and `Cocoa` frameworks.
 
+<!--more-->
+
+Whether you're building an app in Swift or working with legacy Objective-C code, grasping the role of the root class is key to designing robust, scalable software. 
 
 {%
  include centered-image.html 

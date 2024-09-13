@@ -21,9 +21,9 @@ tags:
 
 `Void` is a concept familiar across many programming languages. In Swift, `Void` has a unique and specific meaning, rooted in the language's type system. 
 
-<!--more-->
-
 This post explores the intricacies of `Void` in Swift, how it relates to the empty tuple `()`, and how it is used in functions, methods, and closures.
+
+<!--more-->
 
 {%
  include centered-image.html 

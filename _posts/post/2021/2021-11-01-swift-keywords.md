@@ -19,6 +19,8 @@ tags:
 
 A reserved word is **a term designated by the programming language that cannot be used as an identifier**. This restriction is a syntactic rule that helps prevent conflicts and ambiguities in the code. 
 
+As detailed in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-structure/), these reserved words are integral to the language's syntax and functionality. For convenience, all lists of reserved words provided below are arranged alphabetically, facilitating quick and easy reference.
+
 <!--more-->
 
 {%
@@ -29,8 +31,6 @@ A reserved word is **a term designated by the programming language that cannot b
  width="960" 
  height="1568"
 %}
-
-As detailed in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-structure/), these reserved words are integral to the language's syntax and functionality. For convenience, all lists of reserved words provided below are arranged alphabetically, facilitating quick and easy reference.
 
 ## Keywords used in declarations
 Keywords for defining types, methods, and essential elements in `Swift`, including classes, structs, enums, protocols, and properties, along with access control and initialization behavior.

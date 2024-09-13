@@ -22,9 +22,10 @@ tags:
 ---
 
 In every programming language, the ability to store and manage data is fundamental. In Swift, the distinction between variables and constants is both clear and essential, influencing how you write and optimize your code. 
-<!--more-->
 
 This blog post explores the concepts of mutability in Swift, comparing them to Objective-C, and discussing the broader implications of mutability in programming.
+
+<!--more-->
 
 {%
  include centered-image.html  

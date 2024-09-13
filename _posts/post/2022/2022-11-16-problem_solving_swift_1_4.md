@@ -25,7 +25,10 @@ tags:
 
 After reading the very popular book, Grokking Algorithms, I decided to blog about algorithms and data structures. I find the book is very informative and easy to digest.
 
+Understanding data structures is essential before diving into problem-solving. While I won't go into detailed explanations here, I recommend attempting to solve the problems on your own without immediately referring to the solutions.
+
 <!--more-->
+
 {%
  include centered-image.html 
  image_path="../images/covers/algo_full.webp"
@@ -42,7 +45,7 @@ After reading the very popular book, Grokking Algorithms, I decided to blog abou
  caption="Grokking Algorithms book"
 %}
 
-Understanding data structures is essential before diving into problem-solving. While I won't go into detailed explanations here, I recommend attempting to solve the problems on your own without immediately referring to the solutions.
+
 
 ## Problem 1  
 **Return a pair of two distinct values (if any) that sum up to a target number, from a nonempty array that contains distinct integers.**

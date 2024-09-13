@@ -19,7 +19,10 @@ tags:
   - "Swift"
 ---
 
-This is not directly related to swift or iOS, but thought it's worth sharing, since I couldn't find any article that mention such way to backup files.  
+This is not directly related to swift or iOS, but thought it's worth sharing, since I couldn't find any article that mention such way to backup files.
+
+I'm one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity. 
+
 <!--more-->
 
 {%
@@ -31,7 +34,7 @@ This is not directly related to swift or iOS, but thought it's worth sharing, si
  height="1568"
 %}
 
-I'm one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity. I vividly remember the first flash drive my father gifted me as a teenager; it had a mere 128 MB of storage. At that time, such a device was considered a luxury and not affordable for many where I live. Fast forward to today, and we now have SSDs that are over 1000 times larger in capacity and available at significantly lower prices.
+I vividly remember the first flash drive my father gifted me as a teenager; it had a mere 128 MB of storage. At that time, such a device was considered a luxury and not affordable for many where I live. Fast forward to today, and we now have SSDs that are over 1000 times larger in capacity and available at significantly lower prices.
 
 ## Cloud Storage
 In the realm of cloud storage, common solutions like Google Drive and Dropbox offer plans, such as a 2TB option for $10 monthly. However, I prefer utilizing my own mountable drive integrated with a Content Delivery Network (CDN) for distributing my files efficiently. The best solution I've found for storing my work is using DigitalOcean Spaces, which is similar to AWS S3. I can conveniently mount it using a client like Cyberduck on my Mac, or on any device I own, allowing for seamless access and management of my files. This approach not only provides me with greater control over my data but also enhances my ability to share and distribute content effectively.

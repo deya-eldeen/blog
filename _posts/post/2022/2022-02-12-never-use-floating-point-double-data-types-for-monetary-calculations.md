@@ -19,7 +19,9 @@ tags:
   - "Swift"
 ---
 
-Handling money in software is a task that requires precision, especially when dealing with fractions of currency like dollars and cents. One common mistake that developers make is using floating-point data types, such as `Double`, to represent monetary values. This post explains why this is problematic and what alternatives you should use.
+Handling money in software is a task that requires precision, especially when dealing with fractions of currency like dollars and cents. One common mistake that developers make is using floating-point data types, such as `Double`, to represent monetary values.
+
+This post explains why this is problematic and what alternatives you should use.
 
 <!--more-->
 

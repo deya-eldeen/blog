@@ -26,8 +26,10 @@ tags:
 ---
 
 When developing applications, especially those that handle a large number of images, you may notice a significant difference between the disk size of an image and the amount of RAM it consumes. For example, 
-<!--more-->
+
 you might have an image file that is only 0.3 MB on disk, yet it occupies around 10 MB of RAM when loaded. This post explores why this happens and what you can do to manage memory usage more effectively.
+
+<!--more-->
 
 {%
  include centered-image.html 

@@ -21,7 +21,9 @@ tags:
   - "Objective-C"
 ---
 
-As a programmer, you will often need to represent the concept of "nothingness." In Swift and Objective-C, this idea manifests in various forms: `nil`, `Nil`, `NULL`, and `NSNull`. Each of these serves a distinct purpose and is used in different contexts. Understanding these concepts is fundamental to mastering memory management, type safety, and interoperability between Swift and Objective-C.
+As a programmer, you will often need to represent the concept of "nothingness." In Swift and Objective-C, this idea manifests in various forms: `nil`, `Nil`, `NULL`, and `NSNull`. 
+
+Each of these serves a distinct purpose and is used in different contexts. Understanding these concepts is fundamental to mastering memory management, type safety, and interoperability between Swift and Objective-C.
 
 <!--more-->
 

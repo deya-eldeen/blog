@@ -25,6 +25,8 @@ tags:
   
 Mobile software developers, whether working on iOS or Android, often use GPS functionality in their apps without fully understanding how GPS works. This article is designed to give you a basic understanding of GPS hardware, so you can appreciate the underlying technology and improve your app's location-based features.
 
+This article is structured as a conversation between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻)**. Through their dialogue, we'll explore the fundamentals of GPS technology.
+
 <!--more-->
 
 {% 
@@ -35,8 +37,6 @@ Mobile software developers, whether working on iOS or Android, often use GPS fun
  width="960" 
  height="1568"
 %}
-
-This article is structured as a conversation between an **iOS developer (Alex 👨🏻‍💻)** and an **electrical engineer (Sarah 👩🏼‍💻)**. Through their dialogue, we'll explore the fundamentals of GPS technology.
 
 ## The Basics of GPS
 

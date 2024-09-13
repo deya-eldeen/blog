@@ -20,7 +20,11 @@ tags:
 ---
 
 Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it's primarily a development environment rather than a dedicated source control application. 
+
+The features available in Xcode may suffice for personal or small projects, but when working within a larger team, relying solely on the IDE can lead to significant challenges in managing source control effectively.
+
 <!--more-->
+
 {%
 include centered-image.html
 image_path="../images/covers/git_cli_full.webp"
@@ -29,8 +33,6 @@ caption=""
  width="960" 
  height="1568"
 %}
-
-The features available in Xcode may suffice for personal or small projects, but when working within a larger team, relying solely on the IDE can lead to significant challenges in managing source control effectively.
 
 {%
 include centered-image.html

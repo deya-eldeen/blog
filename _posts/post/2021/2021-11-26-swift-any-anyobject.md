@@ -23,6 +23,8 @@ tags:
 
 When working with Swift, one of the key decisions you’ll often face is how to represent data types. While specificity in defining data types is generally encouraged, Swift offers three flexible type options: `Any`, `AnyObject`, and `AnyHashable`. 
 
+Understanding when and how to use these types is crucial for developing robust and interoperable Swift applications.  
+
 <!--more-->
 
 {%
@@ -33,8 +35,6 @@ When working with Swift, one of the key decisions you’ll often face is how to 
  width="960" 
  height="1568"
 %}
-
-Understanding when and how to use these types is crucial for developing robust and interoperable Swift applications.  
 
 ## Introduction to Any, AnyObject, and AnyHashable
 

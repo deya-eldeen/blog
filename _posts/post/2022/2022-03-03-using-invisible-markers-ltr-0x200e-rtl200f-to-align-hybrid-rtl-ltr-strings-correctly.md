@@ -3,7 +3,7 @@ layout: post
 title: "Using unicode markers (LTR: 0x200E, RTL:200F) to align \"hybrid RTL/LTR strings\" correctly."
 date: "2022-03-03"
 last_modified_at: "2024-09-08"
-permalink: /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly/
+permalink: /invisible-markers-ltr-0x200e-rtl200f-to-align-text-correctly/
 excerpt_separator: <!--more-->
 author: deyaeldeen
 thumbnail: "images/covers/arrows.webp"
@@ -21,9 +21,13 @@ tags:
   - "Swift"
   - "Interface-Builder"
   - "Xcode"
+redirect_from:
+  - /using-invisible-markers-ltr-0x200e-rtl200f-to-align-hybrid-rtl-ltr-strings-correctly/
 ---
 
-So you have some text that contains both Arabic and English languages at the same time and are having difficulty aligning it? Sometimes it starts with English, and other times it starts with Arabic.
+When dealing with text that contains both Arabic and English languages, aligning it correctly can be quite challenging. This is especially true when the text may start with English at times and Arabic at others, leading to potential misalignment issues. 
+
+The use of specific Unicode characters, such as the Left-to-Right Mark (0x200E) and the Right-to-Left Mark (0x200F), can help manage the directionality of the text and ensure proper alignment. By strategically implementing these markers, developers can achieve a more coherent and visually appealing presentation of bilingual text, enhancing readability and user experience.
 
 <!--more-->
 

@@ -19,9 +19,9 @@ tags:
 
 Have you ever dived into an open-source project and marveled at the elegance and consistency of the codebase? 🧐 It's no coincidence. 
 
-<!--more-->
-
 Such codebases follow meticulously crafted style guides that turn good code into great code. But let's face it—many of us have also encountered the other side of the spectrum: projects that are chaotic, messy, and downright painful to navigate 🤮. 
+
+<!--more-->
 
 What’s the difference? It often boils down to one crucial element: the presence—or absence—of a robust code style guide.  
 
