@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "MacBooks with Silicon Chips and Proposed Solutions"
+title: "Network Issues in MacBooks with Silicon Chips and Proposed Solutions"
 date: "2024-02-02"
 last_modified_at: "2024-09-08"
 permalink: /solving-network-issues-on-macbooks-silicon-chips/
