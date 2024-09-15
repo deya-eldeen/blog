@@ -38,7 +38,7 @@ I encourage you to reach out with any questions or feedback regarding my work. I
 
 (Updated April 2024)
 
-[Download Resume](assets/cv_2024_q2.pdf)
+[Download Resume](/assets/cv_2024_q2.pdf)
 
 I hope you enjoy exploring Swift By Deya! 🚀
 
