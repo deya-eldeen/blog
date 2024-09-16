@@ -450,7 +450,7 @@ class MockNotificationService: NotificationService {
 
 ## Sample Code
 
-It's best to use a real project to test our the code, you can download the source code [Here](assets/test_doubles.zip).
+It's best to use a real project to test our the code, you can download the source code [Here](/assets/test_doubles.zip).
 
 {%
  include centered-image.html 

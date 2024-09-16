@@ -1,7 +1,6 @@
 ---
 layout: page
 title: About Me
-feature-img: "assets/img/pexels/travel.webp"
 tags: [About]
 position: 1
 permalink: /about-me/

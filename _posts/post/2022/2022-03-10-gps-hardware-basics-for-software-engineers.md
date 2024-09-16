@@ -59,7 +59,7 @@ This article is structured as a conversation between an **iOS developer (Alex ðŸ
 
 {% 
 include centered-image.html
-image_path="/images/ConstellationGPS.gif"
+image_path="/images/posts/ConstellationGPS.gif"
 alt_text="GPS Satellites"
 caption="GPS Satellites in Orbit (Source: Wikipedia)" 
 %}
