@@ -1,10 +1,4 @@
-`gem install bundler`
-then
-`bundle install`
-
-use 
-http://localhost:4000/
-
-and not
-http://127.0.0.1:4000/
+Run using docker
+docker build -t jekyll-ubuntu . 
+docker run --rm -it -p 4000:4000 -v "$(pwd)":/srv/jekyll jekyll-ubuntu
 
