@@ -1,10 +1,4 @@
-`gem install bundler`
-then
-`bundle install`
-
-use 
-http://localhost:4000/
-
-and not
-http://127.0.0.1:4000/
-
+1) install docker
+2) ./build_docker.sh
+3) ./run_docker.sh
+4) open http://0.0.0.0:4000/
