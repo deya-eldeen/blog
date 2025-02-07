@@ -1,4 +1,4 @@
-Run using docker
-docker build -t jekyll-ubuntu . 
-docker run --rm -it -p 4000:4000 -v "$(pwd)":/srv/jekyll jekyll-ubuntu
-
+1) install docker
+2) ./build_docker.sh
+3) ./run_docker.sh
+4) open http://0.0.0.0:4000/
