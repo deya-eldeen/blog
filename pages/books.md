@@ -29,7 +29,7 @@ tags:
 Pages: 170+
 Examples: 95+
 
-[Download Digital Copy](https://voidbooks.io/l/byte_magic_in_swift)
+[Download Digital Copy](https://swiftbydeya.gumroad.com/l/byte_magic_in_swift)
 
 ## iOS Security By Defensive Techniques, Vol 1
 
