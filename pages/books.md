@@ -31,17 +31,4 @@ Examples: 95+
 
 [Download Digital Copy](https://swiftbydeya.gumroad.com/l/byte_magic_in_swift)
 
-## iOS Security By Defensive Techniques, Vol 1
-
-**Authors:** Deya Eldeen Elkhawaldeh & Dave Poirer
-
-{%
- include centered-image.html 
- image_path="/images/books/ios_security_defensive_vol1.webp"
- alt_text="Swift" 
- caption=""
-%}
-
-**Download Digital Copy**: SOON
-
 <!-- {% include gallery.html gallery_path=page.gallery_path %} -->
