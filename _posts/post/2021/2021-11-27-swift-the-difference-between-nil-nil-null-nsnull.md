@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/nil.webp"
+thumbnail: "images/covers/nil_full.webp"
 categories: 
   - "Development"
   - "iOS"

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /ios-android-developer-security-basics/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/security_basics.webp"
+thumbnail: "images/covers/security_basics_full.webp"
 categories: 
   - "Development"
   - "iOS"

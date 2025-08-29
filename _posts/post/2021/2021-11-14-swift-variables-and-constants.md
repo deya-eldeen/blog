@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-variables-and-constants/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/varlet.webp"
+thumbnail: "images/covers/varlet_full.webp"
 categories: 
   - "Development"
   - "iOS"

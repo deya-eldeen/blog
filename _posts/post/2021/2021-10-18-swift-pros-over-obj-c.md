@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-pros-over-obj-c/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_objc.webp"
+thumbnail: "images/covers/swift_objc_full.webp"
 categories: 
   - "Development"
   - "iOS"

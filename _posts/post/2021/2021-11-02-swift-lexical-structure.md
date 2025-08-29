@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-lexical-structure/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/lexical.webp"
+thumbnail: "images/covers/lexical_full.webp"
 categories: 
   - "Development"
   - "Programming"
@@ -39,8 +39,8 @@ Understanding these components is essential for developers, as they form the bas
 ## Swift Lexical Structure
 
 ### Identifiers 
-**An example of an identifier is a variable name, for example here "pet" is an identifier.  
-  
+An example of an identifier is a variable name, for example here "pet" is an identifier.
+
 ```swift
 let pet = "Happy Dinosaur 🦖"
 ```

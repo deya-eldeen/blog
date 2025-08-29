@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-root-class-nsobject/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/nsobject.webp"
+thumbnail: "images/covers/nsobject_full.webp"
 categories: 
   - "Development"
   - "iOS"

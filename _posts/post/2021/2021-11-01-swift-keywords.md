@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-keywords/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/keywords.webp"
+thumbnail: "images/covers/keywords_full.webp"
 categories: 
   - "Development"
   - "Programming"

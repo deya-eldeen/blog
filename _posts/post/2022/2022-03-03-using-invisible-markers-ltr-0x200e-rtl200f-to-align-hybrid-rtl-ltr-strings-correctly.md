@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /invisible-markers-ltr-0x200e-rtl200f-to-align-text-correctly/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/arrows.webp"
+thumbnail: "images/covers/arrows_full.webp"
 categories: 
   - "Development"
   - "iOS"

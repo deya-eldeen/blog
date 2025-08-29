@@ -18,7 +18,7 @@ Welcome to the roadmap for aspiring iOS developers! Whether you’re just starti
 
 {%
  include centered-image.html 
- image_path="/images/roadmaps/roadmaps.webp"
+ image_path="/images/roadmaps/swift_roadmap.webp"
  alt_text="Swift" 
  caption=""
 %}

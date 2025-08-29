@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /never-use-floating-point-double-data-types-for-monetary-calculations/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/money.webp"
+thumbnail: "images/covers/money_full.webp"
 categories: 
   - "Development"
   - "iOS"

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-16"
 permalink: /ios-pipelines/  
 excerpt_separator: <!--more-->  
 author: deyaeldeen  
-thumbnail: "images/covers/pipeline.jpg"  
+thumbnail: "images/covers/pipeline_full.jpg"  
 categories:  
   - "Development"  
   - "iOS"  

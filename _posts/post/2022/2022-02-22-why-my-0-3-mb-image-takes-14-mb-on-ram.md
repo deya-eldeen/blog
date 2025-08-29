@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/imagesize.webp"
+thumbnail: "images/covers/imagesize_full.webp"
 categories: 
   - "Development"
   - "iOS"

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /solving-network-issues-on-macbooks-silicon-chips/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/network_fix.webp"
+thumbnail: "images/covers/network_fix_full.webp"
 categories: 
   - "Development"
   - "iOS"

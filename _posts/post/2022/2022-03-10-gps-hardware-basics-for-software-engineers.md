@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /gps-hardware-basics-for-software-engineers/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/gps.webp"
+thumbnail: "images/covers/gps_full.webp"
 categories: 
   - "Development"
   - "iOS"

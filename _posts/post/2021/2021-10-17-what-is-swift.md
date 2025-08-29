@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /what-is-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift.webp"
+thumbnail: "images/covers/swift_full.webp"
 categories: 
   - "Development"
   - "iOS"

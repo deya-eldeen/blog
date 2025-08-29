@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-style-guides/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/styleguides.webp"
+thumbnail: "images/covers/styleguides_full.webp"
 categories:  
   - "Development"
   - "Programming"

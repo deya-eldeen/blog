@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-optionals/  
 excerpt_separator: <!--more-->  
 author: deyaeldeen  
-thumbnail: "images/covers/optionals.webp"  
+thumbnail: "images/covers/optionals_full.webp"  
 categories:  
   - "Development"  
   - "iOS"  

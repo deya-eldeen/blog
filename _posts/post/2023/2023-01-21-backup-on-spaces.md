@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /backup-on-spaces/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/do_space.webp"
+thumbnail: "images/covers/do_space_full.webp"
 categories: 
   - "Development"
   - "iOS"

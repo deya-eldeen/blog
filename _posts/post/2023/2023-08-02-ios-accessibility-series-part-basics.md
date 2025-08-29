@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /ios-accessibility/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/a11y.webp"
+thumbnail: "images/covers/a11y_full.webp"
 categories: 
   - "Development"
   - "iOS"

@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swiftui-views-are-values-and-not-objects-overlooking-this-can-lead-to-bugs/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swiftui_inside.webp"
+thumbnail: "images/covers/swiftui_inside_full.webp"
 categories: 
   - "Development"
   - "iOS"

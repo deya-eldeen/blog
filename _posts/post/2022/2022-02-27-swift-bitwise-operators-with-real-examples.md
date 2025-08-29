@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /swift-bitwise-operators-with-real-examples/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/bitwise.webp"
+thumbnail: "images/covers/bitwise_full.webp"
 categories: 
   - "Development"
   - "iOS"

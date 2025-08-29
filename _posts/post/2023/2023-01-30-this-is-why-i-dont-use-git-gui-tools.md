@@ -6,7 +6,7 @@ last_modified_at: "2024-09-08"
 permalink: /this-is-why-i-dont-use-git-gui-tools/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/git_cli.webp"
+thumbnail: "images/covers/git_cli_full.webp"
 categories:
   - "Development"
   - "iOS"
