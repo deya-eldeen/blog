@@ -27,7 +27,7 @@ Pipelines in iOS development refer to a sequence of processing steps that data u
 
 {%
  include centered-image.html
- image_path="../images/covers/pipeline_full.jpg"
+ image_path="../images/covers/pipeline_full.webp"
  alt_text="Swift Zombies" 
  caption=""
  width="960" 
