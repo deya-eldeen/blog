@@ -20,11 +20,13 @@ tags:
 redirect_from:
   - /test-doubles-in-swift-part-1/
 ---
+
 The term **test doubles** draws inspiration from **stunt doubles** in the movie industry, where a stunt double steps in to perform dangerous or complex tasks, allowing the actor to focus on their role. Similarly, in software testing, test doubles step in to replace real components, making testing simpler, faster, and more reliable.
+
+<!--more-->
 
 Testing is an essential part of software development, ensuring the correctness and reliability of our code. However, when we test systems with many dependencies—like databases, web services, or external APIs—writing reliable tests can become challenging. This is where test doubles come in handy.
 
-<!--more-->
 
 {%
  include centered-image.html 
