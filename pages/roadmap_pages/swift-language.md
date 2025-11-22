@@ -30,9 +30,9 @@ Swift is a powerful and intuitive programming language developed by Apple for bu
 
 ### 3. Operators and Strings
 
-- Basic Operators<br>
+- [Basic Operators]({{ site.url }}/swift-basics-operators)<br>
 - [Bitwise Operators]({{ site.url }}/swift-bitwise-operators-with-real-examples)<br>
-- Strings and Characters<br>
+- [Strings and Characters]({{ site.url }}/swift-basics-strings-characters)<br>
 
 ### 4. Collections and Control Flow
 
