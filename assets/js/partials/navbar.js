@@ -1,9 +1,7 @@
-/* @preserve Navbar */
+
 document.addEventListener("DOMContentLoaded", function (event) {
 
-  /*
-   * Display the menu items on smaller screens
-   */
+  
   const pull = document.getElementById('pull');
   const menu = document.querySelector('nav ul');
 
@@ -13,9 +11,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     }, false);
   });
 
-  /*
-   * Make the header images move on scroll
-   */
+  
   window.addEventListener('scroll', function () {
     const offset = -(window.scrollY || window.pageYOffset || document.body.scrollTop) / 3;
     const main = document.getElementById('main');

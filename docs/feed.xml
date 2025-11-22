@@ -1,4 +1,106 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://swiftbydeya.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://swiftbydeya.com/" rel="alternate" type="text/html" /><updated>2025-09-20T20:17:04+03:00</updated><id>https://swiftbydeya.com/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">Setting Up a New macOS Device: My Essential Tweaks</title><link href="https://swiftbydeya.com/mac-setup/" rel="alternate" type="text/html" title="Setting Up a New macOS Device: My Essential Tweaks" /><published>2025-08-29T00:00:00+03:00</published><updated>2025-08-29T00:00:00+03:00</updated><id>https://swiftbydeya.com/setup</id><content type="html" xml:base="https://swiftbydeya.com/mac-setup/"><![CDATA[<p>Getting a new Mac is always exciting, but the first few hours are usually spent setting things up just the way you like them. Here’s a collection of my favorite customizations, terminal tweaks, and productivity hacks that I always apply on a fresh macOS installation.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://swiftbydeya.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://swiftbydeya.com/" rel="alternate" type="text/html" /><updated>2025-11-22T16:43:19+03:00</updated><id>https://swiftbydeya.com/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">Phantom Types in Swift</title><link href="https://swiftbydeya.com/swift-phantom-types/" rel="alternate" type="text/html" title="Phantom Types in Swift" /><published>2025-10-15T00:00:00+03:00</published><updated>2025-10-15T00:00:00+03:00</updated><id>https://swiftbydeya.com/swift-phantom-types</id><content type="html" xml:base="https://swiftbydeya.com/swift-phantom-types/"><![CDATA[<p>Phantom types let you tuck extra meaning into Swift’s type system without changing anything at runtime. They live in a generic parameter purely for compile-time checks, which means you can stop category mistakes—mixing meters with feet or safe SQL with raw text—while keeping zero overhead.</p>
+
+<!--more-->
+
+<!-- _includes/centered-image.html -->
+<div class="centered-image">
+  <img src="../images/covers/swift_phantom_types_full.webp" alt="Phantom Types In Swift" class="centered-image__img" width="960" height="1568" />
+  <p align="center">
+    <em>Phantom Types In Swift</em>
+  </p>
+</div>
+
+<h2 id="the-basic-idea">The basic idea</h2>
+
+<p>Consider a <code class="language-plaintext highlighter-rouge">Tagged</code> wrapper that carries a <code class="language-plaintext highlighter-rouge">Raw</code> value and a phantom <code class="language-plaintext highlighter-rouge">Tag</code> type:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Tagged</span><span class="o">&lt;</span><span class="kt">Tag</span><span class="p">,</span> <span class="kt">Raw</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">Raw</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">Raw</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Tag</code> never appears as a stored property, but the compiler still tracks it. This means two wrappers with different tags are incompatible even if they share the same raw type.</p>
+
+<h2 id="eliminating-category-errors">Eliminating category errors</h2>
+
+<p>Imagine working with units. Create tiny, empty types to tag your values:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">MetersTag</span> <span class="p">{}</span>
+<span class="kd">enum</span> <span class="kt">FeetTag</span> <span class="p">{}</span>
+
+<span class="kd">typealias</span> <span class="kt">Meters</span> <span class="o">=</span> <span class="kt">Tagged</span><span class="o">&lt;</span><span class="kt">MetersTag</span><span class="p">,</span> <span class="kt">Double</span><span class="o">&gt;</span>
+<span class="kd">typealias</span> <span class="kt">Feet</span>   <span class="o">=</span> <span class="kt">Tagged</span><span class="o">&lt;</span><span class="kt">FeetTag</span><span class="p">,</span> <span class="kt">Double</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<p>Now a function like <code class="language-plaintext highlighter-rouge">distanceInMeters</code> only accepts <code class="language-plaintext highlighter-rouge">Meters</code>. Passing a <code class="language-plaintext highlighter-rouge">Feet</code> value won’t compile, even though both carry a <code class="language-plaintext highlighter-rouge">Double</code> underneath. The compiler blocks the mix-up before it ever runs.</p>
+
+<h2 id="safer-apis-with-compile-time-intent">Safer APIs with compile-time intent</h2>
+
+<p>Say you’re building SQL. You can mark raw SQL differently from sanitized SQL:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">RawSQL</span> <span class="p">{}</span>
+<span class="kd">enum</span> <span class="kt">SafeSQL</span> <span class="p">{}</span>
+
+<span class="kd">typealias</span> <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">Flavor</span><span class="o">&gt;</span> <span class="o">=</span> <span class="kt">Tagged</span><span class="o">&lt;</span><span class="kt">Flavor</span><span class="p">,</span> <span class="kt">String</span><span class="o">&gt;</span>
+
+<span class="kd">func</span> <span class="nf">sanitize</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">RawSQL</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">SafeSQL</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">SafeSQL</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"sanitize(</span><span class="se">\(</span><span class="n">input</span><span class="o">.</span><span class="n">raw</span><span class="se">)</span><span class="s">)"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">SafeSQL</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">userInput</span> <span class="o">=</span> <span class="kt">SQL</span><span class="o">&lt;</span><span class="kt">RawSQL</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"DROP TABLE users;"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">safe</span> <span class="o">=</span> <span class="nf">sanitize</span><span class="p">(</span><span class="n">userInput</span><span class="p">)</span>
+<span class="nf">execute</span><span class="p">(</span><span class="n">safe</span><span class="p">)</span>           <span class="c1">// ✅</span>
+<span class="c1">// execute(userInput)   // won’t compile, raw SQL rejected</span>
+</code></pre></div></div>
+
+<p>The same trick keeps coordinate systems honest:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ViewSpace</span> <span class="p">{}</span>
+<span class="kd">enum</span> <span class="kt">WorldSpace</span> <span class="p">{}</span>
+
+<span class="kd">struct</span> <span class="kt">Point</span><span class="o">&lt;</span><span class="kt">Tag</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">typealias</span> <span class="kt">ViewPoint</span>  <span class="o">=</span> <span class="kt">Point</span><span class="o">&lt;</span><span class="kt">ViewSpace</span><span class="o">&gt;</span>
+<span class="kd">typealias</span> <span class="kt">WorldPoint</span> <span class="o">=</span> <span class="kt">Point</span><span class="o">&lt;</span><span class="kt">WorldSpace</span><span class="o">&gt;</span>
+
+<span class="kd">func</span> <span class="nf">convertToWorld</span><span class="p">(</span><span class="n">_</span> <span class="nv">p</span><span class="p">:</span> <span class="kt">ViewPoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">WorldPoint</span> <span class="p">{</span>
+    <span class="kt">WorldPoint</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">local</span> <span class="o">=</span> <span class="kt">ViewPoint</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span> <span class="mi">20</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">world</span> <span class="o">=</span> <span class="nf">convertToWorld</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+<span class="c1">// convertToWorld(world) // won’t compile, can’t double-convert</span>
+</code></pre></div></div>
+
+<p>By tagging points, you can’t accidentally convert the same point twice or pass a world-space point where a view-space point belongs.</p>
+
+<h2 id="real-world-swift-uses">Real-world Swift uses</h2>
+
+<p>You can wrap identifiers to stop cross-wiring them. Tag <code class="language-plaintext highlighter-rouge">UserID</code> and <code class="language-plaintext highlighter-rouge">OrderID</code> so an order summary can never swap them. You can tag network payloads by version and make your decoder refuse to mix v1 with v2. You can tag UI points by layout or screen space to keep math from drifting between coordinate systems. The pattern stays the same: a phantom tag carries meaning the compiler understands, but your runtime values remain lean.</p>
+
+<h2 id="designing-phantom-types-well">Designing phantom types well</h2>
+
+<p>Keep tag types empty and name them for intent—<code class="language-plaintext highlighter-rouge">SafeSQL</code>, <code class="language-plaintext highlighter-rouge">Meters</code>, <code class="language-plaintext highlighter-rouge">WorldSpace</code>—so the purpose is clear at the call site. Lean on typealiases to keep code readable. Conform your wrapper (not the tag) to protocols like <code class="language-plaintext highlighter-rouge">Equatable</code> or <code class="language-plaintext highlighter-rouge">Codable</code> so you don’t leak the implementation detail everywhere.</p>
+
+<h2 id="pitfalls-to-avoid">Pitfalls to avoid</h2>
+
+<p>It’s tempting to tag everything, but overuse makes APIs noisy. Save phantom types for places where mixing values would be a real bug. Don’t force tags into public protocols unless you want consumers to depend on them. Keep initializers narrow—like <code class="language-plaintext highlighter-rouge">init(rawValue:)</code> on the wrapper—so callers can’t bypass the validation you intend.</p>
+
+<h2 id="testing-phantom-heavy-code">Testing phantom-heavy code</h2>
+
+<p>You can even “test” the compiler by keeping small snippets that should fail to compile, annotated with <code class="language-plaintext highlighter-rouge">// expected-error</code> when using tools like SwiftSyntax. In regular unit tests, focus on the behavior of the wrapped values, and add one or two negative cases to prove cross-domain usage won’t build.</p>
+
+<h2 id="when-to-reach-for-phantom-types">When to reach for phantom types</h2>
+
+<p>Reach for phantom types when you want the compiler to guard against mixing domains, when runtime checks would be noisy or forgettable, and when you want zero-cost safety because the tags vanish after compilation. Skip them if the extra generic parameter harms ergonomics or if a simpler domain model or enum can express the same rule.</p>
+
+<p>Phantom types are a gentle way to make invalid states unrepresentable in Swift. They turn assumptions into code the compiler enforces. Start with a small tag around your most error-prone values—IDs, units, or raw SQL—run it through your pipeline, and only expand when the safety gain is obvious.</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Swift" /><category term="Type Safety" /><category term="Generics" /><category term="Phantom Types" /><summary type="html"><![CDATA[Phantom types let you tuck extra meaning into Swift’s type system without changing anything at runtime. They live in a generic parameter purely for compile-time checks, which means you can stop category mistakes—mixing meters with feet or safe SQL with raw text—while keeping zero overhead.]]></summary></entry><entry><title type="html">Setting Up a New macOS Device: My Essential Tweaks</title><link href="https://swiftbydeya.com/mac-setup/" rel="alternate" type="text/html" title="Setting Up a New macOS Device: My Essential Tweaks" /><published>2025-08-29T00:00:00+03:00</published><updated>2025-08-29T00:00:00+03:00</updated><id>https://swiftbydeya.com/setup</id><content type="html" xml:base="https://swiftbydeya.com/mac-setup/"><![CDATA[<p>Getting a new Mac is always exciting, but the first few hours are usually spent setting things up just the way you like them. Here’s a collection of my favorite customizations, terminal tweaks, and productivity hacks that I always apply on a fresh macOS installation.</p>
 
 <!--more-->
 
@@ -1466,315 +1568,4 @@ Use it to catch <strong>message-sent-to-deallocated-instance</strong> issues wit
   <li>Tests run alphabetically, so you shouldn’t rename your tests to change their order of execution. Remember, tests should be independent; changing the order intentionally will break this criterion.</li>
   <li>Xcode provides performance tests that compare previous runs. You can also change the baseline, and it gives nicely formatted test coverage markers.</li>
   <li>Writing no tests is better than writing flaky tests!</li>
-</ul>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[One crisp Monday morning, a fresh-faced software engineer, affectionately nicknamed Penguin 🐧, embarked on their inaugural journey into the professional realm, commencing their very first job as a developer. As the young Penguin waddled into the office, eager to make their mark, a captivating conversation unfolded between the newcomer and their seasoned team leader, the wise and experienced Rex 🦖.]]></summary></entry><entry><title type="html">Refresher: Solving Few Problems</title><link href="https://swiftbydeya.com/problem_solving_swift_1_4/" rel="alternate" type="text/html" title="Refresher: Solving Few Problems" /><published>2022-11-16T00:00:00+03:00</published><updated>2024-09-08T00:00:00+03:00</updated><id>https://swiftbydeya.com/problem_solving_swift_1_4</id><content type="html" xml:base="https://swiftbydeya.com/problem_solving_swift_1_4/"><![CDATA[<p>After reading the very popular book, Grokking Algorithms, I decided to blog about algorithms and data structures. I find the book is very informative and easy to digest.</p>
-
-<p>Understanding data structures is essential before diving into problem-solving. While I won’t go into detailed explanations here, I recommend attempting to solve the problems on your own without immediately referring to the solutions.</p>
-
-<!--more-->
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="../images/covers/algo_full.webp" alt="" class="centered-image__img" width="960" height="1568" />
-  <p align="center">
-    <em></em>
-  </p>
-</div>
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="/images/posts/grokking.webp" alt="" class="centered-image__img" />
-  <p align="center">
-    <em>Grokking Algorithms book</em>
-  </p>
-</div>
-
-<h2 id="problem-1">Problem 1</h2>
-<p><strong>Return a pair of two distinct values (if any) that sum up to a target number, from a nonempty array that contains distinct integers.</strong></p>
-
-<p>Here are different solutions with varying time complexities:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Time: O(n^2)</span>
-<span class="kd">func</span> <span class="nf">solution1</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">targetSum</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span> <span class="o">..&lt;</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">..&lt;</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">array</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">targetSum</span> <span class="p">{</span>
-                <span class="k">return</span> <span class="p">[</span><span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">array</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">[]</span>
-<span class="p">}</span>
-<span class="c1">// Time: O(n^2)</span>
-<span class="kd">func</span> <span class="nf">solution2</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">targetSum</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">array</span> <span class="p">{</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="n">array</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">targetSum</span> <span class="o">==</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">[]</span>
-<span class="p">}</span>
-<span class="c1">// Time: O(n*log(n))</span>
-<span class="kd">func</span> <span class="nf">solution3</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">targetSum</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">let</span> <span class="nv">sorted</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
-    <span class="k">var</span> <span class="nv">leftPointer</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">var</span> <span class="nv">rightPointer</span> <span class="o">=</span> <span class="n">sorted</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="k">while</span> <span class="n">leftPointer</span> <span class="o">&lt;</span> <span class="n">rightPointer</span> <span class="p">{</span>
-        <span class="k">let</span> <span class="nv">leftMost</span> <span class="o">=</span> <span class="n">sorted</span><span class="p">[</span><span class="n">leftPointer</span><span class="p">]</span>
-        <span class="k">let</span> <span class="nv">rightMost</span> <span class="o">=</span> <span class="n">sorted</span><span class="p">[</span><span class="n">rightPointer</span><span class="p">]</span>
-        <span class="k">let</span> <span class="nv">currentSum</span> <span class="o">=</span> <span class="n">leftMost</span> <span class="o">+</span> <span class="n">rightMost</span>
-        <span class="k">if</span> <span class="n">currentSum</span> <span class="o">==</span> <span class="n">targetSum</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">leftMost</span><span class="p">,</span> <span class="n">rightMost</span><span class="p">]</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">currentSum</span> <span class="o">&lt;</span> <span class="n">targetSum</span> <span class="p">{</span>
-            <span class="n">leftPointer</span> <span class="o">=</span> <span class="n">leftPointer</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">currentSum</span> <span class="o">&gt;</span> <span class="n">targetSum</span> <span class="p">{</span>
-            <span class="n">rightPointer</span> <span class="o">=</span> <span class="n">rightPointer</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">[]</span>
-<span class="p">}</span>
-<span class="c1">// Time: O(n)</span>
-<span class="kd">func</span> <span class="nf">solution4</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">targetSum</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">numberDictionary</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">]()</span>
-    <span class="k">for</span> <span class="n">number</span> <span class="k">in</span> <span class="n">array</span> <span class="p">{</span>
-        <span class="k">let</span> <span class="nv">mayMatch</span> <span class="o">=</span> <span class="n">targetSum</span> <span class="o">-</span> <span class="n">number</span>
-        <span class="k">if</span> <span class="k">let</span> <span class="nv">exists</span> <span class="o">=</span> <span class="n">numberDictionary</span><span class="p">[</span><span class="n">mayMatch</span><span class="p">],</span> <span class="n">exists</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">mayMatch</span><span class="p">,</span> <span class="n">number</span><span class="p">]</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="n">numberDictionary</span><span class="p">[</span><span class="n">number</span><span class="p">]</span> <span class="o">=</span> <span class="kc">true</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">[]</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="analysis">Analysis:</h3>
-
-<p>Each solution has its trade-offs in terms of time complexity. Running a simple benchmark on an array with 100,000 values yields the following results:</p>
-
-<ul>
-  <li>solution1: 31.88 s.</li>
-  <li>solution2: 18.41 s.</li>
-  <li>solution3: 0.38 s.</li>
-  <li>solution4: 0.20 s. 🏆</li>
-</ul>
-
-<p>As you can see, solution 4 is the most efficient in this case, with a time complexity of O(n).</p>
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="/images/posts/prob_001_graph-1024x687.webp" alt="" class="centered-image__img" />
-  <p align="center">
-    <em></em>
-  </p>
-</div>
-
-<p>The functions used for benchmarking are:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">printTimeElapsedWhenRunningCode</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span><span class="kt">String</span><span class="p">,</span> <span class="nv">operation</span><span class="p">:()</span><span class="o">-&gt;</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">let</span> <span class="nv">startTime</span> <span class="o">=</span> <span class="kt">CFAbsoluteTimeGetCurrent</span><span class="p">()</span>
-    <span class="nf">operation</span><span class="p">()</span>
-    <span class="k">let</span> <span class="nv">timeElapsed</span> <span class="o">=</span> <span class="kt">CFAbsoluteTimeGetCurrent</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span>
-    <span class="nf">print</span><span class="p">(</span><span class="s">"Time elapsed for </span><span class="se">\(</span><span class="n">title</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">timeElapsed</span><span class="se">)</span><span class="s"> s."</span><span class="p">)</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="nf">timeElapsedInSecondsWhenRunningCode</span><span class="p">(</span><span class="nv">operation</span><span class="p">:</span> <span class="p">()</span><span class="o">-&gt;</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
-    <span class="k">let</span> <span class="nv">startTime</span> <span class="o">=</span> <span class="kt">CFAbsoluteTimeGetCurrent</span><span class="p">()</span>
-    <span class="nf">operation</span><span class="p">()</span>
-    <span class="k">let</span> <span class="nv">timeElapsed</span> <span class="o">=</span> <span class="kt">CFAbsoluteTimeGetCurrent</span><span class="p">()</span> <span class="o">-</span> <span class="n">startTime</span>
-    <span class="k">return</span> <span class="kt">Double</span><span class="p">(</span><span class="n">timeElapsed</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h2 id="problem-2">Problem 2</h2>
-<p>Given two non-empty arrays, write a function that determines if the second array is a subsequence of the first array.</p>
-
-<blockquote>
-  <p>Keep in mind that a subsequence is not the same as a subarray.</p>
-</blockquote>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Time: O(n)</span>
-<span class="kd">func</span> <span class="nf">isValidSubsequence_solution1</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">sequence</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">false</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="n">array</span> <span class="o">==</span> <span class="n">sequence</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">true</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">false</span>
-    <span class="p">}</span>
-    <span class="k">var</span> <span class="nv">arrIdx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">var</span> <span class="nv">seqIdx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">arrIdx</span> <span class="o">&lt;</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">seqIdx</span> <span class="o">&lt;</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="n">array</span><span class="p">[</span><span class="n">arrIdx</span><span class="p">]</span> <span class="o">==</span> <span class="n">sequence</span><span class="p">[</span><span class="n">seqIdx</span><span class="p">]</span> <span class="p">{</span>
-            <span class="n">seqIdx</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="p">}</span>
-        <span class="n">arrIdx</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">seqIdx</span> <span class="o">==</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span>
-<span class="p">}</span>
-
-<span class="c1">// Time: O(n)</span>
-<span class="kd">func</span> <span class="nf">isValidSubsequence_solution2</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="n">_</span> <span class="nv">sequence</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">false</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="n">array</span> <span class="o">==</span> <span class="n">sequence</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">true</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">false</span>
-    <span class="p">}</span>
-    <span class="k">var</span> <span class="nv">seqIdx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="n">array</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="n">seqIdx</span> <span class="o">==</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
-            <span class="k">break</span>
-        <span class="p">}</span>
-        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">sequence</span><span class="p">[</span><span class="n">seqIdx</span><span class="p">]</span> <span class="p">{</span>
-            <span class="n">seqIdx</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">seqIdx</span> <span class="o">==</span> <span class="n">sequence</span><span class="o">.</span><span class="n">count</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="test-results">Test Results:</h3>
-
-<p>Using these arrays:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">myArray1</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="o">-</span><span class="mi">900005</span><span class="p">,</span> <span class="nv">through</span><span class="p">:</span> <span class="mi">900005</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
-<span class="k">let</span> <span class="nv">myArray2</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="o">-</span><span class="mi">900000</span><span class="p">,</span> <span class="nv">through</span><span class="p">:</span> <span class="mi">900000</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
-</code></pre></div></div>
-
-<p>The results were:</p>
-<ul>
-  <li>Time elapsed for solution1: 28.102 s.</li>
-  <li>Time elapsed for solution2: 14.446 s. 🏆</li>
-</ul>
-
-<p>Solution 2 is more efficient, even though both solutions have the same time complexity. Can you guess why? 🤓</p>
-
-<h2 id="problem-3">Problem 3</h2>
-<p>Write a function that takes in a non-empty array of integers sorted in ascending order and returns a new array with the squares of the original integers, also sorted in ascending order.</p>
-
-<p>Here are four solutions along with explanations:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Bad solution, appending is expensive; it's better to initialize an array with the required length.</span>
-<span class="kd">func</span> <span class="nf">sortedSquaredArray_solution1</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">sortedSquares</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]()</span>
-    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="n">array</span> <span class="p">{</span>
-        <span class="n">sortedSquares</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="n">value</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">sortedSquares</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
-<span class="p">}</span>
-<span class="c1">// Time: O(nlog(n)) | Space O(n)</span>
-<span class="kd">func</span> <span class="nf">sortedSquaredArray_solution2</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">sortedSquares</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">in</span> <span class="n">array</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
-        <span class="n">sortedSquares</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">value</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">sortedSquares</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
-<span class="p">}</span>
-<span class="c1">// Using higher-order functions for high performance.</span>
-<span class="kd">func</span> <span class="nf">sortedSquaredArray_solution3</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">*</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
-<span class="p">}</span>
-<span class="c1">// Time: O(n) | Space O(n)</span>
-<span class="kd">func</span> <span class="nf">sortedSquaredArray_solution4</span><span class="p">(</span><span class="n">_</span> <span class="nv">array</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">sortedSquares</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
-    <span class="k">var</span> <span class="nv">smallerValueIdx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">var</span> <span class="nv">largerValueIdx</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="k">for</span> <span class="n">idx</span> <span class="k">in</span> <span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">array</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">through</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">let</span> <span class="nv">smallerValue</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">smallerValueIdx</span><span class="p">]</span>
-        <span class="k">let</span> <span class="nv">largerValue</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">largerValueIdx</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nf">abs</span><span class="p">(</span><span class="n">smallerValue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">largerValue</span><span class="p">)</span> <span class="p">{</span>
-            <span class="n">sortedSquares</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">smallerValue</span> <span class="o">*</span> <span class="n">smallerValue</span>
-            <span class="n">smallerValueIdx</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="n">sortedSquares</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">largerValue</span> <span class="o">*</span> <span class="n">largerValue</span>
-            <span class="n">largerValueIdx</span> <span class="o">-=</span> <span class="mi">1</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">sortedSquares</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="benchmarking">Benchmarking:</h3>
-
-<p>For the input:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">myArraySortedSquares</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="o">-</span><span class="mi">5000000</span><span class="p">,</span> <span class="nv">through</span><span class="p">:</span> <span class="mi">5000000</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
-</code></pre></div></div>
-
-<ul>
-  <li>Time elapsed for solution1: 6.786 s.</li>
-  <li>Time elapsed for solution2: 6.275 s.</li>
-  <li>Time elapsed for solution3: 5.106 s.</li>
-  <li>Time elapsed for solution4: 1.637 s. 🥇</li>
-</ul>
-
-<h2 id="problem-4">Problem 4</h2>
-
-<p>Given a 2D array of matches <code class="language-plaintext highlighter-rouge">[host, guest]</code> and an array of results where 1 means the host team won, determine the player with the most wins.</p>
-
-<p>Example:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">matches</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">[</span><span class="s">"Nepomniachtchi"</span><span class="p">,</span> <span class="s">"Grischuk"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Karjakin"</span><span class="p">,</span> <span class="s">"Grischuk"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Nepomniachtchi"</span><span class="p">,</span> <span class="s">"Keymer"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Ding Liren"</span><span class="p">,</span> <span class="s">"Grischuk"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Karjakin"</span><span class="p">,</span> <span class="s">"Andreikin"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Carlsen"</span><span class="p">,</span> <span class="s">"Gukesh D"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Aronian"</span><span class="p">,</span> <span class="s">"Gukesh D"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Carlsen"</span><span class="p">,</span> <span class="s">"Andreikin"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Nepomniachtchi"</span><span class="p">,</span> <span class="s">"Gukesh D"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s">"Aronian"</span><span class="p">,</span> <span class="s">"Gukesh D"</span><span class="p">]</span>
-<span class="p">]</span>
-<span class="k">let</span> <span class="nv">results</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-</code></pre></div></div>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
-<span class="k">let</span> <span class="nv">HOST_TEAM_WON</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="k">let</span> <span class="nv">WIN_POINTS</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="c1">// O(n) time | O(k) space , where n: are matches and k is the number of teams</span>
-<span class="kd">func</span> <span class="nf">chessWinner</span><span class="p">(</span><span class="n">_</span> <span class="nv">matches</span><span class="p">:</span> <span class="p">[[</span><span class="kt">String</span><span class="p">]],</span> <span class="n">_</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">bestPlayer</span> <span class="o">=</span> <span class="s">""</span>
-    <span class="k">var</span> <span class="nv">scores</span> <span class="o">=</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]()</span>
-    <span class="n">scores</span><span class="p">[</span><span class="n">bestPlayer</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">match</span><span class="p">)</span> <span class="k">in</span> <span class="n">matches</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">let</span> <span class="p">(</span><span class="nv">host</span><span class="p">,</span> <span class="nv">guest</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">match</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">let</span> <span class="nv">winning</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="kt">HOST_TEAM_WON</span><span class="p">)</span> <span class="p">?</span> <span class="p">(</span><span class="n">host</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">guest</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">scores</span><span class="p">[</span><span class="n">winning</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span> <span class="n">scores</span><span class="p">[</span><span class="n">winning</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">}</span>
-        <span class="n">scores</span><span class="p">[</span><span class="n">winning</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">winning</span><span class="p">]</span><span class="o">!</span> <span class="o">+</span> <span class="kt">WIN_POINTS</span>
-        <span class="k">if</span> <span class="n">scores</span><span class="p">[</span><span class="n">winning</span><span class="p">]</span><span class="o">!</span> <span class="o">&gt;</span> <span class="n">scores</span><span class="p">[</span><span class="n">bestPlayer</span><span class="p">]</span><span class="o">!</span> <span class="p">{</span>
-            <span class="n">bestPlayer</span> <span class="o">=</span> <span class="n">winning</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">bestPlayer</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">generateData</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">([[</span><span class="kt">String</span><span class="p">]]</span> <span class="p">,</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="p">{</span>
-    <span class="k">let</span> <span class="nv">players1</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Carlsen"</span><span class="p">,</span> <span class="s">"Ding Liren"</span><span class="p">,</span> <span class="s">"Nepomniachtchi"</span><span class="p">,</span> <span class="s">"Karjakin"</span><span class="p">,</span> <span class="s">"Aronian"</span><span class="p">]</span>
-    <span class="k">let</span> <span class="nv">players2</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Keymer"</span><span class="p">,</span> <span class="s">"Vitiugov"</span><span class="p">,</span> <span class="s">"Gukesh D"</span><span class="p">,</span> <span class="s">"Andreikin"</span><span class="p">,</span> <span class="s">"Grischuk"</span><span class="p">]</span>
-    <span class="k">var</span> <span class="nv">matches</span> <span class="o">=</span> <span class="p">[[</span><span class="kt">String</span><span class="p">]]</span> <span class="p">()</span>
-    <span class="k">var</span> <span class="nv">results</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]()</span>
-    <span class="k">let</span> <span class="nv">possibleResults</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span> <span class="o">..&lt;</span> <span class="mi">10</span> <span class="p">{</span>
-        <span class="n">matches</span><span class="o">.</span><span class="nf">append</span><span class="p">([</span><span class="n">players1</span><span class="o">.</span><span class="nf">randomElement</span><span class="p">()</span> <span class="p">??</span> <span class="s">""</span><span class="p">,</span> <span class="n">players2</span><span class="o">.</span><span class="nf">randomElement</span><span class="p">()</span> <span class="p">??</span> <span class="s">""</span><span class="p">])</span>
-        <span class="n">results</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">possibleResults</span><span class="o">.</span><span class="nf">randomElement</span><span class="p">()</span> <span class="p">??</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="nf">print</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span>
-    <span class="nf">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-    <span class="nf">return</span> <span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="nf">problem_04_solutions</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="nf">generateData</span><span class="p">()</span>
-    <span class="nf">printTimeElapsedWhenRunningCode</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span><span class="s">"solution1"</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">let</span> <span class="nv">winner</span> <span class="o">=</span> <span class="nf">chessWinner</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span>
-        <span class="nf">print</span><span class="p">(</span><span class="n">winner</span><span class="p">)</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div></div>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Math" /><category term="Algorithms" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Math" /><category term="Algorithms" /><summary type="html"><![CDATA[After reading the very popular book, Grokking Algorithms, I decided to blog about algorithms and data structures. I find the book is very informative and easy to digest. Understanding data structures is essential before diving into problem-solving. While I won’t go into detailed explanations here, I recommend attempting to solve the problems on your own without immediately referring to the solutions.]]></summary></entry></feed>
+</ul>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[One crisp Monday morning, a fresh-faced software engineer, affectionately nicknamed Penguin 🐧, embarked on their inaugural journey into the professional realm, commencing their very first job as a developer. As the young Penguin waddled into the office, eager to make their mark, a captivating conversation unfolded between the newcomer and their seasoned team leader, the wise and experienced Rex 🦖.]]></summary></entry></feed>

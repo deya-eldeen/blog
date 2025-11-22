@@ -1,12 +1,5 @@
-/* @preserve Dark mode Init */
-/*
- * There are two colour palettes on CSS for the data-theme: 'light' and 'dark'.
- * Initially the script checks if a theme is set in session storage and
- * alternatively listens to a MediaQuery callback looking for "prefers-color-scheme: dark".
- *
- * The variables darkBtn and lightBtn are defined in head.liquid from the _data/translations.yml
- * The isAutoTheme is defined in head.liquid from the _config.yml
- */
+
+
 
 const themeButton = {
     'light': `<i class="fas fa-adjust" aria-hidden="true"></i><span class="navbar-label-with-icon"> ${darkBtn}</span>`,
@@ -38,20 +31,17 @@ function themeToggle() {
 function bootstrapTheme() {
     if (isAutoTheme) {
         if (!currentTheme()) {
-            // Load browser's preference
             let browserPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
             if (browserPrefersDark.matches) localStorage.setItem('theme', 'dark');
             browserPrefersDark.addEventListener('change', () => {
                 if (browserPrefersDark.matches) localStorage.setItem('theme', 'dark');
             });
         }
-        // Load theme
         let sessionPrefers = currentTheme();
         setMode(sessionPrefers ? sessionPrefers : 'light');
     }
 }
 
-// Init
 (function () {
     bootstrapTheme();
 })()

@@ -1,9 +1,4 @@
-/*
- * Here are all the gulp tasks you can use to help manage your blog
- * Use `npm install` to install all the dependencies located in package.json
- * If you have an issue with sharp, try: `npm rebuild`.
- * Then `gulp default` to minimize css and images.
- */
+
 const gulp = require('gulp');
 const concat = require('gulp-concat');
 const uglify = require('gulp-uglify-es').default;
@@ -13,7 +8,6 @@ const replace = require('gulp-replace');
 const webp = require('gulp-webp');
 const fs = require('fs');
 
-// Use it gulp post -n <title of the post>
 gulp.task('post', function (callback) {
   let args = process.argv;
   let title = args[args.length - 1];
@@ -21,8 +15,6 @@ gulp.task('post', function (callback) {
   let content = '---\n' +
     'layout: post\n' +
     'title: ' + title + '\n' +
-    //'feature-img: "assets/img/"\n' +
-    //'thumbnail: "assets/img/thumbnails/"\n' +
     'tags: []\n' +
     '---';
   console.log('[' + new Date().toLocaleTimeString('en-CA', {hour12: false}) + '] File created: _posts/' + filename);
@@ -50,7 +42,6 @@ gulp.task("img", async function imging() {
     .pipe(gulp.dest('img/'))
 });
 
-// Alternative using "sharp" in case "imagemin" does not work, supported formats: heic, heif, jpeg, jpg, png, raw, tiff, webp
 gulp.task('sharp_img', async function () {
   const responsive = await import('gulp-responsive');
   let settings = {
@@ -71,7 +62,6 @@ gulp.task('thumbnails', async function () {
   const responsive = await import('gulp-responsive');
   let settings = {
     width: '50%',
-    //format: 'jpeg', // convert to jpeg format
   };
 
   return gulp.src('img/feature-img/*')
@@ -87,7 +77,6 @@ gulp.task('thumbnails-all', async function () {
   const responsive = await import('gulp-responsive');
   let settings = {
     width: '50%',
-    //format: 'jpeg', // convert to jpeg format
   };
 
   return gulp.src('img/*.{png,jpg,webp,jpeg}')
