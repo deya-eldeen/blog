@@ -1,10 +1,242 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-03-28T23:24:17+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">LLDB Survival Guide: Theory, Tricks, and Python Hooks</title><link href="http://localhost:4000/lldb-survival-guide/" rel="alternate" type="text/html" title="LLDB Survival Guide: Theory, Tricks, and Python Hooks" /><published>2025-11-10T00:00:00+03:00</published><updated>2025-11-10T00:00:00+03:00</updated><id>http://localhost:4000/lldb-tricks</id><content type="html" xml:base="http://localhost:4000/lldb-survival-guide/"><![CDATA[<p>LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for exploring your process, forcing state changes, and automating whole debugging sessions. Here is the mental model I use, the handful of commands I never forget, and how to extend LLDB with Python when the built-ins are not enough.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-03-29T00:45:55+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">Avoiding Memory Leaks in Swift: Practical Capture List Patterns</title><link href="http://localhost:4000/avoiding-memory-leaks-swift-capture-lists/" rel="alternate" type="text/html" title="Avoiding Memory Leaks in Swift: Practical Capture List Patterns" /><published>2026-03-15T00:00:00+03:00</published><updated>2026-03-15T00:00:00+03:00</updated><id>http://localhost:4000/avoiding-memory-leaks-swift-capture-lists</id><content type="html" xml:base="http://localhost:4000/avoiding-memory-leaks-swift-capture-lists/"><![CDATA[<p>Swift gives us ARC, but ARC is not a leak-proof shield. Memory leaks still happen when strong references create cycles, and closures are one of the most common places where that cycle begins. The good news is that capture lists give us precise control over how values are retained.</p>
 
 <!--more-->
 
 <!-- _includes/centered-image.html -->
 <div class="centered-image">
-  <img src="../images/covers/lldb_full.webp" alt="LLDB console close up" class="centered-image__img" width="960" height="1568" />
+  <img src="../images/covers/memory_management_full.webp" alt="Avoiding memory leaks in Swift with capture lists" class="centered-image__img" width="960" height="1568" />
+  <p align="center">
+    <em>Avoiding memory leaks in Swift with capture lists</em>
+  </p>
+</div>
+
+<h2 id="why-leaks-still-happen-with-arc">Why leaks still happen with ARC</h2>
+
+<p>ARC deallocates objects when their strong reference count reaches zero. A leak happens when a group of objects keeps each other alive forever.</p>
+
+<p>A classic cycle looks like this:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span> <span class="o">=</span> <span class="kt">UserService</span><span class="p">()</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
+
+        <span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">render</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserService</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">onUserLoaded</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">ProfileViewController</code> strongly owns <code class="language-plaintext highlighter-rouge">service</code>, and <code class="language-plaintext highlighter-rouge">service</code> strongly owns <code class="language-plaintext highlighter-rouge">onUserLoaded</code>, and that closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>. That closes the loop.</p>
+
+<h2 id="capture-lists-in-one-sentence">Capture lists in one sentence</h2>
+
+<p>A capture list is the bracket syntax before closure parameters that lets you control how captured values are retained.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now the closure does not increase <code class="language-plaintext highlighter-rouge">self</code>’s retain count.</p>
+
+<h2 id="weak-vs-unowned-in-practice"><code class="language-plaintext highlighter-rouge">weak</code> vs <code class="language-plaintext highlighter-rouge">unowned</code> in practice</h2>
+
+<h3 id="use-weak-when-the-captured-instance-may-disappear">Use <code class="language-plaintext highlighter-rouge">weak</code> when the captured instance may disappear</h3>
+
+<p><code class="language-plaintext highlighter-rouge">weak</code> references are optional and become <code class="language-plaintext highlighter-rouge">nil</code> automatically when the object deallocates.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This is the safe default for UI code and most escaping closures.</p>
+
+<h3 id="use-unowned-only-when-lifetime-is-guaranteed">Use <code class="language-plaintext highlighter-rouge">unowned</code> only when lifetime is guaranteed</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Coordinator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">child</span><span class="p">:</span> <span class="kt">Child</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">child</span> <span class="o">=</span> <span class="kt">Child</span><span class="p">()</span>
+        <span class="n">child</span><span class="o">.</span><span class="n">onFinish</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">self</span><span class="o">.</span><span class="nf">handleFinish</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">handleFinish</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">unowned</code> is non-optional and does not require unwrapping, but it will crash if accessed after deallocation. Use it only when the closure can never outlive the captured object.</p>
+
+<h2 id="common-leak-sources-and-fixes">Common leak sources and fixes</h2>
+
+<h3 id="1-completion-handlers-stored-by-long-lived-objects">1) Completion handlers stored by long-lived objects</h3>
+
+<p>Leak-prone:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apiClient</span><span class="o">.</span><span class="n">requestUser</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Safer:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apiClient</span><span class="o">.</span><span class="n">requestUser</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">result</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="2-timers">2) Timers</h3>
+
+<p><code class="language-plaintext highlighter-rouge">Timer</code> strongly retains its closure. If the closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>, your object may never deallocate.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">timer</span> <span class="o">=</span> <span class="kt">Timer</span><span class="o">.</span><span class="nf">scheduledTimer</span><span class="p">(</span><span class="nv">withTimeInterval</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nv">repeats</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">tick</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Also invalidate timers when leaving scope.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">deinit</span> <span class="p">{</span>
+    <span class="n">timer</span><span class="p">?</span><span class="o">.</span><span class="nf">invalidate</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="3-combine-subscriptions">3) Combine subscriptions</h3>
+
+<p>If <code class="language-plaintext highlighter-rouge">self</code> owns <code class="language-plaintext highlighter-rouge">cancellables</code>, and a <code class="language-plaintext highlighter-rouge">sink</code> closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>, you can create a cycle.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">value</span> <span class="k">in</span>
+        <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">apply</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="4-task-closures-and-async-work">4) Task closures and async work</h3>
+
+<p>Tasks can outlive the view controller that started them.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">repository</span><span class="o">.</span><span class="nf">load</span><span class="p">()</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>And cancel long-running tasks:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">deinit</span> <span class="p">{</span>
+    <span class="n">task</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="capture-values-not-self-when-possible">Capture values, not <code class="language-plaintext highlighter-rouge">self</code>, when possible</h2>
+
+<p>One of the best patterns is to capture only what is needed.</p>
+
+<p>Instead of this:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onEvent</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">event</span> <span class="k">in</span>
+    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="nf">log</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Prefer this when possible:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">logger</span> <span class="o">=</span> <span class="n">logger</span>
+<span class="n">service</span><span class="o">.</span><span class="n">onEvent</span> <span class="o">=</span> <span class="p">{</span> <span class="n">event</span> <span class="k">in</span>
+    <span class="n">logger</span><span class="o">.</span><span class="nf">log</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This avoids optional handling and reduces accidental <code class="language-plaintext highlighter-rouge">self</code> retention.</p>
+
+<h2 id="dont-use-weak-self-everywhere-by-default">Don’t use <code class="language-plaintext highlighter-rouge">[weak self]</code> everywhere by default</h2>
+
+<p>Not every closure needs weak capture. If a closure is non-escaping and used immediately, strong capture is typically fine.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">items</span><span class="o">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This closure is not stored and does not create a long-lived cycle.</p>
+
+<p>A practical rule:</p>
+
+<ul>
+  <li>If closure is escaping and stored or long-lived, evaluate weak/unowned.</li>
+  <li>If closure is short-lived and non-escaping, strong capture is usually okay.</li>
+  <li>If closure uses one dependency, capture that dependency directly.</li>
+</ul>
+
+<h2 id="useful-capture-list-patterns">Useful capture list patterns</h2>
+
+<h3 id="capture-specific-dependencies">Capture specific dependencies</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onRetry</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="n">networkClient</span><span class="p">,</span> <span class="n">cache</span><span class="p">]</span> <span class="k">in</span>
+    <span class="n">networkClient</span><span class="o">.</span><span class="nf">refresh</span><span class="p">()</span>
+    <span class="n">cache</span><span class="o">.</span><span class="nf">clearExpired</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="capture-mutable-value-snapshots-intentionally">Capture mutable value snapshots intentionally</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">retryCount</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">service</span><span class="o">.</span><span class="n">onRetry</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="n">retryCount</span><span class="p">]</span> <span class="k">in</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"Retry count at registration time: </span><span class="se">\(</span><span class="n">retryCount</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="rename-captures-for-clarity">Rename captures for clarity</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onAction</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="n">viewModel</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">viewModel</span><span class="p">]</span> <span class="k">in</span>
+    <span class="n">viewModel</span><span class="p">?</span><span class="o">.</span><span class="nf">reload</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="how-to-verify-leaks-in-a-real-app">How to verify leaks in a real app</h2>
+
+<ol>
+  <li>Open Xcode Memory Graph and look for retained view controllers after dismissal.</li>
+  <li>Use Instruments Leaks and Allocations on navigation loops.</li>
+  <li>Add <code class="language-plaintext highlighter-rouge">deinit</code> logs to critical types during development.</li>
+  <li>Re-check every escaping closure when you introduce a new stored callback.</li>
+</ol>
+
+<h2 id="a-quick-review-checklist">A quick review checklist</h2>
+
+<ul>
+  <li>Is this closure escaping?</li>
+  <li>Who stores this closure?</li>
+  <li>Does it capture <code class="language-plaintext highlighter-rouge">self</code> strongly?</li>
+  <li>Should this be <code class="language-plaintext highlighter-rouge">[weak self]</code>, <code class="language-plaintext highlighter-rouge">[unowned self]</code>, or specific dependency capture?</li>
+  <li>Is there a cancellation or invalidation path (<code class="language-plaintext highlighter-rouge">Task</code>, <code class="language-plaintext highlighter-rouge">Timer</code>, subscription)?</li>
+</ul>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Avoiding leaks in Swift is less about adding <code class="language-plaintext highlighter-rouge">[weak self]</code> everywhere and more about lifetime design. Capture lists let you encode lifetime intent directly in code. Use <code class="language-plaintext highlighter-rouge">weak</code> as the safe default for long-lived closures, reserve <code class="language-plaintext highlighter-rouge">unowned</code> for guaranteed lifetimes, and prefer capturing specific dependencies when possible. That combination keeps your code both safe and readable.</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Swift" /><category term="iOS" /><category term="ARC" /><category term="Memory Management" /><category term="Closures" /><summary type="html"><![CDATA[Swift gives us ARC, but ARC is not a leak-proof shield. Memory leaks still happen when strong references create cycles, and closures are one of the most common places where that cycle begins. The good news is that capture lists give us precise control over how values are retained.]]></summary></entry><entry><title type="html">LLDB Survival Guide: Theory, Tricks, and Python Hooks</title><link href="http://localhost:4000/lldb-survival-guide/" rel="alternate" type="text/html" title="LLDB Survival Guide: Theory, Tricks, and Python Hooks" /><published>2026-03-10T00:00:00+03:00</published><updated>2026-03-10T00:00:00+03:00</updated><id>http://localhost:4000/lldb-tricks</id><content type="html" xml:base="http://localhost:4000/lldb-survival-guide/"><![CDATA[<p>LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for exploring your process, forcing state changes, and automating whole debugging sessions. Here is the mental model I use, the handful of commands I never forget, and how to extend LLDB with Python when the built-ins are not enough.</p>
+
+<!--more-->
+
+<!-- _includes/centered-image.html -->
+<div class="centered-image">
+  <img src="../images/covers/memory_management_full.webp" alt="LLDB console close up" class="centered-image__img" width="960" height="1568" />
   <p align="center">
     <em>LLDB in its natural habitat</em>
   </p>
@@ -40,7 +272,7 @@
 
 <p>Sometimes you want logging, not halts:</p>
 
-<p>Set <code class="language-plaintext highlighter-rouge">br s -n foo</code> then <code class="language-plaintext highlighter-rouge">br command add &lt;id&gt;</code> and enter <code class="language-plaintext highlighter-rouge">thread backtrace</code> or <code class="language-plaintext highlighter-rouge">frame variable bar</code> with <code class="language-plaintext highlighter-rouge">continue</code> to keep running. Built-in tracepoints/logpoints (<code class="language-plaintext highlighter-rouge">br modify &lt;id&gt; --command 'expr -O -- foo' --auto-continue true</code>) emit data without stopping, and adding <code class="language-plaintext highlighter-rouge">--hit-count</code> to breakpoints samples every Nth hit.</p>
+<p>Set <code class="language-plaintext highlighter-rouge">br s -n foo</code> then <code class="language-plaintext highlighter-rouge">br command add &lt;id&gt;</code> and enter <code class="language-plaintext highlighter-rouge">thread backtrace</code> or <code class="language-plaintext highlighter-rouge">frame variable bar</code> with <code class="language-plaintext highlighter-rouge">continue</code> to keep running. Built-in tracepoints/logpoints are best set at creation time (<code class="language-plaintext highlighter-rouge">br s -n foo -C 'expr -O -- foo' -G true</code>) to emit data without stopping, and adding <code class="language-plaintext highlighter-rouge">--ignore-count</code> helps skip noisy early hits.</p>
 
 <h2 id="reading-swift-nicely">Reading Swift Nicely</h2>
 
@@ -50,7 +282,7 @@
 
 <h2 id="productionoptimized-build-survival">Production/Optimized Build Survival</h2>
 
-<p>Turn on <code class="language-plaintext highlighter-rouge">enable-external-lookup</code> to let LLDB ask dSYM files for optimized symbols. When variables are “optimized out,” find adjacent values with <code class="language-plaintext highlighter-rouge">register read</code> and <code class="language-plaintext highlighter-rouge">memory read</code> around <code class="language-plaintext highlighter-rouge">$sp</code> or <code class="language-plaintext highlighter-rouge">$fp</code>. Use <code class="language-plaintext highlighter-rouge">settings set target.process.thread.step-avoid-libraries</code> to skip noisy frameworks while stepping. Prefer <code class="language-plaintext highlighter-rouge">thread jump --by 1</code> sparingly to skip a misbehaving line without re-running side effects. For a post-mortem view, record a lightweight trace with <code class="language-plaintext highlighter-rouge">process trace start</code> (ARM64 supports hardware tracing) and <code class="language-plaintext highlighter-rouge">process trace dump instructions</code>.</p>
+<p>Turn on <code class="language-plaintext highlighter-rouge">settings set symbols.enable-external-lookup true</code> to let LLDB ask external symbol sources for optimized symbols. When variables are “optimized out,” find adjacent values with <code class="language-plaintext highlighter-rouge">register read</code> and <code class="language-plaintext highlighter-rouge">memory read</code> around <code class="language-plaintext highlighter-rouge">$sp</code> or <code class="language-plaintext highlighter-rouge">$fp</code>. Use <code class="language-plaintext highlighter-rouge">settings append target.process.thread.step-avoid-libraries &lt;library-name&gt;</code> to skip noisy frameworks while stepping. Prefer <code class="language-plaintext highlighter-rouge">thread jump --by 1</code> sparingly to skip a misbehaving line without re-running side effects. For a post-mortem view, record a lightweight trace with <code class="language-plaintext highlighter-rouge">process trace start</code> (ARM64 supports hardware tracing) and <code class="language-plaintext highlighter-rouge">process trace dump instructions</code>.</p>
 
 <h2 id="memory-work-from-sanity-checks-to-surgery">Memory Work: From Sanity Checks to Surgery</h2>
 
@@ -62,7 +294,7 @@
 
 <h2 id="crash-and-hang-triage-playbook">Crash and Hang Triage Playbook</h2>
 
-<p>For hangs, <code class="language-plaintext highlighter-rouge">process interrupt</code>, run <code class="language-plaintext highlighter-rouge">thread backtrace all</code>, and look for threads waiting on locks (<code class="language-plaintext highlighter-rouge">pthread_mutex_lock</code>, <code class="language-plaintext highlighter-rouge">dispatch_semaphore_wait</code>). For crashes, read <code class="language-plaintext highlighter-rouge">process status</code> and the exception code; <code class="language-plaintext highlighter-rouge">frame info</code> in the crashing thread is ground truth. Data race hints often surface when you set watchpoints around suspicious state and rerun. For retain cycles, pause in a UI loop, run <code class="language-plaintext highlighter-rouge">expr -l swift -O -- dumpHeap()</code> with Swift introspection libraries, or use the Python helper below. When you catch bad state, checkpoint it with <code class="language-plaintext highlighter-rouge">process save-core /tmp/foo.core</code> so you can exit and analyze offline.</p>
+<p>For hangs, <code class="language-plaintext highlighter-rouge">process interrupt</code>, run <code class="language-plaintext highlighter-rouge">thread backtrace all</code>, and look for threads waiting on locks (<code class="language-plaintext highlighter-rouge">pthread_mutex_lock</code>, <code class="language-plaintext highlighter-rouge">dispatch_semaphore_wait</code>). For crashes, read <code class="language-plaintext highlighter-rouge">process status</code> and the exception code; <code class="language-plaintext highlighter-rouge">frame info</code> in the crashing thread is ground truth. Data race hints often surface when you set watchpoints around suspicious state and rerun. For retain cycles, pause in a UI loop and use your own heap/introspection helper (or the Python hook below), since there is no built-in universal <code class="language-plaintext highlighter-rouge">dumpHeap()</code> command in LLDB. When you catch bad state, checkpoint it with <code class="language-plaintext highlighter-rouge">process save-core /tmp/foo.core</code> so you can exit and analyze offline.</p>
 
 <h2 id="remote-and-core-file-debugging">Remote and Core-File Debugging</h2>
 
@@ -109,23 +341,36 @@
 <h3 id="a-more-involved-hook-auto-dump-on-crash">A More Involved Hook: Auto-Dump on Crash</h3>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># ~/lldb_tools/on_crash_dump.py
-</span><span class="kn">import</span> <span class="n">lldb</span><span class="p">,</span> <span class="n">os</span><span class="p">,</span> <span class="n">datetime</span>
+</span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="n">lldb</span>
 
-<span class="k">def</span> <span class="nf">dump_on_stop</span><span class="p">(</span><span class="n">debugger</span><span class="p">,</span> <span class="n">exe_ctx</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
-    <span class="n">stop_reason</span> <span class="o">=</span> <span class="n">exe_ctx</span><span class="p">.</span><span class="n">thread</span><span class="p">.</span><span class="nc">GetStopDescription</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
-    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">strftime</span><span class="p">(</span><span class="sh">"</span><span class="s">%Y%m%d-%H%M%S</span><span class="sh">"</span><span class="p">)</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">/tmp/lldb-crash-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s">.txt</span><span class="sh">"</span>
-    <span class="n">res</span> <span class="o">=</span> <span class="n">lldb</span><span class="p">.</span><span class="nc">SBCommandReturnObject</span><span class="p">()</span>
-    <span class="n">interp</span> <span class="o">=</span> <span class="n">debugger</span><span class="p">.</span><span class="nc">GetCommandInterpreter</span><span class="p">()</span>
-    <span class="n">interp</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span><span class="sh">"</span><span class="s">thread backtrace all</span><span class="sh">"</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Stop reason: </span><span class="si">{</span><span class="n">stop_reason</span><span class="si">}</span><span class="se">\n\n</span><span class="sh">"</span><span class="p">)</span>
-        <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetOutput</span><span class="p">())</span>
-    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Wrote crash dump to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">CrashDumpHook</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">_extra_args</span><span class="p">,</span> <span class="n">_internal_dict</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+
+    <span class="k">def</span> <span class="nf">handle_stop</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">exe_ctx</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">exe_ctx</span><span class="p">.</span><span class="nc">GetThread</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">thread</span><span class="p">.</span><span class="nc">IsValid</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="n">stop_reason</span> <span class="o">=</span> <span class="n">thread</span><span class="p">.</span><span class="nc">GetStopDescription</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">strftime</span><span class="p">(</span><span class="sh">"</span><span class="s">%Y%m%d-%H%M%S</span><span class="sh">"</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">/tmp/lldb-crash-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s">.txt</span><span class="sh">"</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">lldb</span><span class="p">.</span><span class="nc">SBCommandReturnObject</span><span class="p">()</span>
+        <span class="n">interp</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">target</span><span class="p">.</span><span class="nc">GetDebugger</span><span class="p">().</span><span class="nc">GetCommandInterpreter</span><span class="p">()</span>
+        <span class="n">interp</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span><span class="sh">"</span><span class="s">thread backtrace all</span><span class="sh">"</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Stop reason: </span><span class="si">{</span><span class="n">stop_reason</span><span class="si">}</span><span class="se">\n\n</span><span class="sh">"</span><span class="p">)</span>
+            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetOutput</span><span class="p">()</span> <span class="ow">or</span> <span class="sh">""</span><span class="p">)</span>
+
+        <span class="n">stream</span><span class="p">.</span><span class="nc">Printf</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Wrote crash dump to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
 
 <span class="k">def</span> <span class="nf">__lldb_init_module</span><span class="p">(</span><span class="n">debugger</span><span class="p">,</span> <span class="n">_dict</span><span class="p">):</span>
     <span class="n">debugger</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span>
-        <span class="sh">'</span><span class="s">target stop-hook add -P on_crash_dump.dump_on_stop</span><span class="sh">'</span><span class="p">)</span>
+        <span class="sh">"</span><span class="s">target stop-hook add -P on_crash_dump.CrashDumpHook</span><span class="sh">"</span><span class="p">)</span>
     <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Registered stop-hook crash dumper</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
@@ -156,7 +401,7 @@ command alias memr memory read --format x --size 8 --count 8
 
 <h2 id="performance-poking-without-instruments">Performance Poking Without Instruments</h2>
 
-<p>Use <code class="language-plaintext highlighter-rouge">thread step-inst</code> to watch single instructions on hot paths, and <code class="language-plaintext highlighter-rouge">thread until -c &lt;addr&gt;</code> to run to a specific instruction quickly. <code class="language-plaintext highlighter-rouge">image lookup -n objc_msgSend</code> followed by <code class="language-plaintext highlighter-rouge">br s -a &lt;addr&gt;</code> with a class condition helps catch tight loops. <code class="language-plaintext highlighter-rouge">statistics</code> shows command timings; if stepping is slow, check symbol server latency and reduce logging.</p>
+<p>Use <code class="language-plaintext highlighter-rouge">thread step-inst</code> to watch single instructions on hot paths, and <code class="language-plaintext highlighter-rouge">thread until -a &lt;addr&gt;</code> to run to a specific instruction quickly. <code class="language-plaintext highlighter-rouge">image lookup -n objc_msgSend</code> followed by <code class="language-plaintext highlighter-rouge">br s -a &lt;addr&gt;</code> with a class condition helps catch tight loops. <code class="language-plaintext highlighter-rouge">statistics dump</code> shows command timings; if stepping is slow, check symbol server latency and reduce logging.</p>
 
 <h2 id="ui-debugging-without-xcode">UI Debugging Without Xcode</h2>
 
@@ -1651,91 +1896,4 @@ Use it to catch <strong>message-sent-to-deallocated-instance</strong> issues wit
       <td>Manages multiple working trees attached to the same repository, allowing you to work on different branches simultaneously.</td>
     </tr>
   </tbody>
-</table>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it’s primarily a development environment rather than a dedicated source control application.]]></summary></entry><entry><title type="html">Why I Prefer To Store My Files On A Digital Ocean Space &amp;amp; Not Google Drive Or Dropbox.</title><link href="http://localhost:4000/backup-on-spaces/" rel="alternate" type="text/html" title="Why I Prefer To Store My Files On A Digital Ocean Space &amp;amp; Not Google Drive Or Dropbox." /><published>2023-01-21T00:00:00+03:00</published><updated>2024-09-08T00:00:00+03:00</updated><id>http://localhost:4000/backup-on-spaces</id><content type="html" xml:base="http://localhost:4000/backup-on-spaces/"><![CDATA[<p>This is not directly related to swift or iOS, but thought it’s worth sharing, since I couldn’t find any article that mention such way to backup files.</p>
-
-<p>I’m one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity.</p>
-
-<!--more-->
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="../images/covers/do_space_full.webp" alt="" class="centered-image__img" width="960" height="1568" />
-  <p align="center">
-    <em></em>
-  </p>
-</div>
-
-<p>I vividly remember the first flash drive my father gifted me as a teenager; it had a mere 128 MB of storage. At that time, such a device was considered a luxury and not affordable for many where I live. Fast forward to today, and we now have SSDs that are over 1000 times larger in capacity and available at significantly lower prices.</p>
-
-<h2 id="cloud-storage">Cloud Storage</h2>
-<p>In the realm of cloud storage, common solutions like Google Drive and Dropbox offer plans, such as a 2TB option for $10 monthly. However, I prefer utilizing my own mountable drive integrated with a Content Delivery Network (CDN) for distributing my files efficiently. The best solution I’ve found for storing my work is using DigitalOcean Spaces, which is similar to AWS S3. I can conveniently mount it using a client like Cyberduck on my Mac, or on any device I own, allowing for seamless access and management of my files. This approach not only provides me with greater control over my data but also enhances my ability to share and distribute content effectively.</p>
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="/images/posts/image-2.webp" alt="" class="centered-image__img" />
-  <p align="center">
-    <em>Cyberduck, showing a Digital Ocean drive</em>
-  </p>
-</div>
-
-<p>Serving static websites on DigitalOcean Spaces is entirely feasible by leveraging its S3-compatible object storage capabilities. To get started, you can upload your HTML, CSS, and JavaScript files directly to a Space, which acts as a repository for your website assets.</p>
-
-<p>Even serving static websites, such as React applications or Jekyll blogs, on DigitalOcean Spaces is entirely feasible by leveraging its S3-compatible object storage capabilities. To get started, you can upload your website files—whether they are HTML, CSS, JavaScript. For example, when deploying a React app, you can build your project and upload the contents of the build folder to the Space. Similarly, for a Jekyll blog, you can generate the static site and upload the resulting files to your Space. Although DigitalOcean Spaces doesn’t natively support custom domains, you can set up a reverse proxy server using NGINX on a DigitalOcean Droplet to map your domain to the Space, allowing your static site to be accessed via your custom URL. This combination of tools enables you to efficiently serve your static websites while taking advantage of the scalability and performance of DigitalOcean’s infrastructure.</p>
-
-<h2 id="pros--cons">Pros &amp; Cons</h2>
-
-<p>When considering a storage solution, it’s essential to weigh the advantages and disadvantages to determine the best fit for your needs. DigitalOcean Spaces offers a range of benefits that make it an appealing choice for developers and businesses alike. From cost-effectiveness to enhanced control over your files, the pros of using DigitalOcean Spaces can significantly enhance your workflow and file management capabilities. Below, we outline the key advantages of utilizing DigitalOcean Spaces, as well as some potential drawbacks to keep in mind, ensuring you have a comprehensive understanding of this powerful storage solution.</p>
-
-<h3 id="pros">Pros</h3>
-
-<ul>
-  <li>
-    <p><strong>Direct Links</strong>: Easily access your files with straightforward URLs, allowing for seamless integration into your applications and workflows.</p>
-  </li>
-  <li>
-    <p><strong>Cost-Effective</strong>: With plans starting as low as $5, DigitalOcean Spaces provides an economical solution for storing and serving your data, making it accessible for individuals and small businesses alike.</p>
-  </li>
-  <li>
-    <p><strong>Bandwidth Savings</strong>: Setting up a Content Delivery Network (CDN) is simple, enabling you to save significant amounts of bandwidth and avoid exceeding transfer caps, which is especially beneficial for high-traffic applications.</p>
-  </li>
-  <li>
-    <p><strong>Granular Control</strong>: You have total control over metadata and content types of your files. For example, you can specify whether an uploaded MP4 file is streamable or downloadable, tailoring the user experience to your needs.</p>
-  </li>
-  <li>
-    <p><strong>Cross-Device Compatibility</strong>: DigitalOcean Spaces can be easily mounted on any device or server, providing flexibility and accessibility regardless of your operating system or hardware.</p>
-  </li>
-  <li>
-    <p><strong>Active File Serving</strong>: Unlike traditional storage solutions, your files are actively served, allowing you to host dynamic content, such as an Angular website, without placing additional load on your server.</p>
-  </li>
-  <li>
-    <p><strong>Custom URL Masking</strong>: You can mask the URL to reflect your own domain, enhancing professionalism and branding when presenting to clients or stakeholders during demos.</p>
-  </li>
-</ul>
-
-<h3 id="cons">Cons</h3>
-
-<ul>
-  <li>
-    <p><strong>Technical Knowledge Requirement</strong>: Some users may find that utilizing DigitalOcean Spaces requires a certain level of technical knowledge, which could be a barrier for those unfamiliar with cloud storage solutions.</p>
-  </li>
-  <li>
-    <p><strong>Limited Client Options</strong>: Many desktop clients used to mount such drives are not open source or free, which may limit accessibility for some users.</p>
-  </li>
-  <li>
-    <p><strong>File Sharing Limitations</strong>: Files stored in DigitalOcean Spaces cannot be shared with specific individuals; they are either public or private, which may not suit all collaboration needs.</p>
-  </li>
-</ul>
-
-<h3 id="security">Security</h3>
-
-<p>DigitalOcean Spaces offers robust security features designed to protect your data effectively. One of the key aspects is access control, which allows users to manage permissions for files stored in Spaces.</p>
-
-<h3 id="use-cases-are-infinite">Use cases are infinite!</h3>
-
-<p>The versatility of DigitalOcean Spaces opens up a myriad of use cases that can significantly enhance productivity and efficiency. For instance, if you’re involved in web scraping, you can effortlessly download large YouTube channels as a background job on the server. This approach allows you to avoid consuming your internet bandwidth while eliminating the need to keep a device running for extended periods. Instead, the files are stored directly in your DigitalOcean Space, making them readily accessible whenever you need them, without the hassle of local storage management. 🧐</p>
-
-<p>Moreover, DigitalOcean Spaces functions similarly to a Network Attached Storage (NAS) solution, providing a centralized location for all your files that can be accessed from multiple devices. This capability is particularly beneficial for teams or individuals who require seamless file sharing and collaboration. Additionally, it can serve as a media center, allowing you to host and stream your multimedia content efficiently. Whether you’re managing a portfolio of projects, sharing resources with colleagues, or simply organizing personal media, the possibilities are truly endless with DigitalOcean Spaces.</p>
-
-<p>Another innovative use case for DigitalOcean Spaces is as a centralized repository for continuous integration and deployment (CI/CD) pipelines. Software engineers can utilize Spaces to store build artifacts, such as compiled binaries, Docker images, or deployment packages, generated during the CI/CD process. By configuring your CI/CD tools to upload these artifacts directly to DigitalOcean Spaces, you can ensure that all necessary files are easily accessible for deployment across various environments. This setup not only streamlines the deployment process but also provides a reliable and scalable solution for managing versioned artifacts, making it easier to roll back to previous versions if needed. Additionally, you can integrate Spaces with other services, such as monitoring and alerting tools, to keep track of deployment statuses and ensure smooth operations throughout the software development lifecycle.</p>
-
-<p>I’d love to hear how others are using DigitalOcean Spaces in their projects! Whether you’re leveraging it for web hosting, data storage, or as part of your CI/CD pipeline, your experiences and tips could be incredibly valuable. Share your thoughts and use cases in the comments below—let’s learn from each other!</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[This is not directly related to swift or iOS, but thought it’s worth sharing, since I couldn’t find any article that mention such way to backup files. I’m one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity.]]></summary></entry></feed>
+</table>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it’s primarily a development environment rather than a dedicated source control application.]]></summary></entry></feed>

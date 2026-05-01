@@ -1,8 +1,8 @@
 ---
 layout: post  
 title: "LLDB Survival Guide: Theory, Tricks, and Python Hooks"  
-date: "2025-11-10"  
-last_modified_at: "2025-11-10"  
+date: "2026-03-10"  
+last_modified_at: "2026-03-10"  
 permalink: /lldb-survival-guide/  
 excerpt_separator: <!--more-->  
 author: deyaeldeen  
@@ -17,6 +17,7 @@ tags:
   - "Debugging"  
   - "Swift"  
   - "macOS"
+published: true
 ---
 
 LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for exploring your process, forcing state changes, and automating whole debugging sessions. Here is the mental model I use, the handful of commands I never forget, and how to extend LLDB with Python when the built-ins are not enough.
@@ -25,7 +26,7 @@ LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for ex
 
 {%
  include centered-image.html
- image_path="../images/covers/lldb_full.webp"
+ image_path="../images/covers/memory_management_full.webp"
  alt_text="LLDB console close up"
  caption="LLDB in its natural habitat"
  width="960"
@@ -63,7 +64,7 @@ LLDB stops for breakpoints, signals, or exceptions. Knowing which one fired matt
 
 Sometimes you want logging, not halts:
 
-Set `br s -n foo` then `br command add <id>` and enter `thread backtrace` or `frame variable bar` with `continue` to keep running. Built-in tracepoints/logpoints (`br modify <id> --command 'expr -O -- foo' --auto-continue true`) emit data without stopping, and adding `--hit-count` to breakpoints samples every Nth hit.
+Set `br s -n foo` then `br command add <id>` and enter `thread backtrace` or `frame variable bar` with `continue` to keep running. Built-in tracepoints/logpoints are best set at creation time (`br s -n foo -C 'expr -O -- foo' -G true`) to emit data without stopping, and adding `--ignore-count` helps skip noisy early hits.
 
 ## Reading Swift Nicely
 
@@ -73,7 +74,7 @@ Set `settings set target.swift-demangle true` for human-friendly symbols and bum
 
 ## Production/Optimized Build Survival
 
-Turn on `enable-external-lookup` to let LLDB ask dSYM files for optimized symbols. When variables are “optimized out,” find adjacent values with `register read` and `memory read` around `$sp` or `$fp`. Use `settings set target.process.thread.step-avoid-libraries` to skip noisy frameworks while stepping. Prefer `thread jump --by 1` sparingly to skip a misbehaving line without re-running side effects. For a post-mortem view, record a lightweight trace with `process trace start` (ARM64 supports hardware tracing) and `process trace dump instructions`.
+Turn on `settings set symbols.enable-external-lookup true` to let LLDB ask external symbol sources for optimized symbols. When variables are “optimized out,” find adjacent values with `register read` and `memory read` around `$sp` or `$fp`. Use `settings append target.process.thread.step-avoid-libraries <library-name>` to skip noisy frameworks while stepping. Prefer `thread jump --by 1` sparingly to skip a misbehaving line without re-running side effects. For a post-mortem view, record a lightweight trace with `process trace start` (ARM64 supports hardware tracing) and `process trace dump instructions`.
 
 ## Memory Work: From Sanity Checks to Surgery
 
@@ -85,7 +86,7 @@ Use `thread list` with the queue column to see GCD queues and `thread info -s` t
 
 ## Crash and Hang Triage Playbook
 
-For hangs, `process interrupt`, run `thread backtrace all`, and look for threads waiting on locks (`pthread_mutex_lock`, `dispatch_semaphore_wait`). For crashes, read `process status` and the exception code; `frame info` in the crashing thread is ground truth. Data race hints often surface when you set watchpoints around suspicious state and rerun. For retain cycles, pause in a UI loop, run `expr -l swift -O -- dumpHeap()` with Swift introspection libraries, or use the Python helper below. When you catch bad state, checkpoint it with `process save-core /tmp/foo.core` so you can exit and analyze offline.
+For hangs, `process interrupt`, run `thread backtrace all`, and look for threads waiting on locks (`pthread_mutex_lock`, `dispatch_semaphore_wait`). For crashes, read `process status` and the exception code; `frame info` in the crashing thread is ground truth. Data race hints often surface when you set watchpoints around suspicious state and rerun. For retain cycles, pause in a UI loop and use your own heap/introspection helper (or the Python hook below), since there is no built-in universal `dumpHeap()` command in LLDB. When you catch bad state, checkpoint it with `process save-core /tmp/foo.core` so you can exit and analyze offline.
 
 ## Remote and Core-File Debugging
 
@@ -136,23 +137,36 @@ The function receives the debugger, the raw command string, and the current exec
 
 ```python
 # ~/lldb_tools/on_crash_dump.py
-import lldb, os, datetime
+import datetime
+import lldb
 
-def dump_on_stop(debugger, exe_ctx, _):
-    stop_reason = exe_ctx.thread.GetStopDescription(100)
-    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    path = f"/tmp/lldb-crash-{ts}.txt"
-    res = lldb.SBCommandReturnObject()
-    interp = debugger.GetCommandInterpreter()
-    interp.HandleCommand("thread backtrace all", res)
-    with open(path, "w") as f:
-        f.write(f"Stop reason: {stop_reason}\n\n")
-        f.write(res.GetOutput())
-    print(f"Wrote crash dump to {path}")
+class CrashDumpHook:
+    def __init__(self, target, _extra_args, _internal_dict):
+        self.target = target
+
+    def handle_stop(self, exe_ctx, stream):
+        thread = exe_ctx.GetThread()
+        if not thread.IsValid():
+            return True
+
+        stop_reason = thread.GetStopDescription(100)
+        ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        path = f"/tmp/lldb-crash-{ts}.txt"
+
+        res = lldb.SBCommandReturnObject()
+        interp = self.target.GetDebugger().GetCommandInterpreter()
+        interp.HandleCommand("thread backtrace all", res)
+
+        with open(path, "w") as f:
+            f.write(f"Stop reason: {stop_reason}\n\n")
+            f.write(res.GetOutput() or "")
+
+        stream.Printf(f"Wrote crash dump to {path}")
+        return True
 
 def __lldb_init_module(debugger, _dict):
     debugger.HandleCommand(
-        'target stop-hook add -P on_crash_dump.dump_on_stop')
+        "target stop-hook add -P on_crash_dump.CrashDumpHook")
     print("Registered stop-hook crash dumper")
 ```
 
@@ -185,7 +199,7 @@ Session presets live in a text file—stash common breakpoints there, then `comm
 
 ## Performance Poking Without Instruments
 
-Use `thread step-inst` to watch single instructions on hot paths, and `thread until -c <addr>` to run to a specific instruction quickly. `image lookup -n objc_msgSend` followed by `br s -a <addr>` with a class condition helps catch tight loops. `statistics` shows command timings; if stepping is slow, check symbol server latency and reduce logging.
+Use `thread step-inst` to watch single instructions on hot paths, and `thread until -a <addr>` to run to a specific instruction quickly. `image lookup -n objc_msgSend` followed by `br s -a <addr>` with a class condition helps catch tight loops. `statistics dump` shows command timings; if stepping is slow, check symbol server latency and reduce logging.
 
 ## UI Debugging Without Xcode
 
