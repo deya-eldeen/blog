@@ -18,7 +18,7 @@ tags:
   - "ARC"
   - "Memory Management"
   - "Closures"
-published: true
+published: false
 ---
 
 Swift gives us ARC, but ARC is not a leak-proof shield. Memory leaks still happen when strong references create cycles, and closures are one of the most common places where that cycle begins. The good news is that capture lists give us precise control over how values are retained.

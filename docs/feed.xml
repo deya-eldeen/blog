@@ -1,348 +1,327 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-03-29T00:45:55+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">Avoiding Memory Leaks in Swift: Practical Capture List Patterns</title><link href="http://localhost:4000/avoiding-memory-leaks-swift-capture-lists/" rel="alternate" type="text/html" title="Avoiding Memory Leaks in Swift: Practical Capture List Patterns" /><published>2026-03-15T00:00:00+03:00</published><updated>2026-03-15T00:00:00+03:00</updated><id>http://localhost:4000/avoiding-memory-leaks-swift-capture-lists</id><content type="html" xml:base="http://localhost:4000/avoiding-memory-leaks-swift-capture-lists/"><![CDATA[<p>Swift gives us ARC, but ARC is not a leak-proof shield. Memory leaks still happen when strong references create cycles, and closures are one of the most common places where that cycle begins. The good news is that capture lists give us precise control over how values are retained.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-05-02T13:23:51+03:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Swift By Deya</title><subtitle>Swift Insights: Articles on iOS Development</subtitle><entry><title type="html">LLDB Survival Guide: Theory, Tricks, and Python Hooks</title><link href="http://localhost:4000/lldb-survival-guide/" rel="alternate" type="text/html" title="LLDB Survival Guide: Theory, Tricks, and Python Hooks" /><published>2026-04-04T00:00:00+03:00</published><updated>2026-04-04T00:00:00+03:00</updated><id>http://localhost:4000/lldb-tricks</id><content type="html" xml:base="http://localhost:4000/lldb-survival-guide/"><![CDATA[<p>LLDB is more than a place to set breakpoints. You can inspect app state, test quick fixes without rebuilding, and automate common debug steps. This guide keeps things practical and beginner-friendly.</p>
 
 <!--more-->
 
 <!-- _includes/centered-image.html -->
 <div class="centered-image">
-  <img src="../images/covers/memory_management_full.webp" alt="Avoiding memory leaks in Swift with capture lists" class="centered-image__img" width="960" height="1568" />
-  <p align="center">
-    <em>Avoiding memory leaks in Swift with capture lists</em>
-  </p>
-</div>
-
-<h2 id="why-leaks-still-happen-with-arc">Why leaks still happen with ARC</h2>
-
-<p>ARC deallocates objects when their strong reference count reaches zero. A leak happens when a group of objects keeps each other alive forever.</p>
-
-<p>A classic cycle looks like this:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
-    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span> <span class="o">=</span> <span class="kt">UserService</span><span class="p">()</span>
-
-    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
-
-        <span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">render</span><span class="p">()</span> <span class="p">{}</span>
-<span class="p">}</span>
-
-<span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserService</span> <span class="p">{</span>
-    <span class="k">var</span> <span class="nv">onUserLoaded</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p><code class="language-plaintext highlighter-rouge">ProfileViewController</code> strongly owns <code class="language-plaintext highlighter-rouge">service</code>, and <code class="language-plaintext highlighter-rouge">service</code> strongly owns <code class="language-plaintext highlighter-rouge">onUserLoaded</code>, and that closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>. That closes the loop.</p>
-
-<h2 id="capture-lists-in-one-sentence">Capture lists in one sentence</h2>
-
-<p>A capture list is the bracket syntax before closure parameters that lets you control how captured values are retained.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
-    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>Now the closure does not increase <code class="language-plaintext highlighter-rouge">self</code>’s retain count.</p>
-
-<h2 id="weak-vs-unowned-in-practice"><code class="language-plaintext highlighter-rouge">weak</code> vs <code class="language-plaintext highlighter-rouge">unowned</code> in practice</h2>
-
-<h3 id="use-weak-when-the-captured-instance-may-disappear">Use <code class="language-plaintext highlighter-rouge">weak</code> when the captured instance may disappear</h3>
-
-<p><code class="language-plaintext highlighter-rouge">weak</code> references are optional and become <code class="language-plaintext highlighter-rouge">nil</code> automatically when the object deallocates.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onUserLoaded</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
-    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
-    <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>This is the safe default for UI code and most escaping closures.</p>
-
-<h3 id="use-unowned-only-when-lifetime-is-guaranteed">Use <code class="language-plaintext highlighter-rouge">unowned</code> only when lifetime is guaranteed</h3>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Coordinator</span> <span class="p">{</span>
-    <span class="kd">private</span> <span class="k">let</span> <span class="nv">child</span><span class="p">:</span> <span class="kt">Child</span>
-
-    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-        <span class="n">child</span> <span class="o">=</span> <span class="kt">Child</span><span class="p">()</span>
-        <span class="n">child</span><span class="o">.</span><span class="n">onFinish</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
-            <span class="k">self</span><span class="o">.</span><span class="nf">handleFinish</span><span class="p">()</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">handleFinish</span><span class="p">()</span> <span class="p">{}</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p><code class="language-plaintext highlighter-rouge">unowned</code> is non-optional and does not require unwrapping, but it will crash if accessed after deallocation. Use it only when the closure can never outlive the captured object.</p>
-
-<h2 id="common-leak-sources-and-fixes">Common leak sources and fixes</h2>
-
-<h3 id="1-completion-handlers-stored-by-long-lived-objects">1) Completion handlers stored by long-lived objects</h3>
-
-<p>Leak-prone:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apiClient</span><span class="o">.</span><span class="n">requestUser</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
-    <span class="k">self</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>Safer:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apiClient</span><span class="o">.</span><span class="n">requestUser</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">result</span> <span class="k">in</span>
-    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
-    <span class="k">self</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="2-timers">2) Timers</h3>
-
-<p><code class="language-plaintext highlighter-rouge">Timer</code> strongly retains its closure. If the closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>, your object may never deallocate.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">timer</span> <span class="o">=</span> <span class="kt">Timer</span><span class="o">.</span><span class="nf">scheduledTimer</span><span class="p">(</span><span class="nv">withTimeInterval</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nv">repeats</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
-    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">tick</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>Also invalidate timers when leaving scope.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">deinit</span> <span class="p">{</span>
-    <span class="n">timer</span><span class="p">?</span><span class="o">.</span><span class="nf">invalidate</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="3-combine-subscriptions">3) Combine subscriptions</h3>
-
-<p>If <code class="language-plaintext highlighter-rouge">self</code> owns <code class="language-plaintext highlighter-rouge">cancellables</code>, and a <code class="language-plaintext highlighter-rouge">sink</code> closure strongly captures <code class="language-plaintext highlighter-rouge">self</code>, you can create a cycle.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">publisher</span>
-    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">value</span> <span class="k">in</span>
-        <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">apply</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
-</code></pre></div></div>
-
-<h3 id="4-task-closures-and-async-work">4) Task closures and async work</h3>
-
-<p>Tasks can outlive the view controller that started them.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
-    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
-    <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">repository</span><span class="o">.</span><span class="nf">load</span><span class="p">()</span>
-    <span class="k">self</span><span class="o">.</span><span class="nf">render</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>And cancel long-running tasks:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">deinit</span> <span class="p">{</span>
-    <span class="n">task</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h2 id="capture-values-not-self-when-possible">Capture values, not <code class="language-plaintext highlighter-rouge">self</code>, when possible</h2>
-
-<p>One of the best patterns is to capture only what is needed.</p>
-
-<p>Instead of this:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onEvent</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">event</span> <span class="k">in</span>
-    <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="nf">log</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>Prefer this when possible:</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">logger</span> <span class="o">=</span> <span class="n">logger</span>
-<span class="n">service</span><span class="o">.</span><span class="n">onEvent</span> <span class="o">=</span> <span class="p">{</span> <span class="n">event</span> <span class="k">in</span>
-    <span class="n">logger</span><span class="o">.</span><span class="nf">log</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>This avoids optional handling and reduces accidental <code class="language-plaintext highlighter-rouge">self</code> retention.</p>
-
-<h2 id="dont-use-weak-self-everywhere-by-default">Don’t use <code class="language-plaintext highlighter-rouge">[weak self]</code> everywhere by default</h2>
-
-<p>Not every closure needs weak capture. If a closure is non-escaping and used immediately, strong capture is typically fine.</p>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">items</span><span class="o">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
-    <span class="k">self</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>This closure is not stored and does not create a long-lived cycle.</p>
-
-<p>A practical rule:</p>
-
-<ul>
-  <li>If closure is escaping and stored or long-lived, evaluate weak/unowned.</li>
-  <li>If closure is short-lived and non-escaping, strong capture is usually okay.</li>
-  <li>If closure uses one dependency, capture that dependency directly.</li>
-</ul>
-
-<h2 id="useful-capture-list-patterns">Useful capture list patterns</h2>
-
-<h3 id="capture-specific-dependencies">Capture specific dependencies</h3>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onRetry</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="n">networkClient</span><span class="p">,</span> <span class="n">cache</span><span class="p">]</span> <span class="k">in</span>
-    <span class="n">networkClient</span><span class="o">.</span><span class="nf">refresh</span><span class="p">()</span>
-    <span class="n">cache</span><span class="o">.</span><span class="nf">clearExpired</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="capture-mutable-value-snapshots-intentionally">Capture mutable value snapshots intentionally</h3>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">retryCount</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">service</span><span class="o">.</span><span class="n">onRetry</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="n">retryCount</span><span class="p">]</span> <span class="k">in</span>
-    <span class="nf">print</span><span class="p">(</span><span class="s">"Retry count at registration time: </span><span class="se">\(</span><span class="n">retryCount</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="rename-captures-for-clarity">Rename captures for clarity</h3>
-
-<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">service</span><span class="o">.</span><span class="n">onAction</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="n">viewModel</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">viewModel</span><span class="p">]</span> <span class="k">in</span>
-    <span class="n">viewModel</span><span class="p">?</span><span class="o">.</span><span class="nf">reload</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h2 id="how-to-verify-leaks-in-a-real-app">How to verify leaks in a real app</h2>
-
-<ol>
-  <li>Open Xcode Memory Graph and look for retained view controllers after dismissal.</li>
-  <li>Use Instruments Leaks and Allocations on navigation loops.</li>
-  <li>Add <code class="language-plaintext highlighter-rouge">deinit</code> logs to critical types during development.</li>
-  <li>Re-check every escaping closure when you introduce a new stored callback.</li>
-</ol>
-
-<h2 id="a-quick-review-checklist">A quick review checklist</h2>
-
-<ul>
-  <li>Is this closure escaping?</li>
-  <li>Who stores this closure?</li>
-  <li>Does it capture <code class="language-plaintext highlighter-rouge">self</code> strongly?</li>
-  <li>Should this be <code class="language-plaintext highlighter-rouge">[weak self]</code>, <code class="language-plaintext highlighter-rouge">[unowned self]</code>, or specific dependency capture?</li>
-  <li>Is there a cancellation or invalidation path (<code class="language-plaintext highlighter-rouge">Task</code>, <code class="language-plaintext highlighter-rouge">Timer</code>, subscription)?</li>
-</ul>
-
-<h2 id="conclusion">Conclusion</h2>
-
-<p>Avoiding leaks in Swift is less about adding <code class="language-plaintext highlighter-rouge">[weak self]</code> everywhere and more about lifetime design. Capture lists let you encode lifetime intent directly in code. Use <code class="language-plaintext highlighter-rouge">weak</code> as the safe default for long-lived closures, reserve <code class="language-plaintext highlighter-rouge">unowned</code> for guaranteed lifetimes, and prefer capturing specific dependencies when possible. That combination keeps your code both safe and readable.</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Swift" /><category term="iOS" /><category term="ARC" /><category term="Memory Management" /><category term="Closures" /><summary type="html"><![CDATA[Swift gives us ARC, but ARC is not a leak-proof shield. Memory leaks still happen when strong references create cycles, and closures are one of the most common places where that cycle begins. The good news is that capture lists give us precise control over how values are retained.]]></summary></entry><entry><title type="html">LLDB Survival Guide: Theory, Tricks, and Python Hooks</title><link href="http://localhost:4000/lldb-survival-guide/" rel="alternate" type="text/html" title="LLDB Survival Guide: Theory, Tricks, and Python Hooks" /><published>2026-03-10T00:00:00+03:00</published><updated>2026-03-10T00:00:00+03:00</updated><id>http://localhost:4000/lldb-tricks</id><content type="html" xml:base="http://localhost:4000/lldb-survival-guide/"><![CDATA[<p>LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for exploring your process, forcing state changes, and automating whole debugging sessions. Here is the mental model I use, the handful of commands I never forget, and how to extend LLDB with Python when the built-ins are not enough.</p>
-
-<!--more-->
-
-<!-- _includes/centered-image.html -->
-<div class="centered-image">
-  <img src="../images/covers/memory_management_full.webp" alt="LLDB console close up" class="centered-image__img" width="960" height="1568" />
+  <img src="../images/covers/lldb_full.webp" alt="LLDB console close up" class="centered-image__img" width="960" height="1568" />
   <p align="center">
     <em>LLDB in its natural habitat</em>
   </p>
 </div>
 
+<h2 id="start-here-what-lldb-is-and-how-to-run-it">Start Here: What LLDB Is and How to Run It</h2>
+
+<p><code class="language-plaintext highlighter-rouge">LLDB</code> (sometimes typed as <code class="language-plaintext highlighter-rouge">lldb</code> in lowercase by mistake) is the debugger that ships with Xcode command line tools.</p>
+
+<p>If your app is not running yet, launch it under LLDB:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun lldb /path/to/MyApp
+</code></pre></div></div>
+
+<p>Then in the LLDB prompt:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>lldb<span class="o">)</span> run
+</code></pre></div></div>
+
+<p>If your app is already running, attach to it:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pgrep <span class="nt">-x</span> MyApp
+xcrun lldb <span class="nt">-p</span> &lt;pid&gt;
+</code></pre></div></div>
+
+<p>Or from inside LLDB:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>lldb<span class="o">)</span> attach <span class="nt">--name</span> MyApp
+</code></pre></div></div>
+
+<p>To exit:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>lldb<span class="o">)</span> quit
+</code></pre></div></div>
+
+<h2 id="why-attaching-to-production-apps-can-fail">Why Attaching To Production Apps Can Fail</h2>
+
+<p>Many people hit this early: attaching to production macOS apps is often blocked by security rules.</p>
+
+<p>Main reasons:</p>
+
+<ul>
+  <li>SIP (System Integrity Protection) blocks debugging many protected/system processes.</li>
+  <li>Hardened Runtime + missing <code class="language-plaintext highlighter-rouge">get-task-allow</code> entitlement can block debugger attach.</li>
+  <li>App Store/release builds are usually signed to prevent casual attaching.</li>
+</ul>
+
+<p>So yes, sometimes attach starts working only after SIP is disabled on a test machine. But SIP is not the only gate. Even with SIP disabled, code-signing and entitlements can still block attach.</p>
+
+<p>Check SIP status:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>csrutil status
+</code></pre></div></div>
+
+<p>If you are doing local security research on your own Mac only, disable SIP temporarily:</p>
+
+<ol>
+  <li>Reboot into Recovery.</li>
+  <li>Open Terminal in Recovery.</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">csrutil disable</code>.</li>
+  <li>Reboot normally.</li>
+</ol>
+
+<p>Warning: this is dangerous. Disabling SIP removes important macOS protections that block system tampering and many privilege-escalation paths. If malware runs while SIP is off, it has a much easier time persisting and modifying protected files/processes. Do this only on an isolated test machine, never on your daily-use Mac, and re-enable SIP immediately after testing.</p>
+
+<p>Re-enable it when done:</p>
+
+<ol>
+  <li>Reboot into Recovery again.</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">csrutil enable</code>.</li>
+  <li>Reboot normally.</li>
+</ol>
+
 <h2 id="a-fast-theory-primer">A Fast Theory Primer</h2>
 
-<p>LLDB is two layers: a front-end (the commands you type) and the SB API (an object model for processes, threads, frames, registers, and symbols). Every command funnels down to SB objects. Targets and processes begin with <code class="language-plaintext highlighter-rouge">target create</code>, which loads symbols, and move through <code class="language-plaintext highlighter-rouge">run</code>/<code class="language-plaintext highlighter-rouge">attach</code> to spawn or latch onto a process; <code class="language-plaintext highlighter-rouge">process status</code> is your heartbeat check. Frames and variables are your window into state—<code class="language-plaintext highlighter-rouge">frame info</code>, <code class="language-plaintext highlighter-rouge">frame variable -L</code>, and the <code class="language-plaintext highlighter-rouge">v</code> alias help you walk call stacks and inspect memory without recompiling. The expression engine (<code class="language-plaintext highlighter-rouge">expr -- &lt;code&gt;</code>) uses Clang/Swift to execute in-process code, so keep it side-effect-free unless you are intentionally poking state.</p>
+<p>LLDB has two parts:</p>
+
+<ul>
+  <li>The command line you type into.</li>
+  <li>An internal toolkit called the <code class="language-plaintext highlighter-rouge">SB API</code> (<code class="language-plaintext highlighter-rouge">SB</code> = <strong>Script Bridge</strong> in LLDB docs).</li>
+</ul>
+
+<p>Note: this is LLDB’s API naming and is different from the separate macOS <code class="language-plaintext highlighter-rouge">ScriptingBridge</code> framework.</p>
+
+<p>What is the <code class="language-plaintext highlighter-rouge">SB API object model</code>?</p>
+
+<p>It is just LLDB’s internal set of objects (like building blocks): app, process, thread, stack frame, variables, and symbols. LLDB commands use these objects behind the scenes.</p>
+
+<p>Typical flow:</p>
+
+<ul>
+  <li>Create or select the app to debug (called a “target”): <code class="language-plaintext highlighter-rouge">target create ...</code></li>
+  <li>Launch or attach: <code class="language-plaintext highlighter-rouge">run</code> / <code class="language-plaintext highlighter-rouge">attach ...</code></li>
+  <li>Check liveness: <code class="language-plaintext highlighter-rouge">process status</code></li>
+  <li>Inspect call stack and local values: <code class="language-plaintext highlighter-rouge">frame info</code>, <code class="language-plaintext highlighter-rouge">frame variable -L</code> (or alias <code class="language-plaintext highlighter-rouge">v -L</code>)</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">expr -- &lt;code&gt;</code> runs code inside the paused app. Start with read-only checks. Only change values on purpose.</p>
 
 <h2 id="quick-commands-i-actually-use">Quick Commands I Actually Use</h2>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(lldb) breakpoint set --name viewDidLoad
-(lldb) thread step-in          # or si/step
-(lldb) thread backtrace        # stack with indexes
-(lldb) frame variable request  # locals in current frame
-(lldb) expr -l objc -O -- [[UIApplication sharedApplication] keyWindow]
-(lldb) memory read --format x --size 4 --count 8 $sp
+(lldb) thread step-in
+(lldb) thread backtrace
+(lldb) frame variable request
+(lldb) expr -l objc -O -- [[[UIApplication sharedApplication] connectedScenes] allObjects]
+(lldb) memory read --format x --size 8 --count 8 $sp
 </code></pre></div></div>
 
-<p>Speed tips: use <code class="language-plaintext highlighter-rouge">br s -n</code>, <code class="language-plaintext highlighter-rouge">bt</code>, <code class="language-plaintext highlighter-rouge">fr v</code>, and <code class="language-plaintext highlighter-rouge">mem r</code> once the aliases are in muscle memory. Add <code class="language-plaintext highlighter-rouge">--one-shot true</code> to temporary breakpoints so they clean themselves up.</p>
+<p>Speed tips: <code class="language-plaintext highlighter-rouge">br s -n</code>, <code class="language-plaintext highlighter-rouge">bt</code>, <code class="language-plaintext highlighter-rouge">v</code> (or <code class="language-plaintext highlighter-rouge">frame var</code>), and <code class="language-plaintext highlighter-rouge">mem r</code> are short versions of common commands. Use <code class="language-plaintext highlighter-rouge">--one-shot true</code> for temporary breakpoints so they remove themselves after one hit.</p>
 
 <h2 id="anatomy-of-a-stop">Anatomy of a Stop</h2>
 
-<p>LLDB stops for breakpoints, signals, or exceptions. Knowing which one fired matters:</p>
+<p>LLDB can stop because of a breakpoint, crash signal, exception, or watchpoint. First step: find out why it stopped.</p>
 
-<p><code class="language-plaintext highlighter-rouge">thread backtrace all</code> shows who else is doing work, so deadlocks pop out quickly. <code class="language-plaintext highlighter-rouge">process status</code> identifies whether you hit SIGSEGV, EXC_BAD_ACCESS, or a breakpoint. <code class="language-plaintext highlighter-rouge">thread info</code> shows the stop reason, and <code class="language-plaintext highlighter-rouge">thread return</code> exits the current frame to skip bad code. When you stop in a signal you expect (like SIGPIPE), add a pass rule with <code class="language-plaintext highlighter-rouge">process handle SIGPIPE -n true -p true -s false</code> to ignore it silently.</p>
+<p>Common crash signals/exceptions you will see:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">EXC_BAD_ACCESS</code> / <code class="language-plaintext highlighter-rouge">SIGSEGV</code>: invalid memory access (use-after-free, null/garbage pointer).</li>
+  <li><code class="language-plaintext highlighter-rouge">SIGABRT</code>: app called <code class="language-plaintext highlighter-rouge">abort()</code> (failed assertion, fatal error, uncaught runtime issue).</li>
+  <li><code class="language-plaintext highlighter-rouge">SIGILL</code>: illegal CPU instruction (corrupted state, bad jump, unsupported instruction path).</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">process status</code> tells you if you hit <code class="language-plaintext highlighter-rouge">EXC_BAD_ACCESS</code>, <code class="language-plaintext highlighter-rouge">SIGSEGV</code>, or a normal breakpoint. <code class="language-plaintext highlighter-rouge">thread backtrace all</code> shows what every thread is doing, which helps with hangs. <code class="language-plaintext highlighter-rouge">thread return</code> can skip the current function, but use it carefully because it changes app behavior.</p>
+
+<p>Breakpoint vs watchpoint (quick difference):</p>
+
+<ul>
+  <li>Breakpoint: stops when execution reaches a code location (file/line/function).</li>
+  <li>Watchpoint: stops when a specific value in memory is read/written/modified.</li>
+</ul>
+
+<p>If you get expected signals like <code class="language-plaintext highlighter-rouge">SIGPIPE</code>, tune handling explicitly:</p>
+
+<p><code class="language-plaintext highlighter-rouge">process handle SIGPIPE -n true -p true -s false</code></p>
 
 <h2 id="breakpoints-that-pull-their-weight">Breakpoints That Pull Their Weight</h2>
 
-<p><code class="language-plaintext highlighter-rouge">br s -f File.swift -l 42</code> is the precise file-and-line breakpoint, while <code class="language-plaintext highlighter-rouge">br s -r "viewDidLoad"</code> uses regex to find multiple matches. Conditional breakpoints like <code class="language-plaintext highlighter-rouge">br s -n foo -c 'count &gt; 10'</code> keep you out of noise. Auto-commands let you attach work to a hit—<code class="language-plaintext highlighter-rouge">br command add 1</code> followed by <code class="language-plaintext highlighter-rouge">thread backtrace</code> captures context without pausing. One-shot troubleshooting via <code class="language-plaintext highlighter-rouge">br s -n willDisplayCell --one-shot true</code> avoids cleanup. Watchpoints (<code class="language-plaintext highlighter-rouge">watchpoint set variable self.flag</code> or <code class="language-plaintext highlighter-rouge">watchpoint set expression -- &amp;myVar</code>) trap writes/reads, and adding <code class="language-plaintext highlighter-rouge">--watch read_write</code> helps nail races.</p>
+<p><code class="language-plaintext highlighter-rouge">br s -f File.swift -l 42</code> sets a breakpoint at one exact line. <code class="language-plaintext highlighter-rouge">br s -r "viewDidLoad"</code> matches many functions by name pattern. Conditional breakpoints like <code class="language-plaintext highlighter-rouge">br s -n foo -c 'count &gt; 10'</code> stop only when a rule is true.</p>
+
+<p>Auto-commands are great for data capture:</p>
+
+<ul>
+  <li>Set breakpoint: <code class="language-plaintext highlighter-rouge">br s -n willDisplayCell</code></li>
+  <li>Add actions: <code class="language-plaintext highlighter-rouge">br command add &lt;id&gt;</code></li>
+  <li>Add commands like <code class="language-plaintext highlighter-rouge">thread backtrace</code>, <code class="language-plaintext highlighter-rouge">frame variable model</code>, then <code class="language-plaintext highlighter-rouge">continue</code></li>
+</ul>
+
+<p>Watchpoints stop when a value changes:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">watchpoint set variable myVar</code></li>
+  <li><code class="language-plaintext highlighter-rouge">watchpoint set variable -w read_write myVar</code></li>
+  <li><code class="language-plaintext highlighter-rouge">watchpoint set expression -w modify -- &amp;myVar</code></li>
+</ul>
 
 <h3 id="tracepoints-without-pausing">Tracepoints Without Pausing</h3>
 
-<p>Sometimes you want logging, not halts:</p>
+<p>When you want logs but do not want to pause:</p>
 
-<p>Set <code class="language-plaintext highlighter-rouge">br s -n foo</code> then <code class="language-plaintext highlighter-rouge">br command add &lt;id&gt;</code> and enter <code class="language-plaintext highlighter-rouge">thread backtrace</code> or <code class="language-plaintext highlighter-rouge">frame variable bar</code> with <code class="language-plaintext highlighter-rouge">continue</code> to keep running. Built-in tracepoints/logpoints are best set at creation time (<code class="language-plaintext highlighter-rouge">br s -n foo -C 'expr -O -- foo' -G true</code>) to emit data without stopping, and adding <code class="language-plaintext highlighter-rouge">--ignore-count</code> helps skip noisy early hits.</p>
+<p><code class="language-plaintext highlighter-rouge">br s -n foo -C 'expr -O -- foo' -G true</code></p>
+
+<p>Add <code class="language-plaintext highlighter-rouge">--ignore-count</code> to skip the first N hits.</p>
 
 <h2 id="reading-swift-nicely">Reading Swift Nicely</h2>
 
-<p>Swift-only debug builds can feel opaque because of type mangling and ARC. A few tweaks help:</p>
+<p>Swift values can look cleaner with these settings:</p>
 
-<p>Set <code class="language-plaintext highlighter-rouge">settings set target.swift-demangle true</code> for human-friendly symbols and bump <code class="language-plaintext highlighter-rouge">settings set target.max-children-count 256</code> when exploring large containers. Use <code class="language-plaintext highlighter-rouge">po</code> for ObjC bridged objects, but prefer <code class="language-plaintext highlighter-rouge">expr -O --</code> for Swift types to avoid bridging surprises. Run <code class="language-plaintext highlighter-rouge">expr -l swift -- import Foundation</code> inside a session to unlock higher-level helpers, and on optimized builds enable <code class="language-plaintext highlighter-rouge">settings set target.process.optimization-warnings true</code> so LLDB tells you why a variable is unavailable.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">settings set target.swift-demangle true</code></li>
+  <li><code class="language-plaintext highlighter-rouge">settings set target.max-children-count 256</code></li>
+  <li><code class="language-plaintext highlighter-rouge">settings set target.process.optimization-warnings true</code></li>
+</ul>
+
+<p>Use <code class="language-plaintext highlighter-rouge">expr -l swift -O --</code> for Swift objects (equivalent to <code class="language-plaintext highlighter-rouge">po</code> with explicit Swift context) and <code class="language-plaintext highlighter-rouge">expr -l objc -O --</code> for Objective-C objects. In Release/optimized builds, some local variables may be unavailable; this is normal.</p>
 
 <h2 id="productionoptimized-build-survival">Production/Optimized Build Survival</h2>
 
-<p>Turn on <code class="language-plaintext highlighter-rouge">settings set symbols.enable-external-lookup true</code> to let LLDB ask external symbol sources for optimized symbols. When variables are “optimized out,” find adjacent values with <code class="language-plaintext highlighter-rouge">register read</code> and <code class="language-plaintext highlighter-rouge">memory read</code> around <code class="language-plaintext highlighter-rouge">$sp</code> or <code class="language-plaintext highlighter-rouge">$fp</code>. Use <code class="language-plaintext highlighter-rouge">settings append target.process.thread.step-avoid-libraries &lt;library-name&gt;</code> to skip noisy frameworks while stepping. Prefer <code class="language-plaintext highlighter-rouge">thread jump --by 1</code> sparingly to skip a misbehaving line without re-running side effects. For a post-mortem view, record a lightweight trace with <code class="language-plaintext highlighter-rouge">process trace start</code> (ARM64 supports hardware tracing) and <code class="language-plaintext highlighter-rouge">process trace dump instructions</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">settings set symbols.enable-external-lookup true</code> can help LLDB find extra symbol info. If local values are optimized away, check raw CPU registers (<code class="language-plaintext highlighter-rouge">register read</code>) and memory (<code class="language-plaintext highlighter-rouge">memory read</code>) near <code class="language-plaintext highlighter-rouge">$sp</code>/<code class="language-plaintext highlighter-rouge">$fp</code>.</p>
+
+<p>Noise control while stepping:</p>
+
+<p><code class="language-plaintext highlighter-rouge">settings append target.process.thread.step-avoid-libraries UIKitCore</code></p>
+
+<p><code class="language-plaintext highlighter-rouge">thread jump --by 1</code> can skip one source line. Use as a last resort.</p>
+
+<p>If tracing is supported in your environment, this sequence is useful:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">thread trace start</code></li>
+  <li><code class="language-plaintext highlighter-rouge">thread trace dump instructions</code></li>
+</ul>
 
 <h2 id="memory-work-from-sanity-checks-to-surgery">Memory Work: From Sanity Checks to Surgery</h2>
 
-<p>For stack sanity, use <code class="language-plaintext highlighter-rouge">memory read --format x --size 8 --count 4 $fp</code> to eyeball saved registers. Heap spelunking on macOS leans on <code class="language-plaintext highlighter-rouge">malloc_info -v</code> and <code class="language-plaintext highlighter-rouge">malloc_history &lt;pid&gt; &lt;address&gt;</code> to chase leaks. <code class="language-plaintext highlighter-rouge">image lookup -a 0xADDR</code> reveals symbol ownership of an address when you need dSYM-backed types. Rewrite values with <code class="language-plaintext highlighter-rouge">expr -- myValue = 0</code> or <code class="language-plaintext highlighter-rouge">memory write &lt;addr&gt; &lt;bytes&gt;</code> when you need to unblock a flow without recompiling. Guard pages benefit from a watchpoint on a buffer or a <code class="language-plaintext highlighter-rouge">vmmap</code> pass; when corruption hits, LLDB shows the culprit thread.</p>
+<p>Stack sanity check:</p>
+
+<p><code class="language-plaintext highlighter-rouge">memory read --format x --size 8 --count 4 $fp</code></p>
+
+<p>Address-to-symbol mapping:</p>
+
+<p><code class="language-plaintext highlighter-rouge">image lookup -a 0xADDR</code></p>
+
+<p>Controlled mutation during experiments:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">expr -- myValue = 0</code></li>
+  <li><code class="language-plaintext highlighter-rouge">memory write &lt;addr&gt; &lt;bytes&gt;</code></li>
+</ul>
+
+<p>For memory allocation history, try <code class="language-plaintext highlighter-rouge">memory history &lt;address&gt;</code> when available. For memory-region details, use <code class="language-plaintext highlighter-rouge">memory region &lt;address&gt;</code> and <code class="language-plaintext highlighter-rouge">vmmap</code> (a macOS terminal tool).</p>
 
 <h2 id="asyncawait-actors-and-queues">Async/Await, Actors, and Queues</h2>
 
-<p>Use <code class="language-plaintext highlighter-rouge">thread list</code> with the queue column to see GCD queues and <code class="language-plaintext highlighter-rouge">thread info -s</code> to inspect QoS. A one-shot <code class="language-plaintext highlighter-rouge">br s -n _swift_task_switch</code> catches runaway task churn. For actors, break on the executor hop with <code class="language-plaintext highlighter-rouge">br s -n swift_task_enqueue</code> and read the backtrace to see who scheduled work. To capture the call site that launched a task, set a breakpoint in the task body, run <code class="language-plaintext highlighter-rouge">bt</code>, and note frames marked with concurrency helpers.</p>
+<p><code class="language-plaintext highlighter-rouge">thread list</code> gives a quick view of active threads and queue names. <code class="language-plaintext highlighter-rouge">thread info -s</code> gives extra stop details.</p>
+
+<p>Useful concurrency breakpoints:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">br s -n _swift_task_switch</code></li>
+  <li><code class="language-plaintext highlighter-rouge">br s -n swift_task_enqueue</code></li>
+</ul>
+
+<p>To find where a task was launched, break in the task body and inspect <code class="language-plaintext highlighter-rouge">bt</code> for concurrency runtime frames around your app frames.</p>
 
 <h2 id="crash-and-hang-triage-playbook">Crash and Hang Triage Playbook</h2>
 
-<p>For hangs, <code class="language-plaintext highlighter-rouge">process interrupt</code>, run <code class="language-plaintext highlighter-rouge">thread backtrace all</code>, and look for threads waiting on locks (<code class="language-plaintext highlighter-rouge">pthread_mutex_lock</code>, <code class="language-plaintext highlighter-rouge">dispatch_semaphore_wait</code>). For crashes, read <code class="language-plaintext highlighter-rouge">process status</code> and the exception code; <code class="language-plaintext highlighter-rouge">frame info</code> in the crashing thread is ground truth. Data race hints often surface when you set watchpoints around suspicious state and rerun. For retain cycles, pause in a UI loop and use your own heap/introspection helper (or the Python hook below), since there is no built-in universal <code class="language-plaintext highlighter-rouge">dumpHeap()</code> command in LLDB. When you catch bad state, checkpoint it with <code class="language-plaintext highlighter-rouge">process save-core /tmp/foo.core</code> so you can exit and analyze offline.</p>
+<p>For hangs:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">process interrupt</code></li>
+  <li><code class="language-plaintext highlighter-rouge">thread backtrace all</code></li>
+  <li>Check for waits like <code class="language-plaintext highlighter-rouge">pthread_mutex_lock</code> and <code class="language-plaintext highlighter-rouge">dispatch_semaphore_wait</code></li>
+</ol>
+
+<p>For crashes, start with the crashing thread: run <code class="language-plaintext highlighter-rouge">process status</code>, then <code class="language-plaintext highlighter-rouge">frame info</code> on that thread. If shared state looks suspicious, add watchpoints and rerun.</p>
+
+<p>To keep a point-in-time artifact for offline analysis:</p>
+
+<p><code class="language-plaintext highlighter-rouge">process save-core /tmp/foo.core</code></p>
 
 <h2 id="remote-and-core-file-debugging">Remote and Core-File Debugging</h2>
 
-<p>For remote iOS, <code class="language-plaintext highlighter-rouge">platform select remote-ios</code> then <code class="language-plaintext highlighter-rouge">platform connect connect://&lt;host&gt;:&lt;port&gt;</code> after launching <code class="language-plaintext highlighter-rouge">lldb-server gdbserver</code> on device; load dSYMs locally with <code class="language-plaintext highlighter-rouge">target symbols add</code>. For core files, <code class="language-plaintext highlighter-rouge">target create --core crash.core</code> then <code class="language-plaintext highlighter-rouge">bt all</code>; add <code class="language-plaintext highlighter-rouge">image list</code> to verify correct symbols are loaded, and use <code class="language-plaintext highlighter-rouge">thread select</code> to hop through crashed threads.</p>
+<p>Remote iOS debugging usually starts with:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">platform select remote-ios</code></li>
+  <li><code class="language-plaintext highlighter-rouge">platform connect connect://&lt;host&gt;:&lt;port&gt;</code></li>
+</ul>
+
+<p>Then add symbols locally (<code class="language-plaintext highlighter-rouge">target symbols add ...</code>) and verify loaded images with <code class="language-plaintext highlighter-rouge">image list</code>.</p>
+
+<p>For core files:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">target create --core crash.core</code></li>
+  <li><code class="language-plaintext highlighter-rouge">thread backtrace all</code></li>
+  <li><code class="language-plaintext highlighter-rouge">thread select &lt;index&gt;</code> to inspect specific crashed paths</li>
+</ul>
 
 <h2 id="symbols-and-dsyms">Symbols and dSYMs</h2>
 
-<p>Keep <code class="language-plaintext highlighter-rouge">.dSYM</code> bundles close—LLDB searches <code class="language-plaintext highlighter-rouge">target.exec-search-paths</code> and <code class="language-plaintext highlighter-rouge">target.debug-file-search-paths</code>, which you should configure in <code class="language-plaintext highlighter-rouge">.lldbinit</code>. Verify symbol load with <code class="language-plaintext highlighter-rouge">image list -b</code>, which shows slide addresses and UUIDs; match them with <code class="language-plaintext highlighter-rouge">dwarfdump --uuid</code>. If you only have stripped binaries, use <code class="language-plaintext highlighter-rouge">atos -o MyApp -arch arm64 -l &lt;slide&gt; &lt;addr&gt;</code> as a fallback and feed findings back to LLDB via <code class="language-plaintext highlighter-rouge">target symbols add</code>.</p>
+<p>Keep <code class="language-plaintext highlighter-rouge">.dSYM</code> files available. They help LLDB map memory addresses back to file names and line numbers. Configure search paths in <code class="language-plaintext highlighter-rouge">.lldbinit</code> (<code class="language-plaintext highlighter-rouge">target.exec-search-paths</code>, <code class="language-plaintext highlighter-rouge">target.debug-file-search-paths</code>).</p>
+
+<p>Verification loop:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">image list -b</code> for UUID/slide info</li>
+  <li><code class="language-plaintext highlighter-rouge">dwarfdump --uuid</code> to confirm matches</li>
+  <li>fallback symbolication with <code class="language-plaintext highlighter-rouge">atos -o MyApp -arch arm64 -l &lt;slide&gt; &lt;addr&gt;</code> if needed</li>
+</ul>
 
 <h2 id="python-hooking-your-own-commands">Python: Hooking Your Own Commands</h2>
 
-<p>LLDB ships with a full Python bridge. You can register commands that call into Python, hold state, and print custom output. A minimal example:</p>
+<p>LLDB supports Python. You can add your own custom commands. If you are new, you can skip this section and come back later.</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># save as ~/lldb_tools/retain_cycles.py
 </span><span class="kn">import</span> <span class="n">lldb</span>
 
 <span class="k">def</span> <span class="nf">find_retain_cycles</span><span class="p">(</span><span class="n">debugger</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">exe_ctx</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
-    <span class="sh">"""</span><span class="s">List suspicious retain cycles for a Swift object graph root.</span><span class="sh">"""</span>
-    <span class="n">target</span> <span class="o">=</span> <span class="n">exe_ctx</span><span class="p">.</span><span class="n">target</span>
-    <span class="c1"># naive demo: run a Swift snippet and print the result
-</span>    <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">'</span><span class="s">expr -l swift -O -- </span><span class="si">{</span><span class="n">command</span><span class="si">}</span><span class="s">.debugRetainCycles()</span><span class="sh">'</span>
+    <span class="sh">"""</span><span class="s">Demo command: run a Swift helper method on an expression.</span><span class="sh">"""</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">expr -l swift -O -- </span><span class="si">{</span><span class="n">command</span><span class="si">}</span><span class="s">.debugRetainCycles()</span><span class="sh">"</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">lldb</span><span class="p">.</span><span class="nc">SBCommandReturnObject</span><span class="p">()</span>
     <span class="n">debugger</span><span class="p">.</span><span class="nc">GetCommandInterpreter</span><span class="p">().</span><span class="nc">HandleCommand</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
-    <span class="n">result</span><span class="p">.</span><span class="nc">AppendMessage</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetOutput</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">res</span><span class="p">.</span><span class="nc">Succeeded</span><span class="p">():</span>
+        <span class="n">result</span><span class="p">.</span><span class="nc">AppendMessage</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetOutput</span><span class="p">()</span> <span class="ow">or</span> <span class="sh">""</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">.</span><span class="nc">SetError</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetError</span><span class="p">()</span> <span class="ow">or</span> <span class="sh">"</span><span class="s">Expression failed</span><span class="sh">"</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">__lldb_init_module</span><span class="p">(</span><span class="n">debugger</span><span class="p">,</span> <span class="n">_internal_dict</span><span class="p">):</span>
     <span class="n">debugger</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span>
-        <span class="sh">'</span><span class="s">command script add -f retain_cycles.find_retain_cycles rcfind</span><span class="sh">'</span><span class="p">)</span>
-    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Registered `rcfind &lt;expression&gt;`</span><span class="sh">"</span><span class="p">)</span>
+        <span class="sh">"</span><span class="s">command script add -f retain_cycles.find_retain_cycles rcfind</span><span class="sh">"</span>
+    <span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Registered: rcfind &lt;expression&gt;</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
-<p>Wire it up in your <code class="language-plaintext highlighter-rouge">.lldbinit</code>:</p>
+<p>Wire it in <code class="language-plaintext highlighter-rouge">.lldbinit</code>:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>command script import ~/lldb_tools/retain_cycles.py
 </code></pre></div></div>
 
-<p>Then inside LLDB:</p>
+<p>Use it in-session:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(lldb) rcfind myController
 </code></pre></div></div>
 
-<p>The function receives the debugger, the raw command string, and the current execution context. You can grab threads, frames, and symbols via the SB API, run nested LLDB commands, and return structured output. For heavier tasks, spawn async work with <code class="language-plaintext highlighter-rouge">SBCommandInterpreter</code> so you do not block the REPL.</p>
-
-<h3 id="a-more-involved-hook-auto-dump-on-crash">A More Involved Hook: Auto-Dump on Crash</h3>
+<h3 id="a-more-involved-hook-auto-dump-on-crash-stops">A More Involved Hook: Auto-Dump on Crash Stops</h3>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># ~/lldb_tools/on_crash_dump.py
 </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">import</span> <span class="n">lldb</span>
+
+<span class="n">CRASH_REASONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">lldb</span><span class="p">.</span><span class="n">eStopReasonException</span><span class="p">,</span>
+    <span class="n">lldb</span><span class="p">.</span><span class="n">eStopReasonSignal</span><span class="p">,</span>
+<span class="p">}</span>
 
 <span class="k">class</span> <span class="nc">CrashDumpHook</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">_extra_args</span><span class="p">,</span> <span class="n">_internal_dict</span><span class="p">):</span>
@@ -351,9 +330,12 @@
     <span class="k">def</span> <span class="nf">handle_stop</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">exe_ctx</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
         <span class="n">thread</span> <span class="o">=</span> <span class="n">exe_ctx</span><span class="p">.</span><span class="nc">GetThread</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">thread</span><span class="p">.</span><span class="nc">IsValid</span><span class="p">():</span>
-            <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="bp">False</span>
 
-        <span class="n">stop_reason</span> <span class="o">=</span> <span class="n">thread</span><span class="p">.</span><span class="nc">GetStopDescription</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">thread</span><span class="p">.</span><span class="nc">GetStopReason</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CRASH_REASONS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
         <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="n">datetime</span><span class="p">.</span><span class="nf">now</span><span class="p">().</span><span class="nf">strftime</span><span class="p">(</span><span class="sh">"</span><span class="s">%Y%m%d-%H%M%S</span><span class="sh">"</span><span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">/tmp/lldb-crash-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s">.txt</span><span class="sh">"</span>
 
@@ -361,17 +343,18 @@
         <span class="n">interp</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">target</span><span class="p">.</span><span class="nc">GetDebugger</span><span class="p">().</span><span class="nc">GetCommandInterpreter</span><span class="p">()</span>
         <span class="n">interp</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span><span class="sh">"</span><span class="s">thread backtrace all</span><span class="sh">"</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Stop reason: </span><span class="si">{</span><span class="n">stop_reason</span><span class="si">}</span><span class="se">\n\n</span><span class="sh">"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="sh">"</span><span class="s">utf-8</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Stop reason enum: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="se">\n\n</span><span class="sh">"</span><span class="p">)</span>
             <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="nc">GetOutput</span><span class="p">()</span> <span class="ow">or</span> <span class="sh">""</span><span class="p">)</span>
 
-        <span class="n">stream</span><span class="p">.</span><span class="nc">Printf</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Wrote crash dump to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">True</span>
+        <span class="n">stream</span><span class="p">.</span><span class="nc">Printf</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Wrote crash dump to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="se">\n</span><span class="sh">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">False</span>
 
 <span class="k">def</span> <span class="nf">__lldb_init_module</span><span class="p">(</span><span class="n">debugger</span><span class="p">,</span> <span class="n">_dict</span><span class="p">):</span>
     <span class="n">debugger</span><span class="p">.</span><span class="nc">HandleCommand</span><span class="p">(</span>
-        <span class="sh">"</span><span class="s">target stop-hook add -P on_crash_dump.CrashDumpHook</span><span class="sh">"</span><span class="p">)</span>
-    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Registered stop-hook crash dumper</span><span class="sh">"</span><span class="p">)</span>
+        <span class="sh">"</span><span class="s">target stop-hook add -P on_crash_dump.CrashDumpHook</span><span class="sh">"</span>
+    <span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Registered crash stop hook</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Add to <code class="language-plaintext highlighter-rouge">.lldbinit</code>:</p>
@@ -379,7 +362,7 @@
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>command script import ~/lldb_tools/on_crash_dump.py
 </code></pre></div></div>
 
-<p>Now every stop writes a backtrace to <code class="language-plaintext highlighter-rouge">/tmp</code> so you can resume without losing context.</p>
+<p>This saves crash dumps only on real crash-like stops, not on every breakpoint.</p>
 
 <h2 id="favorite-lldbinit-snippets">Favorite <code class="language-plaintext highlighter-rouge">.lldbinit</code> Snippets</h2>
 
@@ -395,29 +378,69 @@ command alias memr memory read --format x --size 8 --count 8
 
 <h2 id="automating-sessions">Automating Sessions</h2>
 
-<p>Scriptable habits that save me time:</p>
+<p>Small automations that save time:</p>
 
-<p>Session presets live in a text file—stash common breakpoints there, then <code class="language-plaintext highlighter-rouge">command source my_breakpoints.lldb</code>. Auto-run diagnostics with <code class="language-plaintext highlighter-rouge">target stop-hook add -o "thread backtrace"</code> to capture a stack immediately on each stop. For one-liners, <code class="language-plaintext highlighter-rouge">command alias objc ivar list</code> prints all ivars when debugging mixed Swift/ObjC code. Log taps such as <code class="language-plaintext highlighter-rouge">log enable --threadsafe gdb-remote packets</code> help when chasing device comms issues.</p>
+<ul>
+  <li>Keep recurring breakpoints in a file and load with <code class="language-plaintext highlighter-rouge">command source my_breakpoints.lldb</code></li>
+  <li>Add quick diagnostics: <code class="language-plaintext highlighter-rouge">target stop-hook add -o "thread backtrace"</code></li>
+  <li>Turn on protocol logging when needed: <code class="language-plaintext highlighter-rouge">log enable gdb-remote packets</code></li>
+</ul>
 
 <h2 id="performance-poking-without-instruments">Performance Poking Without Instruments</h2>
 
-<p>Use <code class="language-plaintext highlighter-rouge">thread step-inst</code> to watch single instructions on hot paths, and <code class="language-plaintext highlighter-rouge">thread until -a &lt;addr&gt;</code> to run to a specific instruction quickly. <code class="language-plaintext highlighter-rouge">image lookup -n objc_msgSend</code> followed by <code class="language-plaintext highlighter-rouge">br s -a &lt;addr&gt;</code> with a class condition helps catch tight loops. <code class="language-plaintext highlighter-rouge">statistics dump</code> shows command timings; if stepping is slow, check symbol server latency and reduce logging.</p>
+<p>For instruction-level hotspots:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">thread step-inst</code></li>
+  <li><code class="language-plaintext highlighter-rouge">thread until -a &lt;addr&gt;</code></li>
+</ul>
+
+<p>For symbol-focused checks:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">image lookup -n objc_msgSend</code></li>
+  <li><code class="language-plaintext highlighter-rouge">br s -a &lt;addr&gt;</code> with a suitable condition</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">statistics dump</code> helps you see if LLDB itself is slow (for example, symbol loading or heavy expression use).</p>
 
 <h2 id="ui-debugging-without-xcode">UI Debugging Without Xcode</h2>
 
-<p>To hit rendering paths, set <code class="language-plaintext highlighter-rouge">br s -n drawRect:</code> or <code class="language-plaintext highlighter-rouge">layoutSubviews</code> and see who is doing layout work. For responder chain mysteries, <code class="language-plaintext highlighter-rouge">expr -l objc -O -- [UIResponder targetForAction:@selector(_cmd) withSender:nil]</code> finds handlers. A fast textual tree comes from <code class="language-plaintext highlighter-rouge">expr -l objc -O -- [[[UIWindow keyWindow] recursiveDescription] UTF8String]</code>. Dynamic colors can be checked with <code class="language-plaintext highlighter-rouge">expr -l swift -- UITraitCollection.current</code> when issues appear only in production.</p>
+<p>Rendering and layout:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">br s -n drawRect:</code></li>
+  <li><code class="language-plaintext highlighter-rouge">br s -n layoutSubviews</code></li>
+</ul>
+
+<p>Responder-chain probing:</p>
+
+<p><code class="language-plaintext highlighter-rouge">expr -l objc -O -- [UIResponder targetForAction:@selector(description) withSender:nil]</code></p>
+
+<p>Text view hierarchy dump (old but still useful in UIKit debugging):</p>
+
+<p><code class="language-plaintext highlighter-rouge">expr -l objc -O -- [[[UIApplication sharedApplication] keyWindow] recursiveDescription]</code></p>
 
 <h2 id="when-lldb-misbehaves">When LLDB Misbehaves</h2>
 
-<p>Strip your <code class="language-plaintext highlighter-rouge">.lldbinit</code> to isolate slow start-ups. Clear module caches if symbol loading hangs by removing <code class="language-plaintext highlighter-rouge">~/Library/Developer/Xcode/DerivedData/ModuleCache*</code>. Prefer dSYM bundles over stripped archives—LLDB is only as good as the symbols you feed it. If expressions crash, switch languages explicitly with <code class="language-plaintext highlighter-rouge">expr -l objc --</code> or <code class="language-plaintext highlighter-rouge">expr -l swift --</code>. If debugserver refuses to attach, reboot the device and kill straggling <code class="language-plaintext highlighter-rouge">debugserver</code> processes on host.</p>
+<p>If LLDB starts slowly or acts weird, first simplify your <code class="language-plaintext highlighter-rouge">.lldbinit</code>. If module caches are broken, clear <code class="language-plaintext highlighter-rouge">~/Library/Developer/Xcode/DerivedData/ModuleCache*</code>.</p>
+
+<p>If expressions fail unexpectedly, force the language:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">expr -l objc -- ...</code></li>
+  <li><code class="language-plaintext highlighter-rouge">expr -l swift -- ...</code></li>
+</ul>
+
+<p>If remote attach fails repeatedly, restart the target device and clean up stale <code class="language-plaintext highlighter-rouge">debugserver</code> processes on host and device.</p>
 
 <h2 id="tiny-cheat-sheet-copypaste">Tiny Cheat Sheet (copy/paste)</h2>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>br s -n method             # set breakpoint by name
-br s -f File.swift -l 88   # breakpoint at file:line
-br s -n foo -c 'x &gt; 3'     # conditional breakpoint
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>br s -n method
+br s -f File.swift -l 88
+br s -n foo -c 'x &gt; 3'
 br s -n foo --one-shot true
-watchpoint set variable myVar
+watchpoint set variable -w read_write myVar
 thread backtrace all
 frame variable -L
 expr -l swift -O -- myObj.debugDescription()
@@ -425,7 +448,7 @@ memory read --format x --size 8 --count 4 $sp
 process handle SIGPIPE -n true -p true -s false
 </code></pre></div></div>
 
-<p>LLDB rewards practice. Keep a personal playbook of commands and a handful of Python helpers, and the debugger becomes an extension of your editor instead of a chore.</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="Debugging" /><category term="Programming" /><category term="Swift" /><category term="LLDB" /><category term="Debugging" /><category term="Swift" /><category term="macOS" /><summary type="html"><![CDATA[LLDB is more than a breakpoint-and-stepper—it is a programmable runtime for exploring your process, forcing state changes, and automating whole debugging sessions. Here is the mental model I use, the handful of commands I never forget, and how to extend LLDB with Python when the built-ins are not enough.]]></summary></entry><entry><title type="html">Phantom Types in Swift</title><link href="http://localhost:4000/swift-phantom-types/" rel="alternate" type="text/html" title="Phantom Types in Swift" /><published>2025-10-15T00:00:00+03:00</published><updated>2025-10-15T00:00:00+03:00</updated><id>http://localhost:4000/swift-phantom-types</id><content type="html" xml:base="http://localhost:4000/swift-phantom-types/"><![CDATA[<p>Phantom types let you tuck extra meaning into Swift’s type system without changing anything at runtime. They live in a generic parameter purely for compile-time checks, which means you can stop category mistakes (mixing meters with feet or safe SQL with raw text) while keeping zero overhead. If you are new to Swift’s type system, think of phantom types as labels the compiler reads, not values your app carries around.</p>
+<p>LLDB gets easier with repetition. Keep a small command list you trust, and add automation later.</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="Debugging" /><category term="Programming" /><category term="Swift" /><category term="LLDB" /><category term="Debugging" /><category term="Swift" /><category term="macOS" /><summary type="html"><![CDATA[LLDB is more than a place to set breakpoints. You can inspect app state, test quick fixes without rebuilding, and automate common debug steps. This guide keeps things practical and beginner-friendly.]]></summary></entry><entry><title type="html">Phantom Types in Swift</title><link href="http://localhost:4000/swift-phantom-types/" rel="alternate" type="text/html" title="Phantom Types in Swift" /><published>2025-10-15T00:00:00+03:00</published><updated>2025-10-15T00:00:00+03:00</updated><id>http://localhost:4000/swift-phantom-types</id><content type="html" xml:base="http://localhost:4000/swift-phantom-types/"><![CDATA[<p>Phantom types let you tuck extra meaning into Swift’s type system without changing anything at runtime. They live in a generic parameter purely for compile-time checks, which means you can stop category mistakes (mixing meters with feet or safe SQL with raw text) while keeping zero overhead. If you are new to Swift’s type system, think of phantom types as labels the compiler reads, not values your app carries around.</p>
 
 <!--more-->
 
@@ -1896,4 +1919,91 @@ Use it to catch <strong>message-sent-to-deallocated-instance</strong> issues wit
       <td>Manages multiple working trees attached to the same repository, allowing you to work on different branches simultaneously.</td>
     </tr>
   </tbody>
-</table>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it’s primarily a development environment rather than a dedicated source control application.]]></summary></entry></feed>
+</table>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[Almost anyone who uses Xcode can quickly notice that it lacks many essential Git features, which is acceptable in some way since it’s primarily a development environment rather than a dedicated source control application.]]></summary></entry><entry><title type="html">Why I Prefer To Store My Files On A Digital Ocean Space &amp;amp; Not Google Drive Or Dropbox.</title><link href="http://localhost:4000/backup-on-spaces/" rel="alternate" type="text/html" title="Why I Prefer To Store My Files On A Digital Ocean Space &amp;amp; Not Google Drive Or Dropbox." /><published>2023-01-21T00:00:00+03:00</published><updated>2024-09-08T00:00:00+03:00</updated><id>http://localhost:4000/backup-on-spaces</id><content type="html" xml:base="http://localhost:4000/backup-on-spaces/"><![CDATA[<p>This is not directly related to swift or iOS, but thought it’s worth sharing, since I couldn’t find any article that mention such way to backup files.</p>
+
+<p>I’m one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity.</p>
+
+<!--more-->
+
+<!-- _includes/centered-image.html -->
+<div class="centered-image">
+  <img src="../images/covers/do_space_full.webp" alt="" class="centered-image__img" width="960" height="1568" />
+  <p align="center">
+    <em></em>
+  </p>
+</div>
+
+<p>I vividly remember the first flash drive my father gifted me as a teenager; it had a mere 128 MB of storage. At that time, such a device was considered a luxury and not affordable for many where I live. Fast forward to today, and we now have SSDs that are over 1000 times larger in capacity and available at significantly lower prices.</p>
+
+<h2 id="cloud-storage">Cloud Storage</h2>
+<p>In the realm of cloud storage, common solutions like Google Drive and Dropbox offer plans, such as a 2TB option for $10 monthly. However, I prefer utilizing my own mountable drive integrated with a Content Delivery Network (CDN) for distributing my files efficiently. The best solution I’ve found for storing my work is using DigitalOcean Spaces, which is similar to AWS S3. I can conveniently mount it using a client like Cyberduck on my Mac, or on any device I own, allowing for seamless access and management of my files. This approach not only provides me with greater control over my data but also enhances my ability to share and distribute content effectively.</p>
+
+<!-- _includes/centered-image.html -->
+<div class="centered-image">
+  <img src="/images/posts/image-2.webp" alt="" class="centered-image__img" />
+  <p align="center">
+    <em>Cyberduck, showing a Digital Ocean drive</em>
+  </p>
+</div>
+
+<p>Serving static websites on DigitalOcean Spaces is entirely feasible by leveraging its S3-compatible object storage capabilities. To get started, you can upload your HTML, CSS, and JavaScript files directly to a Space, which acts as a repository for your website assets.</p>
+
+<p>Even serving static websites, such as React applications or Jekyll blogs, on DigitalOcean Spaces is entirely feasible by leveraging its S3-compatible object storage capabilities. To get started, you can upload your website files—whether they are HTML, CSS, JavaScript. For example, when deploying a React app, you can build your project and upload the contents of the build folder to the Space. Similarly, for a Jekyll blog, you can generate the static site and upload the resulting files to your Space. Although DigitalOcean Spaces doesn’t natively support custom domains, you can set up a reverse proxy server using NGINX on a DigitalOcean Droplet to map your domain to the Space, allowing your static site to be accessed via your custom URL. This combination of tools enables you to efficiently serve your static websites while taking advantage of the scalability and performance of DigitalOcean’s infrastructure.</p>
+
+<h2 id="pros--cons">Pros &amp; Cons</h2>
+
+<p>When considering a storage solution, it’s essential to weigh the advantages and disadvantages to determine the best fit for your needs. DigitalOcean Spaces offers a range of benefits that make it an appealing choice for developers and businesses alike. From cost-effectiveness to enhanced control over your files, the pros of using DigitalOcean Spaces can significantly enhance your workflow and file management capabilities. Below, we outline the key advantages of utilizing DigitalOcean Spaces, as well as some potential drawbacks to keep in mind, ensuring you have a comprehensive understanding of this powerful storage solution.</p>
+
+<h3 id="pros">Pros</h3>
+
+<ul>
+  <li>
+    <p><strong>Direct Links</strong>: Easily access your files with straightforward URLs, allowing for seamless integration into your applications and workflows.</p>
+  </li>
+  <li>
+    <p><strong>Cost-Effective</strong>: With plans starting as low as $5, DigitalOcean Spaces provides an economical solution for storing and serving your data, making it accessible for individuals and small businesses alike.</p>
+  </li>
+  <li>
+    <p><strong>Bandwidth Savings</strong>: Setting up a Content Delivery Network (CDN) is simple, enabling you to save significant amounts of bandwidth and avoid exceeding transfer caps, which is especially beneficial for high-traffic applications.</p>
+  </li>
+  <li>
+    <p><strong>Granular Control</strong>: You have total control over metadata and content types of your files. For example, you can specify whether an uploaded MP4 file is streamable or downloadable, tailoring the user experience to your needs.</p>
+  </li>
+  <li>
+    <p><strong>Cross-Device Compatibility</strong>: DigitalOcean Spaces can be easily mounted on any device or server, providing flexibility and accessibility regardless of your operating system or hardware.</p>
+  </li>
+  <li>
+    <p><strong>Active File Serving</strong>: Unlike traditional storage solutions, your files are actively served, allowing you to host dynamic content, such as an Angular website, without placing additional load on your server.</p>
+  </li>
+  <li>
+    <p><strong>Custom URL Masking</strong>: You can mask the URL to reflect your own domain, enhancing professionalism and branding when presenting to clients or stakeholders during demos.</p>
+  </li>
+</ul>
+
+<h3 id="cons">Cons</h3>
+
+<ul>
+  <li>
+    <p><strong>Technical Knowledge Requirement</strong>: Some users may find that utilizing DigitalOcean Spaces requires a certain level of technical knowledge, which could be a barrier for those unfamiliar with cloud storage solutions.</p>
+  </li>
+  <li>
+    <p><strong>Limited Client Options</strong>: Many desktop clients used to mount such drives are not open source or free, which may limit accessibility for some users.</p>
+  </li>
+  <li>
+    <p><strong>File Sharing Limitations</strong>: Files stored in DigitalOcean Spaces cannot be shared with specific individuals; they are either public or private, which may not suit all collaboration needs.</p>
+  </li>
+</ul>
+
+<h3 id="security">Security</h3>
+
+<p>DigitalOcean Spaces offers robust security features designed to protect your data effectively. One of the key aspects is access control, which allows users to manage permissions for files stored in Spaces.</p>
+
+<h3 id="use-cases-are-infinite">Use cases are infinite!</h3>
+
+<p>The versatility of DigitalOcean Spaces opens up a myriad of use cases that can significantly enhance productivity and efficiency. For instance, if you’re involved in web scraping, you can effortlessly download large YouTube channels as a background job on the server. This approach allows you to avoid consuming your internet bandwidth while eliminating the need to keep a device running for extended periods. Instead, the files are stored directly in your DigitalOcean Space, making them readily accessible whenever you need them, without the hassle of local storage management. 🧐</p>
+
+<p>Moreover, DigitalOcean Spaces functions similarly to a Network Attached Storage (NAS) solution, providing a centralized location for all your files that can be accessed from multiple devices. This capability is particularly beneficial for teams or individuals who require seamless file sharing and collaboration. Additionally, it can serve as a media center, allowing you to host and stream your multimedia content efficiently. Whether you’re managing a portfolio of projects, sharing resources with colleagues, or simply organizing personal media, the possibilities are truly endless with DigitalOcean Spaces.</p>
+
+<p>Another innovative use case for DigitalOcean Spaces is as a centralized repository for continuous integration and deployment (CI/CD) pipelines. Software engineers can utilize Spaces to store build artifacts, such as compiled binaries, Docker images, or deployment packages, generated during the CI/CD process. By configuring your CI/CD tools to upload these artifacts directly to DigitalOcean Spaces, you can ensure that all necessary files are easily accessible for deployment across various environments. This setup not only streamlines the deployment process but also provides a reliable and scalable solution for managing versioned artifacts, making it easier to roll back to previous versions if needed. Additionally, you can integrate Spaces with other services, such as monitoring and alerting tools, to keep track of deployment statuses and ensure smooth operations throughout the software development lifecycle.</p>
+
+<p>I’d love to hear how others are using DigitalOcean Spaces in their projects! Whether you’re leveraging it for web hosting, data storage, or as part of your CI/CD pipeline, your experiences and tips could be incredibly valuable. Share your thoughts and use cases in the comments below—let’s learn from each other!</p>]]></content><author><name>Deya Elkhawaldeh</name></author><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><category term="Development" /><category term="iOS" /><category term="Programming" /><category term="Swift" /><summary type="html"><![CDATA[This is not directly related to swift or iOS, but thought it’s worth sharing, since I couldn’t find any article that mention such way to backup files. I’m one of those who experienced the evolution of data storage firsthand, starting with floppy disks to back up HTML pages—specifically 3DMax tutorials—during my visits to internet cafés back in 2003. As technology advanced, I transitioned to using CDs, followed by DVDs, which offered greater storage capacity.]]></summary></entry></feed>
