@@ -2,6 +2,7 @@
 layout: page
 title: About Me
 tags: [About]
+hide_tags: true
 position: 1
 permalink: /about-me/
 redirect_from:
@@ -35,15 +36,13 @@ I encourage you to reach out with any questions or feedback regarding my work. I
 
 ## My Resume
 
-(Updated September 2024)
+(Updated 2026 Q2)
 
-[Download Resume](/assets/deya_eldeen_cv_2024_q3.pdf)
+[Download Resume](/assets/deya_eldeen_cv_2026_q2.pdf)
 
 I hope you enjoy exploring Swift By Deya! 🚀
 
 #### Contact
 
 **My Email:** deyaeldeenk@gmail.com<br>
-**Twitter:** twitter.com/deya_eldeen<br>
 **Github:** github.com/deya-eldeen<br>
-**Telegram:** @deyaeldeen
