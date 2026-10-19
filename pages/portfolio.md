@@ -1,5 +1,6 @@
 ---
 layout: page
+show_hero: true
 title: Portfolio
 permalink: /portfolio/
 subtitle: "Apps, libraries, and projects I maintain"

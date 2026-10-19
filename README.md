@@ -33,4 +33,6 @@ The generated header illustration is `assets/img/hero/deya-studio.webp`. Its gen
 
 Article thumbnails currently use `assets/img/article-placeholder.svg`. Once replacement artwork is ready, clear `article_placeholder` in `_config.yml` to show each article's existing `thumbnail` front matter again. Article body images are preserved.
 
+To replace thumbnails one article at a time, set that article's `thumbnail` path and add `thumbnail_ready: true` in its front matter. It will show the new image while other articles keep their gray placeholders. LLDB uses `images/covers/lldb_thumbnail.webp` (1280 × 800); its original portrait cover remains in the article body.
+
 The follow card links to the working RSS feed at `/feed.xml`.

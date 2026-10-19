@@ -1,5 +1,6 @@
 ---
 layout: page
+show_hero: true
 title: Roadmaps
 # subtitle: From the pexels folder
 permalink: /ios-road-map/
