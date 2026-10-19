@@ -1,7 +1,10 @@
 ---
 layout: page
 show_hero: true
+hero_image: /assets/img/hero/deya-roadmap.webp
+hero_image_alt: "A clay-style developer holding an unfolded paper map and looking down at its marked route"
 title: Roadmaps
+hide_title: true
 # subtitle: From the pexels folder
 permalink: /ios-road-map/
 gallery_path: "assets/img/pexels"
@@ -16,13 +19,6 @@ tags:
 ---
 
 Welcome to the roadmap for aspiring iOS developers! Whether you’re just starting your programming journey or looking to sharpen your existing skills, navigating the world of iOS development can be both exciting and overwhelming. 
-
-{%
- include centered-image.html 
- image_path="/images/roadmaps/swift_roadmap.webp"
- alt_text="Swift" 
- caption=""
-%}
 
 With the rapid evolution of technology and frameworks, having a clear roadmap is essential to mastering the art of building robust, user-friendly applications.
 

@@ -7,7 +7,7 @@ tags:
 - Books
 - iOS
 ---
-{% include default/hero.liquid primary_url="#books" primary_label="Explore Books" %}
+{% include default/hero.liquid primary_url="#books" primary_label="Explore Books" image="/assets/img/hero/deya-books.webp" image_alt="A clay-style developer smiling at the camera while holding iOS Security Through Defensive Techniques with its front cover facing forward" %}
 
 <section class="books-library" id="books" aria-labelledby="books-title">
   <div class="section-heading">

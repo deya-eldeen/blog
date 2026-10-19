@@ -1,7 +1,10 @@
 ---
 layout: page
 show_hero: true
+hero_image: /assets/img/hero/deya-portfolio.webp
+hero_image_alt: "A clay-style developer smiling at the camera, surrounded by floating app screens, abstract app tiles, and an idea lightbulb"
 title: Portfolio
+hide_title: true
 permalink: /portfolio/
 subtitle: "Apps, libraries, and projects I maintain"
 position: 2

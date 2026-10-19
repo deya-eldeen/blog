@@ -1,7 +1,9 @@
 ---
 layout: page
 show_hero: true
+hero_image: /assets/img/hero/deya-studio.webp
 title: About Me
+hide_title: true
 tags: [About]
 hide_tags: true
 position: 1
