@@ -1,68 +1,86 @@
 ---
 layout: page
-title: "Swift Data Structures and algorithms"
+title: "Data Structures and Algorithms in Swift"
+subtitle: "Pick the right container and the right approach, and your code gets faster for free"
 permalink: /swift-data-structures-and-algorithms/
 hide: true
 excluded: true
 ---
 
-A solid understanding of data structures and algorithms is crucial for developing efficient and high-performing applications in Swift. This blog post provides a comprehensive overview of essential topics, including elementary data structures, sorting algorithms, tree structures, graph algorithms, and advanced concepts like dynamic programming and cryptographic algorithms. Whether you're a beginner or an experienced developer, this resource will serve as a valuable roadmap to enhance your coding skills and problem-solving abilities in Swift. Let's explore the world of data structures and algorithms together!
+{% include roadmap/guide_header.liquid %}
 
-## Swift Data Structures and algorithms
+Data structures decide how your data is stored; algorithms decide what you do with it. Together they're the difference between a list that scrolls smoothly and one that freezes, and between a search that takes milliseconds and one that takes minutes.
 
-### 1. Elementary Data Structures
+They're also the backbone of technical interviews. This guide starts with the containers you use every day and works up to the clever structures that power search engines, maps, and blockchains.
+
+{% include roadmap/legend.liquid %}
+
+## 1. Measuring Performance
+
+- Time and Space Complexity
+- Big O Notation and Common Complexity Classes
+- Analyzing Your Own Code
+{: .roadmap-topics}
+
+## 2. Elementary Data Structures
+
 - Arrays
-- Dictionaries
-- Sets
+- Dictionaries and Hash Tables
+- [Sets](/swift-set-data-structure-with-practical-example-pizza-cooking/)
 - Stacks
 - Queues
+- Linked Lists
+{: .roadmap-topics}
 
-### 2. Sorting Algorithms
-- Comparison of sorting algorithms
+## 3. Sorting
+
+- Comparing Sorting Algorithms
 - Bubble Sort
 - Insertion Sort
 - Selection Sort
 - Merge Sort
-- Quick Sort
+- Quicksort
+{: .roadmap-topics}
 
-### 3. Tree Data Structures
+## 4. Trees
+
 - Binary Trees
 - Binary Search Trees
-- Heaps
-- Splay Trees
+- Heaps and Priority Queues
 - AVL Trees
+- Splay Trees
+- Tries
+{: .roadmap-topics}
 
-### 4. Graph Algorithms
-- Graph Theory Basics
+## 5. Graphs
+
+- Graph Basics
 - Depth-First Search (DFS)
 - Breadth-First Search (BFS)
-- Minimum Spanning Tree
-- Shortest Path Algorithms
-- SwiftGraph Library
+- Shortest Paths
+- A* Pathfinding
+- Minimum Spanning Trees
+- The SwiftGraph Library
+{: .roadmap-topics}
 
-### 5. Algorithm Efficiency and Big O Notation
-- Understanding time and space complexity
-- Analyzing the efficiency of algorithms
-- Big O notation and common complexity classes
+## 6. Advanced Topics
 
-### 6. Advanced Topics
 - Dynamic Programming
 - Inverted Indexes
-- Fourier Transform
-- Parallel Algorithms
-- MapReduce
 - Bloom Filters
-- Cryptographic Algorithms (SHA, Diffie-Hellman)
-- Linear Programming
-- Probabilistic Data Structures (HyperLogLog)
-- Pathfinding Algorithms (A*)
+- HyperLogLog and Other Probabilistic Structures
 - Merkle Trees
+- Cryptographic Algorithms: Hashing (SHA) and Key Exchange (Diffie-Hellman)
+- The Fourier Transform
+- Parallel Algorithms and MapReduce
+- Linear Programming
+{: .roadmap-topics}
 
-By mastering these data structures and algorithms, you will be equipped to write efficient, scalable, and performant Swift code. Understanding the trade-offs and use cases of each data structure will help you make informed decisions when designing your applications. Regular practice and exposure to common algorithmic problems will sharpen your problem-solving skills and prepare you for technical interviews.
+## 7. Practice
 
-Remember, learning data structures and algorithms is an ongoing process. Stay curious, explore new concepts, and continuously challenge yourself with coding exercises and real-world projects. Happy coding!
+The best way to learn algorithms is to solve problems with them:
 
-### Problme Solving Examples
-[Algorithms & Data structures]({{ site.url }}/problem_solving_swift_1_4)<br>
+- [Refresher: Solving a Few Problems](/problem_solving_swift_1_4/)
+{: .roadmap-topics}
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+{% include roadmap/guide_footer.liquid next_url="/swift-design-patterns/" next_title="Design Patterns" %}

@@ -1,62 +1,79 @@
 ---
 layout: page
-title: "Swift Different Topics"
+title: "More Swift Topics"
+subtitle: "The tools and skills that turn a Swift coder into an iOS engineer"
 permalink: /swift-different-topics/
 hide: true
 excluded: true
 ---
 
-The Swift programming language offers a wide array of topics that are essential for developers looking to deepen their understanding and enhance their skills. From low-level programming techniques to advanced debugging and source control, this blog post will cover various important subjects that every Swift developer should be familiar with. By exploring these topics, you'll gain valuable insights and practical knowledge that can be applied to your projects and improve your overall development process.
+{% include roadmap/guide_header.liquid %}
 
-## Key Topics
+Some of the most valuable skills in iOS development don't fit neatly into a single category. Debugging a crash at 2 a.m., reading a memory graph, setting up a build pipeline, or figuring out why a tiny image eats 10 MB of RAM: none of it is "the Swift language", but all of it makes you a much better developer.
 
-### 1. Low Level Programming
-- Exploring CFHipster and low-level programming concepts
+This guide collects those topics. Dip in wherever you're curious; there's no required order.
 
-### 2. Debugging
-- Utilizing LLDB and LLVM for effective debugging
+{% include roadmap/legend.liquid %}
 
-### 3. Reverse Engineering
-- Techniques and tools for reverse engineering Swift applications
+## 1. Debugging and Diagnostics
 
-### 4. Security
-- Best practices for ensuring application security in Swift
+- [LLDB Survival Guide](/lldb-survival-guide/)
+- Breakpoints and Debugging in Xcode
+- Logging: `print`, `Logger`, and `NSLog`
+- Instruments and Performance Profiling
+- [Zombies: Use-After-Free Bugs](/swift-zombies/)
+{: .roadmap-topics}
 
-### 5. Source Control
-- Implementing version control with Git
+## 2. Memory and Performance
 
-### 6. Regular Expressions (REGEX)
-- Using REGEX for pattern matching and text manipulation
+- [Why a 0.3 MB Image Takes Around 10 MB of RAM](/why-my-0-3-mb-image-takes-14-mb-on-ram/)
+- Avoiding Memory Leaks with Capture Lists
+- Caching Strategies
+- Persistence: Files, UserDefaults, SwiftData, and Core Data
+{: .roadmap-topics}
 
-### 7. Terminal Usage
-- Mastering terminal commands for efficient workflow
+## 3. Going Low-Level
 
-### 8. Dynamic and Static Frameworks
-- Understanding the differences and use cases for each type of framework
+- Core Foundation and Toll-Free Bridging
+- Unsafe Pointers and Memory Layout
+- Objective-C Basics for Swift Developers
+- [GPS Hardware Basics](/gps-hardware-basics-for-software-engineers/)
+{: .roadmap-topics}
 
-### 9. Objective-C Basics
-- A brief introduction to Objective-C for Swift developers
+## 4. Security
 
-### 10. Build Configuration
-- Managing build configurations for different environments
+- [iOS and Android Security Basics](/ios-android-developer-security-basics/)
+- Reverse Engineering iOS Apps
+- Protecting Your App Against Tampering
+{: .roadmap-topics}
 
-### 11. Caching and Persistence
-- Techniques for data caching and persistence in Swift applications
+Want to go further? My book, [*iOS Security Through Defensive Techniques*](/books/), covers app security in depth.
 
-### 12. State Machines
-- Implementing state machines for managing application states
+## 5. Tools and Workflow
 
-### 13. Refactoring Techniques
-- Best practices for refactoring code to improve maintainability
+- [Setting Up Your Mac for Development](/mac-setup/)
+- The Terminal and Shell Scripting
+- [Git: Why I Prefer the Command Line](/this-is-why-i-dont-use-git-gui-tools/)
+- Regular Expressions and Swift Regex
+- Continuous Integration and Delivery (CI/CD)
+{: .roadmap-topics}
 
-### 14. Print and NSLog
-- Effective logging techniques in Swift
+## 6. Building and Shipping
 
-### 15. CocoaPods
-- Managing dependencies with CocoaPods
+- Build Configurations and Schemes
+- Static vs. Dynamic Frameworks
+- Swift Package Manager
+- CocoaPods
+- [Interface Builder Tricks: Tiling Images Without Code](/easily-tiling-images-in-interface-builder-without-code/)
+{: .roadmap-topics}
 
-### 16. [Why Your 0.3 MB Image Occupies Around 10 MB on RAM?]({{ site.url }}/why-my-0-3-mb-image-takes-14-mb-on-ram)
+For new projects, prefer Swift Package Manager. CocoaPods is in maintenance mode, though you'll still meet it in many existing apps.
 
-By exploring these diverse topics in Swift, you will enhance your development skills and gain a deeper understanding of the language and its ecosystem. Each subject offers unique insights and practical applications that can significantly improve your coding practices. As you continue your journey in Swift development, remember to stay curious and keep learning. This roadmap will be updated regularly to reflect the latest trends and best practices in iOS development. Happy coding!
+## 7. Writing Better Code
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+- State Machines
+- Refactoring Techniques
+- [Testing with Test Doubles](/test-doubles-in-swift/)
+{: .roadmap-topics}
+
+{% include roadmap/guide_footer.liquid next_url="/ios-road-map/" next_title="Back to the Roadmaps" %}

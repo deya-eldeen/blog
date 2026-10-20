@@ -1,104 +1,120 @@
 ---
 layout: page
 title: "Swift Language"
+subtitle: "The vocabulary you'll use in every line of code you write"
 permalink: /swift-language/
 hide: true
 excluded: true
 ---
 
-Swift is a powerful and intuitive programming language developed by Apple for building apps on iOS, macOS, watchOS, and tvOS. Since its introduction in 2014, Swift has gained popularity for its modern syntax, safety features, and performance enhancements over its predecessor, Objective-C.
+{% include roadmap/guide_header.liquid %}
 
-## Swift Language
+Swift is Apple's modern programming language for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS, and it also runs on Linux, Windows, and servers. Since its release in 2014, it has won developers over with clean syntax, strong safety guarantees, and great performance.
 
-### 1. Introduction to Swift
+This guide walks through the language from the very first `let` to generics and opaque types. Go in order if you're new; every section builds on the ones before it.
 
-- [What is Swift?]({{ site.url }}/what-is-swift)<br>
-- [Swift Pros over Obj-C]({{ site.url }}/swift-pros-over-obj-c)<br>
-- [Swift Lexical Structure]({{ site.url }}/swift-lexical-structure)<br>
-- [Swift Reserved Keywords]({{ site.url }}/swift-keywords)<br>
-- [Swift Style Guides]({{ site.url }}/swift-style-guides)<br>
+{% include roadmap/legend.liquid %}
 
-### 2. Variables and Data Types
+## 1. Meet Swift
 
-- [Variables and Constants]({{ site.url }}/swift-variables-and-constants)<br>
-- [Swift Basic Data Types & Type Inference]({{ site.url }}/swift-built-in-data-types)<br>
-- [Never Use Floating-Point / Double Data Types for Monetary Calculations!]({{ site.url }}/never-use-floating-point-double-data-types-for-monetary-calculations)<br>
-- [Any / AnyObject / AnyHashable]({{ site.url }}/swift-any-anyobject)<br>
-- [Void / Void()]({{ site.url }}/swift-void-and)<br>
-- [Optionals]({{ site.url }}/swift-optionals)<br>
-- [nil, Null, NSNull]({{ site.url }}/swift-the-difference-between-nil-nil-null-nsnull)<br>
+- [What Is Swift?](/what-is-swift/)
+- [Advantages of Swift Over Objective-C](/swift-pros-over-obj-c/)
+- [Swift Lexical Structure](/swift-lexical-structure/)
+- [Swift Reserved Keywords](/swift-keywords/)
+- [Swift Style Guides](/swift-style-guides/)
+{: .roadmap-topics}
 
-### 3. Operators and Strings
+## 2. Variables and Data Types
 
-- [Basic Operators]({{ site.url }}/swift-basics-operators)<br>
-- [Bitwise Operators]({{ site.url }}/swift-bitwise-operators-with-real-examples)<br>
-- [Strings and Characters]({{ site.url }}/swift-basics-strings-characters)<br>
+- [Variables and Constants](/swift-variables-and-constants/)
+- [Basic Data Types & Type Inference](/swift-built-in-data-types/)
+- [Never Use Floating-Point Types for Money!](/never-use-floating-point-double-data-types-for-monetary-calculations/)
+- [Any, AnyObject, and AnyHashable](/swift-any-anyobject/)
+- [Void vs. ()](/swift-void-and/)
+- [Optionals](/swift-optionals/)
+- [nil, Nil, NULL, and NSNull](/swift-the-difference-between-nil-nil-null-nsnull/)
+{: .roadmap-topics}
 
-### 4. Collections and Control Flow
+## 3. Operators and Strings
 
-- Collection Types<br>
-- [Dealing With Sets]({{ site.url }}/swift-set-data-structure-with-practical-example-pizza-cooking)<br>
-- Control Flow<br>
+- [Basic Operators](/swift-basics-operators/)
+- [Bitwise Operators](/swift-bitwise-operators-with-real-examples/)
+- [Strings and Characters](/swift-basics-strings-characters/)
+- [Aligning Mixed Right-to-Left and Left-to-Right Text](/invisible-markers-ltr-0x200e-rtl200f-to-align-text-correctly/)
+{: .roadmap-topics}
 
-### 5. Functions and Closures
+## 4. Collections and Control Flow
 
-- Functions<br>
-- Closures (escaping closures) & (capturing)<br>
+- Arrays and Dictionaries
+- [Sets](/swift-set-data-structure-with-practical-example-pizza-cooking/)
+- Control Flow: `if`, `guard`, `switch`, and loops
+- Pattern Matching
+{: .roadmap-topics}
 
-### 6. Object-Oriented Concepts
+## 5. Functions and Closures
 
-- Enumerations<br>
-- Structures and Classes & (stacks vs heaps)<br>
-- Properties<br>
-- Methods<br>
-- Subscripts<br>
-- Inheritance<br>
-- [Swift Root Class & NSObject]({{ site.url }}/swift-root-class-nsobject)<br>
+- Functions
+- Closures
+- Escaping and Non-Escaping Closures
+- Capture Lists and Avoiding Memory Leaks
+{: .roadmap-topics}
 
-### 7. Memory Management and Safety
+## 6. Building Your Own Types
 
-- Initialization<br>
-- De-initialization<br>
-- Optional Chaining<br>
-- Error Handling<br>
-- Automatic Reference Counting<br>
-- Memory Safety<br>
-- Access Control<br>
-- Memory Management<br>
+- Enumerations
+- Structures and Classes: Value vs. Reference Types
+- Properties
+- Methods and `mutating`
+- Subscripts
+- Inheritance
+- [The Root Class and NSObject](/swift-root-class-nsobject/)
+{: .roadmap-topics}
 
-### 8. Advanced Swift Features
+## 7. Lifetime, Safety, and Errors
 
-- Concurrency<br>
-- Type Casting<br>
-- Nested Types<br>
-- Extensions<br>
-- Protocols<br>
-- Generics<br>
-- Opaque Types<br>
-- Advanced Operators<br>
+- Initialization
+- Deinitialization
+- Automatic Reference Counting (ARC)
+- [Zombies: Use-After-Free Bugs](/swift-zombies/)
+- Memory Safety
+- Optional Chaining
+- Error Handling
+- Access Control
+{: .roadmap-topics}
 
-## Other Topics
+## 8. Advanced Features
 
-- Dynamic Dispatch / Static Dispatch / Virtual Dispatch<br>
-- Method Swizzling<br>
-- Interoperability<br>
-- Stride<br>
-- KVO<br>
-- Defer<br>
-- Mutating<br>
-- Pattern Matching<br>
-- Address Sanitizer<br>
-- Swift Evolution<br>
-- ABI<br>
-- Swift Package Manager<br>
-- RunLoop<br>
-- NSOperations<br>
-- Property Wrapper<br>
-- Clean Code<br>
-- Zombies<br>
-- Custom Operators<br>
-- Mirroring<br>
+- Protocols
+- Extensions
+- Generics
+- [Phantom Types](/swift-phantom-types/)
+- Opaque and Boxed Types (`some` and `any`)
+- Type Casting
+- Nested Types
+- Property Wrappers
+- Macros
+- Advanced and Custom Operators
+- Concurrency: `async`/`await`, Tasks, and Actors
+{: .roadmap-topics}
 
-Swift is a versatile language that combines powerful features with a user-friendly syntax, making it an excellent choice for both beginners and experienced developers. Dive into the provided links to explore each topic in detail and enhance your Swift programming skills!
+## 9. Under the Hood
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+These topics come up in day-to-day work, in debugging sessions, and very often in interviews:
+
+- Static vs. Dynamic Dispatch
+- Method Swizzling
+- Key-Value Observing (KVO)
+- `defer`
+- `stride`
+- Reflection with `Mirror`
+- Interoperability with Objective-C, C, and C++
+- RunLoop
+- Operation and OperationQueue
+- ABI Stability
+- Swift Package Manager
+- Swift Evolution: How the Language Changes
+- Address Sanitizer
+- Clean Code in Swift
+{: .roadmap-topics}
+
+{% include roadmap/guide_footer.liquid next_url="/swift-object-oriented-programming/" next_title="Object-Oriented Programming" %}
