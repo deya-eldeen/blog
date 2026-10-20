@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-lexical-structure/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/lexical_full.webp"
+thumbnail: "images/covers/swift_lexical_structure_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "Programming"
@@ -28,12 +29,12 @@ Each token can take on various forms, including identifiers, keywords, punctuati
 Understanding these components is essential for developers, as they form the basis for constructing meaningful and functional code. By familiarizing themselves with the different types of tokens, programmers can enhance their coding proficiency, leading to clearer, more effective communication of logic within their applications.
 
 {%
- include centered-image.html 
- image_path="../images/covers/lexical_full.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_lexical_structure_thumbnail.webp"
+ alt_text="The declaration let count = 3 separated into its individual lexical tokens"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Swift Lexical Structure

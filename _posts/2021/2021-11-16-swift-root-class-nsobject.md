@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-root-class-nsobject/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/nsobject_full.webp"
+thumbnail: "images/covers/swift_nsobject_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -28,12 +29,12 @@ In this post, we'll dive deep into the role of the root class in Swift and its r
 Whether you're building an app in Swift or working with legacy Objective-C code, grasping the role of the root class is key to designing robust, scalable software. 
 
 {%
- include centered-image.html 
- image_path="../images/covers/nsobject_full.webp"
- alt_text="NSObject - The Root Class in Objective-C"
+ include centered-image.html
+ image_path="../images/covers/swift_nsobject_thumbnail.webp"
+ alt_text="An NSObject inheritance tree beside a separate Swift type"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Understanding the Concept of a Root Class

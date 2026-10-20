@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-variables-and-constants/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/varlet_full.webp"
+thumbnail: "images/covers/swift_variables_constants_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -28,12 +29,12 @@ This blog post explores the concepts of mutability in Swift, comparing them to O
 <!--more-->
 
 {%
- include centered-image.html  
- image_path="../images/covers/varlet_full.webp"  
- alt_text="Understanding Swift Variables and Constants"  
- caption="The Power of Mutability in Swift"  
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_variables_constants_thumbnail.webp"
+ alt_text="A mutable var changing from 10 to 20 beside a locked let constant holding 10"
+ caption="The Power of Mutability in Swift"
+ width="640"
+ height="400"
 %}
 
 ## Swift Variables and Constants: The Basics

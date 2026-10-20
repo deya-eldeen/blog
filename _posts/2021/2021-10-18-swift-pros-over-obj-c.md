@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-pros-over-obj-c/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_objc_full.webp"
+thumbnail: "images/covers/swift_advantages_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ Objective-C, developed in the early 1980s, has long been the backbone of iOS and
 <!--more-->  
 
 {%
- include centered-image.html 
- image_path="../images/covers/swift_objc_full.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_advantages_thumbnail.webp"
+ alt_text="An ascending arrow connecting an Objective-C block to an organized Swift block with a safety shield"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 

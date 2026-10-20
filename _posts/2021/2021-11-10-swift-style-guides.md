@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-style-guides/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/styleguides_full.webp"
+thumbnail: "images/covers/swift_style_guides_thumbnail.webp"
+thumbnail_ready: true
 categories:  
   - "Development"
   - "Programming"
@@ -26,12 +27,12 @@ Such codebases follow meticulously crafted style guides that turn good code into
 What’s the difference? It often boils down to one crucial element: the presence—or absence—of a robust code style guide.  
 
 {%
- include centered-image.html  
- image_path="../images/covers/styleguides_full.webp"  
- alt_text="A comprehensive look at Swift style guides"  
- caption="Crafting Consistency with Swift Style Guides"  
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_style_guides_thumbnail.webp"
+ alt_text="A code editor transforming loosely formatted code into consistently styled code"
+ caption="Crafting Consistency with Swift Style Guides"
+ width="640"
+ height="400"
 %}
 
 ## The Importance of Code Style Guides
