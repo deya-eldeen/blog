@@ -17,7 +17,7 @@ tags:
   - "Architecture"
 ---
 
-Some types only make sense in the context of another type. A playing card's suit, a network request's error, a view model's state: Swift lets you declare these types *inside* the type they belong to. Nested types keep related code together, avoid name clashes, and make APIs read naturally.
+Some types only make sense in the context of another type. A playing card's suit, a network client's error, a view model's state, a model's coding keys: Swift lets you declare these types **inside** the type they belong to. Nested types keep related code together, avoid name clashes, express ownership, and make APIs read naturally at the call site. Since Swift 5.10, even protocols can be nested.
 
 <!--more-->
 
@@ -40,12 +40,9 @@ struct BlackjackCard {
 
         var values: Values {
             switch self {
-            case .ace:
-                return Values(first: 1, second: 11)
-            case .jack, .queen, .king:
-                return Values(first: 10, second: nil)
-            default:
-                return Values(first: rawValue, second: nil)
+            case .ace: Values(first: 1, second: 11)
+            case .jack, .queen, .king: Values(first: 10, second: nil)
+            default: Values(first: rawValue, second: nil)
             }
         }
     }
@@ -66,24 +63,25 @@ let theAceOfSpades = BlackjackCard(rank: .ace, suit: .spades)
 print(theAceOfSpades.description)   // suit is ♠, value is 1 or 11
 ```
 
-Types can nest as deeply as needed: `Values` lives inside `Rank`, which lives inside `BlackjackCard`.
+Types can nest as deeply as you need: `Values` lives inside `Rank`, which lives inside `BlackjackCard`.
 
 ## Referring to nested types
 
-Inside the outer type, you use the short name, `Suit`. Outside, you qualify it with the outer type's name:
+Inside the outer type, you use the short name, `Suit`. Outside, you qualify it with the outer type:
 
 ```swift
 let heartsSymbol = BlackjackCard.Suit.hearts.rawValue    // "♡"
-let rankValues: BlackjackCard.Rank.Values = BlackjackCard.Rank.king.values
+let kingValues: BlackjackCard.Rank.Values = BlackjackCard.Rank.king.values
+print(heartsSymbol, kingValues.first)                    // ♡ 10
 ```
 
-Thanks to type inference, you rarely need the full name: `BlackjackCard(rank: .ace, suit: .spades)` already knows the types.
+Thanks to type inference, you rarely need the full name at call sites: `BlackjackCard(rank: .ace, suit: .spades)` already knows the types. `Self.Suit` also works inside the type, which is useful in protocol extensions and generic code.
 
 ## Why nest?
 
-### Avoiding name clashes
+### 1. Avoiding name clashes
 
-Two types can each have their own `Error`, `State`, or `Configuration` without prefixes:
+Two types can each have their own `State`, `Error`, `Configuration`, or `Style` without prefixes:
 
 ```swift
 struct LoginViewModel {
@@ -101,9 +99,9 @@ struct CheckoutViewModel {
 }
 ```
 
-Compare that with top-level `LoginViewModelState` and `CheckoutViewModelState`.
+Compare that with top-level `LoginViewModelState` and `CheckoutViewModelState`: longer names, and nothing in the language tying them to their owners.
 
-### Expressing ownership
+### 2. Expressing ownership
 
 A nested type says "this belongs to that". Reading `APIClient.Error` tells you exactly where the error comes from:
 
@@ -120,13 +118,19 @@ struct APIClient {
         }
     }
 }
+
+do {
+    try APIClient().validate(status: 503)
+} catch {
+    print(error)   // badStatus(503)
+}
 ```
 
-Note the `Swift.Error` in the conformance: inside `APIClient`, the name `Error` now refers to the nested enum, so the standard protocol needs its module name.
+Note the `Swift.Error` in the conformance: inside `APIClient`, the name `Error` now refers to the nested enum, so the standard protocol must be qualified with its module name. Shadowing like this is legal and common, but it's worth knowing why the qualification is needed.
 
-### Scoping with access control
+### 3. Scoping helpers with access control
 
-A `private` nested type is invisible outside its parent, which is ideal for helpers:
+A `private` nested type is invisible outside its parent, which is ideal for implementation details:
 
 ```swift
 final class ImageLoader {
@@ -143,9 +147,62 @@ final class ImageLoader {
 }
 ```
 
+## The classic nested type: `CodingKeys`
+
+The most common nested type in Swift code is `CodingKeys`, which customizes how `Codable` maps properties to JSON keys:
+
+```swift
+struct User: Codable {
+    let id: Int
+    let displayName: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName = "display_name"
+    }
+}
+
+let json = #"{"id": 1, "display_name": "Sam"}"#
+let decoded = try JSONDecoder().decode(User.self, from: Data(json.utf8))
+print(decoded.displayName)   // Sam
+```
+
+`Codable` looks for a nested type with exactly that name, which shows how nested types can act as a convention between a type and the frameworks that use it.
+
+## Nested protocols (Swift 5.10)
+
+Since Swift 5.10, protocols can be nested inside non-generic types. That's perfect for delegate protocols, which belong to the type that calls them:
+
+```swift
+final class TableView {
+    protocol Delegate: AnyObject {
+        func didSelect(row: Int)
+    }
+
+    weak var delegate: Delegate?
+
+    func tap(row: Int) {
+        delegate?.didSelect(row: row)
+    }
+}
+
+final class SettingsScreen: TableView.Delegate {
+    func didSelect(row: Int) {
+        print("Selected row \(row)")
+    }
+}
+
+let table = TableView()
+let settings = SettingsScreen()
+table.delegate = settings
+table.tap(row: 2)   // Selected row 2
+```
+
+`TableView.Delegate` reads better than a top-level `TableViewDelegate`, and the protocol lives right next to the code that uses it.
+
 ## Nesting in extensions
 
-You can add nested types in an extension, which helps keep a large type organized:
+You can add nested types in an extension, which helps keep a large type organized, or add helper types to a type you don't own:
 
 ```swift
 extension BlackjackCard {
@@ -160,16 +217,18 @@ extension BlackjackCard {
         }
     }
 }
+
+print(theAceOfSpades.color)   // black
 ```
 
 ## Nested types and generics
 
-A type nested inside a generic type can use the outer type parameters:
+A type nested inside a generic type can use the outer type's parameters:
 
 ```swift
 struct LinkedList<Element> {
     final class Node {
-        let value: Element
+        let value: Element          // uses the outer generic parameter
         var next: Node?
         init(value: Element) { self.value = value }
     }
@@ -189,9 +248,11 @@ list.prepend("hello")
 print(list.head?.value ?? "")   // hello
 ```
 
+`LinkedList<String>.Node` and `LinkedList<Int>.Node` are different types, each specialized for its element type.
+
 ## Namespaces with caseless enums
 
-Swift has no `namespace` keyword, but an enum with no cases can't be instantiated, which makes it a perfect container for related constants and helpers:
+Swift has no `namespace` keyword, but an enum with no cases can't be instantiated, which makes it a clean container for related constants and helpers:
 
 ```swift
 enum Constants {
@@ -208,13 +269,34 @@ enum Constants {
 print(Constants.API.baseURL)
 ```
 
+A caseless enum is preferred over a struct for this, because a struct could accidentally be instantiated: `Constants()`.
+
+## Under the hood
+
+Nesting is purely about **naming and scope**. A nested type has no hidden reference to an instance of its outer type (unlike inner classes in Java), and it doesn't make the outer type larger. `BlackjackCard.Suit` is an ordinary enum whose full name, in symbols and in `String(reflecting:)`, includes its parent: `MyApp.BlackjackCard.Suit`.
+
 ## When not to nest
 
-Deep nesting can make names long and code hard to scan. If a type is useful on its own, or used by many unrelated types, it probably deserves to be top-level. Nest when the inner type genuinely belongs to the outer one.
+Deep nesting makes names long and code hard to scan. If a type is useful on its own, or used by many unrelated types, it probably deserves to be top-level. A good rule: nest when the inner type **genuinely belongs** to the outer one, and its name only makes sense next to the parent's.
+
+## Interview questions
+
+**Does a nested type have access to an instance of its outer type?**
+No. Nesting only affects naming and scope; the nested type has no hidden reference to an outer instance.
+
+**Why write `Swift.Error` inside a type that declares its own `Error`?**
+The nested `Error` shadows the standard library protocol inside that type, so the protocol must be qualified with its module.
+
+**Can protocols be nested?**
+Since Swift 5.10, inside non-generic types, which is great for delegate protocols like `TableView.Delegate`.
+
+**How do you create a namespace in Swift?**
+With a caseless enum holding static members and nested types.
 
 ## Summary
 
-- Declare types inside other types when they only make sense in that context.
-- Use the short name inside, and `Outer.Inner` outside.
-- Nesting avoids name clashes, expresses ownership, and combines well with `private` and generics.
-- Caseless enums work as namespaces for constants and helpers.
+- Declare types inside other types when they only make sense in that context; use the short name inside and `Outer.Inner` outside.
+- Nesting avoids name clashes, expresses ownership, and combines well with `private`; `CodingKeys` is the classic example.
+- Protocols can be nested in non-generic types since Swift 5.10.
+- Types nested in generic types can use the outer type's parameters.
+- Caseless enums work as namespaces; nesting has no runtime cost and no hidden outer reference.
