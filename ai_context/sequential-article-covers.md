@@ -1,8 +1,8 @@
 # Sequential article covers
 
-Started October 20, 2026 using built-in imagegen. The audit found 44 articles without a thumbnail. Each image is generated, inspected, saved as a 640 × 400 WebP under `images/covers/`, and attached as both the thumbnail and opening illustration before starting the next image. Generated site files mirror the sources in `docs/`.
+Completed October 20, 2026 using built-in imagegen. All 44 previously uncovered published articles now have a unique 640 × 400 WebP cover under `images/covers/`, mirrored under `docs/images/covers/`. Each image was generated, inspected, and attached as both the thumbnail and opening illustration before starting the next image.
 
-Completed entries and final prompts are recorded below as each cover is attached.
+Completed entries and final prompts are recorded below.
 
 ## Arrays and Dictionaries in Swift
 
