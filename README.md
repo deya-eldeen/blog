@@ -21,7 +21,7 @@ Choose the home page's featured article by its permalink in `_config.yml`:
 featured_article: /lldb-survival-guide/
 ```
 
-Set this to any published article's URL, including the leading and trailing slashes. Leave it empty to automatically feature the newest published article. An unmatched URL also falls back to the newest published article. The featured article is omitted from the latest-article cards on the first page to avoid duplication.
+Set this to any published article's URL, including the leading and trailing slashes. Leave it empty to automatically feature the newest published article. An unmatched URL also falls back to the newest published article. The featured article is excluded before pagination, so each full page shows eight article cards in addition to the featured article on the first page.
 
 Restart `jekyll serve` after changing `_config.yml`, or rebuild the site with `bundle exec jekyll build`.
 

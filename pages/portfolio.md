@@ -82,8 +82,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/jailbreak-detector-monkey.png"
-          alt="JailbreakDetector affected-device screenshot"
+          src="/images/libraries/covers/jailbreak_detector.webp"
+          alt="A phone with a glowing security shield and magnifying glass inspecting jailbreak indicators"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>JailbreakDetector</h3>
@@ -103,8 +104,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/scrambled-keypad-logo.png"
-          alt="ScrambledKeypad logo"
+          src="/images/libraries/covers/scrambled_keypad.webp"
+          alt="A shuffled numeric keypad with glowing keys and arrows indicating randomized digit positions"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>ScrambledKeypad</h3>
@@ -124,8 +126,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/legacy-swift-crypto-logo.png"
-          alt="LegacySwiftCrypto logo"
+          src="/images/libraries/covers/legacy_swift_crypto.webp"
+          alt="A mechanical cipher rotor beside a key and glowing data cube"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>LegacySwiftCrypto</h3>
@@ -145,8 +148,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/flat-switch-demo.gif"
-          alt="FlatSwitch demo animation"
+          src="/images/libraries/covers/flat_switch.webp"
+          alt="Rounded teal and amber toggle switches showing their on and off states"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>FlatSwitch</h3>
@@ -166,8 +170,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/app-curtain-demo.gif"
-          alt="AppCurtain demo animation"
+          src="/images/libraries/covers/app_curtain.webp"
+          alt="A frosted privacy curtain concealing a phone screen beside a padlock"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>AppCurtain</h3>
@@ -185,6 +190,13 @@ hide_tags: true
       </article>
 
       <article class="portfolio-card portfolio-library-card">
+        <img
+          class="portfolio-library-image"
+          src="/images/libraries/covers/arabic_stopwords.webp"
+          alt="A filter separating common Arabic words from meaningful words for text processing"
+          width="640" height="400"
+          loading="lazy"
+        >
         <h3>Arabic Stopwords</h3>
         <p>
           A structured JSON collection of Arabic stopwords grouped for text cleaning, token filtering,
