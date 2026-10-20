@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /problem_solving_swift_1_4/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/algo_full.webp"
+thumbnail: "images/covers/swift_algorithms_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -30,12 +31,12 @@ Understanding data structures is essential before diving into problem-solving. W
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/algo_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_algorithms_thumbnail.webp"
+ alt_text="Number tiles with 2 and 7 selected to reach a target sum of 9"
+ caption="Finding a pair of values that sums to a target"
+ width="640"
+ height="400"
 %}
 
 {%

@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swiftui-views-are-values-and-not-objects-overlooking-this-can-lead-to-bugs/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swiftui_inside_full.webp"
+thumbnail: "images/covers/swiftui_values_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ In SwiftUI, views are fundamentally designed as value types rather than traditio
 By treating views as values, SwiftUI promotes predictable behavior and enables developers to manage state and data flow more effectively. This paradigm shift towards a more functional and declarative style of programming empowers developers to describe the desired state of the user interface, while SwiftUI handles the complexities of managing the view hierarchy. Understanding this distinction is crucial for developers to avoid common pitfalls that can lead to bugs in their applications and ensure a smooth and efficient user experience. 🧐
 
 {%
- include centered-image.html 
- image_path="../images/covers/swiftui_inside_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swiftui_values_thumbnail.webp"
+ alt_text="Separate interface snapshots connected by arrows, showing views rebuilt from state"
+ caption="SwiftUI views as value snapshots driven by state"
+ width="640"
+ height="400"
 %}
 
 ## The Nature of Value Types in SwiftUI

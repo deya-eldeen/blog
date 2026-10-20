@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-the-difference-between-nil-nil-null-nsnull/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/nil_full.webp"
+thumbnail: "images/covers/swift_nulls_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -28,12 +29,12 @@ Each of these serves a distinct purpose and is used in different contexts. Under
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/nil_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_nulls_thumbnail.webp"
+ alt_text="Four distinct displays labeled nil, Nil, NULL, and NSNull"
+ caption="Different representations of absence in Swift and Objective-C"
+ width="640"
+ height="400"
 %}
 
 ## Understanding the Keywords

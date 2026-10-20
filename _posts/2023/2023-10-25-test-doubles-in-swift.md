@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /test-doubles-in-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/test_doubles_full.webp"
+thumbnail: "images/covers/test_doubles_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -29,12 +30,12 @@ Testing is an essential part of software development, ensuring the correctness a
 
 
 {%
- include centered-image.html 
- image_path="../images/covers/test_doubles_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/test_doubles_thumbnail.webp"
+ alt_text="A translucent substitute service plugging into a test rig with passing checks"
+ caption="Replacing real dependencies with controlled test doubles"
+ width="640"
+ height="400"
 %}
 
 It's important to understand the basics of unit testing, see this blog post [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/), especially since certain architectural patterns, like MVC can introduce complexities that make them less testable. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.

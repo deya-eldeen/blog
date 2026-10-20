@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /ios-accessibility/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/a11y_full.webp"
+thumbnail: "images/covers/ios_accessibility_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -32,12 +33,12 @@ In today's digital landscape, where mobile applications play a crucial role in d
 Accessibility should never be an afterthought; rather, it should be woven into the fabric of app design and development. This proactive approach not only enhances the usability of applications but also broadens the potential user base, fostering a more inclusive digital environment. By prioritizing accessibility, developers can contribute to a world where technology is accessible to everyone, regardless of their abilities.
 
 {%
- include centered-image.html 
- image_path="../images/covers/a11y_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/ios_accessibility_thumbnail.webp"
+ alt_text="A smartphone surrounded by accessibility, hearing, speech, and scalable text symbols"
+ caption="Building accessible and inclusive iOS interfaces"
+ width="640"
+ height="400"
 %}
 
 ## Why Accessibility Matters

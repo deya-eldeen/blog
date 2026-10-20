@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-void-and/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/void_full.webp"
+thumbnail: "images/covers/swift_void_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ This post explores the intricacies of `Void` in Swift, how it relates to the emp
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/void_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_void_thumbnail.webp"
+ alt_text="Void and empty tuple plaques joined by an equals sign"
+ caption="Void is a typealias for the empty tuple"
+ width="640"
+ height="400"
 %}
 
 ## What is Void in Swift?

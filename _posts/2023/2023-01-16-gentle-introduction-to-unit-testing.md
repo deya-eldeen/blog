@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /gentle-introduction-to-unit-testing/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/unit_testing_intro_full.webp"
+thumbnail: "images/covers/unit_testing_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -24,12 +25,12 @@ One crisp Monday morning, a fresh-faced software engineer, affectionately nickna
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/unit_testing_intro_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/unit_testing_thumbnail.webp"
+ alt_text="A function cube under a magnifying glass with input, output, and passing checks"
+ caption="Testing a small isolated unit with predictable results"
+ width="640"
+ height="400"
 %}
 
 **Penguin 🐧:** I've noticed that we have test cases written for almost all features in our mobile app. Why would we write unit tests if we have a QA team that does testing and quality assurance?

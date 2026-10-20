@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /never-use-floating-point-double-data-types-for-monetary-calculations/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/money_full.webp"
+thumbnail: "images/covers/money_precision_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -25,13 +26,13 @@ This post explains why this is problematic and what alternatives you should use.
 
 <!--more-->
 
-{% 
- include centered-image.html 
- image_path="../images/covers/money_full.webp" 
- alt_text="Money and Code" 
- caption="Avoid Floating-Point for Monetary Values" 
- width="960" 
- height="1568"
+{%
+ include centered-image.html
+ image_path="../images/covers/money_precision_thumbnail.webp"
+ alt_text="Coin stacks and a precision balance with exact decimal values and a rounding warning"
+ caption="Using precise decimal arithmetic for monetary values"
+ width="640"
+ height="400"
 %}
 
 ## The Problem with Floating-Point Arithmetic

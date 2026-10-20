@@ -6,7 +6,8 @@ last_modified_at: "2025-10-15"
 permalink: /swift-phantom-types/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_phantom_types_full.webp"
+thumbnail: "images/covers/swift_phantom_types_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "iOS"
@@ -25,11 +26,11 @@ Phantom types let you tuck extra meaning into Swift’s type system without chan
 
 {%
  include centered-image.html 
- image_path="../images/covers/swift_phantom_types_full.webp"
- alt_text="Phantom Types In Swift" 
- caption="Phantom Types In Swift"
- width="960" 
- height="1568"
+ image_path="../images/covers/swift_phantom_types_thumbnail.webp"
+ alt_text="A translucent phantom holding Meters and Feet tags above two identical values, illustrating compile-time type safety"
+ caption="Phantom Types in Swift: identical values, distinct type tags"
+ width="640"
+ height="400"
 %}
 
 ## The basic idea

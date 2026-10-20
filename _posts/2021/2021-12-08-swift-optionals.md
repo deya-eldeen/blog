@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-optionals/  
 excerpt_separator: <!--more-->  
 author: deyaeldeen  
-thumbnail: "images/covers/optionals_full.webp"  
+thumbnail: "images/covers/swift_optionals_thumbnail.webp"
+thumbnail_ready: true
 categories:  
   - "Development"  
   - "iOS"  
@@ -25,11 +26,11 @@ In Swift, **optionals** play a crucial role in managing situations where a value
 
 {%
  include centered-image.html
- image_path="../images/covers/optionals_full.webp"
- alt_text="Swift Optionals" 
- caption=""
- width="960" 
- height="1568"
+ image_path="../images/covers/swift_optionals_thumbnail.webp"
+ alt_text="An optional container holding a value beside an empty container and a question mark"
+ caption="Optionals represent either a wrapped value or its absence"
+ width="640"
+ height="400"
 %}
 
 ## What are Optionals?

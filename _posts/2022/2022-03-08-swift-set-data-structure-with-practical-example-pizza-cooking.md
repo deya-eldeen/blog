@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-set-data-structure-with-practical-example-pizza-cooking/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/venn_full.webp"
+thumbnail: "images/covers/swift_sets_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -27,13 +28,13 @@ Swift offers three primary collection types: Arrays, Sets, and Dictionaries, eac
 
 <!--more-->
 
-{% 
-  include centered-image.html
- image_path="../images/covers/venn_full.webp"
- alt_text=""
- caption="John Venn" 
- width="960" 
- height="1568"
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_sets_thumbnail.webp"
+ alt_text="Pizza ingredients arranged in overlapping teal and orange set circles"
+ caption="Unique ingredients and shared membership in Swift sets"
+ width="640"
+ height="400"
 %}
 
 ## What is a Set?

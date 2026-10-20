@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-any-anyobject/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/any_full.webp"
+thumbnail: "images/covers/swift_any_types_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -28,12 +29,12 @@ Understanding when and how to use these types is crucial for developing robust a
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/any_full.webp"
- alt_text="A conceptual image representing Swift type systems." 
- caption="Exploring Swift's Flexible Type System"
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_any_types_thumbnail.webp"
+ alt_text="Three containers labeled Any, AnyObject, and AnyHashable holding different kinds of values"
+ caption="Flexible type containers for values, class instances, and hashable values"
+ width="640"
+ height="400"
 %}
 
 ## Introduction to Any, AnyObject, and AnyHashable
