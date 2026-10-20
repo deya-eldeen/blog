@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /gps-hardware-basics-for-software-engineers/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/gps_full.webp"
+thumbnail: "images/covers/gps_hardware_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -29,13 +30,13 @@ This article is structured as a conversation between an **iOS developer (Alex ðŸ
 
 <!--more-->
 
-{% 
- include centered-image.html 
- image_path="../images/covers/gps_full.webp"
- alt_text="" 
- caption="" 
- width="960" 
- height="1568"
+{%
+ include centered-image.html
+ image_path="../images/covers/gps_hardware_thumbnail.webp"
+ alt_text="Four satellites sending positioning signals toward a smartphone beside a globe"
+ caption="Determining a mobile location using satellite signals"
+ width="640"
+ height="400"
 %}
 
 ## The Basics of GPS

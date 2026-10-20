@@ -1,55 +1,60 @@
 ---
 layout: page
-title: "Swift Functional Programming"
+title: "Functional Programming in Swift"
+subtitle: "Small, pure functions and immutable data: code that's easier to test and trust"
 permalink: /swift-functional-programming/
 hide: true
 excluded: true
 ---
 
-Functional programming is a powerful paradigm that emphasizes the use of functions as first-class citizens, enabling developers to write cleaner, more maintainable code. In Swift, functional programming techniques can enhance your coding practices and improve the overall structure of your applications. This blog post will explore essential concepts and practices in Swift functional programming, providing a roadmap to help you harness the full potential of this approach.
+{% include roadmap/guide_header.liquid %}
 
-## Key Topics
+Functional programming (FP) builds programs out of functions: small, predictable pieces that take input, return output, and don't secretly change anything else. Swift isn't a purely functional language, but it borrows many of FP's best ideas: first-class functions, closures, value types, `map` and `filter`, and a strong preference for immutability with `let`.
 
-### 1. Thinking Functionally
-- Understanding the principles of functional programming
-- Shifting your mindset from imperative to functional thinking
+You don't have to go all in to benefit. Even a little functional thinking makes code easier to test, easier to reason about, and safer to run concurrently.
 
-### 2. Functional Approach
-- Exploring functional approaches to image processing in Swift
+This guide follows the path of objc.io's excellent book *Functional Swift*, from the core mindset to advanced abstractions.
 
-### 3. Map, Filter, Reduce
-- Utilizing higher-order functions to manipulate collections effectively
+{% include roadmap/legend.liquid %}
 
-### 4. Optionals
-- Leveraging optionals for safer code and better error handling
+## 1. The Functional Mindset
 
-### 5. Quick Check
-- Implementing quick checks to validate data and improve reliability
+- Thinking Functionally: Functions as Values
+- Pure Functions and Side Effects
+- From Imperative to Declarative Code
+- Case Study: Wrapping Core Image Filters in Functions
+{: .roadmap-topics}
 
-### 6. The Value of Immutability
-- Understanding the benefits of immutability in functional programming
+## 2. Everyday Functional Swift
 
-### 7. Enumerations
-- Using enumerations to represent state and improve code clarity
+- Higher-Order Functions
+- `map`, `filter`, and `reduce`
+- `compactMap` and `flatMap`
+- Optionals as a Functional Tool
+- Enumerations and Algebraic Data Types
+{: .roadmap-topics}
 
-### 8. Purely Functional Data Structures
-- Exploring data structures that support functional programming principles
+## 3. Immutability and Testing
 
-### 9. Diagrams
-- Visualizing functional programming concepts for better understanding
+- The Value of Immutability
+- Value Types and Copy-on-Write
+- Property-Based Testing with QuickCheck
+{: .roadmap-topics}
 
-### 10. Generators and Sequences
-- Implementing generators and sequences to handle data streams
+## 4. Functional Data Structures
 
-### 11. Parser Combinators
-- Building complex parsers using functional programming techniques
+- Purely Functional Data Structures
+- Binary Search Trees and Tries, the Functional Way
+- Iterators and Sequences
+- Lazy Sequences
+{: .roadmap-topics}
 
-### 12. Building a Spreadsheet Application
-- Applying functional programming concepts in a practical project
+## 5. Bigger Ideas
 
-### 13. Functors, Applicative Functors, Monads
-- Understanding advanced functional programming concepts and their applications
+- Building Diagrams with Functions
+- Parser Combinators
+- Case Study: Building a Spreadsheet App
+- Functors, Applicative Functors, and Monads
+{: .roadmap-topics}
 
-By exploring the principles and techniques of functional programming in Swift, you can significantly enhance your coding skills and create more robust applications. Embracing this paradigm will lead to cleaner, more maintainable code, ultimately improving your development process. As you continue your journey into functional programming, remember to practice and apply these concepts in real-world projects. Happy coding!
-
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+{% include roadmap/guide_footer.liquid next_url="/swift-data-structures-and-algorithms/" next_title="Data Structures & Algorithms" %}

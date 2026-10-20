@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /this-is-why-i-dont-use-git-gui-tools/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/git_cli_full.webp"
+thumbnail: "images/covers/git_cli_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ Almost anyone who uses Xcode can quickly notice that it lacks many essential Git
 The features available in Xcode may suffice for personal or small projects, but when working within a larger team, relying solely on the IDE can lead to significant challenges in managing source control effectively.
 
 {%
-include centered-image.html
-image_path="../images/covers/git_cli_full.webp"
-alt_text=""
-caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/git_cli_thumbnail.webp"
+ alt_text="A terminal with a branching and merging commit graph and a revert arrow"
+ caption="Managing Git history directly from the command line"
+ width="640"
+ height="400"
 %}
 
 {%

@@ -1,64 +1,79 @@
 ---
 layout: page
-title: "Swift Design Patterns"
+title: "Design Patterns in Swift"
+subtitle: "Proven solutions to problems you'll meet again and again"
 permalink: /swift-design-patterns/
 hide: true
 excluded: true
 ---
 
-Design patterns are essential tools in software development that provide proven solutions to common problems. In Swift, understanding and implementing these patterns can significantly enhance your code's structure, maintainability, and scalability. This blog post will explore various design patterns categorized into Creational, Structural, Behavioral, and Architectural patterns, offering a comprehensive guide to mastering Swift design patterns.
+{% include roadmap/guide_header.liquid %}
 
-## Swift Design Patterns
+Design patterns are named, reusable solutions to common design problems. Knowing them gives you two superpowers: you recognize problems you've seen before, and you can talk about solutions in a single word. Saying "let's use a coordinator" is a lot faster than explaining the whole idea.
 
-### 1. Creational Design Patterns
-- Object Template Pattern
-- Prototype Pattern
-- Singleton Pattern
-- Object Pool Pattern
-- Object Pool Variation
-- Factory Method (aka Virtual Constructor) Pattern
-- Abstract Factory Pattern
-- Builder Pattern (with Director)
-- Borg (Monostate)
-- Lazy Evaluation
-- Pool
+Many classic patterns come from the 1994 "Gang of Four" book, *Design Patterns*. Some are built right into Swift and Apple's frameworks (delegation, observers, singletons), while others need a Swift-flavored twist with protocols, closures, and value types.
 
-### 2. Structural Design Patterns
-- Adapter Pattern
-- Bridge Pattern
-- Decorator Pattern
-- Composite Pattern
-- Facade Pattern
-- Flyweight Pattern
-- Proxy Pattern
-- Coordinator
-- 3-Tier
-- Front Controller
-- Repository
+{% include roadmap/legend.liquid %}
 
-### 3. Behavioral Design Patterns
+## 1. Creational Patterns
+
+How objects get created:
+
+- Singleton
+- Factory Method
+- Abstract Factory
+- Builder
+- Prototype
+- Object Pool
+- Lazy Initialization
+- Monostate
+{: .roadmap-topics}
+
+## 2. Structural Patterns
+
+How objects are composed into bigger structures:
+
+- Adapter
+- Bridge
+- Composite
+- Decorator
+- Facade
+- Flyweight
+- Proxy
+{: .roadmap-topics}
+
+## 3. Behavioral Patterns
+
+How objects communicate and share responsibilities:
+
+- Delegation
+- Observer
+- Publisher-Subscriber and Event Bus
 - Chain of Responsibility
-- Command Pattern
-- Mediator Pattern
-- Observer Pattern
-- Memento Pattern
-- Strategy Pattern
-- Visitor Pattern
-- Template Method Pattern
-- Null Object
-- Catalog
-- Publisher-Subscriber
-- Registry
-- Specification
-- Event Bus
+- Command
+- Iterator
+- Mediator
+- Memento
 - State
+- Strategy
+- Template Method
+- Visitor
+- Null Object
+- Specification
+{: .roadmap-topics}
 
-### 4. Architectural Design Patterns
-- MVC/MVT
-- MVP
-- MVC
-- MVVM
+## 4. App-Level Patterns
 
-By familiarizing yourself with these design patterns in Swift, you can elevate your programming skills and create more efficient, organized, and maintainable applications. Each pattern serves a unique purpose and can be applied to various scenarios, making them invaluable tools in your development toolkit. Embrace the power of design patterns and watch your coding practices transform!
+Patterns that shape how a whole app or feature is organized:
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+- Coordinator
+- Repository
+- Dependency Injection
+- Service Locator and Registry
+- Front Controller
+- Three-Tier Architecture
+{: .roadmap-topics}
+
+Looking for MVC, MVVM, and friends? They have a guide of their own: see [Architectures](/swift-architectures/).
+
+{% include roadmap/guide_footer.liquid next_url="/swift-architectures/" next_title="Architectures" %}

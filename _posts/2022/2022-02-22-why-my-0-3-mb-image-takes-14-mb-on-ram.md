@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /why-my-0-3-mb-image-takes-14-mb-on-ram/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/imagesize_full.webp"
+thumbnail: "images/covers/image_memory_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -32,10 +33,12 @@ you might have an image file that is only 0.3 MB on disk, yet it occupies around
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/imagesize_full.webp"
- alt_text="" 
- caption=""
+ include centered-image.html
+ image_path="../images/covers/image_memory_thumbnail.webp"
+ alt_text="A compressed image file expanding into a raw pixel grid above a RAM module"
+ caption="Compressed image storage versus decoded bitmap memory"
+ width="640"
+ height="400"
 %}
 
 ## Root Of Discrepancy?

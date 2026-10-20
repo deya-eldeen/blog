@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-keywords/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/keywords_full.webp"
+thumbnail: "images/covers/swift_keywords_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "Programming"
@@ -24,12 +25,12 @@ As detailed in [Swift Lexical Structure](https://swiftbydeya.com/swift-lexical-s
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/keywords_full.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_keywords_thumbnail.webp"
+ alt_text="Swift keyword tiles labeled let, var, func, if, guard, and return"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Keywords used in declarations

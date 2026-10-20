@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /easily-tiling-images-in-interface-builder-without-code/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/tiling_full.webp"
+thumbnail: "images/covers/image_tiling_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "iOS"
@@ -30,12 +31,12 @@ By leveraging these techniques, you can achieve a polished and professional look
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/tiling_full.webp"
- alt_text="Tiling Images in Interface Builder" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/image_tiling_thumbnail.webp"
+ alt_text="A single geometric image tile repeated across an adjustable design canvas"
+ caption="Repeating an image tile in a visual interface editor"
+ width="640"
+ height="400"
 %}
 
 ## Why Tile Images?

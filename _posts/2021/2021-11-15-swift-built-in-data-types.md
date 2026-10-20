@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-built-in-data-types/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/inference_full.webp"
+thumbnail: "images/covers/swift_data_types_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -25,12 +26,12 @@ By grasping the nuances of each type, programmers can optimize memory usage, ens
 
 <!--more-->
 {%
- include centered-image.html 
- image_path="../images/covers/inference_full.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_data_types_thumbnail.webp"
+ alt_text="Containers labeled Int, Double, Bool, and String holding example values"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Swift's Basic Data Types

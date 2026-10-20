@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /solving-network-issues-on-macbooks-silicon-chips/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/network_fix_full.webp"
+thumbnail: "images/covers/mac_network_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -29,12 +30,12 @@ Users have expressed concerns over the reliability of their devices, especially 
 
 
 {%
- include centered-image.html 
- image_path="../images/covers/network_fix_full.webp"
- alt_text="Network Performance Issues" 
- caption="Network Performance Issues on M1/M2 MacBooks"
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/mac_network_thumbnail.webp"
+ alt_text="A laptop and router with a broken wireless connection and a USB-C Ethernet adapter"
+ caption="Troubleshooting connectivity on Apple Silicon MacBooks"
+ width="640"
+ height="400"
 %}
 
 ## Overview of Network Issues

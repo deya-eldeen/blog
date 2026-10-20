@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /what-is-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_full.webp"
+thumbnail: "images/covers/swift_introduction_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ Swift is Apple’s modern, open-source programming language, introduced at Apple
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/swift_full.webp"
- alt_text="Swift" 
+ include centered-image.html
+ image_path="../images/covers/swift_introduction_thumbnail.webp"
+ alt_text="A Swift programming core connected to a phone, laptop, and watch"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 It primarily works with Apple’s `Cocoa` and `Cocoa Touch` frameworks. Since its introduction, Swift has rapidly become one of the fastest-growing programming languages. As an open-source language licensed under the [Apache 2.0 license](https://swift.org/LICENSE.txt), Swift has extended beyond Apple's ecosystem, finding use in other areas such as backend server development with frameworks like `Vapor`.

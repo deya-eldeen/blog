@@ -1,6 +1,10 @@
 ---
 layout: page
+show_hero: true
+hero_image: /assets/img/hero/deya-portfolio.webp
+hero_image_alt: "A clay-style developer smiling at the camera, surrounded by floating app screens, abstract app tiles, and an idea lightbulb"
 title: Portfolio
+hide_title: true
 permalink: /portfolio/
 subtitle: "Apps, libraries, and projects I maintain"
 position: 2
@@ -13,247 +17,7 @@ tags:
 hide_tags: true
 ---
 
-<style>
-.portfolio-page {
-  --portfolio-border: rgba(120, 120, 132, 0.35);
-  --portfolio-muted: #76767f;
-  --portfolio-panel: rgba(127, 127, 138, 0.08);
-  max-width: 100%;
-  overflow-x: hidden;
-}
 
-.portfolio-page * {
-  max-width: 100%;
-}
-
-#Portfolio + .subtitle {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  margin-left: auto;
-  margin-right: auto;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.portfolio-section {
-  margin: 0 0 2rem;
-  max-width: 100%;
-}
-
-.portfolio-section-title {
-  margin: 0 0 0.85rem;
-}
-
-.portfolio-intro {
-  margin: 0 0 1.25rem;
-  max-width: 780px;
-}
-
-.portfolio-card {
-  border: 1px solid var(--portfolio-border);
-  border-radius: 8px;
-  padding: 1rem;
-  background: var(--portfolio-panel);
-  box-sizing: border-box;
-  float: none;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.portfolio-app-card {
-  max-width: 780px;
-}
-
-.portfolio-app-header {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  gap: 1rem;
-  align-items: center;
-}
-
-.portfolio-app-icon {
-  width: 88px;
-  min-width: 88px;
-  max-width: 88px;
-  height: 88px;
-  min-height: 88px;
-  max-height: 88px;
-  aspect-ratio: 1 / 1;
-  border-radius: 20px;
-  display: block;
-  flex: 0 0 88px;
-  object-fit: cover;
-  padding: 0 !important;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
-}
-
-.portfolio-app-copy {
-  min-width: 0;
-}
-
-.portfolio-app-title {
-  margin: 0 0 0.25rem;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-}
-
-.portfolio-app-summary {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.portfolio-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.85rem 0 0;
-}
-
-.portfolio-tags span {
-  border: 1px solid var(--portfolio-border);
-  border-radius: 999px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.92rem;
-  line-height: 1.2;
-}
-
-.portfolio-description {
-  margin: 1rem 0;
-}
-
-.portfolio-description ul {
-  margin-bottom: 1rem;
-}
-
-.portfolio-link-button {
-  display: inline-block;
-  border: 1px solid currentColor;
-  border-radius: 8px;
-  padding: 0.55rem 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.portfolio-note {
-  margin: 0.75rem 0 0;
-  color: var(--portfolio-muted);
-  font-size: 0.95rem;
-}
-
-.portfolio-library-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
-}
-
-.portfolio-library-card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.portfolio-library-image {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: contain;
-  display: block;
-  margin: 0 0 0.85rem;
-  border: 1px solid var(--portfolio-border);
-  border-radius: 8px;
-  background: rgba(127, 127, 138, 0.1);
-  padding: 0 !important;
-}
-
-.portfolio-library-card h3 {
-  margin: 0 0 0.45rem;
-  line-height: 1.18;
-}
-
-.portfolio-library-card p {
-  margin: 0 0 0.85rem;
-}
-
-.portfolio-library-card .portfolio-tags {
-  margin: auto 0 0.9rem;
-}
-
-@media (max-width: 640px) {
-  .portfolio-app-header {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    text-align: center;
-    gap: 0.8rem;
-  }
-
-  .portfolio-card,
-  .portfolio-app-card {
-    width: 320px !important;
-    max-width: calc(100vw - 3rem) !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  #Portfolio + .subtitle {
-    width: 320px !important;
-    max-width: calc(100vw - 3rem) !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    text-align: center;
-  }
-
-  .portfolio-app-copy,
-  .portfolio-app-summary,
-  .portfolio-description {
-    width: 100%;
-    max-width: 18rem;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .portfolio-app-icon {
-    width: 96px;
-    min-width: 96px;
-    max-width: 96px;
-    height: 96px;
-    min-height: 96px;
-    max-height: 96px;
-    flex-basis: 96px;
-    border-radius: 22px;
-  }
-
-  .portfolio-tags {
-    justify-content: center;
-  }
-
-  .portfolio-tags span {
-    font-size: 0.86rem;
-  }
-}
-
-@media (max-width: 360px) {
-  #Portfolio + .subtitle,
-  .portfolio-card,
-  .portfolio-app-card {
-    width: calc(100vw - 2rem) !important;
-    max-width: calc(100vw - 2rem) !important;
-  }
-
-  .portfolio-app-icon {
-    width: 84px;
-    min-width: 84px;
-    max-width: 84px;
-    height: 84px;
-    min-height: 84px;
-    max-height: 84px;
-    flex-basis: 84px;
-    border-radius: 19px;
-  }
-}
-</style>
 
 <div class="portfolio-page">
   <section class="portfolio-section">
@@ -318,8 +82,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/jailbreak-detector-monkey.png"
-          alt="JailbreakDetector affected-device screenshot"
+          src="/images/libraries/covers/jailbreak_detector.webp"
+          alt="A phone with a glowing security shield and magnifying glass inspecting jailbreak indicators"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>JailbreakDetector</h3>
@@ -339,8 +104,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/scrambled-keypad-logo.png"
-          alt="ScrambledKeypad logo"
+          src="/images/libraries/covers/scrambled_keypad.webp"
+          alt="A shuffled numeric keypad with glowing keys and arrows indicating randomized digit positions"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>ScrambledKeypad</h3>
@@ -360,8 +126,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/legacy-swift-crypto-logo.png"
-          alt="LegacySwiftCrypto logo"
+          src="/images/libraries/covers/legacy_swift_crypto.webp"
+          alt="A mechanical cipher rotor beside a key and glowing data cube"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>LegacySwiftCrypto</h3>
@@ -381,8 +148,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/flat-switch-demo.gif"
-          alt="FlatSwitch demo animation"
+          src="/images/libraries/covers/flat_switch.webp"
+          alt="Rounded teal and amber toggle switches showing their on and off states"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>FlatSwitch</h3>
@@ -402,8 +170,9 @@ hide_tags: true
       <article class="portfolio-card portfolio-library-card">
         <img
           class="portfolio-library-image"
-          src="/images/libraries/app-curtain-demo.gif"
-          alt="AppCurtain demo animation"
+          src="/images/libraries/covers/app_curtain.webp"
+          alt="A frosted privacy curtain concealing a phone screen beside a padlock"
+          width="640" height="400"
           loading="lazy"
         >
         <h3>AppCurtain</h3>
@@ -421,6 +190,13 @@ hide_tags: true
       </article>
 
       <article class="portfolio-card portfolio-library-card">
+        <img
+          class="portfolio-library-image"
+          src="/images/libraries/covers/arabic_stopwords.webp"
+          alt="A filter separating common Arabic words from meaningful words for text processing"
+          width="640" height="400"
+          loading="lazy"
+        >
         <h3>Arabic Stopwords</h3>
         <p>
           A structured JSON collection of Arabic stopwords grouped for text cleaning, token filtering,

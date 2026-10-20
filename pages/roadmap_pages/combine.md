@@ -1,68 +1,60 @@
 ---
 layout: page
 title: "Combine"
+subtitle: "Apple's framework for processing values over time"
 permalink: /combine/
 hide: true
 excluded: true
 ---
-Combine is Apple's powerful framework that introduces reactive programming to the Swift language, allowing developers to work with asynchronous data streams in a declarative manner. By utilizing Combine, you can create more responsive and maintainable applications by effectively managing asynchronous events and data flow. This blog post will guide you through the essential concepts and operators in Combine, equipping you with the knowledge to implement reactive programming in your Swift projects.
 
-## Key Topics
+{% include roadmap/guide_header.liquid %}
 
-### 1. Publishers and Subscribers
-- Understanding the core components of Combine
-- Creating and managing publishers and subscribers
+Apps are full of things that happen *over time*: a user types into a search field, a network request finishes, a timer fires, a setting changes. Combine, introduced in iOS 13, gives you one consistent way to handle all of them. Values flow from **publishers** through a chain of **operators** to **subscribers**, and you describe that pipeline declaratively instead of juggling callbacks.
 
-### 2. Transforming Operators
-- Utilizing operators to transform emitted values
-- Examples of common transforming operators
+Since Swift 5.5, `async`/`await` and `AsyncSequence` cover many of the same jobs, and since iOS 17 the Observation framework handles most SwiftUI data flow. Combine is still fully supported, though, and you'll find it in a huge number of codebases, especially those built between 2019 and 2023.
 
-### 3. Filtering Operators
-- Applying filtering operators to refine emitted values
-- Techniques for managing data flow with filters
+{% include roadmap/legend.liquid %}
 
-### 4. Combining Operators
-- Merging and combining multiple publishers
-- Overview of operators like `combineLatest`, `zip`, and `merge`
+## 1. The Core Ideas
 
-### 5. Time Manipulation Operators
-- Managing time-based events with Combine
-- Using operators like `delay`, `throttle`, and `debounce`
+- Publishers, Subscribers, and Subscriptions
+- `sink` and `assign`
+- Subjects: `PassthroughSubject` and `CurrentValueSubject`
+- `@Published` Properties
+- `AnyCancellable` and Memory Management
+{: .roadmap-topics}
 
-### 6. Sequence Operators
-- Working with sequence operators to handle collections
-- Examples of how to apply sequence operations
+## 2. Operators
 
-### 7. Networking
-- Implementing networking tasks with Combine
-- Handling API calls and responses reactively
+- Transforming: `map`, `flatMap`, `scan`
+- Filtering: `filter`, `removeDuplicates`, `compactMap`
+- Combining: `combineLatest`, `zip`, `merge`
+- Time: `debounce`, `throttle`, `delay`
+- Sequence Operators: `first`, `last`, `collect`
+{: .roadmap-topics}
 
-### 8. Debugging
-- Strategies for debugging Combine pipelines
-- Tools and techniques for effective debugging
+## 3. Real-World Combine
 
-### 9. Timers
-- Utilizing Combine for timer-based events
-- Creating and managing timers in your applications
+- Networking with `URLSession` Publishers
+- Timers
+- Key-Value Observing (KVO) with Publishers
+- Notifications as Publishers
+{: .roadmap-topics}
 
-### 10. Key-Value Observing (KVO)
-- Integrating KVO with Combine for reactive updates
-- Observing changes in properties reactively
+## 4. Doing It Right
 
-### 11. Resource Management
-- Best practices for managing resources in Combine
-- Handling memory and subscriptions effectively
+- Error Handling: `catch`, `retry`, and `replaceError`
+- Schedulers: `receive(on:)` and `subscribe(on:)`
+- Managing Resources: `share` and Multicasting
+- Debugging Pipelines with `print` and `handleEvents`
+- Testing Publishers
+{: .roadmap-topics}
 
-### 12. Error Handling
-- Implementing error handling strategies in Combine
-- Using operators to manage errors gracefully
+## 5. Combine Today
 
-### 13. Schedulers
-- Understanding schedulers and their role in Combine
-- Managing concurrency and execution contexts
+- Combine vs. `async`/`await` and `AsyncSequence`
+- Bridging Publishers to `async`/`await` with `.values`
+- Combine vs. the Observation Framework in SwiftUI
+{: .roadmap-topics}
 
-### 14. Testing
-- Writing tests for Combine-based code
-- Techniques for testing publishers and subscribers
-
-By mastering the concepts and operators of Combine, you will be well-prepared to implement reactive programming in your Swift applications. Combine empowers you to manage asynchronous data flows more effectively, leading to cleaner, more maintainable code. As you dive deeper into Combine, remember to practice and experiment with various operators and patterns to fully leverage the framework's capabilities. Happy coding!
+{% include roadmap/guide_footer.liquid next_url="/rxswift/" next_title="RxSwift" %}
