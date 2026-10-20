@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Collections"
+thumbnail: "images/covers/swift_arrays_and_dictionaries_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Almost every app is a story about lists and lookups: a feed of posts, a table of settings, a cache keyed by ID. In Swift those stories are told with two collection types you'll use every single day, `Array` and `Dictionary`. They look simple, but they hide a lot of clever engineering: copy-on-write storage, amortized growth, randomized hashing, and value semantics that make them safe to pass around.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_arrays_and_dictionaries_thumbnail.webp"
+ alt_text="An indexed row of value blocks beside key tiles linked to distinct values"
+ caption="Arrays organize values by position; dictionaries associate keys with values."
+ width="640"
+ height="400"
+%}
 
 This article goes beyond the syntax. We'll look at how both types behave, how they're implemented, what they cost, and the mistakes that cause real bugs in production apps.
 

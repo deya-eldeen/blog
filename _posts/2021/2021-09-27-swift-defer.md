@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Syntax"
   - "Errors"
+thumbnail: "images/covers/swift_defer_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 `defer` schedules a block of code to run when the current scope exits, no matter how it exits: a normal `return`, an early `guard` exit, a thrown error, or a `break` out of a loop. It lets you write cleanup right next to the setup it undoes, so you can't forget it on one of many exit paths. It's small, but it has precise rules about scope, order, and timing that are worth knowing well.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_defer_thumbnail.webp"
+ alt_text="Cleanup actions stacked in reverse order beside a scope exit"
+ caption="defer in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The basic idea
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Properties"
+thumbnail: "images/covers/swift_properties_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Properties attach values to types. Some store data, some compute it on demand, some react when they change, some wait until they're first used, and some belong to the type itself rather than to any instance. Each kind has rules that are easy to get subtly wrong, like when observers fire, why `lazy` isn't thread-safe, and why `append` on an array property triggers `didSet`. This article covers all of them.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_properties_thumbnail.webp"
+ alt_text="Storage, computed-result, and notification modules on a single object"
+ caption="Properties in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Stored properties
 

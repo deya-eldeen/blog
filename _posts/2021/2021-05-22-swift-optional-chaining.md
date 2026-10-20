@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Optionals"
   - "Syntax"
+thumbnail: "images/covers/swift_optional_chaining_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Optional chaining lets you call properties, methods, and subscripts on a value that might be `nil`, in one expression. If any link in the chain is `nil`, the whole chain quietly evaluates to `nil` instead of crashing. It's the polite alternative to force-unwrapping with `!`, and you'll use it every time you write `delegate?.didFinish()` or `self?.update()`.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_optional_chaining_thumbnail.webp"
+ alt_text="An optional chain whose path stops at an empty middle node"
+ caption="Optional Chaining in Swift"
+ width="640"
+ height="400"
+%}
 
 ## A quick reminder: optionals are enums
 

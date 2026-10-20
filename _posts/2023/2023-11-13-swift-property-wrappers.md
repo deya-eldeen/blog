@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Properties"
   - "SwiftUI"
+thumbnail: "images/covers/swift_property_wrappers_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 If you've used SwiftUI, you've used property wrappers: `@State`, `@Binding`, `@Environment`, `@AppStorage`. A property wrapper packages up the logic for **how** a value is stored and accessed, so you can reuse it with a single `@` attribute instead of repeating getter and setter code everywhere. Understanding what the compiler generates for them also explains `$` prefixes, underscore-prefixed properties, and a classic concurrency bug.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_property_wrappers_thumbnail.webp"
+ alt_text="A property value enclosed by a wrapper that adds access behavior"
+ caption="Property Wrappers in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The problem
 

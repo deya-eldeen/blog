@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "OOP"
   - "Classes"
+thumbnail: "images/covers/swift_inheritance_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Inheritance lets one class build on another: a subclass gets its superclass's properties and methods, can add new ones, and can override existing behavior. Swift keeps inheritance deliberately simple and explicit: only classes inherit, each class has at most one superclass, overriding requires the `override` keyword, and you can forbid it with `final`. Those rules keep the power of inheritance while avoiding many of its traditional traps.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_inheritance_thumbnail.webp"
+ alt_text="A base class branching to two subclasses that add their own features"
+ caption="Inheritance in Swift"
+ width="640"
+ height="400"
+%}
 
 ## A base class
 

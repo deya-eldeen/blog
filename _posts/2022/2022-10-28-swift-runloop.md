@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Runtime"
   - "Concurrency"
+thumbnail: "images/covers/swift_runloop_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Why does a `Timer` stop firing while you scroll? Why does a timer created on a background thread never fire at all? Why does a change to a view appear on screen only after your function returns, and why does long work on the main thread freeze the UI? All of these lead to the same place: the **run loop**, the event-processing loop at the heart of every Apple app. You rarely touch it directly, but understanding it explains a lot of everyday behavior.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_runloop_thumbnail.webp"
+ alt_text="An event loop connecting input events, a timer and a processing station"
+ caption="RunLoop Explained for Swift Developers"
+ width="640"
+ height="400"
+%}
 
 ## What a run loop is
 

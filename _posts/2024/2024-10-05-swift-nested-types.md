@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Syntax"
   - "Architecture"
+thumbnail: "images/covers/swift_nested_types_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Some types only make sense in the context of another type. A playing card's suit, a network client's error, a view model's state, a model's coding keys: Swift lets you declare these types **inside** the type they belong to. Nested types keep related code together, avoid name clashes, express ownership, and make APIs read naturally at the call site. Since Swift 5.10, even protocols can be nested.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_nested_types_thumbnail.webp"
+ alt_text="A small type token nested inside two related enclosing types"
+ caption="Nested Types in Swift"
+ width="640"
+ height="400"
+%}
 
 ## A first example
 

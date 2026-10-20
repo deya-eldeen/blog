@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Classes"
+thumbnail: "images/covers/swift_initialization_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift has one non-negotiable rule about initialization: **every stored property must have a value before an instance can be used.** There's no "uninitialized" memory to stumble into later, no half-built object reachable from your code. Everything else about initializers, from free memberwise initializers to the two-phase process for classes, exists to enforce that rule while keeping initialization flexible.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_initialization_thumbnail.webp"
+ alt_text="Required components being assembled into a complete initialized object"
+ caption="Initialization in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Default values and custom initializers
 

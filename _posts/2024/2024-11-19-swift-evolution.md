@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Swift Evolution"
   - "Open Source"
+thumbnail: "images/covers/swift_evolution_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Every Swift feature you use, from `async`/`await` to `if` expressions to macros, went through a public process before it shipped. That process is **Swift Evolution**. Anyone can read the proposals, follow the debates, try the implementations, and take part. Knowing how it works pays off in very practical ways: proposals are the most precise documentation a feature has, their "alternatives considered" sections answer most "why didn't they just…?" questions, and upcoming feature flags let you prepare your code for the next language mode years before it arrives. This article covers the process, its history, how to read a proposal, and how to use what's coming in your own projects.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_evolution_thumbnail.webp"
+ alt_text="A language proposal progressing through discussion, review and implementation"
+ caption="Swift Evolution: How the Language Changes"
+ width="640"
+ height="400"
+%}
 
 ## Where it happens
 

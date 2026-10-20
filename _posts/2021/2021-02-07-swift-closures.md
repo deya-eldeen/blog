@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Closures"
   - "Functions"
+thumbnail: "images/covers/swift_closures_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 A closure is a block of code you can pass around and run later, together with the variables it uses from its surroundings. Completion handlers, `map` and `filter`, sort orders, animations, button actions: closures are everywhere in Swift. Their syntax can shrink from verbose to remarkably terse, and their capturing behavior is behind both some of Swift's most elegant APIs and some of its most common memory bugs.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_closures_thumbnail.webp"
+ alt_text="A function capsule carrying captured values and links to its surrounding context"
+ caption="Closures in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Three kinds of closures
 

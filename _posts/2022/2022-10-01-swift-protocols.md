@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Protocols"
   - "POP"
+thumbnail: "images/covers/swift_protocols_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 A protocol describes **what** a type can do, without saying **how**. Classes, structs, and enums can all adopt protocols, which makes them Swift's main tool for abstraction. The standard library is built on them, from `Equatable` and `Hashable` to `Sequence`, `Collection`, and `Codable`, and well-designed app code leans on them too: for testability, for sharing behavior without inheritance, and for writing generic algorithms.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_protocols_thumbnail.webp"
+ alt_text="Different implementation modules fitting the same interface contract"
+ caption="Protocols in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Declaring and adopting a protocol
 

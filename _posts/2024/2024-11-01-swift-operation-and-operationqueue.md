@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Concurrency"
   - "Foundation"
+thumbnail: "images/covers/swift_operation_and_operationqueue_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Before `async`/`await`, Apple platforms offered two main ways to run work concurrently: Grand Central Dispatch for lightweight blocks, and `Operation` with `OperationQueue` for work that needed **dependencies, cancellation, priorities, and limits on concurrency**. Operations are built on top of GCD and still power many large codebases, and some of their ideas, like a dependency graph between units of work, have no direct one-line equivalent in Swift concurrency. This article covers how operations really behave, including the parts the documentation glosses over: cancelled dependencies, asynchronous operations and their KVO contract, passing data between operations, and bridging to `async`/`await`.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_operation_and_operationqueue_thumbnail.webp"
+ alt_text="Queued operations waiting for their prerequisite operations to finish"
+ caption="Operation and OperationQueue in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The model in one paragraph
 

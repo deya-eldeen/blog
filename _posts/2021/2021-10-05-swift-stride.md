@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Collections"
+thumbnail: "images/covers/swift_stride_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift has no C-style `for (int i = 0; i < 10; i += 2)` loop. Ranges like `0..<10` cover steps of one, and for everything else there's `stride`: counting by twos, counting down, stepping through decimals, or walking every third element of an array. Behind it is a small protocol, `Strideable`, which your own types can adopt too.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_stride_thumbnail.webp"
+ alt_text="A fixed stride visiting positions zero, two, four and six"
+ caption="stride in Swift"
+ width="640"
+ height="400"
+%}
 
 ## `to` vs. `through`
 

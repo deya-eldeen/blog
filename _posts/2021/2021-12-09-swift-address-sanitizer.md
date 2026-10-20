@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Debugging"
   - "Memory Management"
+thumbnail: "images/covers/swift_address_sanitizer_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Safe Swift code can't corrupt memory. But the moment you use `Unsafe` pointers, call into C or C++, or depend on a library that does, memory bugs are possible again, and they're the worst kind: crashes far from the cause, wrong values that appear only sometimes, or no visible symptom at all until a user's data is corrupted. **Address Sanitizer** (ASan) catches these bugs at the exact line where they happen, with a report that tells you where the memory was allocated and freed.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_address_sanitizer_thumbnail.webp"
+ alt_text="A magnifying lens detecting a pointer that crosses a memory boundary"
+ caption="Finding Memory Bugs with Address Sanitizer"
+ width="640"
+ height="400"
+%}
 
 ## What Address Sanitizer finds
 

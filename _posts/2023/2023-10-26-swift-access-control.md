@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Architecture"
+thumbnail: "images/covers/swift_access_control_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Access control decides which parts of your code can see which other parts. It lets a type hide its implementation behind a small, deliberate interface, so the rest of the app can't depend on details you might want to change, and can't break the rules the type relies on. Swift has six access levels, built around two units: the **module** and the **source file**. Choosing the right level is a big part of designing APIs that stay easy to change.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_access_control_thumbnail.webp"
+ alt_text="Nested visibility boundaries exposing selected interface connections"
+ caption="Access Control in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Modules and source files
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Errors"
   - "Basics"
+thumbnail: "images/covers/swift_error_handling_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Things go wrong: files are missing, networks drop, users type nonsense. Swift handles recoverable errors with `throw`, `try`, and `catch`, a model that's explicit at every step: you can see which calls can fail just by reading the code, because each one is marked with `try`. Swift 6 adds **typed throws**, which lets a function say exactly which error it can throw. This article covers the whole toolbox, how it works under the hood, and how to design errors that are pleasant to handle.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_error_handling_thumbnail.webp"
+ alt_text="An operation routing an error into a recovery path beside its normal result"
+ caption="Error Handling in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Defining errors
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Objective-C"
   - "Interoperability"
+thumbnail: "images/covers/swift_interoperability_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift didn't arrive in an empty world. Apple's platforms are built on decades of Objective-C and C, and huge amounts of valuable code are written in C++. Swift was designed to call into all three directly, and, for Objective-C and since Swift 5.9 for C++, to be called back. Understanding how that bridge works helps you use system APIs well, migrate old projects one file at a time, wrap C libraries safely, and reuse C++ code without writing glue by hand.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_interoperability_thumbnail.webp"
+ alt_text="Distinct software modules connected through language-interface adapters"
+ caption="Swift Interoperability with Objective-C, C, and C++"
+ width="640"
+ height="400"
+%}
 
 ## Objective-C → Swift: what the importer does
 

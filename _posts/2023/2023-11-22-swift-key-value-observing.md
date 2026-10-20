@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Objective-C"
   - "Runtime"
+thumbnail: "images/covers/swift_key_value_observing_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Key-Value Observing lets one object be notified when a property of another object changes. It comes from Objective-C, and Apple's frameworks still rely on it: `AVPlayer.status`, `AVPlayerItem.status`, `WKWebView.estimatedProgress`, `Operation.isFinished`, `Progress.fractionCompleted`, and many more are documented as observable with KVO. Modern Swift wraps it in a clean, type-safe, block-based API, as long as you follow a few rules. Understanding how it works underneath explains those rules.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_key_value_observing_thumbnail.webp"
+ alt_text="A property-change signal travelling from a model to subscribed observers"
+ caption="Key-Value Observing (KVO) in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Making a property observable
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Syntax"
+thumbnail: "images/covers/swift_control_flow_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Control flow decides which code runs and how many times. Swift's toolbox looks familiar if you've used any C-style language, but almost every tool has a twist that makes code safer or shorter: conditions must be real booleans, `switch` must be exhaustive and doesn't fall through, `guard` keeps early exits tidy, and since Swift 5.9, `if` and `switch` can even be used as expressions that produce a value.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_control_flow_thumbnail.webp"
+ alt_text="A decision branch, early exit and loop represented as connected paths"
+ caption="Control Flow in Swift: if, guard, switch, and Loops"
+ width="640"
+ height="400"
+%}
 
 ## `if`, `else if`, `else`
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Syntax"
   - "Enums"
+thumbnail: "images/covers/swift_pattern_matching_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Pattern matching is how Swift asks "does this value look like *that*?" and pulls the interesting parts out in the same breath. It powers `switch`, `if case`, `guard case`, `for case`, `while case`, and `catch` clauses. Once it clicks, it replaces whole pyramids of `if` statements with a few readable lines, and it lets the compiler prove you handled every possibility.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_pattern_matching_thumbnail.webp"
+ alt_text="Distinct geometric tokens fitting corresponding shaped pattern slots"
+ caption="Pattern matching selects values that fit a pattern and can bind their contents."
+ width="640"
+ height="400"
+%}
 
 ## The idea in one example
 

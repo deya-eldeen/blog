@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Objective-C"
   - "Runtime"
+thumbnail: "images/covers/swift_method_swizzling_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Method swizzling swaps the implementation behind a method at runtime, so calling one method actually runs different code. It's an Objective-C runtime technique that analytics SDKs, crash reporters, accessibility tools, and debugging utilities use to hook into classes they don't own, like `UIViewController`. It still works from Swift, but with important limits, and it should be one of the last tools you reach for. This article explains how it works, how to do it correctly, and why it so often goes wrong.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_method_swizzling_thumbnail.webp"
+ alt_text="Crossed dispatch connections exchanging two method implementations"
+ caption="Method Swizzling in Swift"
+ width="640"
+ height="400"
+%}
 
 ## How Objective-C finds a method
 

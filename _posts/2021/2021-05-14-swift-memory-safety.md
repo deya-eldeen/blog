@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Memory Management"
   - "Safety"
+thumbnail: "images/covers/swift_memory_safety_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift is designed so that, unless you explicitly opt out, your code can't read uninitialized memory, run off the end of a buffer, or use an object after it's freed. Most of those protections are famous: optionals, bounds checks, ARC. One is less well known, and it explains some confusing compiler errors and runtime crashes: **the law of exclusivity.** Two accesses to the same variable must not overlap if one of them is a write.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_memory_safety_thumbnail.webp"
+ alt_text="A write access holding an exclusive gate while other memory accesses wait"
+ caption="Memory Safety in Swift: Exclusive Access"
+ width="640"
+ height="400"
+%}
 
 ## Swift's safety nets
 

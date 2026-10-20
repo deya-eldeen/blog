@@ -16,11 +16,22 @@ tags:
   - "Closures"
   - "ARC"
   - "Memory Management"
+thumbnail: "images/covers/swift_capture_lists_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 A capture list is the small bracketed section at the start of a closure, like `[weak self]` or `[count]`. It controls **how** a closure captures the values it uses: by reference or by value, strongly or weakly, under the original name or a new one. It's a tiny piece of syntax with a big influence on both correctness and memory, and it's where most closure-related bugs in iOS apps are fixed or created.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_capture_lists_thumbnail.webp"
+ alt_text="A closure capsule with distinct owning and non-owning reference connections"
+ caption="Capture Lists in Swift Closures"
+ width="640"
+ height="400"
+%}
 
 ## What closures capture by default
 

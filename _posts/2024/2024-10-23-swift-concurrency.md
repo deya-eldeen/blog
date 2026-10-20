@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Concurrency"
   - "async/await"
+thumbnail: "images/covers/swift_concurrency_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 For years, asynchronous Swift meant completion handlers, nested closures, and manual hops between dispatch queues, with data races found only by luck or by Thread Sanitizer. Swift concurrency replaces that with features built into the language: `async`/`await` for code that reads top to bottom, **tasks** for running work concurrently with structured cancellation, **actors** for protecting shared state, and, since Swift 6, a compiler that proves your code is free of data races. This article is a tour of the whole model, including the parts that trip people up.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_concurrency_thumbnail.webp"
+ alt_text="Structured task branches joining a result beside actor-isolated shared state"
+ caption="Swift Concurrency: async/await, Tasks, and Actors"
+ width="640"
+ height="400"
+%}
 
 ## `async` and `await`
 

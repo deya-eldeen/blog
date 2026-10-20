@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Value Types"
+thumbnail: "images/covers/swift_structures_and_classes_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Structures and classes look almost identical in Swift: both have properties, methods, initializers, and extensions, and both can conform to protocols. The difference that matters is what happens when you **copy** one. A struct is a **value**: every copy is independent. A class instance is a **reference**: every copy points to the same object. That single fact shapes how your code behaves, how it performs, and which bugs it's prone to.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_structures_and_classes_thumbnail.webp"
+ alt_text="Independent copied value containers beside two references to one shared object"
+ caption="Structures and Classes in Swift: Value vs. Reference Types"
+ width="640"
+ height="400"
+%}
 
 ## Same syntax, different semantics
 

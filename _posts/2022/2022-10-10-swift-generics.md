@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Generics"
   - "Type Safety"
+thumbnail: "images/covers/swift_generics_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Generics let you write code once and use it with many types, without giving up type safety. `Array<Element>`, `Dictionary<Key, Value>`, `Optional<Wrapped>`, and `Result<Success, Failure>` are all generic, and so are `map`, `filter`, and `sorted()`. Once you understand the handful of ideas behind them (type parameters, constraints, associated types, and how the compiler implements them), you can build the same kind of flexible, safe, and fast APIs yourself.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_generics_thumbnail.webp"
+ alt_text="Matching generic container forms holding different types of values"
+ caption="Generics in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The problem generics solve
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Enums"
   - "Basics"
+thumbnail: "images/covers/swift_enumerations_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 In many languages, an enum is just a list of named integers. In Swift, enums are full types: they can carry data, have methods and computed properties, conform to protocols, be generic, and even refer to themselves. Combined with exhaustive `switch`, they're the best tool Swift gives you for modeling a world where only certain states are possible, and for making the compiler point at every piece of code that needs to change when that world grows.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_enumerations_thumbnail.webp"
+ alt_text="One selected enum case with associated data and two alternative cases"
+ caption="Enumerations in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The basics
 

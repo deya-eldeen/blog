@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Closures"
   - "Memory Management"
+thumbnail: "images/covers/swift_escaping_closures_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Some closures run and are gone before the function that received them returns. Others are saved for later: stored in a property, handed to a background queue, kept as a completion handler. Swift tracks that difference in the type system with a single attribute, `@escaping`. It affects what the compiler allows, how fast your code runs, and whether you have to think about retain cycles.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_escaping_closures_thumbnail.webp"
+ alt_text="One closure within a function scope and another retained beyond it"
+ caption="Escaping and Non-Escaping Closures in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Non-escaping by default
 

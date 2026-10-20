@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Protocols"
   - "Syntax"
+thumbnail: "images/covers/swift_extensions_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Extensions add new functionality to an existing type, even one you don't own, like `Int`, `String`, or `URL`. They're also how Swift developers organize their own types: one extension per protocol conformance, one per area of responsibility. Protocol extensions go further, adding behavior to every conforming type at once, and constrained extensions add API only where it makes sense. Used well, they make code read like a set of tidy chapters; used carelessly, they scatter behavior and clash across modules.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_extensions_thumbnail.webp"
+ alt_text="New capability modules attached to an unchanged core type"
+ caption="Extensions in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Extending a type you don't own
 

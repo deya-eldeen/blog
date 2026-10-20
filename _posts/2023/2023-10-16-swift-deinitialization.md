@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "ARC"
   - "Classes"
+thumbnail: "images/covers/swift_deinitialization_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 An initializer sets an object up; a deinitializer gets the last word before it disappears. In Swift, `deinit` runs automatically when an instance is about to be destroyed, and it's the right place to release resources the instance owns: file handles, sockets, timers, observations. It's also one of the best debugging tools there is for spotting memory leaks. And since Swift 5.9, it's no longer just for classes.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_deinitialization_thumbnail.webp"
+ alt_text="An object releasing its resources after its final reference is removed"
+ caption="Deinitialization in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Declaring `deinit`
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Macros"
   - "Metaprogramming"
+thumbnail: "images/covers/swift_macros_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift macros, introduced in Swift 5.9, generate code at compile time. Write `@Observable` on a class, `#Preview` in a SwiftUI file, or `#expect` in a test, and the compiler expands it into ordinary Swift code that you can read, step through in the debugger, and reason about. Unlike C macros, Swift macros are type-checked, operate on syntax trees rather than text, and can't silently change the meaning of the code around them. They're also more work to write than a function, which is why knowing when to reach for one matters as much as knowing how.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_macros_thumbnail.webp"
+ alt_text="A compact macro input expanding into structured code through a compiler stage"
+ caption="Macros in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Using macros
 

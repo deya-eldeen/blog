@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Operators"
   - "Syntax"
+thumbnail: "images/covers/swift_advanced_and_custom_operators_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Operators are just functions with special syntax. Beyond the everyday `+`, `-`, and `==`, Swift has overflow operators, masking shifts, and a fully extensible operator system: you can teach existing operators to work with your own types, or define brand-new operators with their own precedence. Used carefully, operators make math-like code read naturally. Used carelessly, they turn code into puzzles. This article covers both the mechanics and the judgment.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_advanced_and_custom_operators_thumbnail.webp"
+ alt_text="Modular tiles for arithmetic, overflow-aware addition, and a custom operator"
+ caption="Advanced and Custom Operators in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Arithmetic details worth knowing
 

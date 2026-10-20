@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Runtime"
   - "Frameworks"
+thumbnail: "images/covers/swift_abi_stability_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 In Swift's early years, every app shipped its own copy of the Swift standard library, adding megabytes to every download, and a binary framework built with one Xcode version broke with the next. Since Swift 5, the standard library lives in the operating system, apps built with different compilers share it, and binary frameworks keep working across compiler updates. The reason is **ABI stability**, together with its siblings, **module stability** and **library evolution**. They're invisible most of the time, but they explain app sizes, `@unknown default`, `@frozen`, and why some new features need a newer OS.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_abi_stability_thumbnail.webp"
+ alt_text="Different module versions sharing one compatible binary interface"
+ caption="ABI Stability in Swift"
+ width="640"
+ height="400"
+%}
 
 ## API vs. ABI
 

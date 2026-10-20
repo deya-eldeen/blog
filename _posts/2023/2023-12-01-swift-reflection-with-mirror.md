@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Runtime"
   - "Debugging"
+thumbnail: "images/covers/swift_reflection_with_mirror_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Reflection is a program inspecting its own structure at runtime: "what properties does this value have, and what's in them?" Swift's reflection is deliberately limited and read-only, and it lives in one type: `Mirror`. It's what powers `print`, `dump`, Xcode's variable views in the debugger, and many debugging, logging, and snapshot-testing tools. Knowing what it shows, and what it hides, makes it a useful tool rather than a mysterious one.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_reflection_with_mirror_thumbnail.webp"
+ alt_text="A mirror revealing the stored components of an inspected object"
+ caption="Reflection in Swift with Mirror"
+ width="640"
+ height="400"
+%}
 
 ## Creating a mirror
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Generics"
   - "Protocols"
+thumbnail: "images/covers/swift_opaque_and_boxed_types_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 `some View` is in every SwiftUI file, and `any Error` is in most error-handling code. Both keywords put a protocol where a type is expected, but they mean very different things. `some` refers to **one specific type** that the reader doesn't see but the compiler knows. `any` is a **box** that can hold a value of whatever conforming type, which can change at runtime. Picking the right one affects flexibility, performance, and which protocols you can use at all, and Swift 5.6 and 5.7 changed both of them significantly.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_opaque_and_boxed_types_thumbnail.webp"
+ alt_text="An opaque fixed-type container beside an existential box with interchangeable conformers"
+ caption="Opaque and Boxed Types in Swift: some vs. any"
+ width="640"
+ height="400"
+%}
 
 ## A shared example
 

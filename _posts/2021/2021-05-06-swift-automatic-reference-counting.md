@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "ARC"
   - "Memory Management"
+thumbnail: "images/covers/swift_automatic_reference_counting_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift manages the memory of class instances with **Automatic Reference Counting** (ARC). Every object keeps count of how many strong references point at it; when the count drops to zero, the object is destroyed immediately. There's no garbage collector pausing your app and no manual `free`. But ARC has one blind spot, reference cycles, and understanding how it works is the difference between an app that releases memory and one that slowly leaks it.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_automatic_reference_counting_thumbnail.webp"
+ alt_text="Three strong reference handles connected to one shared object"
+ caption="Automatic Reference Counting (ARC) in Swift"
+ width="640"
+ height="400"
+%}
 
 ## How ARC counts
 

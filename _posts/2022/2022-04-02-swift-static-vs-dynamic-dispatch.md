@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Performance"
   - "Protocols"
+thumbnail: "images/covers/swift_static_vs_dynamic_dispatch_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 When your code calls a method, the program has to decide *which* implementation runs. Sometimes the compiler knows at compile time: that's **static dispatch**. Sometimes it can only be decided at runtime, based on the actual type of the value: that's **dynamic dispatch**. Swift uses four different mechanisms, and knowing which one applies explains a few notorious protocol bugs, why `final` makes code faster, and how features like KVO and swizzling are even possible.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_static_vs_dynamic_dispatch_thumbnail.webp"
+ alt_text="A direct call path beside a call routed through a runtime lookup table"
+ caption="Static vs. Dynamic Dispatch in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Static dispatch
 

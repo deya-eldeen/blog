@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Functions"
+thumbnail: "images/covers/swift_functions_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Functions are the verbs of your code. Swift's function syntax looks simple, but it's carefully designed: argument labels make call sites read like sentences, default values and variadics keep APIs small, `inout` makes mutation explicit, and functions themselves are values you can store, pass, and return. Understanding these details is what separates code that merely works from APIs that are a pleasure to use.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_functions_thumbnail.webp"
+ alt_text="Input tokens passing through a reusable function module to produce an output"
+ caption="A function groups a reusable operation behind a defined set of inputs and outputs."
+ width="640"
+ height="400"
+%}
 
 ## Anatomy of a function
 

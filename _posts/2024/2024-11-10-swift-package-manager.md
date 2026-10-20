@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "SwiftPM"
   - "Tooling"
+thumbnail: "images/covers/swift_package_manager_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Swift Package Manager (SwiftPM) is the official tool for building, sharing, and depending on Swift code. It's part of the Swift toolchain and built into Xcode, needs no extra installation, and has become the default way to add libraries to Apple-platform projects. It's also the best tool for splitting your own app into modules. This guide goes past "paste a URL into Xcode": we'll build a real multi-target package with resources, a local dependency, a code-generating build plugin, and Swift Testing tests, then look at how version resolution works, how to modularize an app, and the mistakes that cause most SwiftPM headaches.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_package_manager_thumbnail.webp"
+ alt_text="Software packages connected by dependencies, with targets and resources inside one package"
+ caption="Swift Package Manager: A Practical Guide"
+ width="640"
+ height="400"
+%}
 
 ## Packages, targets, and products
 

@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Syntax"
   - "Collections"
+thumbnail: "images/covers/swift_subscripts_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Every time you write `array[0]`, `dictionary["key"]`, or `string[index]`, you're calling a subscript. Subscripts are a shortcut for accessing parts of a value, and you can define them on your own types to give them the same natural square-bracket syntax. They're also more powerful than they look: they can take several parameters, be generic, be static, and even power dynamic member lookup.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_subscripts_thumbnail.webp"
+ alt_text="Square brackets selecting one drawer in an indexed storage rack"
+ caption="Subscripts in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Defining a subscript
 

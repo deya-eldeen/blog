@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Basics"
   - "Value Types"
+thumbnail: "images/covers/swift_methods_and_mutating_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Methods are functions that belong to a type. In classes they behave much like in any object-oriented language. Structs and enums add a twist: a method that changes the instance must be marked `mutating`. That one keyword tells you, the compiler, and every reader which operations can change a value, and understanding how it works under the hood explains a whole family of compiler errors.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_methods_and_mutating_thumbnail.webp"
+ alt_text="An adjustment tool changing a value block beside a read-only inspection lens"
+ caption="Methods and mutating in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Instance methods and `self`
 

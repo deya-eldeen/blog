@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Clean Code"
   - "Best Practices"
+thumbnail: "images/covers/swift_clean_code_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Clean code is code that the next person, often you in six months, can read, trust, and change without fear. Most clean code advice is language-agnostic, but Swift gives you unusually strong tools to apply it: API design guidelines built around the call site, value types, optionals, enums with associated values, access control, and a compiler that can rule out whole classes of mistakes, including data races. This article starts with a realistic refactoring, then goes through the habits that make the biggest difference in day-to-day Swift, the code smells to watch for, and where "clean" turns into over-engineering.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_clean_code_thumbnail.webp"
+ alt_text="A tangled implementation reorganized into clear, cohesive modules"
+ caption="Clean Code in Swift"
+ width="640"
+ height="400"
+%}
 
 ## A refactoring, start to finish
 

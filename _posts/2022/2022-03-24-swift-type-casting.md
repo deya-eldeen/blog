@@ -15,11 +15,22 @@ tags:
   - "Swift"
   - "Type Safety"
   - "Syntax"
+thumbnail: "images/covers/swift_type_casting_thumbnail.webp"
+thumbnail_ready: true
 ---
 
 Type casting answers two questions at runtime: "is this value of a certain type?" and "can I treat it as that type?" Swift answers them with `is` (check), `as?` (try), and `as!` (force), plus a plain `as` for conversions the compiler can verify ahead of time. That looks simple, but Swift's dynamic casts do a lot behind the scenes: they look through optionals, bridge to Foundation types, check protocol conformances, and convert collections element by element.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_type_casting_thumbnail.webp"
+ alt_text="A lens checking the concrete shape within a general type container"
+ caption="Type Casting in Swift"
+ width="640"
+ height="400"
+%}
 
 ## A class hierarchy to work with
 
