@@ -45,76 +45,76 @@ This guide walks through the language from the very first `let` to generics and 
 
 ## 4. Collections and Control Flow
 
-- Arrays and Dictionaries
+- [Arrays and Dictionaries](/swift-arrays-and-dictionaries/)
 - [Sets](/swift-set-data-structure-with-practical-example-pizza-cooking/)
-- Control Flow: `if`, `guard`, `switch`, and loops
-- Pattern Matching
+- [Control Flow: `if`, `guard`, `switch`, and Loops](/swift-control-flow/)
+- [Pattern Matching](/swift-pattern-matching/)
 {: .roadmap-topics}
 
 ## 5. Functions and Closures
 
-- Functions
-- Closures
-- Escaping and Non-Escaping Closures
-- Capture Lists and Avoiding Memory Leaks
+- [Functions](/swift-functions/)
+- [Closures](/swift-closures/)
+- [Escaping and Non-Escaping Closures](/swift-escaping-closures/)
+- [Capture Lists](/swift-capture-lists/)
 {: .roadmap-topics}
 
 ## 6. Building Your Own Types
 
-- Enumerations
-- Structures and Classes: Value vs. Reference Types
-- Properties
-- Methods and `mutating`
-- Subscripts
-- Inheritance
+- [Enumerations](/swift-enumerations/)
+- [Structures and Classes: Value vs. Reference Types](/swift-structures-and-classes/)
+- [Properties](/swift-properties/)
+- [Methods and `mutating`](/swift-methods-and-mutating/)
+- [Subscripts](/swift-subscripts/)
+- [Inheritance](/swift-inheritance/)
 - [The Root Class and NSObject](/swift-root-class-nsobject/)
 {: .roadmap-topics}
 
 ## 7. Lifetime, Safety, and Errors
 
-- Initialization
-- Deinitialization
-- Automatic Reference Counting (ARC)
+- [Initialization](/swift-initialization/)
+- [Deinitialization](/swift-deinitialization/)
+- [Automatic Reference Counting (ARC)](/swift-automatic-reference-counting/)
 - [Zombies: Use-After-Free Bugs](/swift-zombies/)
-- Memory Safety
-- Optional Chaining
-- Error Handling
-- Access Control
+- [Memory Safety](/swift-memory-safety/)
+- [Optional Chaining](/swift-optional-chaining/)
+- [Error Handling](/swift-error-handling/)
+- [Access Control](/swift-access-control/)
 {: .roadmap-topics}
 
 ## 8. Advanced Features
 
-- Protocols
-- Extensions
-- Generics
+- [Protocols](/swift-protocols/)
+- [Extensions](/swift-extensions/)
+- [Generics](/swift-generics/)
 - [Phantom Types](/swift-phantom-types/)
-- Opaque and Boxed Types (`some` and `any`)
-- Type Casting
-- Nested Types
-- Property Wrappers
-- Macros
-- Advanced and Custom Operators
-- Concurrency: `async`/`await`, Tasks, and Actors
+- [Opaque and Boxed Types (`some` and `any`)](/swift-opaque-and-boxed-types/)
+- [Type Casting](/swift-type-casting/)
+- [Nested Types](/swift-nested-types/)
+- [Property Wrappers](/swift-property-wrappers/)
+- [Macros](/swift-macros/)
+- [Advanced and Custom Operators](/swift-advanced-and-custom-operators/)
+- [Concurrency: `async`/`await`, Tasks, and Actors](/swift-concurrency/)
 {: .roadmap-topics}
 
 ## 9. Under the Hood
 
 These topics come up in day-to-day work, in debugging sessions, and very often in interviews:
 
-- Static vs. Dynamic Dispatch
-- Method Swizzling
-- Key-Value Observing (KVO)
-- `defer`
-- `stride`
-- Reflection with `Mirror`
-- Interoperability with Objective-C, C, and C++
-- RunLoop
-- Operation and OperationQueue
-- ABI Stability
-- Swift Package Manager
-- Swift Evolution: How the Language Changes
-- Address Sanitizer
-- Clean Code in Swift
+- [Static vs. Dynamic Dispatch](/swift-static-vs-dynamic-dispatch/)
+- [Method Swizzling](/swift-method-swizzling/)
+- [Key-Value Observing (KVO)](/swift-key-value-observing/)
+- [`defer`](/swift-defer/)
+- [`stride`](/swift-stride/)
+- [Reflection with `Mirror`](/swift-reflection-with-mirror/)
+- [Interoperability with Objective-C, C, and C++](/swift-interoperability/)
+- [RunLoop](/swift-runloop/)
+- [Operation and OperationQueue](/swift-operation-and-operationqueue/)
+- [ABI Stability](/swift-abi-stability/)
+- [Swift Package Manager](/swift-package-manager/)
+- [Swift Evolution: How the Language Changes](/swift-evolution/)
+- [Address Sanitizer](/swift-address-sanitizer/)
+- [Clean Code in Swift](/swift-clean-code/)
 {: .roadmap-topics}
 
 {% include roadmap/guide_footer.liquid next_url="/swift-object-oriented-programming/" next_title="Object-Oriented Programming" %}

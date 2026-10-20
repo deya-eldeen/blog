@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "SwiftUI Views Are Values, Not Objects: Understanding the Implications"
+title: "SwiftUI View Values, Identity, and State: Avoiding Common Bugs"
 date: "2023-05-19"
 last_modified_at: "2026-10-20"
 permalink: /swiftui-views-are-values-and-not-objects-overlooking-this-can-lead-to-bugs/
@@ -20,26 +20,24 @@ tags:
   - "Swift"
 ---
 
-In SwiftUI, a view is not a long-lived object sitting on screen. It is a lightweight value, usually a `struct`, that *describes* a piece of UI. SwiftUI creates these values, reads them, and throws them away constantly.
+A custom SwiftUI view is usually a small `struct` describing part of an interface. Recreating that struct does not necessarily recreate the interface or reset its state. To understand why, separate three concepts: the **view value**, the **view's identity**, and the **storage associated with that identity**.
 
 <!--more-->
 
-That one fact explains a lot of SwiftUI behavior that looks strange if you come from UIKit: why you can't just assign to a property inside `body`, why `@State` sometimes "ignores" a new value you pass in, why a `.task` keeps working with stale data, and why state can suddenly reset. Let's look at what "views are values" really means, how SwiftUI uses it to update the screen, and the bugs you get when you forget it. 🧐
+That distinction explains why a new input can leave `@State` unchanged, why a model can be recreated unexpectedly, and why a list can display one item's local state alongside another item's data. Value semantics helps explain these behaviors, but it does not, by itself, explain SwiftUI's entire rendering system.
 
 {%
  include centered-image.html
  image_path="../images/covers/swiftui_values_thumbnail.webp"
  alt_text="Separate interface snapshots connected by arrows, showing views rebuilt from state"
- caption="SwiftUI views as value snapshots driven by state"
+ caption="View descriptions can change while an identity and its state persist."
  width="640"
  height="400"
 %}
 
-## A View Is a Description, Not the Thing on Screen
+## View Values and View Identity Have Different Lifetimes
 
-In UIKit, a `UILabel` is an object. You create it once, keep a reference to it, and change its `text` over time. The object *is* the thing on screen.
-
-In SwiftUI, this:
+Consider a view with an ordinary input:
 
 ```swift
 struct Greeting: View {
@@ -52,189 +50,127 @@ struct Greeting: View {
 }
 ```
 
-is just a recipe. A `Greeting` value holds a string and knows how to produce a `body`. It isn't rendered, and it has no frame and no lifetime of its own. SwiftUI reads the description and keeps its own, separate, long-lived representation of the UI (internally a dependency graph, often called the *attribute graph*). That internal representation is what owns the state, the layout results, and the platform views or layers that end up on screen.
+A `Greeting` value stores a name and describes content through `body`. It isn't a `UILabel` reference that you keep and update directly. SwiftUI uses the description to manage the displayed interface.
 
-So there are two different lifetimes to keep apart:
+A parent can produce a new `Greeting` value during an update while SwiftUI continues to recognize the same view identity. SwiftUI-managed state belongs to that continuing identity. It isn't reset merely because a struct initializer ran again.
 
-- **The lifetime of a view value.** Very short. A `Greeting` struct may be created every time its parent's `body` runs, then discarded.
-- **The lifetime of a view's identity.** As long as SwiftUI considers "this view" to be the same view in the hierarchy. This is where `@State` storage lives, and it is the span between `onAppear` and `onDisappear` (roughly; containers like `List` can fire these more than once as rows scroll in and out).
+Appearance is a separate concern. `onAppear` and `onDisappear` are not constructor and destructor callbacks. A view can disappear and later reappear while associated state survives, depending on its container and whether its identity remains in the hierarchy. Avoid using appearance callbacks to infer an exact state-storage lifetime. [Apple's explanation of identity and lifetime](https://developer.apple.com/videos/play/wwdc2021/10022/) develops this distinction.
 
-Most of the bugs below come from mixing up these two lifetimes.
+## Value Semantics Does Not Mean Immutability or Thread Safety
 
-### Why structs?
+A struct can have mutable properties. Copying it copies its stored values, which can include references to shared class instances. It does not recursively clone everything reachable through those references.
 
-Making views value types is a deliberate design choice, not just a matter of taste:
+A view value can therefore contain a reference to a model that other code also uses. Nor does declaring a struct make concurrent access to a shared variable safe. Isolation and `Sendable` are separate parts of Swift's concurrency model. See [the Swift language guide's discussion of concurrency](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/).
 
-- **They're cheap.** A small struct is stored inline and is often just a few bytes. Creating thousands of them per second costs almost nothing, while creating and tearing down class instances means heap allocation and reference counting.
-- **No shared mutable state between copies.** A view value can't be changed behind your back by someone holding another reference to it, so the description SwiftUI reads is exactly the one `body` produced.
-- **No inheritance.** There's no `UIView`-style base class carrying dozens of stored properties. Behavior is added by composition (wrapping views in other views and modifiers) instead.
-- **They're easy to compare.** SwiftUI can compare a new view value with the previous one to decide whether anything below it needs updating. More on that below.
+Current SwiftUI SDKs declare `View` with `@MainActor` isolation. That affects conforming code according to Swift's isolation rules; it is not a blanket statement that every view-related function or initializer must execute on the main actor. Some APIs are explicitly `nonisolated`, and older SDK annotations differ. [The `View` declaration](https://developer.apple.com/documentation/swiftui/view) is the relevant API contract.
 
-## What Value Semantics Does (and Doesn't) Give You
+### Why an ordinary counter property doesn't work
 
-### Views aren't "immutable", but `body` can't mutate them
-
-A view struct can declare `var` properties, and its initializer can set them however it likes. What you can't do is mutate `self` from inside `body`, because `body` is a non-mutating computed property:
+This example is intentionally invalid:
 
 ```swift
 struct Counter: View {
     var count = 0
 
     var body: some View {
-        Button("Tapped \(count) times") {
-            count += 1 // ❌ Cannot assign to property: 'self' is immutable
+        Button("Count: \(count)") {
+            count += 1 // Error: self is immutable here.
         }
     }
 }
 ```
 
-Even if this compiled, it would be pointless: the struct is a throwaway copy, and SwiftUI would make a fresh `Counter` with `count = 0` the next time the parent's `body` runs. State that must survive belongs in storage SwiftUI manages for you:
+The action cannot mutate the captured view's ordinary stored property in this context. More fundamentally, an ordinary property does not establish persistent, observable local state for SwiftUI.
+
+Use `@State` for this counter:
 
 ```swift
 struct Counter: View {
     @State private var count = 0
 
     var body: some View {
-        Button("Tapped \(count) times") {
-            count += 1 // ✅ writes to storage owned by SwiftUI, not to the struct
+        Button("Count: \(count)") {
+            count += 1
         }
     }
 }
 ```
 
-`@State` is a property wrapper. The struct holds a small handle, and the real value lives in SwiftUI's graph, tied to the view's identity. That is why it survives the struct being recreated.
+The wrapper provides access to a value managed by SwiftUI. Writes through it can invalidate views that depend on that state. Updating the state from an event handler is appropriate; mutating state while evaluating `body` can cause update loops and other problems. [State documentation](https://developer.apple.com/documentation/swiftui/state) describes its intended use.
 
-### Modifiers wrap, they don't mutate
+### Modifiers return configured values
 
-`.font(.title)` doesn't change the `Text`. It returns a *new* value of a *different type* that wraps the original. You can see this by printing the type:
+Calling a modifier doesn't give you imperative access to a persistent view object. Modifier order matters because each call operates on the result of the preceding call:
 
 ```swift
-let view = Text("Hi")
-    .padding()
-    .background(.red)
-
-print(type(of: view))
-// ModifiedContent<ModifiedContent<Text, _PaddingLayout>, _BackgroundStyleModifier<Color>>
+Text("Hello").padding().background(.red)
+Text("Hello").background(.red).padding()
 ```
 
-(The exact internal type names vary between SDK versions, but the nesting is the point.)
+In the first expression the background includes the padding. In the second the padding sits outside the background.
 
-Chaining modifiers builds a nested type that describes the whole thing, from the inside out. That's also why modifier order matters: `.padding().background(.red)` paints the padding red, while `.background(.red).padding()` paints only behind the text and adds clear space around it. They are different descriptions, so they produce different results.
+Many general modifiers produce wrapper view types, but **not every modifier returns a different type**. For example, the `Text.font(_:)` overload returns another `Text`. Avoid treating printed private generic type names as a stable API. [Text's font modifier](https://developer.apple.com/documentation/swiftui/text/font(_:)) documents its return type.
 
-### Thread safety is not automatic
+## Choose Storage and Observation Separately
 
-A common claim is that value types are "inherently thread-safe". That's only partially true. Copying a struct gives you an independent copy of its stored values, but if those values include references (an `ObservableObject`, a class-based model, a closure capturing shared state), the copies still point to the same shared object. Swift models this with `Sendable`, not with "it's a struct".
+A useful starting point is to ask where the source of truth lives, then how this view observes or edits it:
 
-For SwiftUI specifically, the `View` protocol is isolated to the main actor (made explicit in the iOS 18 SDK), so `body` and view initializers run on the main thread anyway. Being a value type is not what keeps your views safe from data races. Main-actor isolation does that.
+| Declaration | Typical purpose |
+| --- | --- |
+| Ordinary `let` or `var` | Input supplied to a view; it can contain values or references. |
+| `@State` | Local state preserved by SwiftUI for a view identity. It can also hold an `@Observable` model on supported systems. |
+| `@Binding` | Read and write an existing source of truth through a binding. |
+| `@StateObject` | Preserve an `ObservableObject` instance as the view's source of truth. |
+| `@ObservedObject` | Subscribe to an `ObservableObject` supplied from elsewhere. |
+| `@Bindable` | Produce bindings to properties of an `@Observable` model. |
+| `@Environment` / `@EnvironmentObject` | Obtain values or objects through the environment. Their underlying lifetimes depend on how they are supplied. |
 
-## Who Owns the Data?
+A plain model property can be correct. In particular, an `@Observable` reference supplied by a parent does not need `@ObservedObject`: SwiftUI tracks supported property accesses during `body` evaluation. Use `@Bindable` when you need bindings to that model. These Observation examples require iOS 17, macOS 14, or the corresponding platform releases. [Discover Observation in SwiftUI](https://developer.apple.com/videos/play/wwdc2023/10149/) explains these choices.
 
-Because the view struct itself can't hold anything durable, every piece of data in a view is either a plain input that gets replaced on each re-creation, or a handle to storage that lives somewhere else. Choosing the right property wrapper is mostly a question of *who owns the data and how long it lives*:
+Also distinguish ownership conventions from ARC. `@ObservedObject` is not a weak reference; it simply does not provide the identity-scoped object creation and preservation supplied by `@StateObject`. [ObservedObject documentation](https://developer.apple.com/documentation/swiftui/observedobject) recommends receiving it as an input.
 
-| Declaration | Who owns the data | Lives as long as |
-|---|---|---|
-| `let` / `var` (no wrapper) | The parent, passed in | One view value (replaced on every re-creation) |
-| `@State` | This view (SwiftUI stores it) | This view's identity |
-| `@Binding` | Someone else; this view can read and write it | The owner's storage |
-| `@StateObject` | This view (for `ObservableObject`) | This view's identity |
-| `@ObservedObject` | Someone else (for `ObservableObject`) | Whoever owns the object |
-| `@State` with an `@Observable` class | This view (iOS 17+) | This view's identity |
-| `@Environment` / `@EnvironmentObject` | An ancestor view | The ancestor's storage |
+## Updates Are Driven by Dependencies
 
-A plain stored property isn't wrong. It is the right choice for input data the view only displays. It just can't be the source of truth for anything the view changes.
+A useful model of an update is:
 
-## How SwiftUI Decides What to Update
+1. A dependency changes: an input, state, an environment value, or observed model data.
+2. SwiftUI determines which parts of the view hierarchy need updating.
+3. It can evaluate affected `body` properties to obtain updated descriptions.
+4. It performs the necessary layout and rendering work.
 
-When state changes, SwiftUI doesn't rebuild the whole screen, and it doesn't run a React-style "diff two whole trees" pass either. Roughly:
+A `body` evaluation is not equivalent to recreating platform views, redrawing every pixel, or presenting a frame. Updates can be combined, and unchanged portions can avoid further work. SwiftUI's complete comparison and scheduling algorithms are implementation details, so correctness should not depend on a specific field-by-field comparison strategy or an exact number of `body` calls. [Demystify SwiftUI performance](https://developer.apple.com/videos/play/wwdc2023/10160/) provides Apple's practical model.
 
-1. A piece of state changes, such as a `@State` value or a property of an `@Observable` model.
-2. SwiftUI's dependency graph knows which views *read* that state while their `body` ran, so only those views are invalidated.
-3. SwiftUI re-runs `body` for the invalidated views, producing new child view values.
-4. For each child, it compares the new value with the previous one. If they're equal, it can skip running that child's `body`. If not, the child is updated as well.
-5. Layout and rendering are updated for whatever actually changed.
+Observation granularity also matters. `ObservableObject` subscribers respond to its change publisher, usually driven by `@Published`; this is broader than property-access tracking. With `@Observable`, supported property reads during `body` establish more specific dependencies. Reading a property only inside a button action does not, by itself, establish a dependency for displaying that property.
 
-This works because views are cheap values: creating and comparing them costs far less than creating and tearing down objects. It is also why **view initializers and `body` should be cheap and free of side effects**. SwiftUI may call them often, and you don't control when.
+Extracting a dedicated subview can give SwiftUI a useful update boundary. A computed property or `@ViewBuilder` helper still executes when its caller evaluates that expression; however, it can return child views that have their own identity and update behavior. Neither helper functions nor separate structs guarantee a particular performance result. Measure before restructuring a working screen.
 
-### How views are compared
+### Equality must preserve behavior
 
-By default SwiftUI compares a view's stored properties field by field. Simple values like numbers, strings, and `Equatable` structs compare well. Some things can't be compared in a meaningful way, closures being the classic example, so a view that stores a closure is often treated as "changed" every time its parent re-renders.
-
-If you know better than SwiftUI which properties matter, you can make the view `Equatable` and apply `.equatable()` so SwiftUI uses your `==`:
+`.equatable()` supplies an explicit equality-based update boundary for an `Equatable` view. A simple example uses only value inputs and synthesized equality:
 
 ```swift
-struct ScoreRow: View, Equatable {
-    let player: Player
-    let onTap: () -> Void
-
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.player.id == rhs.player.id && lhs.player.score == rhs.player.score
-    }
+struct ScoreSummary: View, Equatable {
+    let name: String
+    let score: Int
 
     var body: some View {
-        Button(player.name, action: onTap)
+        Text("\(name): \(score)")
     }
 }
 
-// In the parent:
-ScoreRow(player: player, onTap: { select(player) })
+// In a parent's body:
+ScoreSummary(name: playerName, score: playerScore)
     .equatable()
 ```
 
-Use this sparingly and only after measuring. If your `==` ignores something the body actually depends on, the view will show stale content, which is exactly the kind of bug this post is about.
+Do not write `==` that ignores a displayed name or a changed action closure merely to reduce updates. An equality check that hides a meaningful change can produce stale content or behavior. Also, equality of input values does not erase independently changing state or environment dependencies. See [EquatableView](https://developer.apple.com/documentation/swiftui/equatableview).
 
-### Smaller views mean smaller updates
+## Common Bugs and Their Causes
 
-Each separate `View` struct gets its own node in SwiftUI's graph, so it can be compared and skipped on its own. A computed property or a `@ViewBuilder` function inside the same view does not: it is just part of the parent's `body`, and it re-runs whenever the parent does.
-
-```swift
-struct Dashboard: View {
-    @State private var model = DashboardModel()
-
-    var body: some View {
-        VStack {
-            header           // re-runs whenever Dashboard's body runs
-            ChartView(points: model.points) // can be skipped if `points` didn't change
-        }
-    }
-
-    private var header: some View {
-        Text(model.title).font(.largeTitle)
-    }
-}
-```
-
-Computed properties are fine for organizing code. Extract a real subview when a part of the screen is expensive, or depends on only a small slice of the data.
-
-### `@Observable` tracks what you read
-
-How precisely views are invalidated depends on how you model your data:
-
-- With **`ObservableObject`**, any `@Published` property change fires `objectWillChange`, and every view observing that object is invalidated, even views that never read the changed property.
-- With the **`@Observable` macro** (iOS 17+), SwiftUI records which properties each `body` actually read and invalidates a view only when one of *those* properties changes.
-
-Either way, the dependency is on what `body` reads. A view that receives a whole model but displays a single property still depends on that model; with `ObservableObject` that means more invalidations than necessary.
-
-### Identity decides whether state survives
-
-To match "old" and "new" views, SwiftUI uses **identity**:
-
-- **Structural identity** comes from a view's type and its position in the hierarchy. The branches of an `if`/`else` in a `@ViewBuilder` are different positions (under the hood the result is a `_ConditionalContent` with two slots), so they count as different views.
-- **Explicit identity** comes from `ForEach` (via `Identifiable` or `id:`) and from the `.id(_:)` modifier.
-
-When identity changes, SwiftUI treats the old view as removed and the new one as inserted. Its state is destroyed and recreated, and transitions play instead of in-place animations.
-
-`AnyView` deserves a mention here. It erases the wrapped view's type, so SwiftUI can no longer see the structure statically. When the type inside an `AnyView` changes, SwiftUI has to throw away the old content and build the new one. `AnyView` works, but prefer `@ViewBuilder`, `Group`, or `some View` when you can.
-
-### Animations interpolate data, not views
-
-SwiftUI doesn't animate by "comparing old and new views". When a change happens inside a transaction that carries an animation (for example via `withAnimation`), SwiftUI interpolates *animatable data*, such as positions, sizes, opacities, or a shape's `animatableData`, from the old value to the new one over time. Views that are inserted or removed use transitions. Identity matters here too: the same view with a new value animates in place, while a view with new identity gets a transition.
-
-## Bugs That Come From Forgetting Views Are Values
-
-### 1. Expecting `@State` to follow a new value passed in
+### 1. Expecting a new input to replace existing state
 
 ```swift
-struct Editor: View {
+struct DraftEditor: View {
     @State private var text: String
 
     init(initialText: String) {
@@ -242,59 +178,82 @@ struct Editor: View {
     }
 
     var body: some View {
-        TextField("Text", text: $text)
+        TextField("Draft", text: $text)
     }
 }
 ```
 
-`State(initialValue:)` is used **only when the view's identity is first created**. When the parent later passes a different `initialText`, a new `Editor` struct is made, but SwiftUI keeps the existing storage and ignores the new initial value. If the parent owns the data, take a `@Binding` instead. If you really want to reset the state, give the view a new identity with `.id(someKey)`.
+The initializer provides an initial value. If SwiftUI keeps the same identity, recreating `DraftEditor` with a different `initialText` does not replace the user's current draft.
 
-### 2. Creating a model with `@ObservedObject`
+If the parent owns the editable text, accept `@Binding var text: String`. If this is intentionally a separate draft, decide when to reset it explicitly. Applying `.id(documentID)` can reset the editor when switching documents, but it resets all state under that identity, not just the text.
+
+### 2. Creating an owned model with `@ObservedObject`
 
 ```swift
 struct ProfileView: View {
-    @ObservedObject var model = ProfileModel() // ❌
+    @ObservedObject var model = ProfileModel() // Fragile ownership pattern.
     // ...
 }
 ```
 
-`@ObservedObject` does not own its object. Every time the parent re-evaluates its `body`, a new `ProfileView` struct is created, and with it a brand-new `ProfileModel`. Anything the old model had loaded is lost. If the view creates and owns the object, use `@StateObject` (or `@State` with an `@Observable` class on iOS 17+). Use `@ObservedObject` only for objects that someone else owns and passes in.
+Evaluating this default expression creates a model for each new `ProfileView` value. Recreating the view can therefore replace its model and restart work or lose data.
 
-A related subtlety: with `@StateObject` and `@State`, the default-value expression still *runs* every time the struct is initialized. SwiftUI just discards the extra instances and keeps the original. Keep model initializers cheap, or create the model lazily (for example in `.task`).
+For a model that this view creates and preserves, use:
 
-### 3. Doing work in `init` or `body`
+```swift
+@StateObject private var model = ProfileModel()
+```
 
-Because view values are created and discarded freely, an `init` that starts a network request, or a `body` that sorts a large array or formats dates with a fresh `DateFormatter`, will repeat that work more often than you expect. Put side effects in `.task`, `.onAppear`, or `.onChange(of:)`, which are tied to the view's identity, and move expensive work into your model.
+**`@StateObject` and property-wrapper-based `@State` do not initialize the same way.** `StateObject` takes its wrapped-value expression as an autoclosure. In the declaration above, SwiftUI evaluates that model-creation expression when it needs to create the state object, once for that identity. This preserves the instance across later view-value initializations.
 
-### 4. A `.task` that keeps using an old value
+If you construct the model in a local variable *before* passing it to `StateObject`, that eager construction has already happened. In contrast, `@State private var model = ObservableModel()` can evaluate its default expression whenever the containing view value is initialized, even when existing state storage is retained. Keep such initializers inexpensive and free of side effects. [StateObject documentation](https://developer.apple.com/documentation/swiftui/stateobject) explains its deferred creation behavior.
 
-Closures inside a view capture a *copy* of the view struct at the moment they're created. Plain properties in that copy never change:
+### 3. Treating `init`, `body`, or `onAppear` as a one-time setup hook
+
+An initializer can run without a new view identity being inserted. `body` can run repeatedly. `onAppear` can also run again after reappearance.
+
+Use lifecycle modifiers such as `.task` for appropriate work, and make the work tolerant of cancellation and repetition. Moving a synchronous, expensive computation into `.task` does not automatically move it off the main actor. Keep expensive processing in an appropriately isolated model or service.
+
+### 4. Loading data without identifying which input it belongs to
+
+A plain `.task { ... }` does not automatically restart for every changed stored property. If loading depends on an article ID, use that ID explicitly:
 
 ```swift
 struct ArticleView: View {
-    let articleID: Article.ID
-    @State private var article: Article?
+    let articleID: UUID
+    let load: @Sendable (UUID) async throws -> String
+
+    @State private var text = ""
+    @State private var errorMessage: String?
 
     var body: some View {
-        content
-            .task {
-                article = try? await api.fetch(articleID) // ❌ runs once
+        VStack {
+            Text(text)
+            if let errorMessage {
+                Text(errorMessage)
             }
+        }
+        .task(id: articleID) {
+            text = "Loading…"
+            errorMessage = nil
+            do {
+                let result = try await load(articleID)
+                try Task.checkCancellation()
+                text = result
+            } catch is CancellationError {
+                // Cancellation needs no error message.
+            } catch {
+                guard !Task.isCancelled else { return }
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 }
 ```
 
-`.task` starts when the view appears and is tied to the view's identity, not to its inputs. If the parent keeps the same `ArticleView` on screen but passes a new `articleID`, the task doesn't run again, and the screen keeps showing the old article. Tell SwiftUI what the task depends on:
+A changed ID requests cancellation of the old task and starts another. Cancellation is cooperative: the loader must support it, and checking before assigning helps prevent a cancelled operation from displaying its result. A task can also run again after the view reappears; it isn't a lifetime-wide “run once” mechanism. [Apple's task modifier documentation](https://developer.apple.com/documentation/swiftui/view/task(id:name:priority:file:line:_:)) describes cancellation and restart behavior.
 
-```swift
-.task(id: articleID) {
-    article = try? await api.fetch(articleID) // ✅ cancelled and restarted when articleID changes
-}
-```
-
-The same reasoning applies to `.onAppear`, and to any long-running work (timers, async sequences) that captured `self` when it started.
-
-### 5. Unstable identities in `ForEach`
+### 5. Identifying list data by a changing position
 
 ```swift
 ForEach(items.indices, id: \.self) { index in
@@ -302,19 +261,19 @@ ForEach(items.indices, id: \.self) { index in
 }
 ```
 
-Here the identity of each row is its *position*. Delete the first item and every row below it gets a new item but keeps its old identity, which means it also keeps the old row's `@State`. Text fields show the wrong text, toggles stay in the wrong state, and animations slide the wrong rows. The same thing happens with `id: \.self` on values that can repeat or change.
+Index identity can be appropriate for fixed positional data. For an editable collection of entities, removing or reordering items can associate a surviving row identity, and its local state, with a different entity.
 
-Use a stable, unique identifier that belongs to the data:
+Prefer stable, unique data identifiers:
 
 ```swift
-ForEach(items) { item in // Item: Identifiable, with a stable id
+ForEach(items) { item in // Item conforms to Identifiable.
     ItemRow(item: item)
 }
 ```
 
-And avoid generating ids on the fly, such as `let id = UUID()` in a struct you re-create from the server on every refresh. A new id is a new identity, and the row resets.
+A stored `UUID` is fine if it remains attached to the same logical item. A computed `id` that returns `UUID()` on every access is unstable; regenerating every ID on each refresh also loses continuity. For `id: \.self`, the values must provide the uniqueness and stability your use case requires. [ForEach documentation](https://developer.apple.com/documentation/swiftui/foreach) explains the role of its identifiers.
 
-### 6. Accidentally resetting state with identity changes
+### 6. Changing structural identity unintentionally
 
 ```swift
 if isCompact {
@@ -325,53 +284,26 @@ if isCompact {
 }
 ```
 
-These are two different `DetailView`s as far as SwiftUI is concerned, because they sit in different branches. Toggling `isCompact` destroys one and creates the other, which resets any `@State` inside. Prefer a single view whose modifiers depend on the condition:
+These branches give the content distinct structural identities. Switching branches can reset state inside `DetailView`. When only padding needs to change, keep one view:
 
 ```swift
 DetailView(item: item)
     .padding(isCompact ? 0 : 16)
 ```
 
-The same applies to `.id(UUID())`: it generates a new identity on every `body` evaluation and resets the view each time. The popular `.if(condition) { $0.padding() }` helper extension has the same problem, because it is just an `if`/`else` in disguise.
+Likewise, `.id(UUID())` creates a new explicit identity each time that expression is evaluated. Use identity changes deliberately when you want replacement and a reset. Insertion and removal may animate through transitions when an appropriate animation transaction is present; an identity change alone does not guarantee an animation.
 
-## Seeing It for Yourself
+## Verify the Behavior You Depend On
 
-You don't have to take any of this on faith. SwiftUI has a debugging helper that prints why a view's `body` ran:
+For local debugging, Apple demonstrates this diagnostic:
 
 ```swift
 var body: some View {
     let _ = Self._printChanges()
-    // ...
+    Text("Example")
 }
 ```
 
-Each time `body` runs, it prints the view name and what changed, for example `ArticleView: @self, _article changed.` Here `@self` means the view value itself was different from the previous one, and `_article` is the `@State` storage. On iOS 17 and later, `Self._logChanges()` does the same thing through the unified logging system. Both start with an underscore because they are meant for debugging only, so don't ship them.
+Its output is a best-effort explanation of a `body` evaluation, not a record of rendered frames. It is underscored and not a stable public API: remove it from shipping code. For performance questions, measure with Instruments instead of counting initializer calls.
 
-For real performance work, use the SwiftUI template in Instruments, which shows how often each view's `body` runs and how long it takes.
-
-## Comparison with UIKit
-
-In UIKit you write two code paths: one that builds the UI, and one that updates it when data changes (setting `label.text`, calling `tableView.reloadData()`, and so on). Forgetting an update in the second path is a classic source of UI that's out of sync with the data.
-
-SwiftUI merges these into one path: `body` describes the UI for the *current* state, and SwiftUI works out what to change. You still handle events (button actions, gestures, `onChange`), but those handlers update *state*, not views. The UI follows from the state.
-
-The trade-off is control. In UIKit you decide exactly when each object is created, updated, and destroyed. In SwiftUI you give that up, and in exchange you have to describe identity and dependencies correctly so SwiftUI can make those decisions for you.
-
-## Conclusion
-
-A SwiftUI view is a cheap, disposable description of UI, not the UI itself. SwiftUI keeps the real, long-lived structure, along with your state, in its own graph and matches new descriptions to it by identity.
-
-Once you keep the two lifetimes apart (short-lived view values versus long-lived view identity), most of SwiftUI's surprises make sense:
-
-- Put state that must persist in `@State`, `@StateObject`, or an `@Observable` model, never in plain stored properties.
-- Use `@Binding` or `@ObservedObject` for data owned by someone else.
-- Keep `init` and `body` cheap and free of side effects.
-- Use `.task(id:)` and `.onChange(of:)` when work depends on an input that can change.
-- Give `ForEach` stable, unique ids, and be deliberate about identity everywhere else, because changing it resets state.
-- When in doubt, add `Self._printChanges()` and watch what actually happens.
-
-## Further Reading
-
-- [Demystify SwiftUI](https://developer.apple.com/videos/play/wwdc2021/10022/) (WWDC21): identity, lifetime, and dependencies.
-- [Discover Observation in SwiftUI](https://developer.apple.com/videos/play/wwdc2023/10149/) (WWDC23): how `@Observable` tracks dependencies.
-- [Demystify SwiftUI performance](https://developer.apple.com/videos/play/wwdc2023/10160/) (WWDC23): dependencies, identity, and what makes updates slow.
+The practical rule is to keep view descriptions inexpensive, give persistent data an explicit source of truth, and keep identifiers stable for the lifetimes you intend. Recreating a view value and replacing a view identity are different events; designing around that distinction prevents many common state bugs.

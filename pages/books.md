@@ -1,18 +1,21 @@
 ---
-layout: default
+layout: page
+show_hero: true
+hero_image: /assets/img/hero/deya-books.webp
+hero_image_alt: "A clay-style developer smiling at the camera while holding iOS Security Through Defensive Techniques with its front cover facing forward"
 title: Books
+hide_title: true
+hide_tags: true
 permalink: /books/
 position: 0
 tags: 
 - Books
 - iOS
 ---
-{% include default/hero.liquid primary_url="#books" primary_label="Explore Books" image="/assets/img/hero/deya-books.webp" image_alt="A clay-style developer smiling at the camera while holding iOS Security Through Defensive Techniques with its front cover facing forward" %}
 
 <section class="books-library" id="books" aria-labelledby="books-title">
-  <div class="section-heading">
-    <h2 id="books-title">Books</h2>
-  </div>
+<h2 id="books-title">Books</h2>
+<p class="portfolio-intro">Long-form guides on iOS security and Swift, for when a topic is too big for a blog post.</p>
 <div class="books-grid">
   <article class="book-card" aria-labelledby="ios-security-title">
     <img
