@@ -229,6 +229,125 @@
 
 <p>That evidence is stronger than a claim that the code now contains more design patterns. The goal is a system whose rules, effects, and ownership can be understood with less guesswork.</p>
 
+<h2 id="case-study-split-a-welcome-manager-without-changing-its-output">Case study: split a welcome manager without changing its output</h2>
+
+<p>A welcome manager reads a profile, decides which name to display, formats a greeting, and records that greeting. A request to change capitalization should not require a database in the test. Start by identifying the current behavior, including its failure behavior, before extracting anything.</p>
+
+<p>For this example, the agreed rules are: a nonempty preferred name wins; otherwise use the legal name; an empty chosen name is an error; record only a successfully built greeting. An empty string is distinct from whitespace under this deliberately simple policy.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">WelcomeProfile</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">legalName</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">WelcomeBuildFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">case</span> <span class="n">missingName</span> <span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">characterizedWelcome</span><span class="p">(</span><span class="n">_</span> <span class="nv">profile</span><span class="p">:</span> <span class="kt">WelcomeProfile</span><span class="p">,</span> <span class="nv">prefix</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">preferred</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">preferredName</span><span class="p">,</span> <span class="o">!</span><span class="n">preferred</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">preferred</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">legalName</span>
+    <span class="p">}</span>
+    <span class="k">guard</span> <span class="o">!</span><span class="n">name</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">WelcomeBuildFailure</span><span class="o">.</span><span class="n">missingName</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="k">prefix</span> <span class="o">+</span> <span class="s">", "</span> <span class="o">+</span> <span class="n">name</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">welcomeCases</span><span class="p">:</span> <span class="p">[(</span><span class="kt">WelcomeProfile</span><span class="p">,</span> <span class="kt">String</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="kt">WelcomeProfile</span><span class="p">(</span><span class="nv">legalName</span><span class="p">:</span> <span class="s">"Maya Ali"</span><span class="p">,</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">),</span> <span class="s">"Hello, Maya"</span><span class="p">),</span>
+    <span class="p">(</span><span class="kt">WelcomeProfile</span><span class="p">(</span><span class="nv">legalName</span><span class="p">:</span> <span class="s">"Maya Ali"</span><span class="p">,</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="kc">nil</span><span class="p">),</span> <span class="s">"Hello, Maya Ali"</span><span class="p">),</span>
+    <span class="p">(</span><span class="kt">WelcomeProfile</span><span class="p">(</span><span class="nv">legalName</span><span class="p">:</span> <span class="s">"Maya Ali"</span><span class="p">,</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="s">""</span><span class="p">),</span> <span class="s">"Hello, Maya Ali"</span><span class="p">)</span>
+<span class="p">]</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span> <span class="k">in</span> <span class="n">welcomeCases</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">actual</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">characterizedWelcome</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="nv">prefix</span><span class="p">:</span> <span class="s">"Hello"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">actual</span> <span class="o">==</span> <span class="n">expected</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In a real refactor, these characterization cases should run through the existing public entry point first. The standalone function represents its agreed formatting behavior here without introducing global database setup. Do not declare a behavior correct merely because the old code has it; if the product wants a change, separate that decision from a behavior-preserving extraction.</p>
+
+<h3 id="extract-the-calculation-and-make-the-effects-visible">Extract the calculation and make the effects visible</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">WelcomeTextPolicy</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">prefix</span><span class="p">:</span> <span class="kt">String</span>
+
+    <span class="kd">func</span> <span class="nf">text</span><span class="p">(</span><span class="k">for</span> <span class="nv">profile</span><span class="p">:</span> <span class="kt">WelcomeProfile</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">preferred</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">preferredName</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="nv">$0</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">chosenName</span> <span class="o">=</span> <span class="n">preferred</span> <span class="p">??</span> <span class="n">profile</span><span class="o">.</span><span class="n">legalName</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">chosenName</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">WelcomeBuildFailure</span><span class="o">.</span><span class="n">missingName</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">prefix</span> <span class="o">+</span> <span class="s">", "</span> <span class="o">+</span> <span class="n">chosenName</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">WelcomeWorkflow</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">readProfile</span><span class="p">:</span> <span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">WelcomeProfile</span>
+    <span class="k">let</span> <span class="nv">policy</span><span class="p">:</span> <span class="kt">WelcomeTextPolicy</span>
+    <span class="k">let</span> <span class="nv">record</span><span class="p">:</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+
+    <span class="kd">func</span> <span class="nf">run</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">profile</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">readProfile</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="k">try</span> <span class="n">policy</span><span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">profile</span><span class="p">)</span>
+        <span class="k">try</span> <span class="nf">record</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">welcomeTextPolicy</span> <span class="o">=</span> <span class="kt">WelcomeTextPolicy</span><span class="p">(</span><span class="nv">prefix</span><span class="p">:</span> <span class="s">"Hello"</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span> <span class="k">in</span> <span class="n">welcomeCases</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">actual</span> <span class="o">=</span> <span class="k">try</span> <span class="n">welcomeTextPolicy</span><span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">profile</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">actual</span> <span class="o">==</span> <span class="n">expected</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">recordedWelcomes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">welcomeWorkflow</span> <span class="o">=</span> <span class="kt">WelcomeWorkflow</span><span class="p">(</span>
+    <span class="nv">readProfile</span><span class="p">:</span> <span class="p">{</span> <span class="kt">WelcomeProfile</span><span class="p">(</span><span class="nv">legalName</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">,</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">},</span>
+    <span class="nv">policy</span><span class="p">:</span> <span class="n">welcomeTextPolicy</span><span class="p">,</span>
+    <span class="nv">record</span><span class="p">:</span> <span class="p">{</span> <span class="n">recordedWelcomes</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">)</span>
+<span class="k">let</span> <span class="nv">completedWelcome</span> <span class="o">=</span> <span class="k">try</span> <span class="n">welcomeWorkflow</span><span class="o">.</span><span class="nf">run</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">completedWelcome</span> <span class="o">==</span> <span class="s">"Hello, Maya"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recordedWelcomes</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Hello, Maya"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The policy can be tested directly. The workflow still expresses the use case in four readable steps. There is no reason to create a class and protocol around every line or to hide the three dependencies inside a generic container.</p>
+
+<p>The closures are named capabilities. If profile reading later needs several related operations or asynchronous cancellation, a protocol can express that larger contract. The small shape here matches the current behavior.</p>
+
+<h3 id="verify-a-failure-prevents-the-downstream-effect">Verify a failure prevents the downstream effect</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">invalidWelcomeRecords</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">invalidWelcomeWorkflow</span> <span class="o">=</span> <span class="kt">WelcomeWorkflow</span><span class="p">(</span>
+    <span class="nv">readProfile</span><span class="p">:</span> <span class="p">{</span> <span class="kt">WelcomeProfile</span><span class="p">(</span><span class="nv">legalName</span><span class="p">:</span> <span class="s">""</span><span class="p">,</span> <span class="nv">preferredName</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">},</span>
+    <span class="nv">policy</span><span class="p">:</span> <span class="n">welcomeTextPolicy</span><span class="p">,</span>
+    <span class="nv">record</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">invalidWelcomeRecords</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="p">)</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">invalidWelcomeWorkflow</span><span class="o">.</span><span class="nf">run</span><span class="p">()</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A missing name must fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">WelcomeBuildFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">missingName</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">invalidWelcomeRecords</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The interaction count matters here because the requirement explicitly forbids recording an invalid greeting. By contrast, asserting that the workflow called a private name-selection helper would freeze an implementation detail without protecting behavior.</p>
+
+<p>Also test reading failure and recording failure when adapting a real effect. If recording partially succeeds before throwing, the caller needs a defined retry policy. The extraction preserves sequencing; it does not make arbitrary external effects atomic.</p>
+
+<h3 id="distinguish-a-bug-fix-from-a-cleanup">Distinguish a bug fix from a cleanup</h3>
+
+<p>Trimming whitespace may sound like an obvious improvement, but it changes the behavior of <code class="language-plaintext highlighter-rouge">"   "</code>. Choosing a localized prefix changes output too. Add separate cases and make those changes deliberately after the extraction is verified.</p>
+
+<p>This discipline makes review easier. A reviewer can assess whether the new boundary preserves known behavior, then assess whether the new product rule is correct. Combining both into a large manager rewrite makes failures harder to attribute.</p>
+
+<h3 id="measure-the-refactor-by-the-next-change">Measure the refactor by the next change</h3>
+
+<p>After extraction, changing the preferred-name rule should affect the policy and its focused tests. Replacing profile storage should affect assembly and the reader adapter. Changing when greetings are recorded should affect the workflow.</p>
+
+<p>If every change still touches every new type, the extraction may have redistributed lines without separating responsibilities. If a simple greeting now travels through five forwarding objects with no additional policy, remove the redundant layers.</p>
+
+<p>An anti-pattern is useful as a diagnosis only when the resulting change reduces a concrete difficulty. Here the outcome is observable: formatting needs no global state, failures are easy to reproduce, and required effects remain ordered in one small workflow.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

@@ -216,4 +216,121 @@ Test invalid construction, successful construction, explicit close twice, use af
 
 The expected result for “use after close” must come from the contract: it may throw, return no result, or be forbidden by a programmer precondition. Leaving it unspecified produces APIs that look valid in one isolated call and fail when used across a real screen lifecycle.
 
+## Case study: observation as an explicitly owned resource
+
+An observer registration has a lifecycle even if it does not own a file handle or database connection. Registering adds work that another object may invoke later; cancellation removes that work. A token can make ownership of the registration explicit.
+
+The token below cancels at most once. It also performs final cleanup if its owner releases it without calling `cancel`, while application code remains free to cancel earlier.
+
+```swift
+final class ObservationLease {
+    private var cancellation: (() -> Void)?
+
+    init(cancellation: @escaping () -> Void) {
+        self.cancellation = cancellation
+    }
+
+    func cancel() {
+        let action = cancellation
+        cancellation = nil
+        action?()
+    }
+
+    deinit { cancel() }
+}
+
+final class ChangeRegistry {
+    private var nextID = 0
+    private var callbacks: [Int: () -> Void] = [:]
+
+    var count: Int { callbacks.count }
+
+    func observe(_ callback: @escaping () -> Void) -> ObservationLease {
+        nextID += 1
+        let id = nextID
+        callbacks[id] = callback
+        return ObservationLease { [weak self] in
+            self?.callbacks.removeValue(forKey: id)
+        }
+    }
+
+    func emit() {
+        let currentCallbacks = Array(callbacks.values)
+        currentCallbacks.forEach { $0() }
+    }
+}
+
+final class ChangeConsumer {
+    private let registry: ChangeRegistry
+    private var lease: ObservationLease?
+    private(set) var received = 0
+
+    init(registry: ChangeRegistry) { self.registry = registry }
+
+    func start() {
+        guard lease == nil else { return }
+        lease = registry.observe { [weak self] in self?.received += 1 }
+    }
+
+    func stop() {
+        lease?.cancel()
+        lease = nil
+    }
+}
+
+let changes = ChangeRegistry()
+var consumer: ChangeConsumer? = ChangeConsumer(registry: changes)
+consumer?.start()
+consumer?.start()
+assert(changes.count == 1)
+changes.emit()
+assert(consumer?.received == 1)
+consumer?.stop()
+assert(changes.count == 0)
+consumer?.start()
+assert(changes.count == 1)
+consumer = nil
+assert(changes.count == 0)
+```
+
+The consumer strongly owns its lease and registry. The registry's callback weakly references the consumer. The lease's cancellation closure weakly references the registry. This graph lets releasing the consumer release the lease, whose cleanup removes the callback.
+
+Calling `start` twice does not register twice. Calling `stop` releases the registration at an application-defined moment. Releasing the consumer provides a final cleanup path if explicit stopping was omitted.
+
+### Clear ownership before invoking cleanup code
+
+`cancel` stores the action locally and clears the stored closure before invoking it. If cancellation reenters the token, there is no second action left to invoke. The token is already in its cancelled state before external code runs.
+
+That ordering is a small example of making a lifecycle operation safe under reentrancy. It does not make the token thread-safe. Concurrent calls to `cancel` would require synchronization or isolation, and a production observer system needs an explicit execution contract.
+
+A deinitializer should also avoid work that depends on a screen still existing or on an asynchronous UI interaction. Here cleanup only removes a registration from a synchronously owned registry. More complicated resources may require an explicit asynchronous close operation before release.
+
+### Cancellation cannot retract an event already captured for delivery
+
+The registry copies its current callbacks before emitting. That avoids mutating a dictionary while iterating it, but it means a callback removed during this emission may still exist in the delivery snapshot.
+
+The contract therefore distinguishes removal from future emissions and suppression of already captured work. A UI can use a request generation or active-state check to ignore a late event. A stronger registry might mark individual registrations inactive and check that state before delivery.
+
+Do not promise “no callback after stop returns” unless the implementation and execution model really provide that guarantee. A weak reference prevents retaining an owner; it does not establish event ordering or cancellation acknowledgment.
+
+### Construction should not lose the lease
+
+If the result of `observe` is discarded immediately, its lease is released and the callback is removed. That can look like a registration that never worked. Keep the lease in the object whose lifetime should govern observation.
+
+Conversely, storing the lease in a global collection can keep observation active long after a screen closes. The token makes ownership visible, but the application still has to choose the correct owner.
+
+This is a useful way to read unfamiliar APIs: ask what object or value represents the resource, whether creating it starts work, and which owner retains the thing that stops it.
+
+### Test lifetime through public effects
+
+The example checks registration count and received events rather than relying on deinitialization print statements. Add a test that calls `cancel` twice and verifies the cleanup action ran only once. Also keep a copy of a callback outside the registry and verify its documented behavior after the consumer disappears.
+
+For an asynchronous implementation, test cancellation racing with completion and shutdown while work is pending. Those tests need a controllable scheduler or service, not long sleeps that merely hope a race occurs.
+
+### Keep initialization failure separate from resource shutdown
+
+A throwing initializer establishes whether an instance can exist. An observation lease controls work performed after a valid instance exists. Combining both into an initializer that registers, starts tasks, and can later throw produces a much harder cleanup story.
+
+Validate cheap configuration first, establish stored state, then activate externally visible work at a deliberate boundary. Use scoped cleanup for resources acquired during construction if failure remains possible. The lifecycle becomes easier to reason about because “not constructed,” “active,” “stopped,” and “released” have distinct meanings.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

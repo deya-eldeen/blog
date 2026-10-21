@@ -174,4 +174,107 @@ Then decide whether the API returns a snapshot, exposes freshness, or automatica
 
 Composition helps localize that contract. It does not remove the responsibility to define it.
 
+## Case study: compose a cache whose key describes the whole request
+
+The search exercise has a specific trap: the same query against a different dataset must not reuse the old results. Solve it with a cache around a search capability, while keeping the matching policy fixed inside the wrapped implementation.
+
+```swift
+protocol NameSearching {
+    func results(in names: [String], query: String) -> [String]
+}
+
+extension NameSearch: NameSearching {}
+
+private struct NameSearchKey: Hashable {
+    let names: [String]
+    let query: String
+}
+
+final class CachedNameSearch: NameSearching {
+    private let wrapped: any NameSearching
+    private var entries: [NameSearchKey: [String]] = [:]
+
+    init(wrapped: any NameSearching) { self.wrapped = wrapped }
+
+    func results(in names: [String], query: String) -> [String] {
+        let key = NameSearchKey(names: names, query: query)
+        if let cached = entries[key] { return cached }
+        let result = wrapped.results(in: names, query: query)
+        entries[key] = result
+        return result
+    }
+
+    func removeAll() { entries.removeAll() }
+}
+
+final class SearchCallCounter: NameSearching {
+    private let wrapped: any NameSearching
+    private(set) var calls = 0
+
+    init(wrapped: any NameSearching) { self.wrapped = wrapped }
+
+    func results(in names: [String], query: String) -> [String] {
+        calls += 1
+        return wrapped.results(in: names, query: query)
+    }
+}
+
+let underlyingSearch = SearchCallCounter(wrapped: NameSearch(matcher: ExactMatch()))
+let cachedNameSearch = CachedNameSearch(wrapped: underlyingSearch)
+assert(cachedNameSearch.results(in: ["Maya", "Omar"], query: "Maya") == ["Maya"])
+assert(cachedNameSearch.results(in: ["Maya", "Omar"], query: "Maya") == ["Maya"])
+assert(underlyingSearch.calls == 1)
+assert(cachedNameSearch.results(in: ["Omar"], query: "Maya").isEmpty)
+assert(underlyingSearch.calls == 2)
+assert(cachedNameSearch.results(in: ["Omar"], query: "Maya").isEmpty)
+assert(underlyingSearch.calls == 2)
+```
+
+An empty result is cached successfully: an optional dictionary lookup distinguishes a stored empty array from an absent entry. The dataset is part of the key, so removing Maya changes the request and causes a new underlying search.
+
+Array order is also part of equality here. That is appropriate because the search preserves input order. If two differently ordered datasets were treated as the same key, the cache could return the right names in the wrong order. Duplicates matter for the same reason.
+
+### Fix the policy or include it in the key
+
+The wrapped `NameSearch` receives a matcher during construction and does not replace it. The cache is therefore scoped to that particular configured search. A separate cache around a case-insensitive search has independent entries.
+
+That is a semantic assumption, not something the protocol can prove. A stateful matcher that changes its result over time would invalidate this memoization. So would a search implementation that reads permissions or a remote index not represented in the request.
+
+If policy can change, either reconstruct the cache, invalidate it when policy changes, or add a stable policy revision to the key. Avoid using a human-readable class name as a policy fingerprint: two instances of the same class can have different configuration.
+
+### Wrapper order answers a measurable question
+
+A counter outside the cache counts requests from the consumer. The existing counter inside the cache counts actual underlying searches:
+
+```swift
+let incomingSearchCalls = SearchCallCounter(wrapped: cachedNameSearch)
+_ = incomingSearchCalls.results(in: ["Maya", "Omar"], query: "Maya")
+_ = incomingSearchCalls.results(in: ["Maya", "Omar"], query: "Maya")
+assert(incomingSearchCalls.calls == 2)
+assert(underlyingSearch.calls == 2)
+
+cachedNameSearch.removeAll()
+_ = incomingSearchCalls.results(in: ["Maya", "Omar"], query: "Maya")
+assert(incomingSearchCalls.calls == 3)
+assert(underlyingSearch.calls == 3)
+```
+
+The first two requests hit a previously populated entry. Clearing the cache causes the next request to reach the underlying service. Neither counter is wrong; each measures a different boundary. Name production metrics accordingly, such as incoming requests and cache misses, rather than calling both “search count.”
+
+### Account for the cost of the cache itself
+
+This example retains complete dataset keys and results indefinitely. Hashing and comparing a key also requires work proportional to the dataset content in relevant cases. For a cheap in-memory exact search, the cache can cost more than recomputation.
+
+For a large immutable dataset, a stable dataset identifier plus revision can be a better key. That design transfers responsibility to whoever maintains the revision: every relevant dataset change must advance it. A count of rows is insufficient because content can change while the count stays constant.
+
+A production cache may also need an eviction policy, bounded memory, and access isolation. Those are requirements of the cache collaborator; they should not force unrelated matching implementations into a subclass hierarchy.
+
+### Cache values according to the result's semantics
+
+The results here are arrays of strings, so callers receive values. Caching arrays of mutable objects would share those objects with every caller unless the API defines another policy. A caller editing a cached entity could then change what a later lookup observes without changing the key.
+
+Choose snapshots when independent results are required, or document live shared entities when that is intentional. Composition creates a place to express this policy. It does not decide the policy for you.
+
+The final assembly has three independent responsibilities: matching, memoization, and measurement. Each has a concrete reason to vary, and their interactions are established by observable tests rather than by the names of subclasses.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

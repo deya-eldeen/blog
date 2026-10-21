@@ -215,6 +215,89 @@
 
 <p>That last question often exposes the real design issue. A hierarchy can compile while disagreeing about whether a failed operation counts as completed. Resolve that behavioral contract before polishing override syntax.</p>
 
+<h2 id="case-study-inherited-property-observers-are-part-of-behavior">Case study: inherited property observers are part of behavior</h2>
+
+<p>A property override can add observation while preserving the inherited implementation. That creates an ordering contract: the subclass’s <code class="language-plaintext highlighter-rouge">willSet</code>, the superclass’s observers, and the subclass’s <code class="language-plaintext highlighter-rouge">didSet</code> can all participate in one assignment.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProgressTrace</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="kt">ObservableProgress</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">trace</span><span class="p">:</span> <span class="kt">ProgressTrace</span>
+    <span class="k">var</span> <span class="nv">amount</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">{</span>
+        <span class="k">willSet</span> <span class="p">{</span> <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Base will: "</span> <span class="o">+</span> <span class="kt">String</span><span class="p">(</span><span class="n">newValue</span><span class="p">))</span> <span class="p">}</span>
+        <span class="k">didSet</span> <span class="p">{</span> <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Base did: "</span> <span class="o">+</span> <span class="kt">String</span><span class="p">(</span><span class="n">amount</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">trace</span><span class="p">:</span> <span class="kt">ProgressTrace</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SpecializedProgress</span><span class="p">:</span> <span class="kt">ObservableProgress</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">var</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">willSet</span> <span class="p">{</span> <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Child will: "</span> <span class="o">+</span> <span class="kt">String</span><span class="p">(</span><span class="n">newValue</span><span class="p">))</span> <span class="p">}</span>
+        <span class="k">didSet</span> <span class="p">{</span> <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Child did: "</span> <span class="o">+</span> <span class="kt">String</span><span class="p">(</span><span class="n">amount</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">progressTrace</span> <span class="o">=</span> <span class="kt">ProgressTrace</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">specializedProgress</span> <span class="o">=</span> <span class="kt">SpecializedProgress</span><span class="p">(</span><span class="nv">trace</span><span class="p">:</span> <span class="n">progressTrace</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">progressTrace</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="n">specializedProgress</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">progressTrace</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"Child will: 10"</span><span class="p">,</span> <span class="s">"Base will: 10"</span><span class="p">,</span> <span class="s">"Base did: 10"</span><span class="p">,</span> <span class="s">"Child did: 10"</span>
+<span class="p">])</span>
+<span class="n">specializedProgress</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">progressTrace</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">8</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The second assignment uses the same value, but observers still run. If the observer launches expensive work or emits analytics, “the value did not change” is not sufficient evidence that no effect occurred.</p>
+
+<p>Initialization is different from ordinary assignment. Establishing this stored property’s initial value does not emit the same observer sequence, which is why the trace starts empty. When debugging an initializer that appears to trigger observation, check whether it calls a helper or an inherited setter after the relevant initialization phase rather than assuming every assignment has identical semantics.</p>
+
+<h3 id="observation-and-validation-are-different-policies">Observation and validation are different policies</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">didSet</code> observer sees a completed assignment. If the object’s invariant requires rejecting an input before mutation, a method or computed setter can provide a clearer boundary than observing and repairing arbitrary writes afterward.</p>
+
+<p>Repairing an invalid value from an observer can also create confusing event histories. Another observer or callback may see the attempted value, the repaired value, or an implementation-specific sequence that is difficult to explain at the API level.</p>
+
+<p>Prefer an operation such as <code class="language-plaintext highlighter-rouge">advance(to:)</code> when advancing has rules and failure outcomes. Use observers for coherent reactions to a change that the property’s mutation contract already allows.</p>
+
+<h3 id="overriding-a-throwing-operation-must-preserve-meaningful-failure-behavior">Overriding a throwing operation must preserve meaningful failure behavior</h3>
+
+<p>Swift permits some implementation refinements, such as an override that does not throw even though the parent declaration can. That is compatible with callers that already handle failure. A subclass cannot arbitrarily add a throwing requirement to an operation whose parent promises a non-throwing call.</p>
+
+<p>The semantic issue remains broader than the compiler rule. If the parent documents that a failed import leaves existing data intact, an override must not partially delete data before throwing. If success means a durable save, returning success after scheduling an untracked background write changes the promise.</p>
+
+<p>Test the operation through the base reference and verify the documented state after both success and failure. That catches violations the override keyword cannot express.</p>
+
+<h3 id="mandatory-sequencing-belongs-in-a-controlled-workflow">Mandatory sequencing belongs in a controlled workflow</h3>
+
+<p>A base API that tells every subclass “remember to call super and then record completion” spreads an invariant across implementations. One omitted call can make behavior depend on which subclass was chosen.</p>
+
+<p>A final workflow with a narrow hook can centralize that sequence. The hook contract then needs its own answers: may it fail, may it reenter the workflow, and what state is visible during execution?</p>
+
+<p>Do not assume that calling <code class="language-plaintext highlighter-rouge">super</code> solves every substitutability problem. A subclass can call the parent and then undo its invariant, add unexpected effects, or expose a partially updated object. The parent invocation is one step in an algorithm, not a proof of correctness.</p>
+
+<h3 id="a-hierarchy-has-an-internal-dependency-graph">A hierarchy has an internal dependency graph</h3>
+
+<p>If base method A calls overridable method B, subclasses depend on that call relationship. Replacing A’s implementation so it no longer calls B can break a subclass even if A’s direct return value remains the same for the base class.</p>
+
+<p>This is the fragile-base-class problem in concrete terms: clients extend the implementation’s control flow, not only its external result. Document intended hook relationships and avoid making incidental internal calls into accidental extension points.</p>
+
+<p>Composition can reduce that coupling when the variation is a policy rather than a true subtype relationship. The decision is easier once you identify exactly which dependency the override creates.</p>
+
+<h3 id="debug-an-unexpected-implementation-systematically">Debug an unexpected implementation systematically</h3>
+
+<p>First confirm the static type at the call site and the exact signature selected. Then check whether the member is an inherited overridable class declaration, a protocol requirement, an extension-only helper, or a distinct overload.</p>
+
+<p>Next, inspect access and finality at the module boundary. A same-named method in a subclass does not replace an inaccessible or unrelated operation merely because direct calls appear to choose it.</p>
+
+<p>Finally, run a tiny trace through the same abstraction the real consumer stores. The observer example above is useful because it records the actual sequence rather than inferring it from source indentation. A focused trace often exposes an incorrect mental model more quickly than reading the entire hierarchy repeatedly.</p>
+
+<p>For the exact language rules, consult <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/inheritance/">Inheritance</a> and <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/properties/">Properties</a>. Use those rules to define the supported customization contract, then test the behavior that contract promises.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

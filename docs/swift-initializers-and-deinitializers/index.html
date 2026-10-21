@@ -231,6 +231,122 @@
 
 <p>The expected result for “use after close” must come from the contract: it may throw, return no result, or be forbidden by a programmer precondition. Leaving it unspecified produces APIs that look valid in one isolated call and fail when used across a real screen lifecycle.</p>
 
+<h2 id="case-study-observation-as-an-explicitly-owned-resource">Case study: observation as an explicitly owned resource</h2>
+
+<p>An observer registration has a lifecycle even if it does not own a file handle or database connection. Registering adds work that another object may invoke later; cancellation removes that work. A token can make ownership of the registration explicit.</p>
+
+<p>The token below cancels at most once. It also performs final cleanup if its owner releases it without calling <code class="language-plaintext highlighter-rouge">cancel</code>, while application code remains free to cancel earlier.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ObservationLease</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellation</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">cancellation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">cancellation</span> <span class="o">=</span> <span class="n">cancellation</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">action</span> <span class="o">=</span> <span class="n">cancellation</span>
+        <span class="n">cancellation</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="nf">action</span><span class="p">?()</span>
+    <span class="p">}</span>
+
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ChangeRegistry</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">callbacks</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">callbacks</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">observe</span><span class="p">(</span><span class="n">_</span> <span class="nv">callback</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">ObservationLease</span> <span class="p">{</span>
+        <span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">nextID</span>
+        <span class="n">callbacks</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">callback</span>
+        <span class="k">return</span> <span class="kt">ObservationLease</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="nf">removeValue</span><span class="p">(</span><span class="nv">forKey</span><span class="p">:</span> <span class="n">id</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">emit</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">currentCallbacks</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="n">callbacks</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">currentCallbacks</span><span class="o">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ChangeConsumer</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">registry</span><span class="p">:</span> <span class="kt">ChangeRegistry</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">lease</span><span class="p">:</span> <span class="kt">ObservationLease</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">received</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">registry</span><span class="p">:</span> <span class="kt">ChangeRegistry</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">registry</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">lease</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">lease</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">observe</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">received</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stop</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">lease</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">lease</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">changes</span> <span class="o">=</span> <span class="kt">ChangeRegistry</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">consumer</span><span class="p">:</span> <span class="kt">ChangeConsumer</span><span class="p">?</span> <span class="o">=</span> <span class="kt">ChangeConsumer</span><span class="p">(</span><span class="nv">registry</span><span class="p">:</span> <span class="n">changes</span><span class="p">)</span>
+<span class="n">consumer</span><span class="p">?</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+<span class="n">consumer</span><span class="p">?</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">changes</span><span class="o">.</span><span class="nf">emit</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">consumer</span><span class="p">?</span><span class="o">.</span><span class="n">received</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">consumer</span><span class="p">?</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">consumer</span><span class="p">?</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">consumer</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The consumer strongly owns its lease and registry. The registry’s callback weakly references the consumer. The lease’s cancellation closure weakly references the registry. This graph lets releasing the consumer release the lease, whose cleanup removes the callback.</p>
+
+<p>Calling <code class="language-plaintext highlighter-rouge">start</code> twice does not register twice. Calling <code class="language-plaintext highlighter-rouge">stop</code> releases the registration at an application-defined moment. Releasing the consumer provides a final cleanup path if explicit stopping was omitted.</p>
+
+<h3 id="clear-ownership-before-invoking-cleanup-code">Clear ownership before invoking cleanup code</h3>
+
+<p><code class="language-plaintext highlighter-rouge">cancel</code> stores the action locally and clears the stored closure before invoking it. If cancellation reenters the token, there is no second action left to invoke. The token is already in its cancelled state before external code runs.</p>
+
+<p>That ordering is a small example of making a lifecycle operation safe under reentrancy. It does not make the token thread-safe. Concurrent calls to <code class="language-plaintext highlighter-rouge">cancel</code> would require synchronization or isolation, and a production observer system needs an explicit execution contract.</p>
+
+<p>A deinitializer should also avoid work that depends on a screen still existing or on an asynchronous UI interaction. Here cleanup only removes a registration from a synchronously owned registry. More complicated resources may require an explicit asynchronous close operation before release.</p>
+
+<h3 id="cancellation-cannot-retract-an-event-already-captured-for-delivery">Cancellation cannot retract an event already captured for delivery</h3>
+
+<p>The registry copies its current callbacks before emitting. That avoids mutating a dictionary while iterating it, but it means a callback removed during this emission may still exist in the delivery snapshot.</p>
+
+<p>The contract therefore distinguishes removal from future emissions and suppression of already captured work. A UI can use a request generation or active-state check to ignore a late event. A stronger registry might mark individual registrations inactive and check that state before delivery.</p>
+
+<p>Do not promise “no callback after stop returns” unless the implementation and execution model really provide that guarantee. A weak reference prevents retaining an owner; it does not establish event ordering or cancellation acknowledgment.</p>
+
+<h3 id="construction-should-not-lose-the-lease">Construction should not lose the lease</h3>
+
+<p>If the result of <code class="language-plaintext highlighter-rouge">observe</code> is discarded immediately, its lease is released and the callback is removed. That can look like a registration that never worked. Keep the lease in the object whose lifetime should govern observation.</p>
+
+<p>Conversely, storing the lease in a global collection can keep observation active long after a screen closes. The token makes ownership visible, but the application still has to choose the correct owner.</p>
+
+<p>This is a useful way to read unfamiliar APIs: ask what object or value represents the resource, whether creating it starts work, and which owner retains the thing that stops it.</p>
+
+<h3 id="test-lifetime-through-public-effects">Test lifetime through public effects</h3>
+
+<p>The example checks registration count and received events rather than relying on deinitialization print statements. Add a test that calls <code class="language-plaintext highlighter-rouge">cancel</code> twice and verifies the cleanup action ran only once. Also keep a copy of a callback outside the registry and verify its documented behavior after the consumer disappears.</p>
+
+<p>For an asynchronous implementation, test cancellation racing with completion and shutdown while work is pending. Those tests need a controllable scheduler or service, not long sleeps that merely hope a race occurs.</p>
+
+<h3 id="keep-initialization-failure-separate-from-resource-shutdown">Keep initialization failure separate from resource shutdown</h3>
+
+<p>A throwing initializer establishes whether an instance can exist. An observation lease controls work performed after a valid instance exists. Combining both into an initializer that registers, starts tasks, and can later throw produces a much harder cleanup story.</p>
+
+<p>Validate cheap configuration first, establish stored state, then activate externally visible work at a deliberate boundary. Use scoped cleanup for resources acquired during construction if failure remains possible. The lifecycle becomes easier to reason about because “not constructed,” “active,” “stopped,” and “released” have distinct meanings.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

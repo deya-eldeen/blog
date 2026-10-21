@@ -179,4 +179,106 @@ For a snapshot value, test that a content change produces inequality even when t
 
 As a design exercise, add an account merge operation. Decide whether the surviving account keeps its ID and how dictionary entries and references to the retired ID are handled. A correct hash implementation cannot compensate for an undefined identity policy at that level.
 
+## Case study: distinguish a renamed row from a replaced row
+
+A list refresh receives new account snapshots. Matching by full snapshot equality would treat a rename as removal plus insertion. Matching only by ID would find the same account but miss its content change. A useful diff performs those two comparisons separately.
+
+First reject duplicate identifiers. Otherwise dictionary construction or last-write-wins assignment could silently discard one row and hide a data integrity problem.
+
+```swift
+struct AccountListChange: Equatable {
+    let inserted: [Int]
+    let removed: [Int]
+    let updated: [Int]
+}
+
+enum AccountListFailure: Error, Equatable {
+    case duplicateID(Int)
+}
+
+func indexAccounts(_ rows: [AccountSnapshot]) throws -> [Int: AccountSnapshot] {
+    var index: [Int: AccountSnapshot] = [:]
+    for row in rows {
+        guard index.updateValue(row, forKey: row.id) == nil else {
+            throw AccountListFailure.duplicateID(row.id)
+        }
+    }
+    return index
+}
+
+func accountChanges(
+    from oldRows: [AccountSnapshot],
+    to newRows: [AccountSnapshot]
+) throws -> AccountListChange {
+    let oldIndex = try indexAccounts(oldRows)
+    let newIndex = try indexAccounts(newRows)
+    return AccountListChange(
+        inserted: newRows.filter { oldIndex[$0.id] == nil }.map { $0.id },
+        removed: oldRows.filter { newIndex[$0.id] == nil }.map { $0.id },
+        updated: newRows.filter { row in
+            guard let previous = oldIndex[row.id] else { return false }
+            return previous != row
+        }.map { $0.id }
+    )
+}
+
+let oldAccountRows = [
+    AccountSnapshot(id: 1, displayName: "Maya"),
+    AccountSnapshot(id: 2, displayName: "Omar")
+]
+let newAccountRows = [
+    AccountSnapshot(id: 1, displayName: "Maya A."),
+    AccountSnapshot(id: 3, displayName: "Lina")
+]
+let accountListChange = try accountChanges(from: oldAccountRows, to: newAccountRows)
+assert(accountListChange == AccountListChange(
+    inserted: [3], removed: [2], updated: [1]
+))
+```
+
+Account 1 is matched by stable identity and classified as updated by snapshot inequality. Account 2 disappeared, and account 3 appeared. The algorithm does not rely on the identity of class instances or on hashes remaining stable across launches.
+
+The output order is deterministic: insertions and updates follow the new array, and removals follow the old array. Dictionary iteration order does not become part of the result contract accidentally.
+
+### Reject ambiguity before producing a partial result
+
+```swift
+do {
+    _ = try accountChanges(from: oldAccountRows, to: [
+        AccountSnapshot(id: 1, displayName: "First"),
+        AccountSnapshot(id: 1, displayName: "Second")
+    ])
+    assertionFailure("Duplicate identifiers must fail")
+} catch {
+    assert(error as? AccountListFailure == .duplicateID(1))
+}
+
+let unchangedAccountList = try accountChanges(from: oldAccountRows, to: oldAccountRows)
+assert(unchangedAccountList == AccountListChange(inserted: [], removed: [], updated: []))
+```
+
+The index mutation before throwing is confined to a local dictionary that never escapes on failure. Neither caller-owned input is changed. Checking the old rows too matters: malformed previous state can be just as ambiguous as malformed incoming state.
+
+This validator enforces uniqueness within one list, not global uniqueness across all accounts. If identities are scoped by tenant or source, use a composite identifier. An integer from one tenant should not accidentally match the same integer from another.
+
+### Content equality should reflect the representation being updated
+
+The current snapshot includes only a display name. Adding an avatar URL to the displayed row should normally add it to this snapshot's content equality as well. A hidden audit timestamp might not belong in a presentation snapshot if changing it should not trigger a visible update.
+
+That is a reason to define a representation for the consumer, rather than customizing one giant entity's equality to serve persistence, UI updates, and business identity simultaneously. Synthesized equality is useful when the stored properties already describe the intended comparison.
+
+A list diff can also need moves. This example intentionally reports membership and content changes only. Reordering unchanged rows produces no updates. Do not hand this result to a UI animation API as if it included index moves; either compute those separately or use a suitable collection difference representation.
+
+### Hashing supports lookup without deciding domain meaning
+
+The dictionary uses integer keys for lookup, but correctness still relies on key equality. Hash collisions are allowed. Replacing `row.id` with `row.hashValue` would destroy the distinction between entity identity and implementation-specific hash behavior.
+
+Expected dictionary lookup performance can make this approach efficient, with linear additional storage in the number of rows. That expectation does not remove the cost of building snapshots or comparing their content. If snapshots contain large values, profile that actual workload before inventing custom hashes as a shortcut.
+
+### Test equality rules independently of the diff
+
+For a custom identifier or entity conformance, construct representative triples and check reflexivity, symmetry, and transitivity. Then check sets and dictionaries with equal-but-distinct instances. Do not assert that unequal values have different hashes; collection behavior is the relevant contract.
+
+For the diff itself, cover renamed content, insertion, removal, empty lists, duplicate old IDs, duplicate new IDs, and reorder-only changes. Together these cases state precisely what “same row” means and what “changed row” means. That clarity prevents a surprising number of list bugs from being blamed on the rendering framework.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

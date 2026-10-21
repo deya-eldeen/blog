@@ -245,4 +245,109 @@ No. The property is a strong reference, but the service may also be injected int
 
 This is the central skill in reading class diagrams: distinguish what the notation asserts from what you merely assume about the implementation.
 
+## Case study: review an upload workflow from three views
+
+A single diagram rarely answers structural, temporal, and lifecycle questions equally well. Consider an upload feature with a coordinator, an uploader, a progress observer, and a cancellable session. Start by deciding what each view is allowed to claim.
+
+The class view describes supported relationships. The sequence view describes one interaction scenario. The state view describes allowed transitions. None of them alone proves that the implementation enforces the model.
+
+```mermaid
+classDiagram
+    direction LR
+    accTitle: Upload feature contracts and ownership
+    accDescr: An upload coordinator uses an uploading contract. A network uploader implements the contract and creates sessions. A session weakly references an optional progress observer.
+    class UploadCoordinator
+    class Uploading {
+        <<protocol>>
+        beginUpload()
+    }
+    class NetworkUploader
+    class UploadSession {
+        cancel()
+    }
+    class UploadProgressObserver {
+        <<protocol>>
+        didProgress()
+    }
+    UploadCoordinator --> Uploading : uses
+    NetworkUploader ..|> Uploading
+    NetworkUploader ..> UploadSession : creates
+    UploadSession --> "0..1" UploadProgressObserver : weak observer
+```
+
+The creation dependency is deliberately dashed. It does not say the uploader retains every session forever. The observer association is optional and explicitly weak; a protocol realization arrow would mean conformance instead of a stored relationship.
+
+The diagram also avoids claiming that `UploadCoordinator` is a superclass of `NetworkUploader`. Their relationship is collaboration, even though one object may create or configure the other in assembly code.
+
+### Use a sequence diagram to expose cancellation races
+
+```mermaid
+sequenceDiagram
+    accTitle: Cancellation racing with upload completion
+    accDescr: The coordinator starts a session, requests cancellation, and rejects a late completion for the cancelled request.
+    participant Screen
+    participant Coordinator
+    participant Session
+    Screen->>Coordinator: Start upload request 7
+    Coordinator->>Session: Begin request 7
+    Screen->>Coordinator: Cancel request 7
+    Coordinator->>Coordinator: Mark request 7 cancelled
+    Coordinator->>Session: Request cancellation
+    Session-->>Coordinator: Completion already in flight
+    Coordinator->>Coordinator: Ignore cancelled request 7
+```
+
+The cancellation request does not assert that work stops immediately. A completion may already be in flight, so the coordinator must decide whether that completion is still relevant. Showing the state update before requesting cancellation also makes a reentrant completion easier to reason about.
+
+If your service guarantees a different cancellation contract, draw that contract instead. A diagram should describe the implementation or intended API accurately, not an idealized ordering that the underlying system cannot provide.
+
+### Model terminal states separately from delivery
+
+```mermaid
+stateDiagram-v2
+    accTitle: Upload session lifecycle
+    accDescr: An upload starts idle, runs, and reaches exactly one terminal state: succeeded, failed, or cancelled.
+    [*] --> Idle
+    Idle --> Running: start
+    Running --> Succeeded: accept success
+    Running --> Failed: accept failure
+    Running --> Cancelled: accept cancellation
+    Succeeded --> [*]
+    Failed --> [*]
+    Cancelled --> [*]
+```
+
+This view describes the session's accepted lifecycle. It does not forbid receiving a stale completion after cancellation; it says such a completion must not cause another accepted terminal transition. That difference matters when comparing a state diagram with a callback trace.
+
+If retry is supported, decide whether it creates a new session identity or moves the same session back to running. A new request ID often makes histories easier to distinguish. The diagram should make whichever policy you choose visible.
+
+### Turn diagram assertions into review questions
+
+| Diagram assertion | Code or test to inspect |
+|---|---|
+| Observer is weak | Stored property and lifetime test |
+| Coordinator uses a protocol | Constructor parameter and consumer property type |
+| Uploader creates a session | Construction path and returned ownership |
+| Cancellation becomes terminal | State transition guard |
+| Late completion is ignored | Request identity and settled-state checks |
+| Success is accepted once | Duplicate-completion test |
+
+This is where diagrams become useful engineering artifacts. Each important edge or transition leads to evidence that can confirm or reject it. A polished shape without corresponding code evidence is still only a hypothesis.
+
+### Keep class and object diagrams distinct
+
+A class diagram says a session can reference zero or one observer. A particular runtime object diagram might show session 7 referencing observer A and session 8 referencing observer B. The latter can help investigate a leak or unexpected sharing in one execution.
+
+Do not infer that every instance shares one observer merely because the class diagram contains one observer box. Classifier boxes represent types, not a count of runtime allocations. Multiplicities constrain relationships between instances; they do not draw all those instances explicitly.
+
+The distinction also matters for singleton claims. A class with static members is not automatically a singleton. If the architecture intentionally maintains one instance per application or per account, annotate that lifetime policy and check assembly code.
+
+### Review diagrams as part of a change
+
+Suppose progress reporting becomes a multi-subscriber stream. The weak optional one-to-one observer edge no longer describes the design. Update the structural view, then consider whether sequence delivery and cancellation states also changed.
+
+Alternatively, a private refactor may replace one storage array without changing any relationship or behavior represented here. The diagram may need no update. Keeping diagrams useful does not mean reproducing every source-code edit.
+
+A practical review asks which visible assertions changed, whether the new drawing makes those changes clear, and which tests demonstrate them. That approach keeps documentation close to the decisions a maintainer actually needs to assess.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

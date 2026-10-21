@@ -193,6 +193,106 @@
 
 <p>As a design exercise, add an account merge operation. Decide whether the surviving account keeps its ID and how dictionary entries and references to the retired ID are handled. A correct hash implementation cannot compensate for an undefined identity policy at that level.</p>
 
+<h2 id="case-study-distinguish-a-renamed-row-from-a-replaced-row">Case study: distinguish a renamed row from a replaced row</h2>
+
+<p>A list refresh receives new account snapshots. Matching by full snapshot equality would treat a rename as removal plus insertion. Matching only by ID would find the same account but miss its content change. A useful diff performs those two comparisons separately.</p>
+
+<p>First reject duplicate identifiers. Otherwise dictionary construction or last-write-wins assignment could silently discard one row and hide a data integrity problem.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AccountListChange</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">inserted</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">removed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">updated</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">AccountListFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">duplicateID</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">indexAccounts</span><span class="p">(</span><span class="n">_</span> <span class="nv">rows</span><span class="p">:</span> <span class="p">[</span><span class="kt">AccountSnapshot</span><span class="p">])</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">AccountSnapshot</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">index</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">AccountSnapshot</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="k">in</span> <span class="n">rows</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">index</span><span class="o">.</span><span class="nf">updateValue</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">AccountListFailure</span><span class="o">.</span><span class="nf">duplicateID</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">index</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">accountChanges</span><span class="p">(</span>
+    <span class="n">from</span> <span class="nv">oldRows</span><span class="p">:</span> <span class="p">[</span><span class="kt">AccountSnapshot</span><span class="p">],</span>
+    <span class="n">to</span> <span class="nv">newRows</span><span class="p">:</span> <span class="p">[</span><span class="kt">AccountSnapshot</span><span class="p">]</span>
+<span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">AccountListChange</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">oldIndex</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">indexAccounts</span><span class="p">(</span><span class="n">oldRows</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">newIndex</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">indexAccounts</span><span class="p">(</span><span class="n">newRows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">AccountListChange</span><span class="p">(</span>
+        <span class="nv">inserted</span><span class="p">:</span> <span class="n">newRows</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">oldIndex</span><span class="p">[</span><span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span> <span class="p">},</span>
+        <span class="nv">removed</span><span class="p">:</span> <span class="n">oldRows</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">newIndex</span><span class="p">[</span><span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span> <span class="p">},</span>
+        <span class="nv">updated</span><span class="p">:</span> <span class="n">newRows</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">row</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">oldIndex</span><span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">previous</span> <span class="o">!=</span> <span class="n">row</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span> <span class="p">}</span>
+    <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">oldAccountRows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">),</span>
+    <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"Omar"</span><span class="p">)</span>
+<span class="p">]</span>
+<span class="k">let</span> <span class="nv">newAccountRows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"Maya A."</span><span class="p">),</span>
+    <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"Lina"</span><span class="p">)</span>
+<span class="p">]</span>
+<span class="k">let</span> <span class="nv">accountListChange</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">accountChanges</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">oldAccountRows</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newAccountRows</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">accountListChange</span> <span class="o">==</span> <span class="kt">AccountListChange</span><span class="p">(</span>
+    <span class="nv">inserted</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="nv">removed</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nv">updated</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">))</span>
+</code></pre></div></div>
+
+<p>Account 1 is matched by stable identity and classified as updated by snapshot inequality. Account 2 disappeared, and account 3 appeared. The algorithm does not rely on the identity of class instances or on hashes remaining stable across launches.</p>
+
+<p>The output order is deterministic: insertions and updates follow the new array, and removals follow the old array. Dictionary iteration order does not become part of the result contract accidentally.</p>
+
+<h3 id="reject-ambiguity-before-producing-a-partial-result">Reject ambiguity before producing a partial result</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">accountChanges</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">oldAccountRows</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="p">[</span>
+        <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"First"</span><span class="p">),</span>
+        <span class="kt">AccountSnapshot</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="s">"Second"</span><span class="p">)</span>
+    <span class="p">])</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Duplicate identifiers must fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">AccountListFailure</span> <span class="o">==</span> <span class="o">.</span><span class="nf">duplicateID</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">unchangedAccountList</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">accountChanges</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">oldAccountRows</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">oldAccountRows</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unchangedAccountList</span> <span class="o">==</span> <span class="kt">AccountListChange</span><span class="p">(</span><span class="nv">inserted</span><span class="p">:</span> <span class="p">[],</span> <span class="nv">removed</span><span class="p">:</span> <span class="p">[],</span> <span class="nv">updated</span><span class="p">:</span> <span class="p">[]))</span>
+</code></pre></div></div>
+
+<p>The index mutation before throwing is confined to a local dictionary that never escapes on failure. Neither caller-owned input is changed. Checking the old rows too matters: malformed previous state can be just as ambiguous as malformed incoming state.</p>
+
+<p>This validator enforces uniqueness within one list, not global uniqueness across all accounts. If identities are scoped by tenant or source, use a composite identifier. An integer from one tenant should not accidentally match the same integer from another.</p>
+
+<h3 id="content-equality-should-reflect-the-representation-being-updated">Content equality should reflect the representation being updated</h3>
+
+<p>The current snapshot includes only a display name. Adding an avatar URL to the displayed row should normally add it to this snapshot’s content equality as well. A hidden audit timestamp might not belong in a presentation snapshot if changing it should not trigger a visible update.</p>
+
+<p>That is a reason to define a representation for the consumer, rather than customizing one giant entity’s equality to serve persistence, UI updates, and business identity simultaneously. Synthesized equality is useful when the stored properties already describe the intended comparison.</p>
+
+<p>A list diff can also need moves. This example intentionally reports membership and content changes only. Reordering unchanged rows produces no updates. Do not hand this result to a UI animation API as if it included index moves; either compute those separately or use a suitable collection difference representation.</p>
+
+<h3 id="hashing-supports-lookup-without-deciding-domain-meaning">Hashing supports lookup without deciding domain meaning</h3>
+
+<p>The dictionary uses integer keys for lookup, but correctness still relies on key equality. Hash collisions are allowed. Replacing <code class="language-plaintext highlighter-rouge">row.id</code> with <code class="language-plaintext highlighter-rouge">row.hashValue</code> would destroy the distinction between entity identity and implementation-specific hash behavior.</p>
+
+<p>Expected dictionary lookup performance can make this approach efficient, with linear additional storage in the number of rows. That expectation does not remove the cost of building snapshots or comparing their content. If snapshots contain large values, profile that actual workload before inventing custom hashes as a shortcut.</p>
+
+<h3 id="test-equality-rules-independently-of-the-diff">Test equality rules independently of the diff</h3>
+
+<p>For a custom identifier or entity conformance, construct representative triples and check reflexivity, symmetry, and transitivity. Then check sets and dictionaries with equal-but-distinct instances. Do not assert that unequal values have different hashes; collection behavior is the relevant contract.</p>
+
+<p>For the diff itself, cover renamed content, insertion, removal, empty lists, duplicate old IDs, duplicate new IDs, and reorder-only changes. Together these cases state precisely what “same row” means and what “changed row” means. That clarity prevents a surprising number of list bugs from being blamed on the rendering framework.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

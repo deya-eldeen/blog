@@ -205,4 +205,101 @@ Verify equal initial content, independent intended mutations, preserved internal
 
 As an exercise, change the graph so two distinct nodes share the same title. A correct clone mapping must use instance identity, not title equality. Otherwise the clone would merge distinct objects and lose information despite producing plausible-looking text.
 
+## Case study: clone an unbounded graph without recursive calls
+
+A graph imported from a document can be much deeper than a hand-written test tree. The identity mapping from the recursive implementation is still the right idea, but recursion couples graph depth to call-stack depth. An explicit queue separates those concerns.
+
+Reuse `GraphNote`, but allocate a placeholder clone when discovering each original node. Process its outgoing edges later:
+
+```swift
+func cloneGraphIteratively(_ root: GraphNote) -> GraphNote {
+    let copiedRoot = GraphNote(title: root.title)
+    var copies: [ObjectIdentifier: GraphNote] = [
+        ObjectIdentifier(root): copiedRoot
+    ]
+    var pending = [root]
+    var cursor = 0
+
+    while cursor < pending.count {
+        let originalNode = pending[cursor]
+        cursor += 1
+        let copiedNode = copies[ObjectIdentifier(originalNode)]!
+
+        copiedNode.links = originalNode.links.map { linkedNode in
+            let key = ObjectIdentifier(linkedNode)
+            if let existing = copies[key] { return existing }
+
+            let created = GraphNote(title: linkedNode.title)
+            copies[key] = created
+            pending.append(linkedNode)
+            return created
+        }
+    }
+    return copiedRoot
+}
+
+let iterativeRoot = GraphNote(title: "Root")
+let sameTitleA = GraphNote(title: "Same")
+let sameTitleB = GraphNote(title: "Same")
+let iterativeShared = GraphNote(title: "Shared")
+iterativeRoot.links = [sameTitleA, sameTitleB, sameTitleA]
+sameTitleA.links = [iterativeShared]
+sameTitleB.links = [iterativeShared]
+iterativeShared.links = [iterativeRoot]
+
+let iterativeCopy = cloneGraphIteratively(iterativeRoot)
+assert(iterativeCopy !== iterativeRoot)
+assert(iterativeCopy.links[0] !== sameTitleA)
+assert(iterativeCopy.links[0] !== iterativeCopy.links[1])
+assert(iterativeCopy.links[0] === iterativeCopy.links[2])
+assert(iterativeCopy.links[0].links[0] === iterativeCopy.links[1].links[0])
+assert(iterativeCopy.links[0].links[0].links[0] === iterativeCopy)
+
+iterativeCopy.links[0].links.append(GraphNote(title: "Copy only"))
+assert(sameTitleA.links.count == 1)
+assert(iterativeCopy.links[0].links.count == 2)
+
+// The model deliberately allows strong cycles; release those cycles explicitly.
+iterativeShared.links.removeAll()
+iterativeCopy.links[0].links[0].links.removeAll()
+```
+
+Two equal titles remain two distinct copied nodes. Two edges to the same original node remain two edges to the same copied node. The back-edge points to the copied root rather than the original root. These are three independent structural properties; comparing printed titles would not establish any of them.
+
+### Why discovery and processing are separate
+
+The mapping entry is created before the newly discovered node enters the queue. If another edge reaches that original before it has been processed, it receives the same placeholder. That is what preserves sharing and terminates cycles.
+
+By the time a node is processed, its placeholder is guaranteed to exist. The force unwrap is confined to that algorithmic invariant. If the mapping were externally mutable or the queue contained nodes inserted through another path, the invariant would need to be reestablished rather than defended with a comment.
+
+The cursor avoids repeatedly removing the first array element, which would shift the remaining elements. Each original node enters the queue once. Each outgoing edge is visited once. With expected dictionary lookup costs, traversal is proportional to reachable nodes and edges, plus payload-copying work. Additional mapping and queue storage is proportional to the node count.
+
+Iteration avoids recursive traversal depth, but it does not make arbitrarily large input cheap. Set document size limits when needed, and remember that releasing a deeply linked ownership graph can have its own runtime costs. The graph representation and its lifetime remain separate concerns from this traversal algorithm.
+
+### A clone needs a consistent source
+
+The algorithm assumes the graph is stable while being copied. If another operation mutates links during traversal, the result may combine observations from different moments. An iterative traversal does not produce a transactional snapshot automatically.
+
+For a shared model, perform the copy within an appropriate isolation boundary or first obtain an immutable snapshot. Locking each individual property read separately may still permit a logically inconsistent combination of nodes. The consistency requirement applies to the operation as a whole.
+
+### Copying policy should classify edges
+
+| Relationship | Possible policy | Reason |
+|---|---|---|
+| Owned mutable paragraph | Clone | Independent edits are required |
+| Shared annotation inside the document | Clone once and preserve aliases | Internal sharing is part of the document |
+| Immutable schema service | Retain or reference separately | Duplicating it adds no editing independence |
+| Live observer registration | Exclude and register explicitly later | It represents an external lifecycle |
+| Persistent document ID | Preserve for a snapshot; regenerate for a duplicate | The product operation decides identity |
+
+The graph code clones every `links` edge because that model assigns all links the same policy. A real model may have several edge kinds. Encode those distinctions explicitly; otherwise a general traversal can cross into account objects, services, or resources that were never meant to be duplicated.
+
+### Test cloning and duplication as separate commands
+
+A snapshot test should establish preserved logical IDs and independent intended mutations. A “duplicate as new” test should establish fresh IDs, remapped internal references, and the absence of registrations that belonged only to the original.
+
+Avoid deriving a fresh persistent identity from `ObjectIdentifier`. That identifier is useful for this temporary mapping, not for durable identity generation. The map exists only to connect original allocations to copied allocations during one operation.
+
+When a value snapshot can represent the feature's needs, it remains the simpler choice. Use graph cloning when preserving graph topology is actually part of the requirement, and test topology directly.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

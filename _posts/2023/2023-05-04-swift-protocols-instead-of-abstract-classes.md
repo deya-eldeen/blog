@@ -193,4 +193,113 @@ Take a base exporter that stores an audit, defines a crashing `render`, and prov
 
 The migration is successful when a missing renderer fails at compile time, the audit lifetime remains explicit, and consumers see only the operations they need. Counting the number of protocols created is not a useful success criterion.
 
+## Case study: replace an abstract import engine with a typed policy
+
+A legacy import base class often has a sequence like “parse, validate, save,” with a crashing `parse` method that every subclass is supposed to override. It may also store an imported-row count. The reusable part is the sequence and bookkeeping; the variable part is how input becomes domain values.
+
+Move parsing into a protocol and put the mutable progress in a concrete owner. An associated type preserves the relationship between a parser's result and the storage closure that accepts it:
+
+```swift
+protocol BatchParsing {
+    associatedtype Record
+    func parse(_ source: String) throws -> [Record]
+}
+
+enum QuantityImportFailure: Error, Equatable {
+    case invalidQuantity(String)
+    case storageUnavailable
+}
+
+struct QuantityParser: BatchParsing {
+    func parse(_ source: String) throws -> [Int] {
+        try source.split(separator: ",", omittingEmptySubsequences: false).map {
+            let field = String($0)
+            guard let quantity = Int(field), quantity >= 0 else {
+                throw QuantityImportFailure.invalidQuantity(field)
+            }
+            return quantity
+        }
+    }
+}
+
+final class BatchImportEngine<P: BatchParsing> {
+    private let parser: P
+    private let commit: ([P.Record]) throws -> Void
+    private(set) var successfulBatches = 0
+
+    init(parser: P, commit: @escaping ([P.Record]) throws -> Void) {
+        self.parser = parser
+        self.commit = commit
+    }
+
+    func run(_ source: String) throws -> Int {
+        let records = try parser.parse(source)
+        try commit(records)
+        successfulBatches += 1
+        return records.count
+    }
+}
+
+var storedQuantities: [[Int]] = []
+let quantityEngine = BatchImportEngine(parser: QuantityParser()) {
+    storedQuantities.append($0)
+}
+let importedQuantityCount = try quantityEngine.run("2,5,0")
+assert(importedQuantityCount == 3)
+assert(storedQuantities == [[2, 5, 0]])
+assert(quantityEngine.successfulBatches == 1)
+```
+
+There is no subclass obligation to call `super`, no abstract method to forget, and no public setter for the success count. The compiler checks that the commit closure accepts the parser's `Record` type. An unrelated parser can produce domain records rather than integers without changing the engine's sequence.
+
+The parser's grammar is intentionally strict: an empty field, whitespace not accepted by `Int`, a negative value, or a non-number is invalid. If the product later wants trimming or a forgiving blank-line policy, change that grammar explicitly and test it. “Reusable import” is not a reason to leave parsing semantics unspecified.
+
+### Define what success means at each boundary
+
+A failure on the second field must not commit the first field accidentally. Parsing builds a complete value array before the engine calls storage:
+
+```swift
+do {
+    _ = try quantityEngine.run("4,broken,8")
+    assertionFailure("Malformed input should fail")
+} catch {
+    assert(error as? QuantityImportFailure == .invalidQuantity("broken"))
+}
+assert(storedQuantities == [[2, 5, 0]])
+assert(quantityEngine.successfulBatches == 1)
+
+let unavailableEngine = BatchImportEngine(parser: QuantityParser()) { _ in
+    throw QuantityImportFailure.storageUnavailable
+}
+do {
+    _ = try unavailableEngine.run("7")
+    assertionFailure("Storage should fail")
+} catch {
+    assert(error as? QuantityImportFailure == .storageUnavailable)
+}
+assert(unavailableEngine.successfulBatches == 0)
+```
+
+The engine records success only after `commit` returns. That does not by itself guarantee that a failing storage implementation performed no partial writes. If atomic persistence is required, the commit contract must promise an all-or-nothing operation and the implementation must use a suitable transaction or replacement strategy.
+
+This is the same semantic issue a base class would have. Replacing inheritance with a protocol does not manufacture atomicity. It makes the relevant boundary easier to name and test.
+
+### Why the state does not belong in the protocol
+
+It might seem convenient to add `var successfulBatches: Int { get set }` to `BatchParsing` and implement the workflow in an extension. That would require every parser to own mutable bookkeeping, expose a writable counter, and participate in an import lifecycle even when used only to preview input.
+
+The parser instead describes one capability. The engine owns the lifecycle of repeated imports. A pure parser can be a small struct; the engine can be a reference when several consumers should observe one progress count. The state and behavior are colocated according to responsibility rather than inherited together because a template method needs access to both.
+
+### Where this design should stop
+
+Do not add associated types for every conceivable dependency preemptively. Here, `Record` prevents an actual mismatch between parsing and committing. The storage closure is sufficient because the engine invokes one operation. If storage later needs transactions, cancellation, or a receipt, introduce a named contract around those requirements then.
+
+For very large inputs, collecting every record before commit may consume too much memory. A streaming import needs a different success model: a transaction spanning chunks, an explicit partial-import receipt, or resumable checkpoints. Changing `parse` into a sequence without revisiting failure behavior would silently change the contract.
+
+### Migrate without confusing cleanup and behavior changes
+
+First run characterization tests against the existing importer: valid input, malformed input midway, storage failure, and repeated calls after failure. Preserve those intended outcomes while replacing the abstract hook. Then remove the old base-class state once no consumer relies on it.
+
+A missing parser implementation should now fail at compile time. A malformed document should still produce a domain error at runtime. Those are different failures, and a successful migration puts each one at the boundary where it can be handled meaningfully.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

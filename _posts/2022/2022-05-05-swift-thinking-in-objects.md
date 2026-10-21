@@ -207,4 +207,113 @@ First write the transition table. Then ask whether reservation data belongs in a
 
 Finally, check what changed in the caller. A good model lets the UI continue to express a borrowing request while the domain's rules become richer. If every screen must inspect new flags and reproduce the same decision tree, responsibility is leaking out of the model.
 
+## Case study: two screens borrow the same copy
+
+The single-object model protects one in-memory instance. Now imagine the catalog and checkout screens each load the same database record. Both see an available copy. Each constructs an independent object, and each object's `lend` method succeeds. The individual objects preserved their invariants while the application accepted two loans for one physical copy.
+
+This is a consistency problem at a boundary larger than one object. A useful solution is optimistic concurrency: each loaded snapshot carries a version, and a write succeeds only if that version is still current. The first writer advances the version; the second writer must reload and reconsider the operation.
+
+```swift
+struct StoredCopySnapshot {
+    let inventoryID: String
+    let version: Int
+    let state: CopyState
+}
+
+enum CopyWriteFailure: Error {
+    case wrongCopy
+    case staleVersion
+}
+
+final class VersionedCopyStore {
+    private var current: StoredCopySnapshot
+
+    init(inventoryID: String) {
+        current = StoredCopySnapshot(inventoryID: inventoryID, version: 0, state: .available)
+    }
+
+    func load() -> StoredCopySnapshot { current }
+
+    func save(state: CopyState, basedOn snapshot: StoredCopySnapshot) throws {
+        guard snapshot.inventoryID == current.inventoryID else {
+            throw CopyWriteFailure.wrongCopy
+        }
+        guard snapshot.version == current.version else {
+            throw CopyWriteFailure.staleVersion
+        }
+        current = StoredCopySnapshot(
+            inventoryID: current.inventoryID,
+            version: current.version + 1,
+            state: state
+        )
+    }
+}
+
+let versionedStore = VersionedCopyStore(inventoryID: "COPY-100")
+let catalogSnapshot = versionedStore.load()
+let checkoutSnapshot = versionedStore.load()
+let acceptedLoan = CopyState.onLoan(LoanRecord(reader: ReaderID(rawValue: "R-10"), dueDay: 30))
+try versionedStore.save(state: acceptedLoan, basedOn: catalogSnapshot)
+
+do {
+    let competingLoan = CopyState.onLoan(LoanRecord(reader: ReaderID(rawValue: "R-11"), dueDay: 30))
+    try versionedStore.save(state: competingLoan, basedOn: checkoutSnapshot)
+    assertionFailure("A stale snapshot must not overwrite an accepted loan")
+} catch CopyWriteFailure.staleVersion {
+    assert(versionedStore.load().state == acceptedLoan)
+    assert(versionedStore.load().version == 1)
+}
+```
+
+The store is a synchronous, serial teaching implementation. A real database must make the version comparison and update atomic, for example with a conditional update inside the database. Putting these checks into a Swift class without synchronization would not make simultaneous thread access safe.
+
+The repository also is not the place to decide whether a reader is eligible or a due date is valid. Those are domain decisions established before saving. Its job here is detecting that another accepted write made the proposed decision stale.
+
+```mermaid
+sequenceDiagram
+    accTitle: Rejecting a stale loan write
+    accDescr: Two screens load version zero. The catalog saves first. Checkout's later write using version zero is rejected.
+    participant Catalog
+    participant Store
+    participant Checkout
+    Catalog->>Store: Load copy
+    Store-->>Catalog: Available, version 0
+    Checkout->>Store: Load copy
+    Store-->>Checkout: Available, version 0
+    Catalog->>Store: Save loan if version is 0
+    Store-->>Catalog: Accepted, version 1
+    Checkout->>Store: Save another loan if version is 0
+    Store-->>Checkout: Reject stale version
+```
+
+### Assign responsibilities after the failure is visible
+
+An application service can now coordinate the borrowing use case: load the relevant state, ask the domain model to make a valid transition, attempt a conditional save, and translate a conflict into a useful result. A screen displays that result. An adapter handles database details.
+
+This division matters because each layer has different information. The screen knows the user's intent. The domain knows the lending rules. The repository knows whether the persisted version changed. Asking one of them to guess another layer's information usually creates either duplicated rules or hidden coupling.
+
+A conflict should not automatically trigger an endless retry. Reloaded state may show that the copy is now on loan. Re-running the domain operation should then produce an ordinary unavailable outcome rather than repeatedly trying to overwrite the accepted loan.
+
+### Distinguish commands, events, and queries
+
+A command requests a transition: borrow this copy for this reader. A query asks what is currently known: show its availability. An event records a fact that was accepted: this copy was lent at a particular time.
+
+Those concepts can use similar data without being interchangeable. A queued command can become invalid before execution. A historical event should not be reinterpreted as a fresh borrowing request. A query snapshot should not be assumed current forever.
+
+Use names that expose the distinction, especially when adding persistence or background work. `BorrowCopy`, `CopyLent`, and `CopyAvailability` communicate different responsibilities more clearly than a generic `CopyData` passed through every layer.
+
+### Keep a transaction boundary smaller than the application
+
+The rule “a reader may have five current loans” involves more than a copy version. A transaction may need the reader's lending account and the selected copy together. That does not mean every catalog record belongs in one enormous aggregate.
+
+Group data that must be consistent for a particular decision. Other information, such as display names or recommendation results, can often be read separately. A model that requires loading the whole library to borrow one book has probably chosen too large a boundary.
+
+### Test outcomes across competing histories
+
+Test two stale snapshots as above, then reverse which writer wins. Verify an unsuccessful write leaves both state and version unchanged. Also test that a retry after reloading encounters the accepted loan's state rather than losing it.
+
+For a service-level test, replace the store with a controlled implementation that reports a conflict once. Observe the result and number of attempts under the documented retry policy. This exercises a meaningful application contract without pretending that an in-memory test proves the database's transaction isolation.
+
+The deeper lesson is that object modeling is the allocation of decisions, identity, and consistency. A class can own a local invariant while a different boundary owns the right to commit it.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

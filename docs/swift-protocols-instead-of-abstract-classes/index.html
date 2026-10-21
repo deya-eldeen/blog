@@ -239,6 +239,113 @@
 
 <p>The migration is successful when a missing renderer fails at compile time, the audit lifetime remains explicit, and consumers see only the operations they need. Counting the number of protocols created is not a useful success criterion.</p>
 
+<h2 id="case-study-replace-an-abstract-import-engine-with-a-typed-policy">Case study: replace an abstract import engine with a typed policy</h2>
+
+<p>A legacy import base class often has a sequence like “parse, validate, save,” with a crashing <code class="language-plaintext highlighter-rouge">parse</code> method that every subclass is supposed to override. It may also store an imported-row count. The reusable part is the sequence and bookkeeping; the variable part is how input becomes domain values.</p>
+
+<p>Move parsing into a protocol and put the mutable progress in a concrete owner. An associated type preserves the relationship between a parser’s result and the storage closure that accepts it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">BatchParsing</span> <span class="p">{</span>
+    <span class="kd">associatedtype</span> <span class="kt">Record</span>
+    <span class="kd">func</span> <span class="nf">parse</span><span class="p">(</span><span class="n">_</span> <span class="nv">source</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Record</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">QuantityImportFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">invalidQuantity</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">storageUnavailable</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">QuantityParser</span><span class="p">:</span> <span class="kt">BatchParsing</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">parse</span><span class="p">(</span><span class="n">_</span> <span class="nv">source</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="n">source</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">","</span><span class="p">,</span> <span class="nv">omittingEmptySubsequences</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">field</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">quantity</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">field</span><span class="p">),</span> <span class="n">quantity</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">throw</span> <span class="kt">QuantityImportFailure</span><span class="o">.</span><span class="nf">invalidQuantity</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">quantity</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BatchImportEngine</span><span class="o">&lt;</span><span class="kt">P</span><span class="p">:</span> <span class="kt">BatchParsing</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">parser</span><span class="p">:</span> <span class="kt">P</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">commit</span><span class="p">:</span> <span class="p">([</span><span class="kt">P</span><span class="o">.</span><span class="kt">Record</span><span class="p">])</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">successfulBatches</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">parser</span><span class="p">:</span> <span class="kt">P</span><span class="p">,</span> <span class="nv">commit</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">([</span><span class="kt">P</span><span class="o">.</span><span class="kt">Record</span><span class="p">])</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">commit</span> <span class="o">=</span> <span class="n">commit</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">source</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">records</span> <span class="o">=</span> <span class="k">try</span> <span class="n">parser</span><span class="o">.</span><span class="nf">parse</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="k">try</span> <span class="nf">commit</span><span class="p">(</span><span class="n">records</span><span class="p">)</span>
+        <span class="n">successfulBatches</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">records</span><span class="o">.</span><span class="n">count</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">storedQuantities</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">quantityEngine</span> <span class="o">=</span> <span class="kt">BatchImportEngine</span><span class="p">(</span><span class="nv">parser</span><span class="p">:</span> <span class="kt">QuantityParser</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">storedQuantities</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">importedQuantityCount</span> <span class="o">=</span> <span class="k">try</span> <span class="n">quantityEngine</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"2,5,0"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">importedQuantityCount</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">storedQuantities</span> <span class="o">==</span> <span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">quantityEngine</span><span class="o">.</span><span class="n">successfulBatches</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>There is no subclass obligation to call <code class="language-plaintext highlighter-rouge">super</code>, no abstract method to forget, and no public setter for the success count. The compiler checks that the commit closure accepts the parser’s <code class="language-plaintext highlighter-rouge">Record</code> type. An unrelated parser can produce domain records rather than integers without changing the engine’s sequence.</p>
+
+<p>The parser’s grammar is intentionally strict: an empty field, whitespace not accepted by <code class="language-plaintext highlighter-rouge">Int</code>, a negative value, or a non-number is invalid. If the product later wants trimming or a forgiving blank-line policy, change that grammar explicitly and test it. “Reusable import” is not a reason to leave parsing semantics unspecified.</p>
+
+<h3 id="define-what-success-means-at-each-boundary">Define what success means at each boundary</h3>
+
+<p>A failure on the second field must not commit the first field accidentally. Parsing builds a complete value array before the engine calls storage:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">quantityEngine</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"4,broken,8"</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Malformed input should fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">QuantityImportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="nf">invalidQuantity</span><span class="p">(</span><span class="s">"broken"</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">storedQuantities</span> <span class="o">==</span> <span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">quantityEngine</span><span class="o">.</span><span class="n">successfulBatches</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">unavailableEngine</span> <span class="o">=</span> <span class="kt">BatchImportEngine</span><span class="p">(</span><span class="nv">parser</span><span class="p">:</span> <span class="kt">QuantityParser</span><span class="p">())</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+    <span class="k">throw</span> <span class="kt">QuantityImportFailure</span><span class="o">.</span><span class="n">storageUnavailable</span>
+<span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">unavailableEngine</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"7"</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Storage should fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">QuantityImportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">storageUnavailable</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unavailableEngine</span><span class="o">.</span><span class="n">successfulBatches</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The engine records success only after <code class="language-plaintext highlighter-rouge">commit</code> returns. That does not by itself guarantee that a failing storage implementation performed no partial writes. If atomic persistence is required, the commit contract must promise an all-or-nothing operation and the implementation must use a suitable transaction or replacement strategy.</p>
+
+<p>This is the same semantic issue a base class would have. Replacing inheritance with a protocol does not manufacture atomicity. It makes the relevant boundary easier to name and test.</p>
+
+<h3 id="why-the-state-does-not-belong-in-the-protocol">Why the state does not belong in the protocol</h3>
+
+<p>It might seem convenient to add <code class="language-plaintext highlighter-rouge">var successfulBatches: Int { get set }</code> to <code class="language-plaintext highlighter-rouge">BatchParsing</code> and implement the workflow in an extension. That would require every parser to own mutable bookkeeping, expose a writable counter, and participate in an import lifecycle even when used only to preview input.</p>
+
+<p>The parser instead describes one capability. The engine owns the lifecycle of repeated imports. A pure parser can be a small struct; the engine can be a reference when several consumers should observe one progress count. The state and behavior are colocated according to responsibility rather than inherited together because a template method needs access to both.</p>
+
+<h3 id="where-this-design-should-stop">Where this design should stop</h3>
+
+<p>Do not add associated types for every conceivable dependency preemptively. Here, <code class="language-plaintext highlighter-rouge">Record</code> prevents an actual mismatch between parsing and committing. The storage closure is sufficient because the engine invokes one operation. If storage later needs transactions, cancellation, or a receipt, introduce a named contract around those requirements then.</p>
+
+<p>For very large inputs, collecting every record before commit may consume too much memory. A streaming import needs a different success model: a transaction spanning chunks, an explicit partial-import receipt, or resumable checkpoints. Changing <code class="language-plaintext highlighter-rouge">parse</code> into a sequence without revisiting failure behavior would silently change the contract.</p>
+
+<h3 id="migrate-without-confusing-cleanup-and-behavior-changes">Migrate without confusing cleanup and behavior changes</h3>
+
+<p>First run characterization tests against the existing importer: valid input, malformed input midway, storage failure, and repeated calls after failure. Preserve those intended outcomes while replacing the abstract hook. Then remove the old base-class state once no consumer relies on it.</p>
+
+<p>A missing parser implementation should now fail at compile time. A malformed document should still produce a domain error at runtime. Those are different failures, and a successful migration puts each one at the boundary where it can be handled meaningfully.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

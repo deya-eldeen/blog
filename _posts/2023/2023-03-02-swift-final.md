@@ -165,4 +165,117 @@ Suppose a test asks to override a private networking detail. Before removing `fi
 
 If external inheritance really is required, write down which members are hooks, their ordering rules, and which invariants subclasses must preserve. Then test one representative subclass through the base interface. Removing one keyword is a small textual edit that can create a substantial new maintenance obligation.
 
+## Case study: protect a workflow while allowing one calculation to vary
+
+An export operation must validate its input, calculate the output, and record a successful completion. Product teams want different transformations, but they do not need permission to skip validation or report success before the transformation completes. A final coordinator with an injected calculation makes that boundary explicit.
+
+The example also guards against a subtle problem: the injected closure can capture the coordinator and call it again while an export is already running. Closing inheritance does not prevent callbacks from reentering an object.
+
+```swift
+enum GuardedExportFailure: Error, Equatable {
+    case emptyInput
+    case alreadyRunning
+}
+
+final class GuardedExport {
+    private let transform: (String) throws -> String
+    private var running = false
+    private(set) var completedOutputs: [String] = []
+
+    init(transform: @escaping (String) throws -> String) {
+        self.transform = transform
+    }
+
+    func run(_ input: String) throws -> String {
+        guard !running else { throw GuardedExportFailure.alreadyRunning }
+        guard !input.isEmpty else { throw GuardedExportFailure.emptyInput }
+
+        running = true
+        defer { running = false }
+        let output = try transform(input)
+        completedOutputs.append(output)
+        return output
+    }
+}
+
+let uppercaseExport = GuardedExport { $0.uppercased() }
+let exportedHeading = try uppercaseExport.run("Release notes")
+assert(exportedHeading == "RELEASE NOTES")
+assert(uppercaseExport.completedOutputs == ["RELEASE NOTES"])
+
+do {
+    _ = try uppercaseExport.run("")
+    assertionFailure("Empty input must be rejected")
+} catch {
+    assert(error as? GuardedExportFailure == .emptyInput)
+}
+assert(uppercaseExport.completedOutputs.count == 1)
+```
+
+The invariant lives in `run`: only a completed transformation is appended. The closure may throw, but it cannot access the private completion array. There is no subclass hook that can replace the workflow, and no setter that permits an outside caller to manufacture a successful completion.
+
+This is still an intentionally synchronous object. The `running` flag handles nested calls on the same serialized execution path. It is not a lock and does not make simultaneous calls from different threads safe. An asynchronous version would need a deliberately isolated owner and explicit decisions about suspension and cancellation.
+
+### Test hostile callbacks, not only friendly substitutions
+
+A collaborator does not have to be malicious to reenter. A transformation can emit an event that triggers an observer, which starts another export. Exercise that path directly:
+
+```swift
+var reentrantExport: GuardedExport!
+var rejectedNestedCall = false
+reentrantExport = GuardedExport { input in
+    do {
+        _ = try reentrantExport.run("Nested")
+    } catch GuardedExportFailure.alreadyRunning {
+        rejectedNestedCall = true
+    }
+    return input + "!"
+}
+let outerOutput = try reentrantExport.run("Outer")
+assert(outerOutput == "Outer!")
+assert(rejectedNestedCall)
+assert(reentrantExport.completedOutputs == ["Outer!"])
+reentrantExport = nil
+```
+
+The outer operation succeeds because the transformation handles the rejected nested call. The stored closure refers to a variable that is cleared after the test, releasing the object. A production callback should have an equally deliberate ownership policy rather than creating an owner–closure retention cycle accidentally.
+
+Next verify that failure releases the in-progress state. Otherwise, one error would leave the object permanently unusable.
+
+```swift
+enum TransformAttemptFailure: Error { case unavailable }
+var transformAttempts = 0
+let recoveringExport = GuardedExport { input in
+    transformAttempts += 1
+    if transformAttempts == 1 { throw TransformAttemptFailure.unavailable }
+    return input
+}
+do {
+    _ = try recoveringExport.run("First")
+    assertionFailure("The first transformation should fail")
+} catch TransformAttemptFailure.unavailable {}
+assert(recoveringExport.completedOutputs.isEmpty)
+let recoveredOutput = try recoveringExport.run("Second")
+assert(recoveredOutput == "Second")
+assert(recoveringExport.completedOutputs == ["Second"])
+```
+
+`defer` restores the flag on both success and error. It does not undo external effects performed by the transformation. If a closure writes a file and then throws, the coordinator cannot infer how to roll that write back. For this contract, prefer a calculation that returns data, with persistence owned by a separately defined stage.
+
+### Compare the actual extension contracts
+
+| Design | Supported variation | Author's continuing obligation |
+|---|---|---|
+| Open workflow method | Entire sequence | Document and tolerate replacement behavior |
+| Final workflow with overridable hook | Hook behavior plus its interaction with the base | Preserve hook ordering and inherited state assumptions |
+| Final object with a closure | One declared calculation | Define inputs, errors, ownership, and reentrancy |
+
+The third option does not remove every obligation. It concentrates them in a smaller interface. A closure can be entirely sufficient for a single transformation; a protocol becomes useful when the collaborator needs several related operations, named semantic requirements, or its own lifecycle.
+
+### Removing final is an API change
+
+If a later requirement genuinely needs inheritance, describe the supported subclass first. Which behavior must vary? Which methods must it call through `super`? Can overrides fail, call back, or retain arguments? A runnable example subclass should demonstrate the intended contract.
+
+That exercise often reveals that the requirement is dependency substitution or configuration instead. When inheritance is appropriate, opening it deliberately is defensible. The mistake is allowing arbitrary overrides to become an accidental extension mechanism for a workflow whose correctness depends on controlling its sequence.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

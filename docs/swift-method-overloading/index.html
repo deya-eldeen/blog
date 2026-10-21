@@ -202,6 +202,115 @@
 
 <p>If you cannot explain a result without experimenting, either document the constraint or simplify the API. The goal is not to memorize every compiler ranking rule. It is to build an interface whose ordinary use is understandable without that memorization.</p>
 
+<h2 id="case-study-a-lookup-api-that-grows-a-second-meaning">Case study: a lookup API that grows a second meaning</h2>
+
+<p>A document application starts with one lookup operation: find a document by its server identifier. Later it adds a local file lookup. Both identifiers happen to be strings, but they have different validation, authorization, and failure behavior. Treating them as interchangeable because their storage types match would make the API easy to misuse.</p>
+
+<p>Give each identifier its own representation before deciding whether to overload the lookup method:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ServerDocumentID</span><span class="p">:</span> <span class="kt">Hashable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">rawValue</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">LocalDocumentPath</span><span class="p">:</span> <span class="kt">Hashable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">rawValue</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">DocumentLookup</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">locate</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ServerDocumentID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="s">"server/"</span> <span class="o">+</span> <span class="n">id</span><span class="o">.</span><span class="n">rawValue</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locate</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">LocalDocumentPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="s">"local/"</span> <span class="o">+</span> <span class="n">path</span><span class="o">.</span><span class="n">rawValue</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">documentLookup</span> <span class="o">=</span> <span class="kt">DocumentLookup</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">documentLookup</span><span class="o">.</span><span class="nf">locate</span><span class="p">(</span><span class="kt">ServerDocumentID</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"notes"</span><span class="p">))</span> <span class="o">==</span> <span class="s">"server/notes"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">documentLookup</span><span class="o">.</span><span class="nf">locate</span><span class="p">(</span><span class="kt">LocalDocumentPath</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"notes"</span><span class="p">))</span> <span class="o">==</span> <span class="s">"local/notes"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The wrappers make the distinction survive storage, function parameters, and refactoring. An argument label helps at a particular call; a distinct type protects every function that accepts that concept. These initializers deliberately accept any string to keep the overload example small. A real identifier type can validate its own format without changing the lookup’s overload structure.</p>
+
+<p>This API is reasonable only if both overloads promise a coherent operation. If server lookup is asynchronous while local lookup is a cheap dictionary read, the shared name must not conceal that difference. The signature and documentation should expose effect and failure expectations. Distinct types eliminate one ambiguity; they do not automatically make two behaviors conceptually equivalent.</p>
+
+<h3 id="build-an-executable-matrix-for-contextual-types">Build an executable matrix for contextual types</h3>
+
+<p>Now consider a smaller overload family where optional values are meaningful. The purpose here is to make the compiler’s context visible, rather than to recommend optional overloads as the default design.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">missingLabel</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="n">value</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"Number: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"No number"</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">missingLabel</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="n">value</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"Text: "</span> <span class="o">+</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"No text"</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">absentNumber</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="k">let</span> <span class="nv">absentText</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="k">let</span> <span class="nv">formatOptionalNumber</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">missingLabel</span>
+<span class="k">let</span> <span class="nv">formatOptionalText</span><span class="p">:</span> <span class="p">(</span><span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">missingLabel</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="nf">missingLabel</span><span class="p">(</span><span class="n">absentNumber</span><span class="p">)</span> <span class="o">==</span> <span class="s">"No number"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">missingLabel</span><span class="p">(</span><span class="n">absentText</span><span class="p">)</span> <span class="o">==</span> <span class="s">"No text"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">missingLabel</span><span class="p">(</span><span class="kc">nil</span> <span class="k">as</span> <span class="kt">Int</span><span class="p">?)</span> <span class="o">==</span> <span class="s">"No number"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">formatOptionalNumber</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Number: 8"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">formatOptionalText</span><span class="p">(</span><span class="s">"Ready"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Text: Ready"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A bare <code class="language-plaintext highlighter-rouge">missingLabel(nil)</code> supplies insufficient information to distinguish these two optional parameter types. That intentionally ambiguous call is omitted from the runnable example. Both overloads accept the literal; neither a runtime check nor an <code class="language-plaintext highlighter-rouge">if</code> statement decides which meaning the author intended.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Call context</th>
+      <th>Information available to the compiler</th>
+      <th>Design implication</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Typed optional variable</td>
+      <td>The optional’s wrapped type</td>
+      <td>Predictable selection</td>
+    </tr>
+    <tr>
+      <td>Explicit cast on <code class="language-plaintext highlighter-rouge">nil</code></td>
+      <td>The author’s chosen optional type</td>
+      <td>Useful for a focused test</td>
+    </tr>
+    <tr>
+      <td>Function value annotation</td>
+      <td>Complete input and output types</td>
+      <td>Stable selection for later calls</td>
+    </tr>
+    <tr>
+      <td>Bare <code class="language-plaintext highlighter-rouge">nil</code></td>
+      <td>No wrapped type distinguishing these candidates</td>
+      <td>Simplify the API or supply context</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The stored function values also show when selection happens. Once <code class="language-plaintext highlighter-rouge">formatOptionalNumber</code> is formed, calling it does not reconsider the string overload. Its type is already <code class="language-plaintext highlighter-rouge">(Int?) -&gt; String</code>.</p>
+
+<h3 id="separate-source-compatibility-from-binary-behavior">Separate source compatibility from binary behavior</h3>
+
+<p>Suppose version one of a library accepts a broad input type, and version two introduces a specialized overload. Recompiling client source can cause a previously valid expression to select the new overload. Existing compiled clients do not generally revisit source overload resolution at runtime just because another declaration now exists. Binary compatibility has additional library and toolchain rules; it is a separate question from which overload a fresh compilation selects.</p>
+
+<p>For a library change, keep a tiny client fixture containing representative calls. Compile that fixture against both API versions and compare observable behavior. A test placed only inside the new overload cannot detect a client silently switching from the old declaration to the new one.</p>
+
+<p>Pay particular attention to closures passed to higher-order functions. Parameter annotations, collection element types, and generic constraints can all provide context. If the new overload changes a side effect, a call that still compiles successfully can nevertheless become a behavioral regression.</p>
+
+<h3 id="decide-when-explicit-naming-is-the-better-migration">Decide when explicit naming is the better migration</h3>
+
+<p>If an overload family starts requiring repeated casts and explanatory comments, introduce clearer names or labels. A gradual migration can retain the old entry point as a forwarding compatibility method while moving callers toward <code class="language-plaintext highlighter-rouge">locate(serverID:)</code> and <code class="language-plaintext highlighter-rouge">locate(localPath:)</code>.</p>
+
+<p>Keep the forwarding implementation semantically identical to its old behavior. Do not use a naming cleanup as an opportunity to change cache policy or error handling silently. A deprecation message can identify the replacement; characterization tests should establish that the replacement preserves the intended result.</p>
+
+<p>The useful design skill is recognizing when the compiler has enough information but the reader does not. Successful type checking is a necessary condition for an overload family, not a complete review of its usability.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

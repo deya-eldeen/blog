@@ -178,4 +178,126 @@ Extract only the data and calculation required for that behavior. Keep the manag
 
 That evidence is stronger than a claim that the code now contains more design patterns. The goal is a system whose rules, effects, and ownership can be understood with less guesswork.
 
+## Case study: split a welcome manager without changing its output
+
+A welcome manager reads a profile, decides which name to display, formats a greeting, and records that greeting. A request to change capitalization should not require a database in the test. Start by identifying the current behavior, including its failure behavior, before extracting anything.
+
+For this example, the agreed rules are: a nonempty preferred name wins; otherwise use the legal name; an empty chosen name is an error; record only a successfully built greeting. An empty string is distinct from whitespace under this deliberately simple policy.
+
+```swift
+struct WelcomeProfile {
+    let legalName: String
+    let preferredName: String?
+}
+
+enum WelcomeBuildFailure: Error, Equatable { case missingName }
+
+func characterizedWelcome(_ profile: WelcomeProfile, prefix: String) throws -> String {
+    let name: String
+    if let preferred = profile.preferredName, !preferred.isEmpty {
+        name = preferred
+    } else {
+        name = profile.legalName
+    }
+    guard !name.isEmpty else { throw WelcomeBuildFailure.missingName }
+    return prefix + ", " + name
+}
+
+let welcomeCases: [(WelcomeProfile, String)] = [
+    (WelcomeProfile(legalName: "Maya Ali", preferredName: "Maya"), "Hello, Maya"),
+    (WelcomeProfile(legalName: "Maya Ali", preferredName: nil), "Hello, Maya Ali"),
+    (WelcomeProfile(legalName: "Maya Ali", preferredName: ""), "Hello, Maya Ali")
+]
+for (profile, expected) in welcomeCases {
+    let actual = try characterizedWelcome(profile, prefix: "Hello")
+    assert(actual == expected)
+}
+```
+
+In a real refactor, these characterization cases should run through the existing public entry point first. The standalone function represents its agreed formatting behavior here without introducing global database setup. Do not declare a behavior correct merely because the old code has it; if the product wants a change, separate that decision from a behavior-preserving extraction.
+
+### Extract the calculation and make the effects visible
+
+```swift
+struct WelcomeTextPolicy {
+    let prefix: String
+
+    func text(for profile: WelcomeProfile) throws -> String {
+        let preferred = profile.preferredName.flatMap { $0.isEmpty ? nil : $0 }
+        let chosenName = preferred ?? profile.legalName
+        guard !chosenName.isEmpty else { throw WelcomeBuildFailure.missingName }
+        return prefix + ", " + chosenName
+    }
+}
+
+struct WelcomeWorkflow {
+    let readProfile: () throws -> WelcomeProfile
+    let policy: WelcomeTextPolicy
+    let record: (String) throws -> Void
+
+    func run() throws -> String {
+        let profile = try readProfile()
+        let text = try policy.text(for: profile)
+        try record(text)
+        return text
+    }
+}
+
+let welcomeTextPolicy = WelcomeTextPolicy(prefix: "Hello")
+for (profile, expected) in welcomeCases {
+    let actual = try welcomeTextPolicy.text(for: profile)
+    assert(actual == expected)
+}
+
+var recordedWelcomes: [String] = []
+let welcomeWorkflow = WelcomeWorkflow(
+    readProfile: { WelcomeProfile(legalName: "Maya", preferredName: nil) },
+    policy: welcomeTextPolicy,
+    record: { recordedWelcomes.append($0) }
+)
+let completedWelcome = try welcomeWorkflow.run()
+assert(completedWelcome == "Hello, Maya")
+assert(recordedWelcomes == ["Hello, Maya"])
+```
+
+The policy can be tested directly. The workflow still expresses the use case in four readable steps. There is no reason to create a class and protocol around every line or to hide the three dependencies inside a generic container.
+
+The closures are named capabilities. If profile reading later needs several related operations or asynchronous cancellation, a protocol can express that larger contract. The small shape here matches the current behavior.
+
+### Verify a failure prevents the downstream effect
+
+```swift
+var invalidWelcomeRecords = 0
+let invalidWelcomeWorkflow = WelcomeWorkflow(
+    readProfile: { WelcomeProfile(legalName: "", preferredName: nil) },
+    policy: welcomeTextPolicy,
+    record: { _ in invalidWelcomeRecords += 1 }
+)
+do {
+    _ = try invalidWelcomeWorkflow.run()
+    assertionFailure("A missing name must fail")
+} catch {
+    assert(error as? WelcomeBuildFailure == .missingName)
+}
+assert(invalidWelcomeRecords == 0)
+```
+
+The interaction count matters here because the requirement explicitly forbids recording an invalid greeting. By contrast, asserting that the workflow called a private name-selection helper would freeze an implementation detail without protecting behavior.
+
+Also test reading failure and recording failure when adapting a real effect. If recording partially succeeds before throwing, the caller needs a defined retry policy. The extraction preserves sequencing; it does not make arbitrary external effects atomic.
+
+### Distinguish a bug fix from a cleanup
+
+Trimming whitespace may sound like an obvious improvement, but it changes the behavior of `"   "`. Choosing a localized prefix changes output too. Add separate cases and make those changes deliberately after the extraction is verified.
+
+This discipline makes review easier. A reviewer can assess whether the new boundary preserves known behavior, then assess whether the new product rule is correct. Combining both into a large manager rewrite makes failures harder to attribute.
+
+### Measure the refactor by the next change
+
+After extraction, changing the preferred-name rule should affect the policy and its focused tests. Replacing profile storage should affect assembly and the reader adapter. Changing when greetings are recorded should affect the workflow.
+
+If every change still touches every new type, the extraction may have redistributed lines without separating responsibilities. If a simple greeting now travels through five forwarding objects with no additional policy, remove the redundant layers.
+
+An anti-pattern is useful as a diagnosis only when the resulting change reduces a concrete difficulty. Here the outcome is observable: formatting needs no global state, failures are easy to reproduce, and required effects remain ordered in one small workflow.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

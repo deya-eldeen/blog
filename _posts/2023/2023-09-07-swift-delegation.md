@@ -186,4 +186,129 @@ For a one-shot completion, test exactly-once delivery and failure as well as suc
 
 As an exercise, add an approval callback to `SelectionSession`. Specify which state the approval callback sees, which state the notification sees, and whether the approval callback may reenter selection. Writing those three answers before implementation prevents a surprising amount of callback code from becoming an accidental state machine.
 
+## Case study: deliver a one-shot result while ignoring late callbacks
+
+A request owner starts work, can cancel it, and reports one successful result to a delegate. The underlying transport might still call back after cancellation. It might even invoke a completion twice because of an adapter bug. Weak ownership does not solve either problem.
+
+Represent each attempt with a token and clear the active attempt before notifying the delegate:
+
+```swift
+struct AttemptToken: Equatable {
+    let number: Int
+}
+
+protocol AttemptOwnerDelegate: AnyObject {
+    func attemptOwner(_ owner: AttemptOwner, didFinish value: String)
+}
+
+final class AttemptOwner {
+    weak var delegate: (any AttemptOwnerDelegate)?
+    private var nextNumber = 0
+    private(set) var active: AttemptToken?
+    private(set) var lastValue: String?
+
+    func start() -> AttemptToken {
+        nextNumber += 1
+        let token = AttemptToken(number: nextNumber)
+        active = token
+        return token
+    }
+
+    func cancel(_ token: AttemptToken) {
+        guard active == token else { return }
+        active = nil
+    }
+
+    func receive(_ value: String, for token: AttemptToken) {
+        guard active == token else { return }
+        active = nil
+        lastValue = value
+        delegate?.attemptOwner(self, didFinish: value)
+    }
+}
+
+final class AttemptRecorder: AttemptOwnerDelegate {
+    private(set) var values: [String] = []
+    private(set) var observedSettledState = true
+    var onFinish: ((AttemptOwner) -> Void)?
+
+    func attemptOwner(_ owner: AttemptOwner, didFinish value: String) {
+        values.append(value)
+        observedSettledState = observedSettledState && owner.active == nil
+        onFinish?(owner)
+    }
+}
+
+let attemptOwner = AttemptOwner()
+let attemptRecorder = AttemptRecorder()
+attemptOwner.delegate = attemptRecorder
+let abandonedAttempt = attemptOwner.start()
+attemptOwner.cancel(abandonedAttempt)
+attemptOwner.receive("Too late", for: abandonedAttempt)
+assert(attemptRecorder.values.isEmpty)
+
+let currentAttempt = attemptOwner.start()
+attemptOwner.receive("Accepted", for: currentAttempt)
+attemptOwner.receive("Duplicate", for: currentAttempt)
+assert(attemptRecorder.values == ["Accepted"])
+assert(attemptRecorder.observedSettledState)
+assert(attemptOwner.lastValue == "Accepted")
+```
+
+Starting again supersedes any active attempt. Cancellation retains the last successful value and reports no success. These are explicit policies. A different product may need cancellation events or may reject starting while busy; adjust the state machine and delegate contract together.
+
+The transport is omitted so the callback contract can be tested synchronously and deterministically. A real adapter associates the token with its request and forwards callbacks to the owner's isolated execution context.
+
+### Reentrancy must preserve the new request
+
+A delegate can start another attempt while handling a successful result. Because the old attempt is cleared before notification, the new attempt is preserved:
+
+```swift
+var restartedAttempt: AttemptToken?
+attemptRecorder.onFinish = { owner in
+    restartedAttempt = owner.start()
+}
+let finishingAttempt = attemptOwner.start()
+attemptOwner.receive("First stage", for: finishingAttempt)
+assert(restartedAttempt != nil)
+assert(attemptOwner.active == restartedAttempt)
+attemptOwner.receive("Old repeat", for: finishingAttempt)
+assert(attemptOwner.active == restartedAttempt)
+attemptRecorder.onFinish = nil
+```
+
+If `receive` cleared `active` after calling the delegate, it would erase the newly started request. This is a sequencing bug that a basic “delegate was called” assertion would miss.
+
+The recorder's callback receives the owner as an argument and does not retain it. If a stored callback instead captures a coordinator that owns the recorder, inspect that extra ownership edge as carefully as the delegate property.
+
+```mermaid
+sequenceDiagram
+    accTitle: Settle a request before notifying its delegate
+    accDescr: The owner clears the completed attempt, notifies the delegate, and preserves a new attempt started during that notification.
+    participant Transport
+    participant Owner
+    participant Delegate
+    Transport->>Owner: result for attempt 1
+    Owner->>Owner: clear active attempt 1
+    Owner->>Delegate: didFinish
+    Delegate->>Owner: start attempt 2
+    Owner-->>Delegate: token 2
+    Transport->>Owner: duplicate result for attempt 1
+    Owner->>Owner: ignore mismatched token
+```
+
+### At-most-once notification is a local guarantee
+
+The owner accepts at most one result for its current token under serialized access. It cannot guarantee a callback will arrive, keep a weak delegate alive, or ensure that an external server performs an operation only once.
+
+If a request creates a payment, a local attempt token is not a substitute for a server-side idempotency key. If the delegate must eventually observe a durable result after an app restart, an in-memory weak callback is not a delivery system. Store the result and expose an appropriate query or durable event mechanism.
+
+### Cancellation has two responsibilities
+
+Invalidating the active token protects the owner's state against a late callback. Cancelling the transport prevents unnecessary work when possible. Perform both when the application needs both. A transport's `cancel` can be best-effort, so retain the token check even if cancellation usually stops callbacks.
+
+Similarly, a weak delegate becoming `nil` does not stop an active request. Decide whether the request belongs to a screen, a feature coordinator, or an application service. Its lifetime should follow that owner explicitly.
+
+For a UI version, put the owner and delegate interaction under main-actor isolation. For a worker, choose an actor or another serialization mechanism. The token comparison and update must occur within the same protected operation; the synchronous example's plain properties do not supply thread safety.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

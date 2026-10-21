@@ -209,4 +209,122 @@ Imagine a report type conforming to one protocol with `name`, `shareLink`, `save
 
 Then construct a preview implementation with no database and no network client. If doing so still requires dummy `delete` and `upload` methods, the boundary remains broader than that consumer's needs. The benefit of protocol composition is being able to require exactly the capabilities needed at a particular use site.
 
+## Case study: one store, two capabilities, two security boundaries
+
+A settings screen needs to read preferences. An account-management screen needs to change them. Both work with the same store, but requiring every consumer to accept a broad read/write interface makes mutation available where it serves no purpose.
+
+Define the capabilities independently, then let a concrete class supply both:
+
+```swift
+protocol PreferenceReading {
+    func value(for key: String) -> String?
+}
+
+protocol PreferenceWriting {
+    func setValue(_ value: String, for key: String)
+}
+
+final class PreferenceStore: PreferenceReading, PreferenceWriting {
+    private var values: [String: String] = [:]
+
+    func value(for key: String) -> String? { values[key] }
+
+    func setValue(_ value: String, for key: String) {
+        values[key] = value
+    }
+}
+
+struct PreferenceHeading {
+    let preferences: any PreferenceReading
+
+    func text() -> String {
+        preferences.value(for: "displayName") ?? "Guest"
+    }
+}
+
+func changeDisplayName<S: PreferenceReading & PreferenceWriting>(
+    to name: String,
+    in store: S
+) -> String? {
+    let previous = store.value(for: "displayName")
+    store.setValue(name, for: "displayName")
+    return previous
+}
+
+let preferenceStore = PreferenceStore()
+let preferenceHeading = PreferenceHeading(preferences: preferenceStore)
+assert(preferenceHeading.text() == "Guest")
+let previousDisplayName = changeDisplayName(to: "Mina", in: preferenceStore)
+assert(previousDisplayName == nil)
+assert(preferenceHeading.text() == "Mina")
+```
+
+There is one dictionary, not one dictionary inherited from a reading parent and another inherited from a writing parent. Multiple conformance supplies several views of one object. The heading observes subsequent updates because it holds a reference to that same store through the reading contract.
+
+This narrower type limits ordinary operations available to the consumer; it is not a security sandbox. Code that knows the concrete store could attempt a cast. Authorization for protected changes must be enforced by the relevant domain or service boundary regardless of the static interface offered to a screen.
+
+### Use an adapter when identical signatures have different meanings
+
+Now imagine an external API that exposes `value(for:)` too, but it should read a frozen set of defaults rather than the live account preferences. Making one class satisfy two same-shaped reading contracts cannot give a single method two different meanings just because callers view it through different names.
+
+Represent each view as a distinct adapter instead:
+
+```swift
+struct DefaultPreferenceView: PreferenceReading {
+    let defaults: [String: String]
+
+    func value(for key: String) -> String? { defaults[key] }
+}
+
+struct EffectivePreferenceView: PreferenceReading {
+    let account: any PreferenceReading
+    let defaults: any PreferenceReading
+
+    func value(for key: String) -> String? {
+        account.value(for: key) ?? defaults.value(for: key)
+    }
+}
+
+let defaultPreferences = DefaultPreferenceView(defaults: [
+    "displayName": "Visitor",
+    "language": "en"
+])
+let effectivePreferences = EffectivePreferenceView(
+    account: preferenceStore,
+    defaults: defaultPreferences
+)
+assert(effectivePreferences.value(for: "displayName") == "Mina")
+assert(effectivePreferences.value(for: "language") == "en")
+assert(defaultPreferences.value(for: "displayName") == "Visitor")
+```
+
+The adapters make source selection explicit. An effective view has a documented precedence rule: the account value wins when present. An empty string is still present and therefore wins; `nil` means absent. If the domain wants an empty string to mean “use the default,” encode that as a deliberate policy rather than relying on a truthiness rule Swift does not have.
+
+### Shared state and snapshot state are different capabilities
+
+The effective view holds a live account reader and a value containing defaults. Updates to the account are visible on the next call. The defaults struct contains a copied dictionary value; constructing another defaults value does not edit this one.
+
+A preview or audit record may need a frozen result instead. Build a snapshot with the exact keys required and document when it is captured. Do not call a wrapper a snapshot if it simply forwards each read to a mutable store. Protocol composition decides which operations are available, not whether their results remain stable over time.
+
+This matters for caching as well. A cache around `EffectivePreferenceView` needs an invalidation rule when account preferences change. Conformance to `PreferenceReading` alone makes no promise that reads are pure, immutable, or free from external effects.
+
+### Keep combined requirements local until they have a domain meaning
+
+`changeDisplayName` needs both reading and writing because it returns the previous value. A generic composition documents that actual requirement. The heading needs only reading. Neither requires a new umbrella protocol containing every preference-related operation.
+
+A named refining protocol becomes useful if “editable preferences” is a stable abstraction shared by several consumers. Even then, avoid including unrelated synchronization or account deletion methods simply because the concrete store happens to have them.
+
+| Consumer | Capability needed | State observed |
+|---|---|---|
+| Heading | Reading | Live account value |
+| Rename action returning the old name | Reading and writing | One shared store |
+| Defaults inspector | Reading | Fixed defaults value |
+| Effective settings view | Reading | Account value with explicit fallback |
+
+### Test the views and their relationships
+
+Test account precedence, fallback on absence, empty values, and updates visible through a previously constructed live view. Also construct two independent stores and verify their mutations remain independent. These tests establish the ownership and semantic rules that multiple protocol declarations alone cannot express.
+
+If these reads and writes can race, the read-then-write rename helper is not atomic. Introduce an isolated transactional operation when returning the previous value must correspond to the exact change. Combining two protocols is a type-level statement; it is not a concurrency transaction.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

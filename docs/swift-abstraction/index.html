@@ -229,6 +229,151 @@
 
 <p>The screen may legitimately gain a freshness indicator. It should not need to parse the vendor’s JSON or know which database table holds the cache. That distinction is how you evaluate an abstraction in practice: it permits meaningful product changes while containing irrelevant mechanical changes.</p>
 
+<h2 id="case-study-adapting-a-carrier-without-leaking-its-vocabulary">Case study: adapting a carrier without leaking its vocabulary</h2>
+
+<p>A carrier SDK may use transport-specific outcomes that do not belong in a tracking screen: numeric response codes, rate-limit fields, and vendor labels. An adapter should preserve the distinctions the application needs while translating away those mechanics.</p>
+
+<p>Start with the consumer’s recovery choices. It can show a known status, explain that no parcel matches the identifier, or ask the user to retry later. A misconfigured integration requires a different operational response from an unknown parcel.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">CarrierReply</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">inTransit</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">observedMinute</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">delivered</span><span class="p">(</span><span class="nv">observedMinute</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">noMatch</span>
+    <span class="k">case</span> <span class="nf">rateLimited</span><span class="p">(</span><span class="nv">retryAfterMinutes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">credentialsRejected</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">CarrierResponding</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">reply</span><span class="p">(</span><span class="k">for</span> <span class="nv">identifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CarrierReply</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">ParcelObservation</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">known</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="kt">ParcelStatus</span><span class="p">,</span> <span class="nv">observedMinute</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">unknown</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">ParcelLookupFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">temporarilyUnavailable</span><span class="p">(</span><span class="nv">retryAfterMinutes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">integrationMisconfigured</span>
+    <span class="k">case</span> <span class="n">invalidResponse</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">CarrierTrackingAdapter</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">carrier</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">CarrierResponding</span>
+
+    <span class="kd">func</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">_</span> <span class="nv">identifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">ParcelObservation</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="k">try</span> <span class="n">carrier</span><span class="o">.</span><span class="nf">reply</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">identifier</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">inTransit</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">minute</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">.</span><span class="nf">known</span><span class="p">(</span>
+                <span class="nv">status</span><span class="p">:</span> <span class="kt">ParcelStatus</span><span class="p">(</span><span class="nv">description</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span> <span class="nv">isDelivered</span><span class="p">:</span> <span class="kc">false</span><span class="p">),</span>
+                <span class="nv">observedMinute</span><span class="p">:</span> <span class="n">minute</span>
+            <span class="p">)</span>
+        <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">delivered</span><span class="p">(</span><span class="n">minute</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">.</span><span class="nf">known</span><span class="p">(</span>
+                <span class="nv">status</span><span class="p">:</span> <span class="kt">ParcelStatus</span><span class="p">(</span><span class="nv">description</span><span class="p">:</span> <span class="s">"Delivered"</span><span class="p">,</span> <span class="nv">isDelivered</span><span class="p">:</span> <span class="kc">true</span><span class="p">),</span>
+                <span class="nv">observedMinute</span><span class="p">:</span> <span class="n">minute</span>
+            <span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">noMatch</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">.</span><span class="n">unknown</span>
+        <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">rateLimited</span><span class="p">(</span><span class="n">delay</span><span class="p">):</span>
+            <span class="k">guard</span> <span class="n">delay</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">ParcelLookupFailure</span><span class="o">.</span><span class="n">invalidResponse</span> <span class="p">}</span>
+            <span class="k">throw</span> <span class="kt">ParcelLookupFailure</span><span class="o">.</span><span class="nf">temporarilyUnavailable</span><span class="p">(</span><span class="nv">retryAfterMinutes</span><span class="p">:</span> <span class="n">delay</span><span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">credentialsRejected</span><span class="p">:</span>
+            <span class="k">throw</span> <span class="kt">ParcelLookupFailure</span><span class="o">.</span><span class="n">integrationMisconfigured</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">FixedCarrierReply</span><span class="p">:</span> <span class="kt">CarrierResponding</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">CarrierReply</span>
+    <span class="kd">func</span> <span class="nf">reply</span><span class="p">(</span><span class="k">for</span> <span class="nv">identifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CarrierReply</span> <span class="p">{</span> <span class="n">response</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">unknownAdapter</span> <span class="o">=</span> <span class="kt">CarrierTrackingAdapter</span><span class="p">(</span><span class="nv">carrier</span><span class="p">:</span> <span class="kt">FixedCarrierReply</span><span class="p">(</span><span class="nv">response</span><span class="p">:</span> <span class="o">.</span><span class="n">noMatch</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">unknownObservation</span> <span class="o">=</span> <span class="k">try</span> <span class="n">unknownAdapter</span><span class="o">.</span><span class="nf">lookup</span><span class="p">(</span><span class="s">"PKG-404"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unknownObservation</span> <span class="o">==</span> <span class="o">.</span><span class="n">unknown</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">busyAdapter</span> <span class="o">=</span> <span class="kt">CarrierTrackingAdapter</span><span class="p">(</span><span class="nv">carrier</span><span class="p">:</span> <span class="kt">FixedCarrierReply</span><span class="p">(</span><span class="nv">response</span><span class="p">:</span> <span class="o">.</span><span class="nf">rateLimited</span><span class="p">(</span><span class="nv">retryAfterMinutes</span><span class="p">:</span> <span class="mi">5</span><span class="p">)))</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">busyAdapter</span><span class="o">.</span><span class="nf">lookup</span><span class="p">(</span><span class="s">"PKG-42"</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A rate limit is not an unknown parcel"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">ParcelLookupFailure</span><span class="o">.</span><span class="nf">temporarilyUnavailable</span><span class="p">(</span><span class="k">let</span> <span class="nv">delay</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">delay</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The adapter is intentionally synchronous because the supplied carrier is local. A real network-backed contract should be asynchronous and include a cancellation policy. Do not hide a blocking SDK behind a friendly name and assume that naming has abstracted away its timing cost.</p>
+
+<p>The new result also carries observation time. It is a separate contract from the earlier <code class="language-plaintext highlighter-rouge">ParcelTracking</code>, which returned only status. When the product needs freshness, evolve the semantic contract deliberately instead of smuggling timestamps into a display string.</p>
+
+<h3 id="decide-which-errors-cross-the-boundary">Decide which errors cross the boundary</h3>
+
+<p>A transport timeout may map to temporary unavailability, while a decoding error may indicate an invalid integration response. Raw diagnostic information can still be logged by the adapter or infrastructure layer without becoming the screen’s public error vocabulary.</p>
+
+<p>Avoid catching every error and returning <code class="language-plaintext highlighter-rouge">.unknown</code>. That makes the UI give a confident but false explanation. Also avoid exposing every vendor error directly: consumers then have to understand a backend’s private taxonomy and change whenever the SDK renames a case.</p>
+
+<p>A useful boundary preserves information needed for recovery and operations while discarding irrelevant representation details. That is a more demanding goal than merely replacing a concrete parameter with a protocol.</p>
+
+<h3 id="validate-units-and-meaning-not-just-types">Validate units and meaning, not just types</h3>
+
+<p>Both a retry delay in seconds and a retry delay in minutes can be integers. A compiler cannot catch passing one as the other when both are represented as <code class="language-plaintext highlighter-rouge">Int</code>.</p>
+
+<p>Wrapper values such as <code class="language-plaintext highlighter-rouge">RetryDelay</code> or a standard duration type can make those distinctions harder to lose. Even with wrappers, tests should cover conversion boundaries, negative values, overflow, and any clamping policy. An adapter is often the last place to reject a malformed vendor value before it becomes trusted domain data.</p>
+
+<p>Similarly, “observed at” and “downloaded at” are different timestamps. A freshly downloaded cached response can still describe an old observation. Name the field according to what it actually means.</p>
+
+<h3 id="write-an-implementation-matrix-before-adding-another-backend">Write an implementation matrix before adding another backend</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Carrier A</th>
+      <th>Carrier B</th>
+      <th>Consumer-facing requirement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Identifier absent</td>
+      <td>Explicit no-match result</td>
+      <td>Empty result list</td>
+      <td><code class="language-plaintext highlighter-rouge">.unknown</code></td>
+    </tr>
+    <tr>
+      <td>Temporary rate limit</td>
+      <td>Delay in minutes</td>
+      <td>Delay in seconds</td>
+      <td>One agreed retry-delay representation</td>
+    </tr>
+    <tr>
+      <td>Delivered parcel</td>
+      <td>Dedicated case</td>
+      <td>Status code</td>
+      <td>Delivered status plus observation time</td>
+    </tr>
+    <tr>
+      <td>Invalid credentials</td>
+      <td>Error code</td>
+      <td>Thrown SDK error</td>
+      <td>Integration failure, not parcel absence</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The matrix reveals where an abstraction is coherent and where an adapter must translate. If one backend cannot provide observation time at all, decide whether the domain allows an unknown timestamp. Inventing a current timestamp would make the interface easy to satisfy while misleading consumers about freshness.</p>
+
+<h3 id="keep-adapter-tests-separate-from-screen-tests">Keep adapter tests separate from screen tests</h3>
+
+<p>A screen test should exercise known, unknown, stale, and unavailable outcomes without constructing carrier responses. An adapter test should feed representative carrier responses and verify the domain translation. A small integration test can check that the actual SDK still provides the shapes the adapter expects.</p>
+
+<p>Those tests protect different contracts. Reusing one giant fake for every layer tends to blur whether a failure is in presentation logic or translation. It can also accidentally make the tests reproduce the adapter’s implementation instead of checking the intended meaning.</p>
+
+<h3 id="evaluate-the-abstraction-under-a-real-change">Evaluate the abstraction under a real change</h3>
+
+<p>Add a second carrier that has no live status for delivered parcels but offers a historical completion record. Ask whether the existing result can truthfully represent that record and its timestamp. If it can, the screen may remain stable. If the product must expose a different guarantee, change the consumer-facing model rather than concealing the distinction.</p>
+
+<p>A good abstraction makes relevant differences explicit and irrelevant differences local. Its success is measured by the correctness and clarity of the consumer, not by how many backends can be forced through one method signature.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

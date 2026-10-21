@@ -192,4 +192,106 @@ A test suite changes a static API host to point at a local server, then another 
 
 For environment configuration, construct a client with an immutable configuration value. For per-request variation, pass the value to the request operation. Leaving it static because “there is normally one host” hides a variation that tests and multi-account features have already shown to be real.
 
+## Case study: count requests per runtime type without global storage
+
+Suppose a diagnostic tool groups instances by their concrete class. A stored static counter inherited from a base class cannot provide one independent counter per subclass. The grouping key must represent the runtime type explicitly, and the storage must have a chosen owner.
+
+`ObjectIdentifier` can identify a metatype within a process. That makes it useful as a dictionary key for this in-memory registry:
+
+```swift
+class DiagnosticTask {}
+final class ImageDiagnosticTask: DiagnosticTask {}
+final class TextDiagnosticTask: DiagnosticTask {}
+
+final class TaskTypeCounts {
+    private var counts: [ObjectIdentifier: Int] = [:]
+
+    func record(_ task: DiagnosticTask) {
+        let key = ObjectIdentifier(type(of: task))
+        counts[key, default: 0] += 1
+    }
+
+    func count(for taskType: DiagnosticTask.Type) -> Int {
+        counts[ObjectIdentifier(taskType), default: 0]
+    }
+}
+
+let taskCounts = TaskTypeCounts()
+let firstTask: DiagnosticTask = ImageDiagnosticTask()
+taskCounts.record(firstTask)
+taskCounts.record(ImageDiagnosticTask())
+taskCounts.record(TextDiagnosticTask())
+assert(taskCounts.count(for: ImageDiagnosticTask.self) == 2)
+assert(taskCounts.count(for: TextDiagnosticTask.self) == 1)
+assert(taskCounts.count(for: DiagnosticTask.self) == 0)
+
+let independentCounts = TaskTypeCounts()
+assert(independentCounts.count(for: ImageDiagnosticTask.self) == 0)
+```
+
+The base-typed `firstTask` still contributes to the image class's bucket because `type(of:)` obtains its dynamic type. Counting the base class does not include all subclasses automatically. This registry groups exact runtime types; an inclusive hierarchy count would be a different operation with a different implementation.
+
+Two registry instances remain independent. A screen can own one registry for its current diagnostic session, while a test constructs a fresh registry without resetting a process-wide variable. If several components should share counts, inject the same instance explicitly.
+
+### A type identity is not a persistent identifier
+
+`ObjectIdentifier` is suitable for identity comparisons within a running process. Do not write it into a database as a permanent class identifier or use it as a cross-launch analytics schema. A later process has its own identities, and implementation types can change during refactoring.
+
+For persisted grouping, define stable domain keys such as an enum or a documented string code. A type can expose that code through a static protocol requirement, but the code's stability comes from the API contract, not from the runtime address of the type.
+
+This distinction also matters for instances. A class identity tells you which allocation you have; a database identifier tells you which entity it represents. A metatype identity tells you which runtime type you have; a product category identifies a concept that may span several implementation types.
+
+### Factories do not have to own the instances they create
+
+A static factory can be pure even when its result holds per-instance configuration. It does not require mutable static configuration:
+
+```swift
+struct UploadClientConfiguration: Equatable {
+    let host: String
+    let account: String
+}
+
+final class ConfiguredUploadClient {
+    let configuration: UploadClientConfiguration
+
+    init(configuration: UploadClientConfiguration) {
+        self.configuration = configuration
+    }
+
+    static func preview(account: String) -> ConfiguredUploadClient {
+        ConfiguredUploadClient(configuration: UploadClientConfiguration(
+            host: "preview.invalid",
+            account: account
+        ))
+    }
+}
+
+let previewAlice = ConfiguredUploadClient.preview(account: "alice")
+let previewBob = ConfiguredUploadClient.preview(account: "bob")
+assert(previewAlice.configuration.account == "alice")
+assert(previewBob.configuration.account == "bob")
+assert(previewAlice !== previewBob)
+```
+
+Each call creates an independent client. The word `static` describes how the factory is accessed; it does not mean the factory returns a singleton. Conversely, an instance method can return a shared object. Read the construction and ownership policy instead of inferring lifetime from the presence of a dot after a type name.
+
+This factory returns the concrete final class intentionally. There is no subclass contract to preserve with `Self`, and no reason to introduce a required initializer. A public initializer can remain the general construction path, while a named factory expresses one useful configuration.
+
+### Choose a scope by asking who should observe a change
+
+| State | Likely owner | Why |
+|---|---|---|
+| Universal immutable suffix | Type constant | Every instance uses the same fact |
+| Exact-type diagnostic counts | Explicit registry instance | Session lifetime and sharing are controllable |
+| Account credentials | Account-scoped client | Another account must not observe a replacement |
+| One request's retry count | Request operation | A later request starts independently |
+
+These choices are about semantics. Moving a property from an instance to the type changes who shares it and how long it lives. That can alter behavior even when every caller still compiles.
+
+### Initialization safety and operational safety need separate tests
+
+A test confirming that a static factory returns the expected configuration says nothing about concurrent mutation of a shared registry. This registry, like the earlier counter, is meant for serialized access. If it becomes shared across tasks, add isolation at its actual ownership boundary and test the resulting asynchronous API.
+
+Likewise, a lazy singleton can initialize correctly once and still retain stale account information forever. Verify switching accounts, ending a session, and constructing two environments in the same process. Those scenarios expose hidden type-level assumptions more effectively than a test that asks for the singleton twice and checks reference equality.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

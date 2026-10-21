@@ -253,6 +253,147 @@
 
 <p>Then construct a preview implementation with no database and no network client. If doing so still requires dummy <code class="language-plaintext highlighter-rouge">delete</code> and <code class="language-plaintext highlighter-rouge">upload</code> methods, the boundary remains broader than that consumer’s needs. The benefit of protocol composition is being able to require exactly the capabilities needed at a particular use site.</p>
 
+<h2 id="case-study-one-store-two-capabilities-two-security-boundaries">Case study: one store, two capabilities, two security boundaries</h2>
+
+<p>A settings screen needs to read preferences. An account-management screen needs to change them. Both work with the same store, but requiring every consumer to accept a broad read/write interface makes mutation available where it serves no purpose.</p>
+
+<p>Define the capabilities independently, then let a concrete class supply both:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">PreferenceReading</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">PreferenceWriting</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">setValue</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PreferenceStore</span><span class="p">:</span> <span class="kt">PreferenceReading</span><span class="p">,</span> <span class="kt">PreferenceWriting</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span> <span class="n">values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">setValue</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">PreferenceHeading</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">preferences</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">PreferenceReading</span>
+
+    <span class="kd">func</span> <span class="nf">text</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">preferences</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"displayName"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"Guest"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="n">changeDisplayName</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">PreferenceReading</span> <span class="o">&amp;</span> <span class="kt">PreferenceWriting</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">to</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="k">in</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">S</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"displayName"</span><span class="p">)</span>
+    <span class="n">store</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nv">for</span><span class="p">:</span> <span class="s">"displayName"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">previous</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">preferenceStore</span> <span class="o">=</span> <span class="kt">PreferenceStore</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">preferenceHeading</span> <span class="o">=</span> <span class="kt">PreferenceHeading</span><span class="p">(</span><span class="nv">preferences</span><span class="p">:</span> <span class="n">preferenceStore</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preferenceHeading</span><span class="o">.</span><span class="nf">text</span><span class="p">()</span> <span class="o">==</span> <span class="s">"Guest"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">previousDisplayName</span> <span class="o">=</span> <span class="nf">changeDisplayName</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="s">"Mina"</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">preferenceStore</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previousDisplayName</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preferenceHeading</span><span class="o">.</span><span class="nf">text</span><span class="p">()</span> <span class="o">==</span> <span class="s">"Mina"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>There is one dictionary, not one dictionary inherited from a reading parent and another inherited from a writing parent. Multiple conformance supplies several views of one object. The heading observes subsequent updates because it holds a reference to that same store through the reading contract.</p>
+
+<p>This narrower type limits ordinary operations available to the consumer; it is not a security sandbox. Code that knows the concrete store could attempt a cast. Authorization for protected changes must be enforced by the relevant domain or service boundary regardless of the static interface offered to a screen.</p>
+
+<h3 id="use-an-adapter-when-identical-signatures-have-different-meanings">Use an adapter when identical signatures have different meanings</h3>
+
+<p>Now imagine an external API that exposes <code class="language-plaintext highlighter-rouge">value(for:)</code> too, but it should read a frozen set of defaults rather than the live account preferences. Making one class satisfy two same-shaped reading contracts cannot give a single method two different meanings just because callers view it through different names.</p>
+
+<p>Represent each view as a distinct adapter instead:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">DefaultPreferenceView</span><span class="p">:</span> <span class="kt">PreferenceReading</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">defaults</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span> <span class="n">defaults</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">EffectivePreferenceView</span><span class="p">:</span> <span class="kt">PreferenceReading</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">account</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">PreferenceReading</span>
+    <span class="k">let</span> <span class="nv">defaults</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">PreferenceReading</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">account</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span> <span class="p">??</span> <span class="n">defaults</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">defaultPreferences</span> <span class="o">=</span> <span class="kt">DefaultPreferenceView</span><span class="p">(</span><span class="n">defaults</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s">"displayName"</span><span class="p">:</span> <span class="s">"Visitor"</span><span class="p">,</span>
+    <span class="s">"language"</span><span class="p">:</span> <span class="s">"en"</span>
+<span class="p">])</span>
+<span class="k">let</span> <span class="nv">effectivePreferences</span> <span class="o">=</span> <span class="kt">EffectivePreferenceView</span><span class="p">(</span>
+    <span class="nv">account</span><span class="p">:</span> <span class="n">preferenceStore</span><span class="p">,</span>
+    <span class="n">defaults</span><span class="p">:</span> <span class="n">defaultPreferences</span>
+<span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">effectivePreferences</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"displayName"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Mina"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">effectivePreferences</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"language"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"en"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">defaultPreferences</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"displayName"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Visitor"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The adapters make source selection explicit. An effective view has a documented precedence rule: the account value wins when present. An empty string is still present and therefore wins; <code class="language-plaintext highlighter-rouge">nil</code> means absent. If the domain wants an empty string to mean “use the default,” encode that as a deliberate policy rather than relying on a truthiness rule Swift does not have.</p>
+
+<h3 id="shared-state-and-snapshot-state-are-different-capabilities">Shared state and snapshot state are different capabilities</h3>
+
+<p>The effective view holds a live account reader and a value containing defaults. Updates to the account are visible on the next call. The defaults struct contains a copied dictionary value; constructing another defaults value does not edit this one.</p>
+
+<p>A preview or audit record may need a frozen result instead. Build a snapshot with the exact keys required and document when it is captured. Do not call a wrapper a snapshot if it simply forwards each read to a mutable store. Protocol composition decides which operations are available, not whether their results remain stable over time.</p>
+
+<p>This matters for caching as well. A cache around <code class="language-plaintext highlighter-rouge">EffectivePreferenceView</code> needs an invalidation rule when account preferences change. Conformance to <code class="language-plaintext highlighter-rouge">PreferenceReading</code> alone makes no promise that reads are pure, immutable, or free from external effects.</p>
+
+<h3 id="keep-combined-requirements-local-until-they-have-a-domain-meaning">Keep combined requirements local until they have a domain meaning</h3>
+
+<p><code class="language-plaintext highlighter-rouge">changeDisplayName</code> needs both reading and writing because it returns the previous value. A generic composition documents that actual requirement. The heading needs only reading. Neither requires a new umbrella protocol containing every preference-related operation.</p>
+
+<p>A named refining protocol becomes useful if “editable preferences” is a stable abstraction shared by several consumers. Even then, avoid including unrelated synchronization or account deletion methods simply because the concrete store happens to have them.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Consumer</th>
+      <th>Capability needed</th>
+      <th>State observed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Heading</td>
+      <td>Reading</td>
+      <td>Live account value</td>
+    </tr>
+    <tr>
+      <td>Rename action returning the old name</td>
+      <td>Reading and writing</td>
+      <td>One shared store</td>
+    </tr>
+    <tr>
+      <td>Defaults inspector</td>
+      <td>Reading</td>
+      <td>Fixed defaults value</td>
+    </tr>
+    <tr>
+      <td>Effective settings view</td>
+      <td>Reading</td>
+      <td>Account value with explicit fallback</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="test-the-views-and-their-relationships">Test the views and their relationships</h3>
+
+<p>Test account precedence, fallback on absence, empty values, and updates visible through a previously constructed live view. Also construct two independent stores and verify their mutations remain independent. These tests establish the ownership and semantic rules that multiple protocol declarations alone cannot express.</p>
+
+<p>If these reads and writes can race, the read-then-write rename helper is not atomic. Introduce an isolated transactional operation when returning the previous value must correspond to the exact change. Combining two protocols is a type-level statement; it is not a concurrency transaction.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

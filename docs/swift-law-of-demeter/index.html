@@ -211,6 +211,147 @@
 
 <p>A good boundary should localize the storage-model adjustment to the projection builder or domain operation. The screen may still change if the product now displays a historical-address warning; that is a legitimate behavior change. The goal is containing irrelevant structural knowledge, not preventing every consumer change forever.</p>
 
+<h2 id="case-study-keep-an-orders-destination-stable-after-checkout">Case study: keep an order’s destination stable after checkout</h2>
+
+<p>A customer changes their preferred address after placing an order. Should the old order’s dispatch label change? Usually the order should preserve the destination agreed at checkout. A deep traversal into the customer’s current preferences is therefore more than structural coupling: it can encode the wrong time semantics.</p>
+
+<p>Capture a domain value at checkout and let the order own that historical fact:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">DispatchDestination</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">recipient</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">street</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">city</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CustomerDeliveryPreferences</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">preferred</span><span class="p">:</span> <span class="kt">DispatchDestination</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">preferred</span><span class="p">:</span> <span class="kt">DispatchDestination</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">preferred</span> <span class="o">=</span> <span class="n">preferred</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">DispatchOrderFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">case</span> <span class="n">alreadyDispatched</span> <span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">DispatchOrder</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">number</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">destination</span><span class="p">:</span> <span class="kt">DispatchDestination</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">dispatched</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">number</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">destination</span><span class="p">:</span> <span class="kt">DispatchDestination</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">number</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">destination</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">amendDestination</span><span class="p">(</span><span class="n">_</span> <span class="nv">replacement</span><span class="p">:</span> <span class="kt">DispatchDestination</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">dispatched</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">DispatchOrderFailure</span><span class="o">.</span><span class="n">alreadyDispatched</span> <span class="p">}</span>
+        <span class="n">destination</span> <span class="o">=</span> <span class="n">replacement</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">markDispatched</span><span class="p">()</span> <span class="p">{</span> <span class="n">dispatched</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">DispatchLabelFormatter</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">label</span><span class="p">(</span><span class="k">for</span> <span class="nv">order</span><span class="p">:</span> <span class="kt">DispatchOrder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">destination</span>
+        <span class="k">return</span> <span class="s">"Order #</span><span class="se">\(</span><span class="n">order</span><span class="o">.</span><span class="n">number</span><span class="se">)\n</span><span class="s">"</span> <span class="o">+</span> <span class="n">destination</span><span class="o">.</span><span class="n">recipient</span> <span class="o">+</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span>
+            <span class="o">+</span> <span class="n">destination</span><span class="o">.</span><span class="n">street</span> <span class="o">+</span> <span class="s">", "</span> <span class="o">+</span> <span class="n">destination</span><span class="o">.</span><span class="n">city</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">checkoutDestination</span> <span class="o">=</span> <span class="kt">DispatchDestination</span><span class="p">(</span>
+    <span class="nv">recipient</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">,</span> <span class="nv">street</span><span class="p">:</span> <span class="s">"Garden Street"</span><span class="p">,</span> <span class="nv">city</span><span class="p">:</span> <span class="s">"Amman"</span>
+<span class="p">)</span>
+<span class="k">let</span> <span class="nv">customerDeliveryPreferences</span> <span class="o">=</span> <span class="kt">CustomerDeliveryPreferences</span><span class="p">(</span><span class="nv">preferred</span><span class="p">:</span> <span class="n">checkoutDestination</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">historicalOrder</span> <span class="o">=</span> <span class="kt">DispatchOrder</span><span class="p">(</span>
+    <span class="nv">number</span><span class="p">:</span> <span class="mi">44</span><span class="p">,</span> <span class="nv">destination</span><span class="p">:</span> <span class="n">customerDeliveryPreferences</span><span class="o">.</span><span class="n">preferred</span>
+<span class="p">)</span>
+<span class="n">customerDeliveryPreferences</span><span class="o">.</span><span class="n">preferred</span> <span class="o">=</span> <span class="kt">DispatchDestination</span><span class="p">(</span>
+    <span class="nv">recipient</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">,</span> <span class="nv">street</span><span class="p">:</span> <span class="s">"Hill Street"</span><span class="p">,</span> <span class="nv">city</span><span class="p">:</span> <span class="s">"Irbid"</span>
+<span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">historicalOrder</span><span class="o">.</span><span class="n">destination</span> <span class="o">==</span> <span class="n">checkoutDestination</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">DispatchLabelFormatter</span><span class="p">()</span><span class="o">.</span><span class="nf">label</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">historicalOrder</span><span class="p">)</span>
+    <span class="o">==</span> <span class="s">"Order #44</span><span class="se">\n</span><span class="s">Maya</span><span class="se">\n</span><span class="s">Garden Street, Amman"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The formatter can inspect the destination’s fields because formatting that deliberate value is its job. It does not need an account, a preference repository, or a customer graph. The order’s dependency is on the destination concept, not on the storage location from which checkout originally obtained it.</p>
+
+<p>The captured value contains strings and has value semantics. If it contained a mutable address class instead, copying the outer struct would still share that reference. The independence required by a historical record must extend through the relevant payload.</p>
+
+<h3 id="explicit-amendments-are-different-from-accidental-live-updates">Explicit amendments are different from accidental live updates</h3>
+
+<p>An order may legitimately allow a destination correction before dispatch. Model that as a command with a rule, rather than letting unrelated preference edits rewrite the order:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">correctedDestination</span> <span class="o">=</span> <span class="kt">DispatchDestination</span><span class="p">(</span>
+    <span class="nv">recipient</span><span class="p">:</span> <span class="s">"Maya"</span><span class="p">,</span> <span class="nv">street</span><span class="p">:</span> <span class="s">"Garden Street, Building 8"</span><span class="p">,</span> <span class="nv">city</span><span class="p">:</span> <span class="s">"Amman"</span>
+<span class="p">)</span>
+<span class="k">try</span> <span class="n">historicalOrder</span><span class="o">.</span><span class="nf">amendDestination</span><span class="p">(</span><span class="n">correctedDestination</span><span class="p">)</span>
+<span class="n">historicalOrder</span><span class="o">.</span><span class="nf">markDispatched</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">historicalOrder</span><span class="o">.</span><span class="nf">amendDestination</span><span class="p">(</span><span class="n">customerDeliveryPreferences</span><span class="o">.</span><span class="n">preferred</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A dispatched order must reject amendments"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">DispatchOrderFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">alreadyDispatched</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">historicalOrder</span><span class="o">.</span><span class="n">destination</span> <span class="o">==</span> <span class="n">correctedDestination</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The rejected command leaves the destination unchanged. The label formatter needs no new traversal or conditional logic to support the correction rule. It formats the destination that the order currently authorizes.</p>
+
+<p>The example assumes serial access. Persisted fulfillment also needs a transaction so dispatch and amendment cannot both proceed from stale state. Hiding object structure does not resolve a race between competing commands.</p>
+
+<h3 id="absorb-an-infrastructure-representation-change-in-one-adapter">Absorb an infrastructure representation change in one adapter</h3>
+
+<p>Suppose a remote API changes from nested customer settings to a flattened checkout response. Translate either response into <code class="language-plaintext highlighter-rouge">DispatchDestination</code> at the boundary. The order and formatter do not need to import those transport types.</p>
+
+<p>That adapter should validate whatever the domain requires: supported destination kinds, required fields, or normalized postal information. Avoid using empty strings as silent replacements for missing mandatory data. A narrow value boundary is useful partly because it gives validation a specific home.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Change</th>
+      <th>Component expected to change</th>
+      <th>Component that can remain stable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Remote address field renamed</td>
+      <td>Transport adapter</td>
+      <td>Order and label formatter</td>
+    </tr>
+    <tr>
+      <td>Customer preference moved to another service</td>
+      <td>Checkout assembly</td>
+      <td>Existing order labels</td>
+    </tr>
+    <tr>
+      <td>Destination amendments forbidden after dispatch</td>
+      <td>Order transition</td>
+      <td>Transport DTOs</td>
+    </tr>
+    <tr>
+      <td>Localized label layout</td>
+      <td>Formatter</td>
+      <td>Order lifecycle</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This table is a practical coupling test. If moving the remote field still requires edits to every screen, the supposed boundary probably leaks the transport representation.</p>
+
+<h3 id="returning-data-can-reduce-knowledge-more-than-forwarding-methods">Returning data can reduce knowledge more than forwarding methods</h3>
+
+<p>An order method for every address field would let the formatter avoid a nested expression, but it would duplicate the address interface on the order. Returning one meaningful destination value is often clearer.</p>
+
+<p>That does not mean returning every internal object is harmless. A destination value intentionally communicates a stable concept. Returning the entire mutable customer exposes far more capabilities and representation than dispatch requires. Choose the result according to the consumer’s task.</p>
+
+<h3 id="historical-snapshots-need-an-update-policy">Historical snapshots need an update policy</h3>
+
+<p>Capturing a destination does not mean all order data must be frozen forever. Status changes, authorized corrections, and audit records can coexist with immutable observations. Name which facts are historical and which are live.</p>
+
+<p>A production audit may preserve every prior destination plus who authorized the correction. That is a separate requirement from formatting the latest authorized label. Add it to the order’s transition or persistence boundary without making each presentation consumer reconstruct history from customer preferences.</p>
+
+<p>The useful result of applying Demeter here is a better domain model: checkout supplies a destination, the order controls amendments, and the formatter consumes a coherent value. The shorter call site follows from those responsibilities.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

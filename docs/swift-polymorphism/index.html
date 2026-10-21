@@ -252,6 +252,102 @@
 
 <p>As an exercise, add <code class="language-plaintext highlighter-rouge">debugLabel</code> to <code class="language-plaintext highlighter-rouge">DeliveryChannel</code>’s requirements and predict which assertions change. Then explain why adding a superclass implementation fixes the inherited-conformance example. If you can predict both, you understand the customization boundary more deeply than “Swift supports polymorphism.”</p>
 
+<h2 id="case-study-preserve-a-result-type-or-erase-it-deliberately">Case study: preserve a result type or erase it deliberately</h2>
+
+<p>Polymorphism is not only about selecting which implementation runs. It is also about which type relationships remain visible afterward. A producer and consumer can be individually polymorphic while still needing to agree on the exact value type they exchange.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ValueTransforming</span> <span class="p">{</span>
+    <span class="kd">associatedtype</span> <span class="kt">Input</span>
+    <span class="kd">associatedtype</span> <span class="kt">Output</span>
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Output</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">StringLength</span><span class="p">:</span> <span class="kt">ValueTransforming</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">input</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">PositiveDescription</span><span class="p">:</span> <span class="kt">ValueTransforming</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">input</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="s">"Nonempty"</span> <span class="p">:</span> <span class="s">"Empty"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">TransformPipeline</span><span class="o">&lt;</span><span class="kt">A</span><span class="p">:</span> <span class="kt">ValueTransforming</span><span class="p">,</span> <span class="kt">B</span><span class="p">:</span> <span class="kt">ValueTransforming</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">ValueTransforming</span>
+<span class="k">where</span> <span class="kt">A</span><span class="o">.</span><span class="kt">Output</span> <span class="o">==</span> <span class="kt">B</span><span class="o">.</span><span class="kt">Input</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">first</span><span class="p">:</span> <span class="kt">A</span>
+    <span class="k">let</span> <span class="nv">second</span><span class="p">:</span> <span class="kt">B</span>
+
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">A</span><span class="o">.</span><span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">B</span><span class="o">.</span><span class="kt">Output</span> <span class="p">{</span>
+        <span class="n">second</span><span class="o">.</span><span class="nf">transform</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="nf">transform</span><span class="p">(</span><span class="n">input</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">typedPipeline</span> <span class="o">=</span> <span class="kt">TransformPipeline</span><span class="p">(</span><span class="nv">first</span><span class="p">:</span> <span class="kt">StringLength</span><span class="p">(),</span> <span class="nv">second</span><span class="p">:</span> <span class="kt">PositiveDescription</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">typedPipeline</span><span class="o">.</span><span class="nf">transform</span><span class="p">(</span><span class="s">"Swift"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Nonempty"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">typedPipeline</span><span class="o">.</span><span class="nf">transform</span><span class="p">(</span><span class="s">""</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Empty"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The same-type constraint is the important contract: the first stage’s output must be the second stage’s input. A pipeline from an arbitrary string producer to an arbitrary image consumer would be rejected rather than waiting for a cast to fail at runtime.</p>
+
+<p>The concrete generic pipeline is appropriate when its structure is known at assembly time. If a feature must store one of several interchangeable transformations with the same input and output types, a small type eraser can deliberately hide the concrete implementation.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AnyTextTransform</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">apply</span><span class="p">:</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span>
+
+    <span class="kd">init</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">ValueTransforming</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">transform</span><span class="p">:</span> <span class="kt">T</span><span class="p">)</span>
+    <span class="k">where</span> <span class="kt">T</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">T</span><span class="o">.</span><span class="kt">Output</span> <span class="o">==</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">apply</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">transform</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="nf">apply</span><span class="p">(</span><span class="n">input</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">UppercaseText</span><span class="p">:</span> <span class="kt">ValueTransforming</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="n">input</span><span class="o">.</span><span class="nf">uppercased</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BracketedText</span><span class="p">:</span> <span class="kt">ValueTransforming</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">transform</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="s">"["</span> <span class="o">+</span> <span class="n">input</span> <span class="o">+</span> <span class="s">"]"</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">interchangeableTransforms</span> <span class="o">=</span> <span class="p">[</span><span class="kt">AnyTextTransform</span><span class="p">(</span><span class="kt">UppercaseText</span><span class="p">()),</span> <span class="kt">AnyTextTransform</span><span class="p">(</span><span class="kt">BracketedText</span><span class="p">())]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">interchangeableTransforms</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">transform</span><span class="p">(</span><span class="s">"Swift"</span><span class="p">)</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"SWIFT"</span><span class="p">,</span> <span class="s">"[Swift]"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The wrapper erases implementation identity while preserving a specific capability: <code class="language-plaintext highlighter-rouge">String</code> in, <code class="language-plaintext highlighter-rouge">String</code> out. It does not expose arbitrary values through <code class="language-plaintext highlighter-rouge">Any</code> and ask each caller to cast them. That makes the lost information deliberate and bounded.</p>
+
+<h3 id="account-for-captured-state-in-a-type-eraser">Account for captured state in a type eraser</h3>
+
+<p>The stored function captures whatever is needed to invoke the supplied transformation. If that transformation is a class, the closure can retain its instance. If it is a value containing a mutable reference, the wrapper can still share that referenced state.</p>
+
+<p>Type erasure changes what a consumer knows, not the ownership semantics of the implementation. Document whether calls mutate hidden state, whether copies share it, and where the wrapper may be used concurrently. Do not assume that a struct wrapper around a closure is automatically an immutable, freely transferable value.</p>
+
+<p>This is also why a type eraser should have a focused name. <code class="language-plaintext highlighter-rouge">AnyTextTransform</code> makes its retained capability clear. A generic <code class="language-plaintext highlighter-rouge">AnyObjectWrapper</code> gives the reader much less information about what remains safe to do.</p>
+
+<h3 id="distinguish-an-open-set-of-implementations-from-a-closed-set-of-cases">Distinguish an open set of implementations from a closed set of cases</h3>
+
+<p>An existential or erased wrapper supports implementations supplied independently. An enum expresses alternatives known to the model and gives exhaustive switching over them.</p>
+
+<p>If the only allowed export modes are explicitly plain text and HTML, an enum may make product rules easier to audit. If plugins or client modules may introduce new exporters, a protocol can represent that extension point more naturally.</p>
+
+<p>Changing from an enum to a protocol also changes where new behavior must be added. With an enum, a new case can force existing switches to be reviewed. With a protocol, a new implementation can be introduced without changing consumers, but the behavioral contract must already be adequate. Neither property is universally superior.</p>
+
+<h3 id="keep-semantic-dispatch-separate-from-compiler-optimization">Keep semantic dispatch separate from compiler optimization</h3>
+
+<p>The generic pipeline may be specialized by the compiler. An existential call may be optimized when the concrete implementation becomes provable. These transformations must preserve the language’s observable behavior, including the extension-only and inherited-conformance examples earlier in the article.</p>
+
+<p>Do not explain a surprising result by guessing whether a call “went through a vtable.” First identify which declaration or requirement the source selected. Then investigate generated code only if a measured performance problem requires it.</p>
+
+<p>For a benchmark, separate the cost of transforming text from storage, allocation, capture, and dispatch. A slow operation behind an interface is not evidence that the interface call itself dominates runtime.</p>
+
+<h3 id="test-substitution-through-the-public-storage-shape">Test substitution through the public storage shape</h3>
+
+<p>The pipeline assertions verify connected types and output. For the type eraser, verify that different implementations remain callable through one collection and produce their intended results. If an implementation is stateful, test repeated calls and copies of the wrapper under the documented sharing contract.</p>
+
+<p>Finally, compare direct concrete calls with the calls consumers actually make through generic constraints, superclass references, or stored existential values. That is how you catch a customization point that looked polymorphic in one context but was only a same-named member in another.</p>
+
+<p>Swift’s <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/">Generics chapter</a> describes associated-type relationships and constraints. Treat those relationships as part of the API design rather than incidental syntax needed to satisfy the compiler.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

@@ -201,4 +201,128 @@ Take an editing feature and write three observations: change a copied draft, cha
 
 Then fix the smallest representation boundary that restores the promise. That may mean making one child a value, taking an immutable snapshot, or giving the feature an explicit transaction. Replacing every class with a struct is a much larger change and may leave the actual reference escape intact.
 
+## Case study: an editor with save and cancel
+
+An editor needs three distinct pieces of state: the persisted document, an independent working value, and the version on which editing began. If the working value is a shared reference to the persisted object, cancel cannot reliably undo changes that have already leaked into other screens.
+
+A value draft makes the ordinary editing behavior direct. A version protects against a separate issue: someone else saving while this editor remains open.
+
+```swift
+struct ArticleText: Equatable {
+    var title: String
+    var paragraphs: [String]
+}
+
+struct ArticleRevision {
+    let version: Int
+    let text: ArticleText
+}
+
+enum EditorFailure: Error { case conflict }
+
+final class ArticleStore {
+    private(set) var revision: ArticleRevision
+
+    init(text: ArticleText) {
+        revision = ArticleRevision(version: 0, text: text)
+    }
+
+    func save(_ text: ArticleText, expectedVersion: Int) throws {
+        guard expectedVersion == revision.version else { throw EditorFailure.conflict }
+        revision = ArticleRevision(version: revision.version + 1, text: text)
+    }
+}
+
+struct ArticleEditor {
+    private let original: ArticleRevision
+    var draft: ArticleText
+
+    init(revision: ArticleRevision) {
+        original = revision
+        draft = revision.text
+    }
+
+    var hasChanges: Bool { draft != original.text }
+
+    mutating func cancel() { draft = original.text }
+
+    func save(to store: ArticleStore) throws {
+        try store.save(draft, expectedVersion: original.version)
+    }
+}
+
+let articleStore = ArticleStore(text: ArticleText(title: "Before", paragraphs: ["One"]))
+var articleEditor = ArticleEditor(revision: articleStore.revision)
+articleEditor.draft.paragraphs.append("Two")
+assert(articleEditor.hasChanges)
+assert(articleStore.revision.text.paragraphs == ["One"])
+articleEditor.cancel()
+assert(!articleEditor.hasChanges)
+articleEditor.draft.title = "Edited"
+try articleEditor.save(to: articleStore)
+assert(articleStore.revision.text.title == "Edited")
+```
+
+The editor's original revision is intentionally fixed. After a successful save, a UI should create or reset an editing session from the newly accepted revision. Reusing the old expected version would correctly produce a conflict on a later save. That lifecycle decision belongs in the feature rather than being hidden inside equality or copying.
+
+The store here is serial and local. A persisted version check must be atomic in the persistence system, and concurrent access needs an isolation strategy. Value semantics provide independent state; they do not implement a distributed transaction.
+
+### Understand what cancel actually guarantees
+
+Cancel replaces the draft value with its original text. It does not undo external effects such as uploads, analytics events, or a request already sent to another system. If editing performs those effects eagerly, a separate compensation policy may be necessary.
+
+This distinction is useful during API review. A method called `cancel` can mean discard local edits, request cancellation of ongoing work, or roll back a transaction. Name and document the operation according to the guarantee actually provided.
+
+A value draft is particularly effective when the product can defer writes until save. When edits must stream live to collaborators, the ownership model needs revisions, operations, or another synchronization design. Simply changing the draft to a class does not solve that problem.
+
+### Add undo as values, then evaluate the cost
+
+```swift
+struct TextUndoHistory {
+    private var past: [ArticleText] = []
+    private(set) var current: ArticleText
+
+    init(initial: ArticleText) { current = initial }
+
+    mutating func apply(_ replacement: ArticleText) {
+        guard replacement != current else { return }
+        past.append(current)
+        current = replacement
+    }
+
+    mutating func undo() -> Bool {
+        guard let previous = past.popLast() else { return false }
+        current = previous
+        return true
+    }
+}
+
+var undoHistory = TextUndoHistory(initial: ArticleText(title: "A", paragraphs: []))
+undoHistory.apply(ArticleText(title: "B", paragraphs: []))
+undoHistory.apply(ArticleText(title: "B", paragraphs: []))
+assert(undoHistory.undo())
+assert(undoHistory.current.title == "A")
+assert(!undoHistory.undo())
+```
+
+This representation is easy to reason about: each history entry is an independent text value. Standard-library copy-on-write may share storage efficiently, but retaining history can still keep large buffers alive. Copy-on-write postpones duplication; it does not promise that an unbounded history consumes no memory.
+
+For very large documents, an operation history or persistent data structure may be more appropriate. Make that change in response to measured memory or editing costs. The simpler snapshot implementation provides a useful correctness reference for a more optimized one.
+
+### Inspect nested state before promising independent editing
+
+If `ArticleText` later gains a mutable `Attachment` class, copying the draft will copy that reference. Renaming the attachment through the draft could then change the supposedly persisted representation too.
+
+Choose among an immutable attachment descriptor, a stable attachment ID with separately coordinated updates, and a deliberate deep-copy operation. The right answer depends on whether an attachment's edits are part of the same save/cancel transaction.
+
+The important review is recursive at the semantic level: which mutations can the draft perform, and which of them must stay local? You do not have to clone every reachable object, but you must account for every permitted mutation that could escape.
+
+### Use identity only for the question it answers
+
+Two equal `ArticleText` values can represent different editing sessions. Two editor sessions can concern the same persistent article while having different original revisions. A session may need a separate ID for request routing or analytics, without changing the text's equality definition.
+
+Keep content equality, persistent identity, and session identity separate. Combining them into one overloaded comparison is a common source of false “no changes” results and accidental overwrites.
+
+A strong ownership design lets each of those questions be answered directly. The value/object choice is one part of that design, alongside transaction boundaries, versioning, and lifetime.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

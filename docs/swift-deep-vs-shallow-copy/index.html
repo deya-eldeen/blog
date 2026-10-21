@@ -248,6 +248,131 @@
 
 <p>As an exercise, change the graph so two distinct nodes share the same title. A correct clone mapping must use instance identity, not title equality. Otherwise the clone would merge distinct objects and lose information despite producing plausible-looking text.</p>
 
+<h2 id="case-study-clone-an-unbounded-graph-without-recursive-calls">Case study: clone an unbounded graph without recursive calls</h2>
+
+<p>A graph imported from a document can be much deeper than a hand-written test tree. The identity mapping from the recursive implementation is still the right idea, but recursion couples graph depth to call-stack depth. An explicit queue separates those concerns.</p>
+
+<p>Reuse <code class="language-plaintext highlighter-rouge">GraphNote</code>, but allocate a placeholder clone when discovering each original node. Process its outgoing edges later:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">cloneGraphIteratively</span><span class="p">(</span><span class="n">_</span> <span class="nv">root</span><span class="p">:</span> <span class="kt">GraphNote</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">GraphNote</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">copiedRoot</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="n">root</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">copies</span><span class="p">:</span> <span class="p">[</span><span class="kt">ObjectIdentifier</span><span class="p">:</span> <span class="kt">GraphNote</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="kt">ObjectIdentifier</span><span class="p">(</span><span class="n">root</span><span class="p">):</span> <span class="n">copiedRoot</span>
+    <span class="p">]</span>
+    <span class="k">var</span> <span class="nv">pending</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">cursor</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">cursor</span> <span class="o">&lt;</span> <span class="n">pending</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">originalNode</span> <span class="o">=</span> <span class="n">pending</span><span class="p">[</span><span class="n">cursor</span><span class="p">]</span>
+        <span class="n">cursor</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">copiedNode</span> <span class="o">=</span> <span class="n">copies</span><span class="p">[</span><span class="kt">ObjectIdentifier</span><span class="p">(</span><span class="n">originalNode</span><span class="p">)]</span><span class="o">!</span>
+
+        <span class="n">copiedNode</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="n">originalNode</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">linkedNode</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="kt">ObjectIdentifier</span><span class="p">(</span><span class="n">linkedNode</span><span class="p">)</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">existing</span> <span class="o">=</span> <span class="n">copies</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="n">existing</span> <span class="p">}</span>
+
+            <span class="k">let</span> <span class="nv">created</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="n">linkedNode</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+            <span class="n">copies</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">created</span>
+            <span class="n">pending</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">linkedNode</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">created</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">copiedRoot</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">iterativeRoot</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Root"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sameTitleA</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Same"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sameTitleB</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Same"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">iterativeShared</span> <span class="o">=</span> <span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Shared"</span><span class="p">)</span>
+<span class="n">iterativeRoot</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[</span><span class="n">sameTitleA</span><span class="p">,</span> <span class="n">sameTitleB</span><span class="p">,</span> <span class="n">sameTitleA</span><span class="p">]</span>
+<span class="n">sameTitleA</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[</span><span class="n">iterativeShared</span><span class="p">]</span>
+<span class="n">sameTitleB</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[</span><span class="n">iterativeShared</span><span class="p">]</span>
+<span class="n">iterativeShared</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[</span><span class="n">iterativeRoot</span><span class="p">]</span>
+
+<span class="k">let</span> <span class="nv">iterativeCopy</span> <span class="o">=</span> <span class="nf">cloneGraphIteratively</span><span class="p">(</span><span class="n">iterativeRoot</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span> <span class="o">!==</span> <span class="n">iterativeRoot</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!==</span> <span class="n">sameTitleA</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!==</span> <span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="n">iterativeCopy</span><span class="p">)</span>
+
+<span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">GraphNote</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Copy only"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sameTitleA</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="c1">// The model deliberately allows strong cycles; release those cycles explicitly.</span>
+<span class="n">iterativeShared</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+<span class="n">iterativeCopy</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Two equal titles remain two distinct copied nodes. Two edges to the same original node remain two edges to the same copied node. The back-edge points to the copied root rather than the original root. These are three independent structural properties; comparing printed titles would not establish any of them.</p>
+
+<h3 id="why-discovery-and-processing-are-separate">Why discovery and processing are separate</h3>
+
+<p>The mapping entry is created before the newly discovered node enters the queue. If another edge reaches that original before it has been processed, it receives the same placeholder. That is what preserves sharing and terminates cycles.</p>
+
+<p>By the time a node is processed, its placeholder is guaranteed to exist. The force unwrap is confined to that algorithmic invariant. If the mapping were externally mutable or the queue contained nodes inserted through another path, the invariant would need to be reestablished rather than defended with a comment.</p>
+
+<p>The cursor avoids repeatedly removing the first array element, which would shift the remaining elements. Each original node enters the queue once. Each outgoing edge is visited once. With expected dictionary lookup costs, traversal is proportional to reachable nodes and edges, plus payload-copying work. Additional mapping and queue storage is proportional to the node count.</p>
+
+<p>Iteration avoids recursive traversal depth, but it does not make arbitrarily large input cheap. Set document size limits when needed, and remember that releasing a deeply linked ownership graph can have its own runtime costs. The graph representation and its lifetime remain separate concerns from this traversal algorithm.</p>
+
+<h3 id="a-clone-needs-a-consistent-source">A clone needs a consistent source</h3>
+
+<p>The algorithm assumes the graph is stable while being copied. If another operation mutates links during traversal, the result may combine observations from different moments. An iterative traversal does not produce a transactional snapshot automatically.</p>
+
+<p>For a shared model, perform the copy within an appropriate isolation boundary or first obtain an immutable snapshot. Locking each individual property read separately may still permit a logically inconsistent combination of nodes. The consistency requirement applies to the operation as a whole.</p>
+
+<h3 id="copying-policy-should-classify-edges">Copying policy should classify edges</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Relationship</th>
+      <th>Possible policy</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Owned mutable paragraph</td>
+      <td>Clone</td>
+      <td>Independent edits are required</td>
+    </tr>
+    <tr>
+      <td>Shared annotation inside the document</td>
+      <td>Clone once and preserve aliases</td>
+      <td>Internal sharing is part of the document</td>
+    </tr>
+    <tr>
+      <td>Immutable schema service</td>
+      <td>Retain or reference separately</td>
+      <td>Duplicating it adds no editing independence</td>
+    </tr>
+    <tr>
+      <td>Live observer registration</td>
+      <td>Exclude and register explicitly later</td>
+      <td>It represents an external lifecycle</td>
+    </tr>
+    <tr>
+      <td>Persistent document ID</td>
+      <td>Preserve for a snapshot; regenerate for a duplicate</td>
+      <td>The product operation decides identity</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The graph code clones every <code class="language-plaintext highlighter-rouge">links</code> edge because that model assigns all links the same policy. A real model may have several edge kinds. Encode those distinctions explicitly; otherwise a general traversal can cross into account objects, services, or resources that were never meant to be duplicated.</p>
+
+<h3 id="test-cloning-and-duplication-as-separate-commands">Test cloning and duplication as separate commands</h3>
+
+<p>A snapshot test should establish preserved logical IDs and independent intended mutations. A “duplicate as new” test should establish fresh IDs, remapped internal references, and the absence of registrations that belonged only to the original.</p>
+
+<p>Avoid deriving a fresh persistent identity from <code class="language-plaintext highlighter-rouge">ObjectIdentifier</code>. That identifier is useful for this temporary mapping, not for durable identity generation. The map exists only to connect original allocations to copied allocations during one operation.</p>
+
+<p>When a value snapshot can represent the feature’s needs, it remains the simpler choice. Use graph cloning when preserving graph topology is actually part of the requirement, and test topology directly.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

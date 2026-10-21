@@ -185,4 +185,120 @@ A useful exercise is replacing a local tracker with a cache plus remote refresh.
 
 The screen may legitimately gain a freshness indicator. It should not need to parse the vendor's JSON or know which database table holds the cache. That distinction is how you evaluate an abstraction in practice: it permits meaningful product changes while containing irrelevant mechanical changes.
 
+## Case study: adapting a carrier without leaking its vocabulary
+
+A carrier SDK may use transport-specific outcomes that do not belong in a tracking screen: numeric response codes, rate-limit fields, and vendor labels. An adapter should preserve the distinctions the application needs while translating away those mechanics.
+
+Start with the consumer's recovery choices. It can show a known status, explain that no parcel matches the identifier, or ask the user to retry later. A misconfigured integration requires a different operational response from an unknown parcel.
+
+```swift
+enum CarrierReply {
+    case inTransit(label: String, observedMinute: Int)
+    case delivered(observedMinute: Int)
+    case noMatch
+    case rateLimited(retryAfterMinutes: Int)
+    case credentialsRejected
+}
+
+protocol CarrierResponding {
+    func reply(for identifier: String) throws -> CarrierReply
+}
+
+enum ParcelObservation: Equatable {
+    case known(status: ParcelStatus, observedMinute: Int)
+    case unknown
+}
+
+enum ParcelLookupFailure: Error {
+    case temporarilyUnavailable(retryAfterMinutes: Int)
+    case integrationMisconfigured
+    case invalidResponse
+}
+
+struct CarrierTrackingAdapter {
+    let carrier: any CarrierResponding
+
+    func lookup(_ identifier: String) throws -> ParcelObservation {
+        switch try carrier.reply(for: identifier) {
+        case let .inTransit(label, minute):
+            return .known(
+                status: ParcelStatus(description: label, isDelivered: false),
+                observedMinute: minute
+            )
+        case let .delivered(minute):
+            return .known(
+                status: ParcelStatus(description: "Delivered", isDelivered: true),
+                observedMinute: minute
+            )
+        case .noMatch:
+            return .unknown
+        case let .rateLimited(delay):
+            guard delay >= 0 else { throw ParcelLookupFailure.invalidResponse }
+            throw ParcelLookupFailure.temporarilyUnavailable(retryAfterMinutes: delay)
+        case .credentialsRejected:
+            throw ParcelLookupFailure.integrationMisconfigured
+        }
+    }
+}
+
+struct FixedCarrierReply: CarrierResponding {
+    let response: CarrierReply
+    func reply(for identifier: String) throws -> CarrierReply { response }
+}
+
+let unknownAdapter = CarrierTrackingAdapter(carrier: FixedCarrierReply(response: .noMatch))
+let unknownObservation = try unknownAdapter.lookup("PKG-404")
+assert(unknownObservation == .unknown)
+let busyAdapter = CarrierTrackingAdapter(carrier: FixedCarrierReply(response: .rateLimited(retryAfterMinutes: 5)))
+do {
+    _ = try busyAdapter.lookup("PKG-42")
+    assertionFailure("A rate limit is not an unknown parcel")
+} catch ParcelLookupFailure.temporarilyUnavailable(let delay) {
+    assert(delay == 5)
+}
+```
+
+The adapter is intentionally synchronous because the supplied carrier is local. A real network-backed contract should be asynchronous and include a cancellation policy. Do not hide a blocking SDK behind a friendly name and assume that naming has abstracted away its timing cost.
+
+The new result also carries observation time. It is a separate contract from the earlier `ParcelTracking`, which returned only status. When the product needs freshness, evolve the semantic contract deliberately instead of smuggling timestamps into a display string.
+
+### Decide which errors cross the boundary
+
+A transport timeout may map to temporary unavailability, while a decoding error may indicate an invalid integration response. Raw diagnostic information can still be logged by the adapter or infrastructure layer without becoming the screen's public error vocabulary.
+
+Avoid catching every error and returning `.unknown`. That makes the UI give a confident but false explanation. Also avoid exposing every vendor error directly: consumers then have to understand a backend's private taxonomy and change whenever the SDK renames a case.
+
+A useful boundary preserves information needed for recovery and operations while discarding irrelevant representation details. That is a more demanding goal than merely replacing a concrete parameter with a protocol.
+
+### Validate units and meaning, not just types
+
+Both a retry delay in seconds and a retry delay in minutes can be integers. A compiler cannot catch passing one as the other when both are represented as `Int`.
+
+Wrapper values such as `RetryDelay` or a standard duration type can make those distinctions harder to lose. Even with wrappers, tests should cover conversion boundaries, negative values, overflow, and any clamping policy. An adapter is often the last place to reject a malformed vendor value before it becomes trusted domain data.
+
+Similarly, “observed at” and “downloaded at” are different timestamps. A freshly downloaded cached response can still describe an old observation. Name the field according to what it actually means.
+
+### Write an implementation matrix before adding another backend
+
+| Scenario | Carrier A | Carrier B | Consumer-facing requirement |
+|---|---|---|---|
+| Identifier absent | Explicit no-match result | Empty result list | `.unknown` |
+| Temporary rate limit | Delay in minutes | Delay in seconds | One agreed retry-delay representation |
+| Delivered parcel | Dedicated case | Status code | Delivered status plus observation time |
+| Invalid credentials | Error code | Thrown SDK error | Integration failure, not parcel absence |
+
+The matrix reveals where an abstraction is coherent and where an adapter must translate. If one backend cannot provide observation time at all, decide whether the domain allows an unknown timestamp. Inventing a current timestamp would make the interface easy to satisfy while misleading consumers about freshness.
+
+### Keep adapter tests separate from screen tests
+
+A screen test should exercise known, unknown, stale, and unavailable outcomes without constructing carrier responses. An adapter test should feed representative carrier responses and verify the domain translation. A small integration test can check that the actual SDK still provides the shapes the adapter expects.
+
+Those tests protect different contracts. Reusing one giant fake for every layer tends to blur whether a failure is in presentation logic or translation. It can also accidentally make the tests reproduce the adapter's implementation instead of checking the intended meaning.
+
+### Evaluate the abstraction under a real change
+
+Add a second carrier that has no live status for delivered parcels but offers a historical completion record. Ask whether the existing result can truthfully represent that record and its timestamp. If it can, the screen may remain stable. If the product must expose a different guarantee, change the consumer-facing model rather than concealing the distinction.
+
+A good abstraction makes relevant differences explicit and irrelevant differences local. Its success is measured by the correctness and clarity of the consumer, not by how many backends can be forced through one method signature.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

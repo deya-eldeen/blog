@@ -199,4 +199,88 @@ Suppose every subclass must override `run`, remember to call `super.run`, and th
 
 That last question often exposes the real design issue. A hierarchy can compile while disagreeing about whether a failed operation counts as completed. Resolve that behavioral contract before polishing override syntax.
 
+## Case study: inherited property observers are part of behavior
+
+A property override can add observation while preserving the inherited implementation. That creates an ordering contract: the subclass's `willSet`, the superclass's observers, and the subclass's `didSet` can all participate in one assignment.
+
+```swift
+final class ProgressTrace {
+    private(set) var events: [String] = []
+    func record(_ event: String) { events.append(event) }
+}
+
+class ObservableProgress {
+    let trace: ProgressTrace
+    var amount = 0 {
+        willSet { trace.record("Base will: " + String(newValue)) }
+        didSet { trace.record("Base did: " + String(amount)) }
+    }
+
+    init(trace: ProgressTrace) { self.trace = trace }
+}
+
+final class SpecializedProgress: ObservableProgress {
+    override var amount: Int {
+        willSet { trace.record("Child will: " + String(newValue)) }
+        didSet { trace.record("Child did: " + String(amount)) }
+    }
+}
+
+let progressTrace = ProgressTrace()
+let specializedProgress = SpecializedProgress(trace: progressTrace)
+assert(progressTrace.events.isEmpty)
+specializedProgress.amount = 10
+assert(progressTrace.events == [
+    "Child will: 10", "Base will: 10", "Base did: 10", "Child did: 10"
+])
+specializedProgress.amount = 10
+assert(progressTrace.events.count == 8)
+```
+
+The second assignment uses the same value, but observers still run. If the observer launches expensive work or emits analytics, “the value did not change” is not sufficient evidence that no effect occurred.
+
+Initialization is different from ordinary assignment. Establishing this stored property's initial value does not emit the same observer sequence, which is why the trace starts empty. When debugging an initializer that appears to trigger observation, check whether it calls a helper or an inherited setter after the relevant initialization phase rather than assuming every assignment has identical semantics.
+
+### Observation and validation are different policies
+
+A `didSet` observer sees a completed assignment. If the object's invariant requires rejecting an input before mutation, a method or computed setter can provide a clearer boundary than observing and repairing arbitrary writes afterward.
+
+Repairing an invalid value from an observer can also create confusing event histories. Another observer or callback may see the attempted value, the repaired value, or an implementation-specific sequence that is difficult to explain at the API level.
+
+Prefer an operation such as `advance(to:)` when advancing has rules and failure outcomes. Use observers for coherent reactions to a change that the property's mutation contract already allows.
+
+### Overriding a throwing operation must preserve meaningful failure behavior
+
+Swift permits some implementation refinements, such as an override that does not throw even though the parent declaration can. That is compatible with callers that already handle failure. A subclass cannot arbitrarily add a throwing requirement to an operation whose parent promises a non-throwing call.
+
+The semantic issue remains broader than the compiler rule. If the parent documents that a failed import leaves existing data intact, an override must not partially delete data before throwing. If success means a durable save, returning success after scheduling an untracked background write changes the promise.
+
+Test the operation through the base reference and verify the documented state after both success and failure. That catches violations the override keyword cannot express.
+
+### Mandatory sequencing belongs in a controlled workflow
+
+A base API that tells every subclass “remember to call super and then record completion” spreads an invariant across implementations. One omitted call can make behavior depend on which subclass was chosen.
+
+A final workflow with a narrow hook can centralize that sequence. The hook contract then needs its own answers: may it fail, may it reenter the workflow, and what state is visible during execution?
+
+Do not assume that calling `super` solves every substitutability problem. A subclass can call the parent and then undo its invariant, add unexpected effects, or expose a partially updated object. The parent invocation is one step in an algorithm, not a proof of correctness.
+
+### A hierarchy has an internal dependency graph
+
+If base method A calls overridable method B, subclasses depend on that call relationship. Replacing A's implementation so it no longer calls B can break a subclass even if A's direct return value remains the same for the base class.
+
+This is the fragile-base-class problem in concrete terms: clients extend the implementation's control flow, not only its external result. Document intended hook relationships and avoid making incidental internal calls into accidental extension points.
+
+Composition can reduce that coupling when the variation is a policy rather than a true subtype relationship. The decision is easier once you identify exactly which dependency the override creates.
+
+### Debug an unexpected implementation systematically
+
+First confirm the static type at the call site and the exact signature selected. Then check whether the member is an inherited overridable class declaration, a protocol requirement, an extension-only helper, or a distinct overload.
+
+Next, inspect access and finality at the module boundary. A same-named method in a subclass does not replace an inaccessible or unrelated operation merely because direct calls appear to choose it.
+
+Finally, run a tiny trace through the same abstraction the real consumer stores. The observer example above is useful because it records the actual sequence rather than inferring it from source indentation. A focused trace often exposes an incorrect mental model more quickly than reading the entire hierarchy repeatedly.
+
+For the exact language rules, consult [Inheritance](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/inheritance/) and [Properties](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/properties/). Use those rules to define the supported customization contract, then test the behavior that contract promises.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

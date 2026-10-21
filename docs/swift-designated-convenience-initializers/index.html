@@ -209,6 +209,127 @@
 
 <p>Finally, test the shortest convenience call and the fully specified call. They should agree on invariants even when their defaults differ. This catches a common mistake: validating one entry point thoroughly while allowing a supposedly convenient path to skip a rule.</p>
 
+<h2 id="case-study-observe-the-actual-initializer-route">Case study: observe the actual initializer route</h2>
+
+<p>Initializer inheritance can feel mysterious because the shortest call does not show all the work it triggers. Instrumenting a small hierarchy makes delegation and customization order observable without guessing from the call’s spelling.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ConstructionTrace</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="kt">NamedComponent</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">trace</span><span class="p">:</span> <span class="kt">ConstructionTrace</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">trace</span><span class="p">:</span> <span class="kt">ConstructionTrace</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span>
+        <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Base storage ready"</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">convenience</span> <span class="nf">init</span><span class="p">(</span><span class="nv">trace</span><span class="p">:</span> <span class="kt">ConstructionTrace</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Convenience entry"</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"Default"</span><span class="p">,</span> <span class="nv">trace</span><span class="p">:</span> <span class="n">trace</span><span class="p">)</span>
+        <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Convenience customization"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TracedComponent</span><span class="p">:</span> <span class="kt">NamedComponent</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">mode</span><span class="p">:</span> <span class="kt">String</span>
+
+    <span class="k">override</span> <span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">trace</span><span class="p">:</span> <span class="kt">ConstructionTrace</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="s">"Audited"</span>
+        <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Subclass storage ready"</span><span class="p">)</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="nv">trace</span><span class="p">:</span> <span class="n">trace</span><span class="p">)</span>
+        <span class="n">trace</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"Subclass customization"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">constructionTrace</span> <span class="o">=</span> <span class="kt">ConstructionTrace</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">tracedComponent</span> <span class="o">=</span> <span class="kt">TracedComponent</span><span class="p">(</span><span class="nv">trace</span><span class="p">:</span> <span class="n">constructionTrace</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">tracedComponent</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">"Default"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">tracedComponent</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">"Audited"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">constructionTrace</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"Convenience entry"</span><span class="p">,</span>
+    <span class="s">"Subclass storage ready"</span><span class="p">,</span>
+    <span class="s">"Base storage ready"</span><span class="p">,</span>
+    <span class="s">"Subclass customization"</span><span class="p">,</span>
+    <span class="s">"Convenience customization"</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The convenience initializer is inherited because the subclass supplies the superclass’s designated construction path. Its call to <code class="language-plaintext highlighter-rouge">self.init</code> reaches the subclass implementation. That implementation establishes <code class="language-plaintext highlighter-rouge">mode</code>, delegates upward, and then performs its post-delegation customization.</p>
+
+<p>The trace parameter can be used before <code class="language-plaintext highlighter-rouge">super.init</code> because it is an already available argument. The code does not call an arbitrary instance method on a partially initialized <code class="language-plaintext highlighter-rouge">self</code> or publish that instance to the registry. Keep that distinction clear when reading diagnostic code: using an input value is different from using the incomplete instance.</p>
+
+<h3 id="default-arguments-do-not-create-extra-initializers">Default arguments do not create extra initializers</h3>
+
+<p>An initializer <code class="language-plaintext highlighter-rouge">init(host: String, port: Int = 443)</code> is one designated initializer with a default argument. A designated <code class="language-plaintext highlighter-rouge">init(host:port:)</code> plus a convenience <code class="language-plaintext highlighter-rouge">init(host:)</code> is a pair of declarations with a delegation relationship.</p>
+
+<p>The two APIs may permit similar call syntax while having different inheritance and override behavior. A subclass overriding the designated initializer must match its declaration, not invent a separate override for the default-argument call shape.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>API shape</th>
+      <th>Number of declarations</th>
+      <th>What the short call does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>One initializer with a default argument</td>
+      <td>One</td>
+      <td>Supplies an omitted argument</td>
+    </tr>
+    <tr>
+      <td>Designated plus convenience initializer</td>
+      <td>Two</td>
+      <td>Delegates through another initializer</td>
+    </tr>
+    <tr>
+      <td>Named factory returning an instance</td>
+      <td>One separate function</td>
+      <td>Executes an explicit construction policy</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Choose based on the construction story, not just a desire to save a parameter at the call site. A convenience initializer is useful when several input representations converge on one designated path. A default can be clearer when the omitted argument simply has an ordinary default value.</p>
+
+<h3 id="required-construction-and-injected-dependencies-can-conflict">Required construction and injected dependencies can conflict</h3>
+
+<p>A required initializer promises that subclasses support a particular construction interface. If a subclass introduces a mandatory service that interface cannot supply, the hierarchy has a design tension.</p>
+
+<p>Silently constructing the service inside the subclass may satisfy the syntax while hiding a dependency and lifetime decision. Giving the service a meaningless optional default can create a validly initialized but unusable instance. Neither is automatically the right answer.</p>
+
+<p>Possible responses include putting the required configuration into a coherent configuration value, providing a separate factory capability, or closing the hierarchy if subclass construction is not actually a supported extension point. The required initializer should describe a construction contract the entire hierarchy can honestly fulfill.</p>
+
+<p>A protocol factory can sometimes express the real need better than a subclass metatype. The caller may only need “create a processor for this request,” not “construct every possible subclass with these exact initializer arguments.”</p>
+
+<h3 id="keep-validation-in-the-route-every-caller-reaches">Keep validation in the route every caller reaches</h3>
+
+<p>If a port must be valid for every endpoint, validate it in the designated initializer or in a validated configuration value accepted by that initializer. Validating only in a convenience entry leaves fully specified construction able to bypass the rule.</p>
+
+<p>The reverse is also worth checking: a convenience initializer may impose a product-specific restriction that does not belong to every construction path. Document that restriction as part of the alternate entry point instead of accidentally making it a hidden universal invariant.</p>
+
+<p>For a throwing construction path, verify the error from each route. For a failable path, verify which invalid inputs return <code class="language-plaintext highlighter-rouge">nil</code>. Do not infer validation coverage merely because all properties receive initial values; initialization safety and domain validity are different guarantees.</p>
+
+<h3 id="review-library-evolution-through-subclass-call-sites">Review library evolution through subclass call sites</h3>
+
+<p>A client module may subclass an open class and override its designated initializer. Adding another designated initializer to the superclass can affect which convenience initializers a subclass automatically inherits. A change that seems additive for direct callers can therefore alter a subclass’s construction surface.</p>
+
+<p>Review representative external subclasses when evolving an inheritance API. Also consider which initializers are public, open-class supported, required, or deliberately unavailable. The source-level convenience of a short call should not conceal a new long-term construction promise.</p>
+
+<h3 id="use-the-trace-as-a-debugging-method">Use the trace as a debugging method</h3>
+
+<p>When an actual hierarchy initializes the wrong configuration, record the entry point, every delegation, and the values established at each level. Compare that trace with the expected route before changing access modifiers or adding more convenience initializers.</p>
+
+<p>If a property is overwritten later, identify whether that happens in subclass customization, convenience customization, or a subsequent activation method. Those are different phases, and the fix belongs where the wrong policy was applied.</p>
+
+<p>The goal is one understandable construction path per valid use case. More initializer overloads do not compensate for a path whose required state and delegation order are unclear.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

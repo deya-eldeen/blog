@@ -199,4 +199,129 @@ Take a method that formats “expires in five minutes.” List the current time,
 
 Then test the exact expiration boundary and a locale variation without changing process-wide settings. That exercise usually teaches more about injection than adding a container: it makes the behavior's real inputs explicit and controllable.
 
+## Case study: share a cache within an account and revoke it on sign-out
+
+A profile screen and a menu should share account preferences. A second signed-in account must not reuse those cached values. A process-wide singleton is too broad, while constructing a separate cache for every screen is too narrow.
+
+Model an account scope as an explicit object. It owns the account identity, a small cache, and an injected loading capability:
+
+```swift
+enum AccountScopeFailure: Error, Equatable { case closed }
+
+final class AccountPreferenceScope {
+    let accountID: String
+    private let load: (String, String) throws -> String?
+    private var cache: [String: String] = [:]
+    private var closed = false
+
+    init(accountID: String, load: @escaping (String, String) throws -> String?) {
+        self.accountID = accountID
+        self.load = load
+    }
+
+    func value(for key: String) throws -> String? {
+        guard !closed else { throw AccountScopeFailure.closed }
+        if let existing = cache[key] { return existing }
+        let value = try load(accountID, key)
+        if let value { cache[key] = value }
+        return value
+    }
+
+    func close() {
+        closed = true
+        cache.removeAll()
+    }
+}
+
+struct AccountPreferenceLabel {
+    let scope: AccountPreferenceScope
+    let key: String
+
+    func text() throws -> String {
+        try scope.value(for: key) ?? "Not configured"
+    }
+}
+
+struct AccountFeatureFactory {
+    let load: (String, String) throws -> String?
+
+    func makeScope(accountID: String) -> AccountPreferenceScope {
+        AccountPreferenceScope(accountID: accountID, load: load)
+    }
+}
+
+var accountPreferenceLoads: [String] = []
+let accountFeatureFactory = AccountFeatureFactory { accountID, key in
+    accountPreferenceLoads.append(accountID + "/" + key)
+    return accountID + " value"
+}
+let aliceScope = accountFeatureFactory.makeScope(accountID: "alice")
+let aliceProfile = AccountPreferenceLabel(scope: aliceScope, key: "displayName")
+let aliceMenu = AccountPreferenceLabel(scope: aliceScope, key: "displayName")
+let aliceProfileText = try aliceProfile.text()
+let aliceMenuText = try aliceMenu.text()
+assert(aliceProfileText == "alice value")
+assert(aliceMenuText == "alice value")
+assert(accountPreferenceLoads == ["alice/displayName"])
+
+let bobScope = accountFeatureFactory.makeScope(accountID: "bob")
+let bobMenu = AccountPreferenceLabel(scope: bobScope, key: "displayName")
+let bobMenuText = try bobMenu.text()
+assert(bobMenuText == "bob value")
+assert(accountPreferenceLoads == ["alice/displayName", "bob/displayName"])
+```
+
+The factory creates a fresh scope, not a globally registered service. Assembly chooses which labels share it. The labels receive a concrete dependency because substituting the loading effect at the scope boundary already gives the tests the control they need.
+
+This small cache stores present values only. A missing value will be loaded again. Caching absence requires a separate representation, such as an enum with missing and present cases, because assigning `nil` to a dictionary subscript removes an entry. Choose that policy based on freshness requirements instead of accidentally conflating absence with “not loaded.”
+
+### Releasing an owner is different from revoking access
+
+A screen can retain an old scope after the application has removed it from its current-session property. Simply assigning that property to `nil` does not invalidate references held elsewhere. An explicit close operation gives old consumers a defined failure:
+
+```swift
+aliceScope.close()
+aliceScope.close()
+do {
+    _ = try aliceMenu.text()
+    assertionFailure("A closed account scope must reject reads")
+} catch {
+    assert(error as? AccountScopeFailure == .closed)
+}
+let stillActiveBobText = try bobMenu.text()
+assert(stillActiveBobText == "bob value")
+assert(accountPreferenceLoads.count == 2)
+```
+
+Closing is idempotent, clears cached values, and rejects access before consulting the loader. Bob's scope remains active. This is an application lifecycle policy; it is not a substitute for server authorization or secure credential storage.
+
+An asynchronous loader needs more care. A result can arrive after close, so check the scope's active generation before accepting it and cancel owned work where possible. The synchronous example intentionally does not pretend a boolean solves that race across suspension points or threads.
+
+### Draw scopes as ownership decisions
+
+```mermaid
+flowchart TB
+    accTitle: Account-scoped dependency sharing
+    accDescr: Application assembly creates separate Alice and Bob scopes. Alice's profile and menu share Alice's scope, while Bob's menu uses Bob's scope.
+    App[Application assembly] --> Alice[Alice scope]
+    App --> Bob[Bob scope]
+    Profile[Alice profile] --> Alice
+    MenuA[Alice menu] --> Alice
+    MenuB[Bob menu] --> Bob
+```
+
+A container could automate this graph, but it would still need to know when account scopes begin and end. Explicit factories make that policy visible in ordinary Swift code. They also permit two scopes in one test process without resetting shared globals.
+
+### Test lifetime and reuse separately
+
+A useful scope test proves two things: expected consumers reuse one cache, and unrelated scopes remain independent. A lifecycle test then keeps an old consumer alive deliberately and verifies that closing its scope disables further work.
+
+Also decide how updates invalidate a cached value. This teaching example models read-mostly state for the scope's lifetime. A settings editor would need an explicit update or invalidate operation; injecting a loader does not make cached values fresh automatically.
+
+### Avoid a factory that becomes a service locator
+
+The factory's result and construction argument are specific. A generic `resolve(type:)` method would let a feature request arbitrary services during execution, hiding its true dependencies again. Keep factories focused on resources whose creation and lifetime matter.
+
+The important outcome is a reviewable ownership graph: application-level assembly supplies a loading capability, account scopes own account state, and feature objects share precisely the scope intended for them. Injection makes those choices explicit; the scope's API enforces the lifecycle decisions.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

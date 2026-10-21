@@ -211,4 +211,134 @@ Extend the reducer with a cancellation action. Decide whether cancellation prese
 
 Keep actual task cancellation in the coordinating object. The reducer should still reject outcomes that the state no longer accepts, because cancellation of external work may race with delivery. That is a practical example of OOP and functional design cooperating: an object owns work and lifetime, while a function owns the rule for state transitions.
 
+## Case study: return effect descriptions from a pure transition
+
+The earlier reducer changes state but leaves request creation and cancellation to its owner. A larger workflow can make the requested effects explicit too: return a new state plus values describing work to perform. The function still does no I/O.
+
+Use a separate, smaller query model so the effect planning is visible:
+
+```swift
+struct QueryState: Equatable {
+    var generation = 0
+    var activeRequest: Int?
+    var query = ""
+    var results: [String] = []
+}
+
+enum QueryEvent {
+    case changed(String)
+    case cancelled
+    case received(request: Int, results: [String])
+}
+
+enum QueryEffect: Equatable {
+    case load(request: Int, query: String)
+    case cancel(request: Int)
+}
+
+struct QueryTransition: Equatable {
+    let state: QueryState
+    let effects: [QueryEffect]
+}
+
+func planQuery(_ state: QueryState, event: QueryEvent) -> QueryTransition {
+    var next = state
+    var effects: [QueryEffect] = []
+    switch event {
+    case let .changed(query):
+        if let active = state.activeRequest {
+            effects.append(.cancel(request: active))
+        }
+        next.generation += 1
+        next.query = query
+        next.activeRequest = nil
+        if query.isEmpty {
+            next.results = []
+        } else {
+            next.activeRequest = next.generation
+            effects.append(.load(request: next.generation, query: query))
+        }
+    case .cancelled:
+        if let active = state.activeRequest {
+            effects.append(.cancel(request: active))
+            next.activeRequest = nil
+        }
+    case let .received(request, results):
+        guard state.activeRequest == request else {
+            return QueryTransition(state: state, effects: [])
+        }
+        next.activeRequest = nil
+        next.results = results
+    }
+    return QueryTransition(state: next, effects: effects)
+}
+
+let queryOne = planQuery(QueryState(), event: .changed("sw"))
+assert(queryOne.effects == [.load(request: 1, query: "sw")])
+let queryTwo = planQuery(queryOne.state, event: .changed("swift"))
+assert(queryTwo.effects == [
+    .cancel(request: 1), .load(request: 2, query: "swift")
+])
+let cancelledQuery = planQuery(queryTwo.state, event: .cancelled)
+assert(cancelledQuery.state.activeRequest == nil)
+assert(cancelledQuery.effects == [.cancel(request: 2)])
+let lateQueryOne = planQuery(
+    cancelledQuery.state, event: .received(request: 1, results: ["Old"])
+)
+let lateQueryTwo = planQuery(
+    lateQueryOne.state, event: .received(request: 2, results: ["Also old"])
+)
+assert(lateQueryOne.state == cancelledQuery.state)
+assert(lateQueryTwo.state == cancelledQuery.state)
+assert(lateQueryTwo.effects.isEmpty)
+```
+
+Changing a query supersedes the old request. Cancellation preserves the query and existing results. Empty input cancels current work and clears results. Identical nonempty query events deliberately start a fresh request; deduplication or debounce would be a separate policy.
+
+Request identifiers increase within this state owner's lifetime. If callbacks can outlive the owner and reach a new owner, use a token whose scope cannot collide, or prevent that delivery at the adapter boundary. A local integer is not a durable cross-session identity.
+
+### Commit the state before executing the effects
+
+The coordinating object handles an event by calculating a transition, replacing its stored state, then interpreting the returned effects. That order matters when a test loader or cache completes synchronously. If effects run before state is committed, the completion could arrive while the owner still believes the previous request is active.
+
+The interpreter maps `.load` to a real request and maps its outcome back to another event. It maps `.cancel` to cancellation of the corresponding task. It must own tasks, deliver events within the chosen isolation boundary, and clean up when the feature ends.
+
+The effect array describes intent; returning `.cancel` does not prove cancellation happened. That distinction lets tests cover decision logic separately from infrastructure, while adapter tests cover task lookup, actual cancellation, and callback delivery.
+
+```mermaid
+stateDiagram-v2
+    accTitle: Query workflow accepts only active request results
+    accDescr: A nonempty query starts loading. New queries replace requests. Completion or cancellation settles loading, and stale results leave the current state unchanged.
+    [*] --> Settled
+    Settled --> Loading: nonempty query
+    Loading --> Loading: replace query and request
+    Loading --> Settled: current result
+    Loading --> Settled: cancel or clear
+    Settled --> Settled: late result ignored
+```
+
+### Deterministic replay has a precise boundary
+
+Replaying the same state and event returns the same transition:
+
+```swift
+let queryTwoAgain = planQuery(queryOne.state, event: .changed("swift"))
+assert(queryTwoAgain == queryTwo)
+let repeatedCancellation = planQuery(cancelledQuery.state, event: .cancelled)
+assert(repeatedCancellation.state == cancelledQuery.state)
+assert(repeatedCancellation.effects.isEmpty)
+```
+
+Recalculating a transition is safe because it performs no effects. Reexecuting its `.load` effect may issue a second request. Purity of the planner is not an exactly-once guarantee for an interpreter or remote service.
+
+For diagnostic replay, record events and reconstruct state without running effects. If you want to resume work after a restart, define a persistence and recovery protocol instead of blindly replaying every historical effect.
+
+### Keep the state model truthful as requirements grow
+
+This query example omits failures to keep the cancellation path focused; the earlier `SearchViewState` reducer shows a failure outcome. A production model can add typed error state and a failed event guarded by the same active-request rule.
+
+If loading can preserve old content, represent that intentionally. If clearing the query must clear an error too, include that rule. Functional design helps because every transition can be inspected and tested, not because one universal state enum fits every product.
+
+The object remains responsible for lifetime, isolation, and effects. The function owns the decision about which state and work should follow an event. That division gives both programming styles a concrete job and keeps the hardest ordering rules executable without timing-dependent tests.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

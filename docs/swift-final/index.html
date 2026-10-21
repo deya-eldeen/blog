@@ -207,6 +207,137 @@
 
 <p>If external inheritance really is required, write down which members are hooks, their ordering rules, and which invariants subclasses must preserve. Then test one representative subclass through the base interface. Removing one keyword is a small textual edit that can create a substantial new maintenance obligation.</p>
 
+<h2 id="case-study-protect-a-workflow-while-allowing-one-calculation-to-vary">Case study: protect a workflow while allowing one calculation to vary</h2>
+
+<p>An export operation must validate its input, calculate the output, and record a successful completion. Product teams want different transformations, but they do not need permission to skip validation or report success before the transformation completes. A final coordinator with an injected calculation makes that boundary explicit.</p>
+
+<p>The example also guards against a subtle problem: the injected closure can capture the coordinator and call it again while an export is already running. Closing inheritance does not prevent callbacks from reentering an object.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">GuardedExportFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">emptyInput</span>
+    <span class="k">case</span> <span class="n">alreadyRunning</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">GuardedExport</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">transform</span><span class="p">:</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">running</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">completedOutputs</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">transform</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">transform</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">running</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">GuardedExportFailure</span><span class="o">.</span><span class="n">alreadyRunning</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">input</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">GuardedExportFailure</span><span class="o">.</span><span class="n">emptyInput</span> <span class="p">}</span>
+
+        <span class="n">running</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">running</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">output</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">transform</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+        <span class="n">completedOutputs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">uppercaseExport</span> <span class="o">=</span> <span class="kt">GuardedExport</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">uppercased</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">exportedHeading</span> <span class="o">=</span> <span class="k">try</span> <span class="n">uppercaseExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"Release notes"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">exportedHeading</span> <span class="o">==</span> <span class="s">"RELEASE NOTES"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">uppercaseExport</span><span class="o">.</span><span class="n">completedOutputs</span> <span class="o">==</span> <span class="p">[</span><span class="s">"RELEASE NOTES"</span><span class="p">])</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">uppercaseExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">""</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Empty input must be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">GuardedExportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">emptyInput</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">uppercaseExport</span><span class="o">.</span><span class="n">completedOutputs</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The invariant lives in <code class="language-plaintext highlighter-rouge">run</code>: only a completed transformation is appended. The closure may throw, but it cannot access the private completion array. There is no subclass hook that can replace the workflow, and no setter that permits an outside caller to manufacture a successful completion.</p>
+
+<p>This is still an intentionally synchronous object. The <code class="language-plaintext highlighter-rouge">running</code> flag handles nested calls on the same serialized execution path. It is not a lock and does not make simultaneous calls from different threads safe. An asynchronous version would need a deliberately isolated owner and explicit decisions about suspension and cancellation.</p>
+
+<h3 id="test-hostile-callbacks-not-only-friendly-substitutions">Test hostile callbacks, not only friendly substitutions</h3>
+
+<p>A collaborator does not have to be malicious to reenter. A transformation can emit an event that triggers an observer, which starts another export. Exercise that path directly:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">reentrantExport</span><span class="p">:</span> <span class="kt">GuardedExport</span><span class="o">!</span>
+<span class="k">var</span> <span class="nv">rejectedNestedCall</span> <span class="o">=</span> <span class="kc">false</span>
+<span class="n">reentrantExport</span> <span class="o">=</span> <span class="kt">GuardedExport</span> <span class="p">{</span> <span class="n">input</span> <span class="k">in</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">reentrantExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"Nested"</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="kt">GuardedExportFailure</span><span class="o">.</span><span class="n">alreadyRunning</span> <span class="p">{</span>
+        <span class="n">rejectedNestedCall</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">input</span> <span class="o">+</span> <span class="s">"!"</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">outerOutput</span> <span class="o">=</span> <span class="k">try</span> <span class="n">reentrantExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"Outer"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">outerOutput</span> <span class="o">==</span> <span class="s">"Outer!"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">rejectedNestedCall</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">reentrantExport</span><span class="o">.</span><span class="n">completedOutputs</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Outer!"</span><span class="p">])</span>
+<span class="n">reentrantExport</span> <span class="o">=</span> <span class="kc">nil</span>
+</code></pre></div></div>
+
+<p>The outer operation succeeds because the transformation handles the rejected nested call. The stored closure refers to a variable that is cleared after the test, releasing the object. A production callback should have an equally deliberate ownership policy rather than creating an owner–closure retention cycle accidentally.</p>
+
+<p>Next verify that failure releases the in-progress state. Otherwise, one error would leave the object permanently unusable.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">TransformAttemptFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">unavailable</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">transformAttempts</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">recoveringExport</span> <span class="o">=</span> <span class="kt">GuardedExport</span> <span class="p">{</span> <span class="n">input</span> <span class="k">in</span>
+    <span class="n">transformAttempts</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">transformAttempts</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">TransformAttemptFailure</span><span class="o">.</span><span class="n">unavailable</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">input</span>
+<span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">recoveringExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"First"</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The first transformation should fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">TransformAttemptFailure</span><span class="o">.</span><span class="n">unavailable</span> <span class="p">{}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recoveringExport</span><span class="o">.</span><span class="n">completedOutputs</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">recoveredOutput</span> <span class="o">=</span> <span class="k">try</span> <span class="n">recoveringExport</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"Second"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recoveredOutput</span> <span class="o">==</span> <span class="s">"Second"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recoveringExport</span><span class="o">.</span><span class="n">completedOutputs</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Second"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">defer</code> restores the flag on both success and error. It does not undo external effects performed by the transformation. If a closure writes a file and then throws, the coordinator cannot infer how to roll that write back. For this contract, prefer a calculation that returns data, with persistence owned by a separately defined stage.</p>
+
+<h3 id="compare-the-actual-extension-contracts">Compare the actual extension contracts</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Design</th>
+      <th>Supported variation</th>
+      <th>Author’s continuing obligation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Open workflow method</td>
+      <td>Entire sequence</td>
+      <td>Document and tolerate replacement behavior</td>
+    </tr>
+    <tr>
+      <td>Final workflow with overridable hook</td>
+      <td>Hook behavior plus its interaction with the base</td>
+      <td>Preserve hook ordering and inherited state assumptions</td>
+    </tr>
+    <tr>
+      <td>Final object with a closure</td>
+      <td>One declared calculation</td>
+      <td>Define inputs, errors, ownership, and reentrancy</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The third option does not remove every obligation. It concentrates them in a smaller interface. A closure can be entirely sufficient for a single transformation; a protocol becomes useful when the collaborator needs several related operations, named semantic requirements, or its own lifecycle.</p>
+
+<h3 id="removing-final-is-an-api-change">Removing final is an API change</h3>
+
+<p>If a later requirement genuinely needs inheritance, describe the supported subclass first. Which behavior must vary? Which methods must it call through <code class="language-plaintext highlighter-rouge">super</code>? Can overrides fail, call back, or retain arguments? A runnable example subclass should demonstrate the intended contract.</p>
+
+<p>That exercise often reveals that the requirement is dependency substitution or configuration instead. When inheritance is appropriate, opening it deliberately is defensible. The mistake is allowing arbitrary overrides to become an accidental extension mechanism for a workflow whose correctness depends on controlling its sequence.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

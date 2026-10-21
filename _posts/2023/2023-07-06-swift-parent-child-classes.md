@@ -191,4 +191,124 @@ Then retain a child while releasing its parent and verify the intended optional-
 
 As an exercise, add sibling-name uniqueness. Decide whether a failed move preserves the original parent; it usually should. Validate the destination before detaching the child, so an expected rejection does not accidentally turn a move into a removal.
 
+## Case study: move a node without losing it on failure
+
+A sidebar allows folders to be dragged between groups. Siblings must have unique names. A rejected drag must leave the item exactly where it was. The earlier `OutlineNode` exercise becomes a small transaction: check every destination constraint first, then update both directions together.
+
+Use a separate model here so that the original tree's permissive naming policy remains clear:
+
+```swift
+enum TreeMoveFailure: Error, Equatable {
+    case cycle
+    case duplicateName(String)
+}
+
+final class NavigationNode {
+    let name: String
+    private(set) weak var parent: NavigationNode?
+    private(set) var children: [NavigationNode] = []
+
+    init(name: String) { self.name = name }
+
+    func move(to destination: NavigationNode) throws {
+        var ancestor: NavigationNode? = destination
+        while let current = ancestor {
+            guard current !== self else { throw TreeMoveFailure.cycle }
+            ancestor = current.parent
+        }
+        guard !destination.children.contains(where: {
+            $0 !== self && $0.name == name
+        }) else {
+            throw TreeMoveFailure.duplicateName(name)
+        }
+        guard parent !== destination else { return }
+
+        parent?.children.removeAll { $0 === self }
+        destination.children.append(self)
+        parent = destination
+    }
+}
+
+let navigationRoot = NavigationNode(name: "Root")
+let workGroup = NavigationNode(name: "Work")
+let personalGroup = NavigationNode(name: "Personal")
+let workNotes = NavigationNode(name: "Notes")
+let personalNotes = NavigationNode(name: "Notes")
+try workGroup.move(to: navigationRoot)
+try personalGroup.move(to: navigationRoot)
+try workNotes.move(to: workGroup)
+try personalNotes.move(to: personalGroup)
+
+do {
+    try workNotes.move(to: personalGroup)
+    assertionFailure("The destination already has Notes")
+} catch {
+    assert(error as? TreeMoveFailure == .duplicateName("Notes"))
+}
+assert(workNotes.parent === workGroup)
+assert(workGroup.children.count == 1)
+assert(workGroup.children.first === workNotes)
+assert(personalGroup.children.first === personalNotes)
+```
+
+Every expected error happens before detachment. A failed move does not become an accidental delete. That ordering is a more useful correctness property than simply checking whether `parent` is weak.
+
+The name is immutable in this model. Allowing a public mutable name would let a caller create duplicate siblings without invoking `move`. A rename operation should perform its own sibling validation, or route both rename and move through a shared owner that enforces the invariant.
+
+### Test the successful path and the dangerous topology
+
+```swift
+let archiveGroup = NavigationNode(name: "Archive")
+try archiveGroup.move(to: navigationRoot)
+try workNotes.move(to: archiveGroup)
+assert(workGroup.children.isEmpty)
+assert(workNotes.parent === archiveGroup)
+try workNotes.move(to: archiveGroup)
+assert(archiveGroup.children.count == 1)
+
+do {
+    try navigationRoot.move(to: workNotes)
+    assertionFailure("A root cannot move beneath its descendant")
+} catch {
+    assert(error as? TreeMoveFailure == .cycle)
+}
+assert(navigationRoot.parent == nil)
+assert(archiveGroup.parent === navigationRoot)
+assert(workNotes.parent === archiveGroup)
+```
+
+Repeatedly moving to the current parent is an idempotent success. Attempting to move the root below a descendant fails without changing any edge. Walking upward from the destination detects both this indirect cycle and the direct case of moving a node under itself.
+
+The scan costs time proportional to destination depth plus the sibling lists examined and updated. That is usually understandable for a small navigation tree. A large indexed model might use identifiers and name indexes instead; it would then need to keep those indexes consistent during every mutation too.
+
+### Separate the logical graph from the retain graph
+
+```mermaid
+flowchart LR
+    accTitle: Navigation tree ownership after a move
+    accDescr: The root owns two groups. Archive owns Notes. Notes has a weak parent link to Archive.
+    Root[Root] -->|strong| Work[Work]
+    Root -->|strong| Archive[Archive]
+    Archive -->|strong| Notes[Notes]
+    Notes -.->|weak parent| Archive
+```
+
+The diagram omits the personal branch to focus on the move. Strong downward references retain the descendants. A weak upward reference permits a descendant to outlive its former ancestors if an external owner retains it.
+
+Logical acyclicity is established by the ancestor check. Memory ownership is established by the strong and weak edges. Neither proves the other: a graph with weak back-links can still contain an invalid logical cycle, and an acyclic domain tree can still leak through a separately captured callback.
+
+### Publishing a move introduces another boundary
+
+The example has no notifications and assumes serial access. That lets the mutation complete without outside code observing its intermediate steps. If each assignment emits a callback, an observer could see the old parent missing the child while the new back-reference has not yet been assigned.
+
+Publish one move event after the relationship is consistent. Include enough information for observers to update themselves without reaching into half-updated state. If observers can trigger another move, define whether reentrancy is accepted, queued, or rejected.
+
+For persisted moves, the in-memory operation is not automatically a database transaction. Either persist atomically before publishing the new state, or define a pending move and a rollback policy. A disk failure after detachment is a different category of failure from a duplicate-name rejection discovered before mutation.
+
+### Define the policies this model deliberately leaves open
+
+Name comparison here is exact string equality. A product may need case-insensitive uniqueness, locale-independent normalization, or distinct display names and stable path keys. Decide those rules before shipping file-like behavior.
+
+Also decide whether detached nodes are legal, who owns the root, and whether external code may retain a node after removal. These decisions determine optionality and lifetime. A superclass name cannot answer them because they concern relationships between instances, not inheritance between types.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

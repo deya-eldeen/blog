@@ -207,6 +207,131 @@
 
 <p>For environment configuration, construct a client with an immutable configuration value. For per-request variation, pass the value to the request operation. Leaving it static because “there is normally one host” hides a variation that tests and multi-account features have already shown to be real.</p>
 
+<h2 id="case-study-count-requests-per-runtime-type-without-global-storage">Case study: count requests per runtime type without global storage</h2>
+
+<p>Suppose a diagnostic tool groups instances by their concrete class. A stored static counter inherited from a base class cannot provide one independent counter per subclass. The grouping key must represent the runtime type explicitly, and the storage must have a chosen owner.</p>
+
+<p><code class="language-plaintext highlighter-rouge">ObjectIdentifier</code> can identify a metatype within a process. That makes it useful as a dictionary key for this in-memory registry:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">DiagnosticTask</span> <span class="p">{}</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ImageDiagnosticTask</span><span class="p">:</span> <span class="kt">DiagnosticTask</span> <span class="p">{}</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TextDiagnosticTask</span><span class="p">:</span> <span class="kt">DiagnosticTask</span> <span class="p">{}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TaskTypeCounts</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">counts</span><span class="p">:</span> <span class="p">[</span><span class="kt">ObjectIdentifier</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">DiagnosticTask</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="kt">ObjectIdentifier</span><span class="p">(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">task</span><span class="p">))</span>
+        <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">count</span><span class="p">(</span><span class="k">for</span> <span class="nv">taskType</span><span class="p">:</span> <span class="kt">DiagnosticTask</span><span class="o">.</span><span class="k">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="p">[</span><span class="kt">ObjectIdentifier</span><span class="p">(</span><span class="n">taskType</span><span class="p">),</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">taskCounts</span> <span class="o">=</span> <span class="kt">TaskTypeCounts</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">firstTask</span><span class="p">:</span> <span class="kt">DiagnosticTask</span> <span class="o">=</span> <span class="kt">ImageDiagnosticTask</span><span class="p">()</span>
+<span class="n">taskCounts</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="n">firstTask</span><span class="p">)</span>
+<span class="n">taskCounts</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="kt">ImageDiagnosticTask</span><span class="p">())</span>
+<span class="n">taskCounts</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="kt">TextDiagnosticTask</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskCounts</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="kt">ImageDiagnosticTask</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskCounts</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="kt">TextDiagnosticTask</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskCounts</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="kt">DiagnosticTask</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">independentCounts</span> <span class="o">=</span> <span class="kt">TaskTypeCounts</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">independentCounts</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="kt">ImageDiagnosticTask</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The base-typed <code class="language-plaintext highlighter-rouge">firstTask</code> still contributes to the image class’s bucket because <code class="language-plaintext highlighter-rouge">type(of:)</code> obtains its dynamic type. Counting the base class does not include all subclasses automatically. This registry groups exact runtime types; an inclusive hierarchy count would be a different operation with a different implementation.</p>
+
+<p>Two registry instances remain independent. A screen can own one registry for its current diagnostic session, while a test constructs a fresh registry without resetting a process-wide variable. If several components should share counts, inject the same instance explicitly.</p>
+
+<h3 id="a-type-identity-is-not-a-persistent-identifier">A type identity is not a persistent identifier</h3>
+
+<p><code class="language-plaintext highlighter-rouge">ObjectIdentifier</code> is suitable for identity comparisons within a running process. Do not write it into a database as a permanent class identifier or use it as a cross-launch analytics schema. A later process has its own identities, and implementation types can change during refactoring.</p>
+
+<p>For persisted grouping, define stable domain keys such as an enum or a documented string code. A type can expose that code through a static protocol requirement, but the code’s stability comes from the API contract, not from the runtime address of the type.</p>
+
+<p>This distinction also matters for instances. A class identity tells you which allocation you have; a database identifier tells you which entity it represents. A metatype identity tells you which runtime type you have; a product category identifies a concept that may span several implementation types.</p>
+
+<h3 id="factories-do-not-have-to-own-the-instances-they-create">Factories do not have to own the instances they create</h3>
+
+<p>A static factory can be pure even when its result holds per-instance configuration. It does not require mutable static configuration:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">UploadClientConfiguration</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">host</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">account</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ConfiguredUploadClient</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">configuration</span><span class="p">:</span> <span class="kt">UploadClientConfiguration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="kt">UploadClientConfiguration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">configuration</span> <span class="o">=</span> <span class="n">configuration</span>
+    <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">preview</span><span class="p">(</span><span class="nv">account</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">ConfiguredUploadClient</span> <span class="p">{</span>
+        <span class="kt">ConfiguredUploadClient</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="kt">UploadClientConfiguration</span><span class="p">(</span>
+            <span class="nv">host</span><span class="p">:</span> <span class="s">"preview.invalid"</span><span class="p">,</span>
+            <span class="nv">account</span><span class="p">:</span> <span class="n">account</span>
+        <span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">previewAlice</span> <span class="o">=</span> <span class="kt">ConfiguredUploadClient</span><span class="o">.</span><span class="nf">preview</span><span class="p">(</span><span class="nv">account</span><span class="p">:</span> <span class="s">"alice"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">previewBob</span> <span class="o">=</span> <span class="kt">ConfiguredUploadClient</span><span class="o">.</span><span class="nf">preview</span><span class="p">(</span><span class="nv">account</span><span class="p">:</span> <span class="s">"bob"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previewAlice</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">account</span> <span class="o">==</span> <span class="s">"alice"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previewBob</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">account</span> <span class="o">==</span> <span class="s">"bob"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previewAlice</span> <span class="o">!==</span> <span class="n">previewBob</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Each call creates an independent client. The word <code class="language-plaintext highlighter-rouge">static</code> describes how the factory is accessed; it does not mean the factory returns a singleton. Conversely, an instance method can return a shared object. Read the construction and ownership policy instead of inferring lifetime from the presence of a dot after a type name.</p>
+
+<p>This factory returns the concrete final class intentionally. There is no subclass contract to preserve with <code class="language-plaintext highlighter-rouge">Self</code>, and no reason to introduce a required initializer. A public initializer can remain the general construction path, while a named factory expresses one useful configuration.</p>
+
+<h3 id="choose-a-scope-by-asking-who-should-observe-a-change">Choose a scope by asking who should observe a change</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>State</th>
+      <th>Likely owner</th>
+      <th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Universal immutable suffix</td>
+      <td>Type constant</td>
+      <td>Every instance uses the same fact</td>
+    </tr>
+    <tr>
+      <td>Exact-type diagnostic counts</td>
+      <td>Explicit registry instance</td>
+      <td>Session lifetime and sharing are controllable</td>
+    </tr>
+    <tr>
+      <td>Account credentials</td>
+      <td>Account-scoped client</td>
+      <td>Another account must not observe a replacement</td>
+    </tr>
+    <tr>
+      <td>One request’s retry count</td>
+      <td>Request operation</td>
+      <td>A later request starts independently</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These choices are about semantics. Moving a property from an instance to the type changes who shares it and how long it lives. That can alter behavior even when every caller still compiles.</p>
+
+<h3 id="initialization-safety-and-operational-safety-need-separate-tests">Initialization safety and operational safety need separate tests</h3>
+
+<p>A test confirming that a static factory returns the expected configuration says nothing about concurrent mutation of a shared registry. This registry, like the earlier counter, is meant for serialized access. If it becomes shared across tasks, add isolation at its actual ownership boundary and test the resulting asynchronous API.</p>
+
+<p>Likewise, a lazy singleton can initialize correctly once and still retain stale account information forever. Verify switching accounts, ending a session, and constructing two environments in the same process. Those scenarios expose hidden type-level assumptions more effectively than a test that asks for the singleton twice and checks reference equality.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

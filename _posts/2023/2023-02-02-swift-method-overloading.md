@@ -187,4 +187,90 @@ Take an overload family and write a tiny call matrix with one row per context: l
 
 If you cannot explain a result without experimenting, either document the constraint or simplify the API. The goal is not to memorize every compiler ranking rule. It is to build an interface whose ordinary use is understandable without that memorization.
 
+## Case study: a lookup API that grows a second meaning
+
+A document application starts with one lookup operation: find a document by its server identifier. Later it adds a local file lookup. Both identifiers happen to be strings, but they have different validation, authorization, and failure behavior. Treating them as interchangeable because their storage types match would make the API easy to misuse.
+
+Give each identifier its own representation before deciding whether to overload the lookup method:
+
+```swift
+struct ServerDocumentID: Hashable {
+    let rawValue: String
+}
+
+struct LocalDocumentPath: Hashable {
+    let rawValue: String
+}
+
+struct DocumentLookup {
+    func locate(_ id: ServerDocumentID) -> String {
+        "server/" + id.rawValue
+    }
+
+    func locate(_ path: LocalDocumentPath) -> String {
+        "local/" + path.rawValue
+    }
+}
+
+let documentLookup = DocumentLookup()
+assert(documentLookup.locate(ServerDocumentID(rawValue: "notes")) == "server/notes")
+assert(documentLookup.locate(LocalDocumentPath(rawValue: "notes")) == "local/notes")
+```
+
+The wrappers make the distinction survive storage, function parameters, and refactoring. An argument label helps at a particular call; a distinct type protects every function that accepts that concept. These initializers deliberately accept any string to keep the overload example small. A real identifier type can validate its own format without changing the lookup's overload structure.
+
+This API is reasonable only if both overloads promise a coherent operation. If server lookup is asynchronous while local lookup is a cheap dictionary read, the shared name must not conceal that difference. The signature and documentation should expose effect and failure expectations. Distinct types eliminate one ambiguity; they do not automatically make two behaviors conceptually equivalent.
+
+### Build an executable matrix for contextual types
+
+Now consider a smaller overload family where optional values are meaningful. The purpose here is to make the compiler's context visible, rather than to recommend optional overloads as the default design.
+
+```swift
+func missingLabel(_ value: Int?) -> String {
+    value.map { "Number: \($0)" } ?? "No number"
+}
+
+func missingLabel(_ value: String?) -> String {
+    value.map { "Text: " + $0 } ?? "No text"
+}
+
+let absentNumber: Int? = nil
+let absentText: String? = nil
+let formatOptionalNumber: (Int?) -> String = missingLabel
+let formatOptionalText: (String?) -> String = missingLabel
+
+assert(missingLabel(absentNumber) == "No number")
+assert(missingLabel(absentText) == "No text")
+assert(missingLabel(nil as Int?) == "No number")
+assert(formatOptionalNumber(8) == "Number: 8")
+assert(formatOptionalText("Ready") == "Text: Ready")
+```
+
+A bare `missingLabel(nil)` supplies insufficient information to distinguish these two optional parameter types. That intentionally ambiguous call is omitted from the runnable example. Both overloads accept the literal; neither a runtime check nor an `if` statement decides which meaning the author intended.
+
+| Call context | Information available to the compiler | Design implication |
+|---|---|---|
+| Typed optional variable | The optional's wrapped type | Predictable selection |
+| Explicit cast on `nil` | The author's chosen optional type | Useful for a focused test |
+| Function value annotation | Complete input and output types | Stable selection for later calls |
+| Bare `nil` | No wrapped type distinguishing these candidates | Simplify the API or supply context |
+
+The stored function values also show when selection happens. Once `formatOptionalNumber` is formed, calling it does not reconsider the string overload. Its type is already `(Int?) -> String`.
+
+### Separate source compatibility from binary behavior
+
+Suppose version one of a library accepts a broad input type, and version two introduces a specialized overload. Recompiling client source can cause a previously valid expression to select the new overload. Existing compiled clients do not generally revisit source overload resolution at runtime just because another declaration now exists. Binary compatibility has additional library and toolchain rules; it is a separate question from which overload a fresh compilation selects.
+
+For a library change, keep a tiny client fixture containing representative calls. Compile that fixture against both API versions and compare observable behavior. A test placed only inside the new overload cannot detect a client silently switching from the old declaration to the new one.
+
+Pay particular attention to closures passed to higher-order functions. Parameter annotations, collection element types, and generic constraints can all provide context. If the new overload changes a side effect, a call that still compiles successfully can nevertheless become a behavioral regression.
+
+### Decide when explicit naming is the better migration
+
+If an overload family starts requiring repeated casts and explanatory comments, introduce clearer names or labels. A gradual migration can retain the old entry point as a forwarding compatibility method while moving callers toward `locate(serverID:)` and `locate(localPath:)`.
+
+Keep the forwarding implementation semantically identical to its old behavior. Do not use a naming cleanup as an opportunity to change cache policy or error handling silently. A deprecation message can identify the replacement; characterization tests should establish that the replacement preserves the intended result.
+
+The useful design skill is recognizing when the compiler has enough information but the reader does not. Successful type checking is a necessary condition for an overload family, not a complete review of its usability.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

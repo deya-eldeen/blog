@@ -213,4 +213,128 @@ Evaluate the tradeoff against a concrete scenario. For a one-off local formatter
 
 A useful review exercise is to name the change each abstraction protects. If no one can name a plausible current change or consumer requirement, leave the code concrete until evidence appears. If a replacement violates error semantics or lifecycle assumptions, fix the contract before adding another implementation.
 
+## Case study: an export that must never announce a failed save
+
+A feature now requires a receipt after a report is saved. Invalid reports must not reach storage, storage failures must not produce success receipts, and the destination must accept complete replacements. This change tests whether the earlier boundaries describe behavior precisely enough.
+
+Keep validation and rendering together as a domain policy, and make replacement semantics explicit in the storage contract:
+
+```swift
+enum VerifiedExportFailure: Error, Equatable {
+    case missingTitle
+    case destinationUnavailable
+}
+
+protocol CompleteTextReplacing {
+    // Success means the full text was accepted as the new value for this key.
+    // A failure must leave the previous value intact.
+    func replace(_ text: String, at key: String) throws
+}
+
+struct ValidatedReportRenderer {
+    func render(_ report: Report) throws -> String {
+        guard !report.title.isEmpty else { throw VerifiedExportFailure.missingTitle }
+        return ([report.title] + report.lines).joined(separator: "\n")
+    }
+}
+
+struct ExportReceipt: Equatable {
+    let key: String
+    let characterCount: Int
+}
+
+struct VerifiedReportExport {
+    let renderer: ValidatedReportRenderer
+    let destination: any CompleteTextReplacing
+
+    func export(_ report: Report, key: String) throws -> ExportReceipt {
+        let text = try renderer.render(report)
+        try destination.replace(text, at: key)
+        return ExportReceipt(key: key, characterCount: text.count)
+    }
+}
+
+final class ReplacementStore: CompleteTextReplacing {
+    private(set) var values: [String: String] = [:]
+    private(set) var attempts = 0
+    var acceptsWrites = true
+
+    func replace(_ text: String, at key: String) throws {
+        attempts += 1
+        guard acceptsWrites else { throw VerifiedExportFailure.destinationUnavailable }
+        values[key] = text
+    }
+}
+
+let replacementStore = ReplacementStore()
+let verifiedExport = VerifiedReportExport(
+    renderer: ValidatedReportRenderer(), destination: replacementStore
+)
+let exportReceipt = try verifiedExport.export(Report(title: "Build", lines: ["Passed"]), key: "latest")
+assert(exportReceipt == ExportReceipt(key: "latest", characterCount: 12))
+assert(replacementStore.values["latest"] == "Build\nPassed")
+```
+
+The receipt is returned after storage succeeds. Its character count uses Swift `String.count`, counting extended grapheme clusters, not UTF-8 bytes. If an upload API needs a byte length, name and calculate that different quantity explicitly.
+
+There is no receipt notifier in this design. The caller can update the screen from the returned value. Introducing another protocol and callback solely to report a synchronous return would add a lifecycle and failure boundary without a current requirement.
+
+### Make the forbidden effects observable
+
+```swift
+do {
+    _ = try verifiedExport.export(Report(title: "", lines: ["Invalid"]), key: "latest")
+    assertionFailure("A missing title must fail")
+} catch {
+    assert(error as? VerifiedExportFailure == .missingTitle)
+}
+assert(replacementStore.attempts == 1)
+
+replacementStore.acceptsWrites = false
+do {
+    _ = try verifiedExport.export(Report(title: "Next", lines: []), key: "latest")
+    assertionFailure("The destination should reject this write")
+} catch {
+    assert(error as? VerifiedExportFailure == .destinationUnavailable)
+}
+assert(replacementStore.attempts == 2)
+assert(replacementStore.values["latest"] == "Build\nPassed")
+```
+
+The validation test establishes that invalid input causes no storage attempt. The failure test establishes that this implementation preserves its previous value. A real file adapter needs an appropriate replacement operation; a database adapter needs a transaction with equivalent semantics. Merely conforming to the protocol does not verify those infrastructure guarantees.
+
+### Relate each principle to one actual decision
+
+Single Responsibility keeps text policy separate from persistence mechanics. It does not require moving the two title-validation lines into a separate validator object. They currently change with the report rendering rules.
+
+Open/Closed permits another destination implementation without changing the export sequence. A new domain rule may still require editing the renderer. “Closed” does not mean freezing incorrect behavior forever.
+
+Liskov Substitution requires every destination to honor complete replacement and failure preservation. An append-only adapter cannot truthfully satisfy this contract by appending text and hoping the caller will not notice.
+
+Interface Segregation gives the exporter only replacement capability. It cannot delete unrelated records or administer the database because the destination's concrete implementation happens to support those operations.
+
+Dependency Inversion places the replacement contract alongside the export policy, using strings and domain keys rather than database transaction classes. The infrastructure adapter depends on that contract and translates it to its storage system.
+
+### Module ownership matters more than diagram arrows
+
+```mermaid
+flowchart TB
+    accTitle: Export policy owns the storage contract
+    accDescr: The export policy and infrastructure adapter both depend on the domain-facing replacement protocol. Application assembly supplies the adapter to the policy.
+    Export[VerifiedReportExport] --> Contract[CompleteTextReplacing]
+    Adapter[File or database adapter] --> Contract
+    Assembly[Application assembly] --> Export
+    Assembly --> Adapter
+```
+
+If the protocol lived in a database module and exposed database-specific values, the high-level code would still import that module. Drawing a protocol box between classes would not change the dependency direction. Verify actual imports and ownership when separating modules.
+
+### Recognize the next change that would require a new design
+
+A remote store can accept a request but lose the response. Retrying might write twice. If the product requires retry-safe identity, add an operation identifier and define its behavior at the destination. A receipt returned by this synchronous example is not proof of distributed exactly-once processing.
+
+Likewise, sending a notification after saving creates two effects. If notification failure must not lose the saved event, an outbox or another durable coordination mechanism may be required. Do not solve that hypothetical requirement now, but do recognize it when it arrives instead of treating it as another incidental delegate call.
+
+The value of the principles is that they expose these contract questions. Their success is measured by truthful behavior under change, including failure, rather than by the number of interfaces in the folder.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

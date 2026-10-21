@@ -325,6 +325,134 @@
 
 <p>This is the central skill in reading class diagrams: distinguish what the notation asserts from what you merely assume about the implementation.</p>
 
+<h2 id="case-study-review-an-upload-workflow-from-three-views">Case study: review an upload workflow from three views</h2>
+
+<p>A single diagram rarely answers structural, temporal, and lifecycle questions equally well. Consider an upload feature with a coordinator, an uploader, a progress observer, and a cancellable session. Start by deciding what each view is allowed to claim.</p>
+
+<p>The class view describes supported relationships. The sequence view describes one interaction scenario. The state view describes allowed transitions. None of them alone proves that the implementation enforces the model.</p>
+
+<pre><code class="language-mermaid">classDiagram
+    direction LR
+    accTitle: Upload feature contracts and ownership
+    accDescr: An upload coordinator uses an uploading contract. A network uploader implements the contract and creates sessions. A session weakly references an optional progress observer.
+    class UploadCoordinator
+    class Uploading {
+        &lt;&lt;protocol&gt;&gt;
+        beginUpload()
+    }
+    class NetworkUploader
+    class UploadSession {
+        cancel()
+    }
+    class UploadProgressObserver {
+        &lt;&lt;protocol&gt;&gt;
+        didProgress()
+    }
+    UploadCoordinator --&gt; Uploading : uses
+    NetworkUploader ..|&gt; Uploading
+    NetworkUploader ..&gt; UploadSession : creates
+    UploadSession --&gt; "0..1" UploadProgressObserver : weak observer
+</code></pre>
+
+<p>The creation dependency is deliberately dashed. It does not say the uploader retains every session forever. The observer association is optional and explicitly weak; a protocol realization arrow would mean conformance instead of a stored relationship.</p>
+
+<p>The diagram also avoids claiming that <code class="language-plaintext highlighter-rouge">UploadCoordinator</code> is a superclass of <code class="language-plaintext highlighter-rouge">NetworkUploader</code>. Their relationship is collaboration, even though one object may create or configure the other in assembly code.</p>
+
+<h3 id="use-a-sequence-diagram-to-expose-cancellation-races">Use a sequence diagram to expose cancellation races</h3>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Cancellation racing with upload completion
+    accDescr: The coordinator starts a session, requests cancellation, and rejects a late completion for the cancelled request.
+    participant Screen
+    participant Coordinator
+    participant Session
+    Screen-&gt;&gt;Coordinator: Start upload request 7
+    Coordinator-&gt;&gt;Session: Begin request 7
+    Screen-&gt;&gt;Coordinator: Cancel request 7
+    Coordinator-&gt;&gt;Coordinator: Mark request 7 cancelled
+    Coordinator-&gt;&gt;Session: Request cancellation
+    Session--&gt;&gt;Coordinator: Completion already in flight
+    Coordinator-&gt;&gt;Coordinator: Ignore cancelled request 7
+</code></pre>
+
+<p>The cancellation request does not assert that work stops immediately. A completion may already be in flight, so the coordinator must decide whether that completion is still relevant. Showing the state update before requesting cancellation also makes a reentrant completion easier to reason about.</p>
+
+<p>If your service guarantees a different cancellation contract, draw that contract instead. A diagram should describe the implementation or intended API accurately, not an idealized ordering that the underlying system cannot provide.</p>
+
+<h3 id="model-terminal-states-separately-from-delivery">Model terminal states separately from delivery</h3>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: Upload session lifecycle
+    accDescr: An upload starts idle, runs, and reaches exactly one terminal state: succeeded, failed, or cancelled.
+    [*] --&gt; Idle
+    Idle --&gt; Running: start
+    Running --&gt; Succeeded: accept success
+    Running --&gt; Failed: accept failure
+    Running --&gt; Cancelled: accept cancellation
+    Succeeded --&gt; [*]
+    Failed --&gt; [*]
+    Cancelled --&gt; [*]
+</code></pre>
+
+<p>This view describes the session’s accepted lifecycle. It does not forbid receiving a stale completion after cancellation; it says such a completion must not cause another accepted terminal transition. That difference matters when comparing a state diagram with a callback trace.</p>
+
+<p>If retry is supported, decide whether it creates a new session identity or moves the same session back to running. A new request ID often makes histories easier to distinguish. The diagram should make whichever policy you choose visible.</p>
+
+<h3 id="turn-diagram-assertions-into-review-questions">Turn diagram assertions into review questions</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Diagram assertion</th>
+      <th>Code or test to inspect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Observer is weak</td>
+      <td>Stored property and lifetime test</td>
+    </tr>
+    <tr>
+      <td>Coordinator uses a protocol</td>
+      <td>Constructor parameter and consumer property type</td>
+    </tr>
+    <tr>
+      <td>Uploader creates a session</td>
+      <td>Construction path and returned ownership</td>
+    </tr>
+    <tr>
+      <td>Cancellation becomes terminal</td>
+      <td>State transition guard</td>
+    </tr>
+    <tr>
+      <td>Late completion is ignored</td>
+      <td>Request identity and settled-state checks</td>
+    </tr>
+    <tr>
+      <td>Success is accepted once</td>
+      <td>Duplicate-completion test</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This is where diagrams become useful engineering artifacts. Each important edge or transition leads to evidence that can confirm or reject it. A polished shape without corresponding code evidence is still only a hypothesis.</p>
+
+<h3 id="keep-class-and-object-diagrams-distinct">Keep class and object diagrams distinct</h3>
+
+<p>A class diagram says a session can reference zero or one observer. A particular runtime object diagram might show session 7 referencing observer A and session 8 referencing observer B. The latter can help investigate a leak or unexpected sharing in one execution.</p>
+
+<p>Do not infer that every instance shares one observer merely because the class diagram contains one observer box. Classifier boxes represent types, not a count of runtime allocations. Multiplicities constrain relationships between instances; they do not draw all those instances explicitly.</p>
+
+<p>The distinction also matters for singleton claims. A class with static members is not automatically a singleton. If the architecture intentionally maintains one instance per application or per account, annotate that lifetime policy and check assembly code.</p>
+
+<h3 id="review-diagrams-as-part-of-a-change">Review diagrams as part of a change</h3>
+
+<p>Suppose progress reporting becomes a multi-subscriber stream. The weak optional one-to-one observer edge no longer describes the design. Update the structural view, then consider whether sequence delivery and cancellation states also changed.</p>
+
+<p>Alternatively, a private refactor may replace one storage array without changing any relationship or behavior represented here. The diagram may need no update. Keeping diagrams useful does not mean reproducing every source-code edit.</p>
+
+<p>A practical review asks which visible assertions changed, whether the new drawing makes those changes clear, and which tests demonstrate them. That approach keeps documentation close to the decisions a maintainer actually needs to assess.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     

@@ -210,4 +210,102 @@ Also test through the storage shape consumers actually use: a superclass variabl
 
 As an exercise, add `debugLabel` to `DeliveryChannel`'s requirements and predict which assertions change. Then explain why adding a superclass implementation fixes the inherited-conformance example. If you can predict both, you understand the customization boundary more deeply than “Swift supports polymorphism.”
 
+## Case study: preserve a result type or erase it deliberately
+
+Polymorphism is not only about selecting which implementation runs. It is also about which type relationships remain visible afterward. A producer and consumer can be individually polymorphic while still needing to agree on the exact value type they exchange.
+
+```swift
+protocol ValueTransforming {
+    associatedtype Input
+    associatedtype Output
+    func transform(_ input: Input) -> Output
+}
+
+struct StringLength: ValueTransforming {
+    func transform(_ input: String) -> Int { input.count }
+}
+
+struct PositiveDescription: ValueTransforming {
+    func transform(_ input: Int) -> String {
+        input > 0 ? "Nonempty" : "Empty"
+    }
+}
+
+struct TransformPipeline<A: ValueTransforming, B: ValueTransforming>: ValueTransforming
+where A.Output == B.Input {
+    let first: A
+    let second: B
+
+    func transform(_ input: A.Input) -> B.Output {
+        second.transform(first.transform(input))
+    }
+}
+
+let typedPipeline = TransformPipeline(first: StringLength(), second: PositiveDescription())
+assert(typedPipeline.transform("Swift") == "Nonempty")
+assert(typedPipeline.transform("") == "Empty")
+```
+
+The same-type constraint is the important contract: the first stage's output must be the second stage's input. A pipeline from an arbitrary string producer to an arbitrary image consumer would be rejected rather than waiting for a cast to fail at runtime.
+
+The concrete generic pipeline is appropriate when its structure is known at assembly time. If a feature must store one of several interchangeable transformations with the same input and output types, a small type eraser can deliberately hide the concrete implementation.
+
+```swift
+struct AnyTextTransform {
+    private let apply: (String) -> String
+
+    init<T: ValueTransforming>(_ transform: T)
+    where T.Input == String, T.Output == String {
+        apply = transform.transform
+    }
+
+    func transform(_ input: String) -> String { apply(input) }
+}
+
+struct UppercaseText: ValueTransforming {
+    func transform(_ input: String) -> String { input.uppercased() }
+}
+
+struct BracketedText: ValueTransforming {
+    func transform(_ input: String) -> String { "[" + input + "]" }
+}
+
+let interchangeableTransforms = [AnyTextTransform(UppercaseText()), AnyTextTransform(BracketedText())]
+assert(interchangeableTransforms.map { $0.transform("Swift") } == ["SWIFT", "[Swift]"])
+```
+
+The wrapper erases implementation identity while preserving a specific capability: `String` in, `String` out. It does not expose arbitrary values through `Any` and ask each caller to cast them. That makes the lost information deliberate and bounded.
+
+### Account for captured state in a type eraser
+
+The stored function captures whatever is needed to invoke the supplied transformation. If that transformation is a class, the closure can retain its instance. If it is a value containing a mutable reference, the wrapper can still share that referenced state.
+
+Type erasure changes what a consumer knows, not the ownership semantics of the implementation. Document whether calls mutate hidden state, whether copies share it, and where the wrapper may be used concurrently. Do not assume that a struct wrapper around a closure is automatically an immutable, freely transferable value.
+
+This is also why a type eraser should have a focused name. `AnyTextTransform` makes its retained capability clear. A generic `AnyObjectWrapper` gives the reader much less information about what remains safe to do.
+
+### Distinguish an open set of implementations from a closed set of cases
+
+An existential or erased wrapper supports implementations supplied independently. An enum expresses alternatives known to the model and gives exhaustive switching over them.
+
+If the only allowed export modes are explicitly plain text and HTML, an enum may make product rules easier to audit. If plugins or client modules may introduce new exporters, a protocol can represent that extension point more naturally.
+
+Changing from an enum to a protocol also changes where new behavior must be added. With an enum, a new case can force existing switches to be reviewed. With a protocol, a new implementation can be introduced without changing consumers, but the behavioral contract must already be adequate. Neither property is universally superior.
+
+### Keep semantic dispatch separate from compiler optimization
+
+The generic pipeline may be specialized by the compiler. An existential call may be optimized when the concrete implementation becomes provable. These transformations must preserve the language's observable behavior, including the extension-only and inherited-conformance examples earlier in the article.
+
+Do not explain a surprising result by guessing whether a call “went through a vtable.” First identify which declaration or requirement the source selected. Then investigate generated code only if a measured performance problem requires it.
+
+For a benchmark, separate the cost of transforming text from storage, allocation, capture, and dispatch. A slow operation behind an interface is not evidence that the interface call itself dominates runtime.
+
+### Test substitution through the public storage shape
+
+The pipeline assertions verify connected types and output. For the type eraser, verify that different implementations remain callable through one collection and produce their intended results. If an implementation is stateful, test repeated calls and copies of the wrapper under the documented sharing contract.
+
+Finally, compare direct concrete calls with the calls consumers actually make through generic constraints, superclass references, or stored existential values. That is how you catch a customization point that looked polymorphic in one context but was only a same-named member in another.
+
+Swift's [Generics chapter](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/) describes associated-type relationships and constraints. Treat those relationships as part of the API design rather than incidental syntax needed to satisfy the compiler.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

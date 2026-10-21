@@ -194,4 +194,117 @@ The important property is that failures preserve the previously valid state. A m
 
 A useful exercise is to support changing a reservation from three seats to four. Define whether that is a new request or an explicit amendment, whether the amendment keeps the same ID, and how capacity is checked. If you can add the behavior without exposing the storage dictionary, the original encapsulation boundary is earning its place.
 
+## Case study: retries after an amendment or cancellation
+
+The first ledger recognizes a retry only while its active reservation remains stored. A real client can retry after the reservation was amended or cancelled. If deleting an entry allows the original request ID to create a new reservation, an old network retry can unexpectedly reopen a booking.
+
+Represent the lifecycle explicitly and retain enough request history to distinguish a repeated command from a new command. The following local model remembers the count originally requested, the current count, and cancellation separately.
+
+```swift
+enum BookingReceipt: Equatable {
+    case active(count: Int)
+    case cancelled
+}
+
+enum BookingFailure: Error {
+    case invalidCount, conflictingRequest, insufficientCapacity, unknownID, notActive
+}
+
+final class AmendableReservations {
+    private struct Entry {
+        let originalCount: Int
+        var currentCount: Int?
+
+        var receipt: BookingReceipt {
+            currentCount.map { .active(count: $0) } ?? .cancelled
+        }
+    }
+
+    private let capacity: Int
+    private var entries: [ReservationID: Entry] = [:]
+
+    init(capacity: Int) {
+        precondition(capacity >= 0)
+        self.capacity = capacity
+    }
+
+    var available: Int {
+        capacity - entries.values.compactMap { $0.currentCount }.reduce(0, +)
+    }
+
+    func reserve(id: ReservationID, count: Int) throws -> BookingReceipt {
+        guard count > 0 else { throw BookingFailure.invalidCount }
+        if let existing = entries[id] {
+            guard existing.originalCount == count else { throw BookingFailure.conflictingRequest }
+            return existing.receipt
+        }
+        guard count <= available else { throw BookingFailure.insufficientCapacity }
+        entries[id] = Entry(originalCount: count, currentCount: count)
+        return .active(count: count)
+    }
+
+    func amend(id: ReservationID, count: Int) throws {
+        guard count > 0 else { throw BookingFailure.invalidCount }
+        guard var entry = entries[id] else { throw BookingFailure.unknownID }
+        guard let previous = entry.currentCount else { throw BookingFailure.notActive }
+        guard count <= available + previous else { throw BookingFailure.insufficientCapacity }
+        entry.currentCount = count
+        entries[id] = entry
+    }
+
+    func cancel(id: ReservationID) throws {
+        guard var entry = entries[id] else { throw BookingFailure.unknownID }
+        entry.currentCount = nil
+        entries[id] = entry
+    }
+}
+
+let amendedBookings = AmendableReservations(capacity: 6)
+let originalRequest = ReservationID(rawValue: "booking-100")
+_ = try amendedBookings.reserve(id: originalRequest, count: 3)
+try amendedBookings.amend(id: originalRequest, count: 4)
+let replayAfterAmendment = try amendedBookings.reserve(id: originalRequest, count: 3)
+assert(replayAfterAmendment == .active(count: 4))
+assert(amendedBookings.available == 2)
+try amendedBookings.cancel(id: originalRequest)
+try amendedBookings.cancel(id: originalRequest)
+let replayAfterCancellation = try amendedBookings.reserve(id: originalRequest, count: 3)
+assert(replayAfterCancellation == .cancelled)
+assert(amendedBookings.available == 6)
+```
+
+A repeated reserve command recognizes the original request but reports the current lifecycle outcome. It does not replay an immutable copy of the first response. Those are distinct idempotency contracts; choose the one the client workflow needs and document it.
+
+The amendment credits the reservation's existing seats before checking the replacement count. It validates before changing the entry, so a rejected amendment does not lose the original booking. Cancellation retains a tombstone rather than deleting request history, making a late reserve retry harmless under the stated contract.
+
+### Express the invariant in terms of authoritative state
+
+The invariant is that the sum of active counts never exceeds capacity, every active count is positive, and a known request ID keeps its original meaning. Availability is derived from the entries, so a second independently maintained count cannot drift.
+
+For a larger system, recalculating availability by scanning every entry may become expensive. You can maintain a cached total, but then every transition must update both the entry and total atomically. The derived implementation is a useful reference when testing the optimized representation.
+
+Retaining tombstones forever is also not a complete production policy. Define how long clients may retry and how long history is retained. If request IDs expire, communicate that boundary; otherwise a cleanup job can silently reintroduce the duplicate-reservation problem.
+
+### Encapsulate the transition, not just each field
+
+Making `entries` private is helpful because callers cannot delete tombstones or manufacture active counts. The stronger boundary is the set of allowed operations: reserve, amend, and cancel. Each preserves a related collection of rules.
+
+A public `setEntry` method would undo much of that protection even if the property remained private. Likewise, returning a mutable `Entry` class to consumers could allow changes that bypass the ledger. The private entry is a value here, and only the owner commits replacements.
+
+If an operation invokes observers, commit the coherent new state before delivering notifications. Consumers should not observe the seat count from before an amendment alongside the entry from after it. Do not call arbitrary external code midway through the validation-and-update sequence.
+
+### Decide who may request a transition
+
+Access control answers which code can call `amend`; it does not establish that a user is authorized to amend a particular reservation. Authorization typically belongs at an application or service boundary with authenticated identity and permission information.
+
+Keep that distinction visible in review. A well-encapsulated domain object can still be exposed through an endpoint that permits the wrong person to invoke it. Conversely, an authorized endpoint can still corrupt data if the domain transition does not preserve its invariant.
+
+### Verify failure atomicity with a small history
+
+After reserving four of six seats, attempt to amend to seven. Capture availability before the operation and verify it remains two after the expected failure. Then cancel and verify a retry returns cancelled rather than allocating seats again.
+
+Also test a reused ID with a different original count, an unknown cancellation, and an amendment after cancellation. Those cases exercise the lifecycle rather than merely checking that one setter rejects a negative number.
+
+The example assumes serial calls. In a concurrent or persisted implementation, the whole read-validate-write transition needs isolation or a transaction. Keeping the transition inside one method makes that boundary visible, but the runtime and storage design must actually enforce it.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

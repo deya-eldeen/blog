@@ -193,4 +193,122 @@ Move the preferred delivery address from a customer account into the order itsel
 
 A good boundary should localize the storage-model adjustment to the projection builder or domain operation. The screen may still change if the product now displays a historical-address warning; that is a legitimate behavior change. The goal is containing irrelevant structural knowledge, not preventing every consumer change forever.
 
+## Case study: keep an order's destination stable after checkout
+
+A customer changes their preferred address after placing an order. Should the old order's dispatch label change? Usually the order should preserve the destination agreed at checkout. A deep traversal into the customer's current preferences is therefore more than structural coupling: it can encode the wrong time semantics.
+
+Capture a domain value at checkout and let the order own that historical fact:
+
+```swift
+struct DispatchDestination: Equatable {
+    let recipient: String
+    let street: String
+    let city: String
+}
+
+final class CustomerDeliveryPreferences {
+    var preferred: DispatchDestination
+
+    init(preferred: DispatchDestination) { self.preferred = preferred }
+}
+
+enum DispatchOrderFailure: Error, Equatable { case alreadyDispatched }
+
+final class DispatchOrder {
+    let number: Int
+    private(set) var destination: DispatchDestination
+    private(set) var dispatched = false
+
+    init(number: Int, destination: DispatchDestination) {
+        self.number = number
+        self.destination = destination
+    }
+
+    func amendDestination(_ replacement: DispatchDestination) throws {
+        guard !dispatched else { throw DispatchOrderFailure.alreadyDispatched }
+        destination = replacement
+    }
+
+    func markDispatched() { dispatched = true }
+}
+
+struct DispatchLabelFormatter {
+    func label(for order: DispatchOrder) -> String {
+        let destination = order.destination
+        return "Order #\(order.number)\n" + destination.recipient + "\n"
+            + destination.street + ", " + destination.city
+    }
+}
+
+let checkoutDestination = DispatchDestination(
+    recipient: "Maya", street: "Garden Street", city: "Amman"
+)
+let customerDeliveryPreferences = CustomerDeliveryPreferences(preferred: checkoutDestination)
+let historicalOrder = DispatchOrder(
+    number: 44, destination: customerDeliveryPreferences.preferred
+)
+customerDeliveryPreferences.preferred = DispatchDestination(
+    recipient: "Maya", street: "Hill Street", city: "Irbid"
+)
+assert(historicalOrder.destination == checkoutDestination)
+assert(DispatchLabelFormatter().label(for: historicalOrder)
+    == "Order #44\nMaya\nGarden Street, Amman")
+```
+
+The formatter can inspect the destination's fields because formatting that deliberate value is its job. It does not need an account, a preference repository, or a customer graph. The order's dependency is on the destination concept, not on the storage location from which checkout originally obtained it.
+
+The captured value contains strings and has value semantics. If it contained a mutable address class instead, copying the outer struct would still share that reference. The independence required by a historical record must extend through the relevant payload.
+
+### Explicit amendments are different from accidental live updates
+
+An order may legitimately allow a destination correction before dispatch. Model that as a command with a rule, rather than letting unrelated preference edits rewrite the order:
+
+```swift
+let correctedDestination = DispatchDestination(
+    recipient: "Maya", street: "Garden Street, Building 8", city: "Amman"
+)
+try historicalOrder.amendDestination(correctedDestination)
+historicalOrder.markDispatched()
+do {
+    try historicalOrder.amendDestination(customerDeliveryPreferences.preferred)
+    assertionFailure("A dispatched order must reject amendments")
+} catch {
+    assert(error as? DispatchOrderFailure == .alreadyDispatched)
+}
+assert(historicalOrder.destination == correctedDestination)
+```
+
+The rejected command leaves the destination unchanged. The label formatter needs no new traversal or conditional logic to support the correction rule. It formats the destination that the order currently authorizes.
+
+The example assumes serial access. Persisted fulfillment also needs a transaction so dispatch and amendment cannot both proceed from stale state. Hiding object structure does not resolve a race between competing commands.
+
+### Absorb an infrastructure representation change in one adapter
+
+Suppose a remote API changes from nested customer settings to a flattened checkout response. Translate either response into `DispatchDestination` at the boundary. The order and formatter do not need to import those transport types.
+
+That adapter should validate whatever the domain requires: supported destination kinds, required fields, or normalized postal information. Avoid using empty strings as silent replacements for missing mandatory data. A narrow value boundary is useful partly because it gives validation a specific home.
+
+| Change | Component expected to change | Component that can remain stable |
+|---|---|---|
+| Remote address field renamed | Transport adapter | Order and label formatter |
+| Customer preference moved to another service | Checkout assembly | Existing order labels |
+| Destination amendments forbidden after dispatch | Order transition | Transport DTOs |
+| Localized label layout | Formatter | Order lifecycle |
+
+This table is a practical coupling test. If moving the remote field still requires edits to every screen, the supposed boundary probably leaks the transport representation.
+
+### Returning data can reduce knowledge more than forwarding methods
+
+An order method for every address field would let the formatter avoid a nested expression, but it would duplicate the address interface on the order. Returning one meaningful destination value is often clearer.
+
+That does not mean returning every internal object is harmless. A destination value intentionally communicates a stable concept. Returning the entire mutable customer exposes far more capabilities and representation than dispatch requires. Choose the result according to the consumer's task.
+
+### Historical snapshots need an update policy
+
+Capturing a destination does not mean all order data must be frozen forever. Status changes, authorized corrections, and audit records can coexist with immutable observations. Name which facts are historical and which are live.
+
+A production audit may preserve every prior destination plus who authorized the correction. That is a separate requirement from formatting the latest authorized label. Add it to the order's transition or persistence boundary without making each presentation consumer reconstruct history from customer preferences.
+
+The useful result of applying Demeter here is a better domain model: checkout supplies a destination, the order controls amendments, and the formatter consumes a coherent value. The shorter call site follows from those responsibilities.
+
 Continue through the [Object-Oriented Programming roadmap](/swift-object-oriented-programming/).

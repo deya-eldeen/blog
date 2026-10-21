@@ -245,6 +245,128 @@
 
 <p>Then fix the smallest representation boundary that restores the promise. That may mean making one child a value, taking an immutable snapshot, or giving the feature an explicit transaction. Replacing every class with a struct is a much larger change and may leave the actual reference escape intact.</p>
 
+<h2 id="case-study-an-editor-with-save-and-cancel">Case study: an editor with save and cancel</h2>
+
+<p>An editor needs three distinct pieces of state: the persisted document, an independent working value, and the version on which editing began. If the working value is a shared reference to the persisted object, cancel cannot reliably undo changes that have already leaked into other screens.</p>
+
+<p>A value draft makes the ordinary editing behavior direct. A version protects against a separate issue: someone else saving while this editor remains open.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ArticleText</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ArticleRevision</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">version</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">ArticleText</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">EditorFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">conflict</span> <span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ArticleStore</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">revision</span><span class="p">:</span> <span class="kt">ArticleRevision</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">text</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">revision</span> <span class="o">=</span> <span class="kt">ArticleRevision</span><span class="p">(</span><span class="nv">version</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">text</span><span class="p">:</span> <span class="n">text</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">save</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">,</span> <span class="nv">expectedVersion</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">expectedVersion</span> <span class="o">==</span> <span class="n">revision</span><span class="o">.</span><span class="n">version</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">EditorFailure</span><span class="o">.</span><span class="n">conflict</span> <span class="p">}</span>
+        <span class="n">revision</span> <span class="o">=</span> <span class="kt">ArticleRevision</span><span class="p">(</span><span class="nv">version</span><span class="p">:</span> <span class="n">revision</span><span class="o">.</span><span class="n">version</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">text</span><span class="p">:</span> <span class="n">text</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ArticleEditor</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">original</span><span class="p">:</span> <span class="kt">ArticleRevision</span>
+    <span class="k">var</span> <span class="nv">draft</span><span class="p">:</span> <span class="kt">ArticleText</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">revision</span><span class="p">:</span> <span class="kt">ArticleRevision</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">original</span> <span class="o">=</span> <span class="n">revision</span>
+        <span class="n">draft</span> <span class="o">=</span> <span class="n">revision</span><span class="o">.</span><span class="n">text</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">hasChanges</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">draft</span> <span class="o">!=</span> <span class="n">original</span><span class="o">.</span><span class="n">text</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span> <span class="n">draft</span> <span class="o">=</span> <span class="n">original</span><span class="o">.</span><span class="n">text</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">save</span><span class="p">(</span><span class="n">to</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">ArticleStore</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="n">store</span><span class="o">.</span><span class="nf">save</span><span class="p">(</span><span class="n">draft</span><span class="p">,</span> <span class="nv">expectedVersion</span><span class="p">:</span> <span class="n">original</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">articleStore</span> <span class="o">=</span> <span class="kt">ArticleStore</span><span class="p">(</span><span class="nv">text</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Before"</span><span class="p">,</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[</span><span class="s">"One"</span><span class="p">]))</span>
+<span class="k">var</span> <span class="nv">articleEditor</span> <span class="o">=</span> <span class="kt">ArticleEditor</span><span class="p">(</span><span class="nv">revision</span><span class="p">:</span> <span class="n">articleStore</span><span class="o">.</span><span class="n">revision</span><span class="p">)</span>
+<span class="n">articleEditor</span><span class="o">.</span><span class="n">draft</span><span class="o">.</span><span class="n">paragraphs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"Two"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleEditor</span><span class="o">.</span><span class="n">hasChanges</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleStore</span><span class="o">.</span><span class="n">revision</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">paragraphs</span> <span class="o">==</span> <span class="p">[</span><span class="s">"One"</span><span class="p">])</span>
+<span class="n">articleEditor</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">articleEditor</span><span class="o">.</span><span class="n">hasChanges</span><span class="p">)</span>
+<span class="n">articleEditor</span><span class="o">.</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s">"Edited"</span>
+<span class="k">try</span> <span class="n">articleEditor</span><span class="o">.</span><span class="nf">save</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">articleStore</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleStore</span><span class="o">.</span><span class="n">revision</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">title</span> <span class="o">==</span> <span class="s">"Edited"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The editor’s original revision is intentionally fixed. After a successful save, a UI should create or reset an editing session from the newly accepted revision. Reusing the old expected version would correctly produce a conflict on a later save. That lifecycle decision belongs in the feature rather than being hidden inside equality or copying.</p>
+
+<p>The store here is serial and local. A persisted version check must be atomic in the persistence system, and concurrent access needs an isolation strategy. Value semantics provide independent state; they do not implement a distributed transaction.</p>
+
+<h3 id="understand-what-cancel-actually-guarantees">Understand what cancel actually guarantees</h3>
+
+<p>Cancel replaces the draft value with its original text. It does not undo external effects such as uploads, analytics events, or a request already sent to another system. If editing performs those effects eagerly, a separate compensation policy may be necessary.</p>
+
+<p>This distinction is useful during API review. A method called <code class="language-plaintext highlighter-rouge">cancel</code> can mean discard local edits, request cancellation of ongoing work, or roll back a transaction. Name and document the operation according to the guarantee actually provided.</p>
+
+<p>A value draft is particularly effective when the product can defer writes until save. When edits must stream live to collaborators, the ownership model needs revisions, operations, or another synchronization design. Simply changing the draft to a class does not solve that problem.</p>
+
+<h3 id="add-undo-as-values-then-evaluate-the-cost">Add undo as values, then evaluate the cost</h3>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TextUndoHistory</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">past</span><span class="p">:</span> <span class="p">[</span><span class="kt">ArticleText</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">ArticleText</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">initial</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">)</span> <span class="p">{</span> <span class="n">current</span> <span class="o">=</span> <span class="n">initial</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">apply</span><span class="p">(</span><span class="n">_</span> <span class="nv">replacement</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">replacement</span> <span class="o">!=</span> <span class="n">current</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">past</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">replacement</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">undo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">past</span><span class="o">.</span><span class="nf">popLast</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">previous</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">undoHistory</span> <span class="o">=</span> <span class="kt">TextUndoHistory</span><span class="p">(</span><span class="nv">initial</span><span class="p">:</span> <span class="kt">ArticleText</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"A"</span><span class="p">,</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[]))</span>
+<span class="n">undoHistory</span><span class="o">.</span><span class="nf">apply</span><span class="p">(</span><span class="kt">ArticleText</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"B"</span><span class="p">,</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[]))</span>
+<span class="n">undoHistory</span><span class="o">.</span><span class="nf">apply</span><span class="p">(</span><span class="kt">ArticleText</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"B"</span><span class="p">,</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[]))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">undoHistory</span><span class="o">.</span><span class="nf">undo</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">undoHistory</span><span class="o">.</span><span class="n">current</span><span class="o">.</span><span class="n">title</span> <span class="o">==</span> <span class="s">"A"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">undoHistory</span><span class="o">.</span><span class="nf">undo</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>This representation is easy to reason about: each history entry is an independent text value. Standard-library copy-on-write may share storage efficiently, but retaining history can still keep large buffers alive. Copy-on-write postpones duplication; it does not promise that an unbounded history consumes no memory.</p>
+
+<p>For very large documents, an operation history or persistent data structure may be more appropriate. Make that change in response to measured memory or editing costs. The simpler snapshot implementation provides a useful correctness reference for a more optimized one.</p>
+
+<h3 id="inspect-nested-state-before-promising-independent-editing">Inspect nested state before promising independent editing</h3>
+
+<p>If <code class="language-plaintext highlighter-rouge">ArticleText</code> later gains a mutable <code class="language-plaintext highlighter-rouge">Attachment</code> class, copying the draft will copy that reference. Renaming the attachment through the draft could then change the supposedly persisted representation too.</p>
+
+<p>Choose among an immutable attachment descriptor, a stable attachment ID with separately coordinated updates, and a deliberate deep-copy operation. The right answer depends on whether an attachment’s edits are part of the same save/cancel transaction.</p>
+
+<p>The important review is recursive at the semantic level: which mutations can the draft perform, and which of them must stay local? You do not have to clone every reachable object, but you must account for every permitted mutation that could escape.</p>
+
+<h3 id="use-identity-only-for-the-question-it-answers">Use identity only for the question it answers</h3>
+
+<p>Two equal <code class="language-plaintext highlighter-rouge">ArticleText</code> values can represent different editing sessions. Two editor sessions can concern the same persistent article while having different original revisions. A session may need a separate ID for request routing or analytics, without changing the text’s equality definition.</p>
+
+<p>Keep content equality, persistent identity, and session identity separate. Combining them into one overloaded comparison is a common source of false “no changes” results and accidental overwrites.</p>
+
+<p>A strong ownership design lets each of those questions be answered directly. The value/object choice is one part of that design, alongside transaction boundaries, versioning, and lifetime.</p>
+
 <p>Continue through the <a href="/swift-object-oriented-programming/">Object-Oriented Programming roadmap</a>.</p>
 
     
