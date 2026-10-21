@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Swift is Apple's modern programming language for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS, and it also runs on Linux, Windows, and servers. Since its release in 2014, it has won developers over with clean syntax, strong safety guarantees, and great performance.
 
 This guide walks through the language from the very first `let` to generics and opaque types. Go in order if you're new; every section builds on the ones before it.

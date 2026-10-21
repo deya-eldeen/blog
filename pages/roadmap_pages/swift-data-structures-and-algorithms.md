@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Data structures decide how your data is stored; algorithms decide what you do with it. Together they're the difference between a list that scrolls smoothly and one that freezes, and between a search that takes milliseconds and one that takes minutes.
 
 They're also the backbone of technical interviews. This guide starts with the containers you use every day and works up to the clever structures that power search engines, maps, and blockchains.

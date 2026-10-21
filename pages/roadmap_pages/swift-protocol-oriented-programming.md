@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 When Apple introduced Swift, it also introduced a slogan: *"Swift is a protocol-oriented language."* Instead of building deep class hierarchies, you describe capabilities with protocols, give them default behavior with extensions, and let any type, whether a struct, an enum, or a class, adopt exactly the capabilities it needs.
 
 Most of the Swift standard library works this way, from `Equatable` and `Hashable` to `Sequence` and `Collection`. This guide shows how to use the same approach in your own code.

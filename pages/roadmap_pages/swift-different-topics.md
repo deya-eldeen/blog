@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Some of the most valuable skills in iOS development don't fit neatly into a single category. Debugging a crash at 2 a.m., reading a memory graph, setting up a build pipeline, or figuring out why a tiny image eats 10 MB of RAM: none of it is "the Swift language", but all of it makes you a much better developer.
 
 This guide collects those topics. Dip in wherever you're curious; there's no required order.

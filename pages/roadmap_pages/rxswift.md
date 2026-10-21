@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 RxSwift is the Swift member of the ReactiveX family, the same reactive programming model available in many other languages, such as RxJava and RxJS. It treats events, user input, and network responses as **observable sequences** that you transform and combine with operators.
 
 RxSwift came years before Apple's Combine, and it's still in many production apps. Even if you start new projects with Combine or Swift concurrency, knowing RxSwift will help you work with existing codebases, and the concepts transfer almost one to one.

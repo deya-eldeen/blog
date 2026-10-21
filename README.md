@@ -36,6 +36,32 @@ hidden: true
 
 The article remains published at its URL and available in the archive, search, and roadmap. Remove the flag or set `hidden: false` to show it in the home feed again.
 
+## Diagrams and tables in articles
+
+Use a fenced `mermaid` block for a diagram. Pages containing these blocks automatically load the local Mermaid renderer; no front matter flag is required.
+
+````markdown
+```mermaid
+classDiagram
+    accTitle: A document and its paragraphs
+    accDescr: A document owns zero or more paragraphs.
+    Document "1" *-- "0..*" Paragraph : owns
+```
+````
+
+Diagrams follow the site's light or dark appearance, scroll horizontally when needed, and include expandable source. Include `accTitle` and `accDescr` to describe the diagram for assistive technology. If rendering fails or JavaScript is disabled, the source remains available. For diagrams supplied by an include or raw `.mermaid` markup, `mermaid: true` in the page's front matter explicitly enables the renderer.
+
+Standard Markdown tables render automatically:
+
+```markdown
+| Relationship | Swift example |
+| --- | --- |
+| Inheritance | A class subclasses another class |
+| Conformance | A type adopts a protocol |
+```
+
+Tables have styled headers and alternating rows and can scroll horizontally on narrow screens. See `/swift-uml-class-diagrams/` for class diagrams, a sequence diagram, and comparison tables.
+
 ## Design and artwork
 
 The shared responsive theme lives in `_sass/_reskin.scss`. It includes light and dark appearances, mobile navigation, article cards, and the styles for all content pages.

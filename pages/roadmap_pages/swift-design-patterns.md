@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Design patterns are named, reusable solutions to common design problems. Knowing them gives you two superpowers: you recognize problems you've seen before, and you can talk about solutions in a single word. Saying "let's use a coordinator" is a lot faster than explaining the whole idea.
 
 Many classic patterns come from the 1994 "Gang of Four" book, *Design Patterns*. Some are built right into Swift and Apple's frameworks (delegation, observers, singletons), while others need a Swift-flavored twist with protocols, closures, and value types.
