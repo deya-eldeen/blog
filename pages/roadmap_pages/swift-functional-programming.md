@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Functional programming (FP) builds programs out of functions: small, predictable pieces that take input, return output, and don't secretly change anything else. Swift isn't a purely functional language, but it borrows many of FP's best ideas: first-class functions, closures, value types, `map` and `filter`, and a strong preference for immutability with `let`.
 
 You don't have to go all in to benefit. Even a little functional thinking makes code easier to test, easier to reason about, and safer to run concurrently.

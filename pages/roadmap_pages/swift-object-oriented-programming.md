@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Object-oriented programming (OOP) organizes code around *objects*: bundles of data and the behavior that belongs to it. UIKit, Foundation, and most of Apple's older frameworks are built this way, so understanding OOP is essential for reading and writing real iOS code.
 
 Swift supports OOP fully, with its own twists: structs and enums can have methods too, there's no multiple class inheritance, and protocols often take the place of abstract classes. This guide covers the classic ideas and how they translate to Swift.

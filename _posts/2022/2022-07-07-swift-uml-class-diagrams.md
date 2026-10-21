@@ -17,21 +17,21 @@ A class diagram is useful when it explains relationships that are difficult to s
 
 ## Read a type box
 
-A basic UML class box has three compartments: the type name, its attributes, and its operations. Here is a text rendering of one:
+A basic UML class box has three compartments: the type name, its attributes, and its operations. Here is a rendered example:
 
-```text
-+----------------------------------+
-| Download                         |
-+----------------------------------+
-| - receivedBytes: Int              |
-| + expectedBytes: Int              |
-+----------------------------------+
-| + receive(bytes: Int): Void       |
-| + progress(): Double             |
-+----------------------------------+
+```mermaid
+classDiagram
+    accTitle: Anatomy of a UML class
+    accDescr: Download has private received bytes, public expected bytes, and two public operations.
+    class Download {
+        -Int receivedBytes
+        +Int expectedBytes
+        +receive(bytes)
+        +progress() Double
+    }
 ```
 
-The diagram presents an API and some internal state. It does not explain the transfer protocol, thread safety, or error handling. Add those in prose when they matter to the design discussion.
+The diagram presents an illustrative API and some internal state. The implementation below focuses on reporting and omits `expectedBytes` and `progress()`. A class diagram does not explain the transfer protocol, thread safety, or error handling. Add those in prose when they matter to the design discussion.
 
 UML commonly uses `+` for public and `-` for private visibility, with `#` for protected and `~` for package visibility. Swift has no protected access level, and a Swift module is not a UML package in every modeling convention. Write `internal`, `fileprivate`, or `open` explicitly when a symbol would obscure the meaning.
 
@@ -90,26 +90,32 @@ Review the diagram when relationships change. A stale dependency diagram can be 
 
 ## Draw the relationships as well as the boxes
 
-The download example contains three distinct ideas: a worker, a callback contract, and an implementation of that contract. A relationship sketch should make those ideas visible. Here is a text rendering using triangle-like arrowheads for the UML generalization and realization targets:
+The download example contains three distinct ideas: a worker, a callback contract, and an implementation of that contract. A relationship sketch should make those ideas visible. This diagram shows the association and protocol realization directly:
 
-```text
-+------------------+        0..1       +---------------------------+
-| Download         |------------------>| «protocol»                |
-|------------------|  reporter {weak}  | DownloadReporting         |
-| receivedBytes    |                   |---------------------------|
-|------------------|                   | report(receivedBytes:)    |
-| receive(bytes:)  |                   +---------------------------+
-+------------------+                                △
-                                                    : realization
-                                                    :
-                                       +---------------------------+
-                                       | ProgressLog               |
-                                       |---------------------------|
-                                       | report(receivedBytes:)    |
-                                       +---------------------------+
+```mermaid
+classDiagram
+    direction LR
+    accTitle: Download reporting and protocol conformance
+    accDescr: A download weakly references an optional reporter. ProgressLog conforms to the class-only DownloadReporting protocol.
+    class Download {
+        Int receivedBytes
+        receive(bytes)
+    }
+    class DownloadReporting {
+        <<protocol>>
+        report(receivedBytes)
+    }
+    class ProgressLog {
+        report(receivedBytes)
+    }
+    Download --> "0..1" DownloadReporting : reporter (weak)
+    ProgressLog ..|> DownloadReporting
+    note for DownloadReporting "Class-only: AnyObject"
 ```
 
-The punctuation is a text approximation, not a replacement for every UML symbol. The important facts are the association's target, its optional multiplicity, and the distinction between conformance and ownership. Label the reference `weak` because a conventional UML association alone does not communicate Swift ARC semantics.
+The solid association points from the download to its optional reporter. The dashed realization points from `ProgressLog` toward the protocol it implements. The important facts are the association's target, its optional multiplicity, and the distinction between conformance and ownership. Label the reference `weak` because a conventional UML association alone does not communicate Swift ARC semantics.
+
+This relationship view omits member visibility markers. The Swift code remains authoritative about access: `receivedBytes` has an internal getter and a private setter. Add that annotation when reviewing the access contract rather than treating it as a completely private field.
 
 A reverse association from the reporter to the download should appear only if the reporter actually stores that reference. Receiving the download as a callback argument would instead be a temporary dependency. Otherwise the diagram suggests an ownership cycle that the code does not have.
 
@@ -117,9 +123,29 @@ A reverse association from the reporter to the download should appear only if th
 
 A shopping cart might contain zero or more lines. Each line describes one product. A useful sketch can say:
 
-```text
-Cart "1" *-------- "0..*" CartLine --------> "1" Product
-           owns                         references
+```mermaid
+classDiagram
+    direction LR
+    accTitle: Cart composition and line multiplicity
+    accDescr: One cart owns zero or more cart line values. Each line contains one product description snapshot and a positive quantity.
+    class Cart {
+        <<struct>>
+        CartLine[] lines
+        add(line)
+    }
+    class CartLine {
+        <<struct>>
+        ProductDescription product
+        Int quantity
+    }
+    class ProductDescription {
+        <<struct>>
+        ProductCode code
+        String name
+    }
+    Cart "1" *-- "0..*" CartLine : owns
+    CartLine --> "1" ProductDescription : product snapshot
+    note for CartLine "Quantity must be positive"
 ```
 
 The filled-diamond composition notation belongs at the whole, `Cart`. It claims exclusive conceptual ownership of the lines in this model. It does not require every line to be a heap object. A Swift implementation might store line structs in an array.
@@ -181,7 +207,25 @@ A diagram is a view of the code, so it may deliberately omit language details. T
 
 Suppose a download updates its count, reports progress, and then checks whether to finish. A class diagram can show the collaborators, but it cannot clearly express the order of those steps or reentrant callbacks.
 
-Use a sequence description or a state table alongside the class view when timing is the question. For instance: `receive → update bytes → notify reporter`. Add the rule that the count has already changed before notification. That small addition can reveal a bug that no amount of class-box detail would show.
+Use a sequence diagram or a state table alongside the class view when timing is the question:
+
+```mermaid
+sequenceDiagram
+    accTitle: Reporting download progress after updating state
+    accDescr: A caller supplies bytes. Download updates its state first, then synchronously notifies its reporter if one exists.
+    participant Caller
+    participant Download
+    participant Reporter as DownloadReporting
+    Caller->>Download: receive(bytes)
+    Download->>Download: Update receivedBytes
+    opt A reporter exists
+        Download->>Reporter: report(receivedBytes)
+        Reporter-->>Download: Return
+    end
+    Download-->>Caller: Return
+```
+
+The count has already changed when notification begins. The callback is synchronous in this example, so the reporter returns before `receive` returns to its caller. That ordering is a behavioral rule that a class diagram alone cannot express.
 
 Similarly, a class diagram cannot establish that an API runs on the main actor or that a service transaction commits atomically. Those are behavioral contracts requiring annotations, prose, or another view.
 

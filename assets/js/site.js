@@ -17,7 +17,7 @@ async function copySnippet(code, button, status) {
 
 function addSnippetCopyButtons() {
   document.querySelectorAll('.post-content pre').forEach(pre => {
-    if (pre.closest('.code-snippet, .language-mermaid, .mermaid')) return;
+    if (pre.closest('.code-snippet, .language-mermaid, .mermaid') || pre.querySelector('code.language-mermaid')) return;
     const snippet = document.createElement('div');
     snippet.className = 'code-snippet';
     const button = document.createElement('button');

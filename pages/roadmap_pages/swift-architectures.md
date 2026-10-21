@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Every app has an architecture, whether you chose one or not. Architecture decides where each piece of code lives, how data flows from the network to the screen, and how painful your next feature will be.
 
 There's no single "best" architecture. Each one trades simplicity for structure in a different way. A weekend project and a banking app with fifty developers need very different things. This guide covers the architectures you'll meet in real iOS codebases, so you can recognize them, understand their trade-offs, and choose wisely.

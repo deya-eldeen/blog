@@ -7,8 +7,6 @@ hide: true
 excluded: true
 ---
 
-{% include roadmap/guide_header.liquid %}
-
 Apps are full of things that happen *over time*: a user types into a search field, a network request finishes, a timer fires, a setting changes. Combine, introduced in iOS 13, gives you one consistent way to handle all of them. Values flow from **publishers** through a chain of **operators** to **subscribers**, and you describe that pipeline declaratively instead of juggling callbacks.
 
 Since Swift 5.5, `async`/`await` and `AsyncSequence` cover many of the same jobs, and since iOS 17 the Observation framework handles most SwiftUI data flow. Combine is still fully supported, though, and you'll find it in a huge number of codebases, especially those built between 2019 and 2023.
