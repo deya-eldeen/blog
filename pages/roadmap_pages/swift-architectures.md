@@ -1,51 +1,76 @@
 ---
 layout: page
-title: "Swift Architectures"
+title: "App Architectures in Swift"
+subtitle: "How to organize an app so it stays easy to change"
 permalink: /swift-architectures/
 hide: true
 excluded: true
 ---
-Choosing the right architectural pattern is crucial for building scalable and maintainable applications in Swift. Each architecture offers unique advantages and is suited for different types of projects. This blog post will explore various architectures commonly used in Swift development, providing insights into their structures, benefits, and use cases. By understanding these architectures, you'll be better equipped to make informed decisions when designing your applications.
 
-## Key Architectures
+Every app has an architecture, whether you chose one or not. Architecture decides where each piece of code lives, how data flows from the network to the screen, and how painful your next feature will be.
 
-### 1. Model-View-Controller (MVC)
-- Overview of MVC and its components
-- Advantages and disadvantages of using MVC
+There's no single "best" architecture. Each one trades simplicity for structure in a different way. A weekend project and a banking app with fifty developers need very different things. This guide covers the architectures you'll meet in real iOS codebases, so you can recognize them, understand their trade-offs, and choose wisely.
 
-### 2. MVC Variants
-- MVC+VS (View-Controller Separation)
-- MVC+C (Controller as a Coordinator)
-- MAVB (ModelAdapter-ViewBinder)
+Before diving in, it helps to know a few [design patterns](/swift-design-patterns/), especially delegation, observer, and coordinator.
 
-### 3. Model-View-Presenter (MVP)
-- Understanding the MVP pattern
-- When to use MVP in your projects
+{% include roadmap/legend.liquid %}
 
-### 4. Model-View-ViewModel (MVVM)
-- Overview of MVVM and its components
-- MVVM-C (MVVM with Coordinator)
+## 1. Model-View-Controller (MVC)
 
-### 5. VIPER
-- Exploring the VIPER architecture
-- Benefits of using VIPER for complex applications
+- How Apple's MVC Works
+- Strengths and Weaknesses
+- The "Massive View Controller" Problem
+{: .roadmap-topics}
 
-### 6. RIB (Router-Interactor-Builder)
-- Understanding the RIB architecture
-- Use cases for RIB in Swift development
+## 2. MVC Variants
 
-### 7. Redux
-- Introduction to Redux and its principles
-- Implementing Redux in Swift applications
+- MVC+VS: MVC with an Explicit View State
+- MVC+C: MVC with Coordinators
+- MAVB: ModelAdapter-ViewBinder
+{: .roadmap-topics}
 
-### 8. LASSO
-- Overview of the LASSO architecture
-- Benefits and applications of LASSO
+## 3. Model-View-Presenter (MVP)
 
-### 9. Elm / TEA (The Elm Architecture)
-- Understanding the Elm architecture
-- Adapting Elm principles in Swift development
+- How MVP Works
+- When MVP Makes Sense
+{: .roadmap-topics}
 
-By familiarizing yourself with these various architectures, you can choose the most suitable pattern for your Swift projects, leading to cleaner, more maintainable code. Each architecture has its strengths and weaknesses, and understanding these will help you navigate the complexities of app development effectively. As you continue to grow as a developer, consider experimenting with different architectures to find the best fit for your applications. Happy coding!
+## 4. Model-View-ViewModel (MVVM)
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+- How MVVM Works
+- Data Binding: Closures, Combine, and Observation
+- MVVM-C: MVVM with Coordinators
+- MVVM in SwiftUI
+{: .roadmap-topics}
+
+## 5. Clean Architecture and VIPER
+
+- Clean Architecture Principles
+- VIPER: View, Interactor, Presenter, Entity, Router
+- Clean Swift (VIP)
+- When the Extra Structure Pays Off
+{: .roadmap-topics}
+
+## 6. RIBs
+
+- Uber's RIBs: Router, Interactor, Builder
+- Use Cases for Large Teams and Apps
+{: .roadmap-topics}
+
+## 7. Unidirectional Data Flow
+
+- Redux: State, Actions, and Reducers
+- The Elm Architecture (TEA)
+- The Composable Architecture (TCA)
+- Lasso
+{: .roadmap-topics}
+
+## 8. Choosing an Architecture
+
+- Team Size and App Complexity
+- Testability
+- UIKit vs. SwiftUI Considerations
+- Migrating from One Architecture to Another
+{: .roadmap-topics}
+
+{% include roadmap/guide_footer.liquid next_url="/gentle-introduction-to-unit-testing/" next_title="Unit Testing" %}

@@ -1,65 +1,61 @@
 ---
 layout: page
-title: "RXSwift"
+title: "RxSwift"
+subtitle: "The reactive library that powered a generation of iOS apps"
 permalink: /rxswift/
 hide: true
 excluded: true
 ---
 
-RxSwift is a powerful library that brings reactive programming to the Swift ecosystem. By leveraging RxSwift, developers can create more responsive, scalable, and maintainable applications, especially when dealing with complex asynchronous events and user interface updates. This comprehensive guide will take you through the essential concepts and features of RxSwift, enabling you to harness its full potential in your Swift projects.
+RxSwift is the Swift member of the ReactiveX family, the same reactive programming model available in many other languages, such as RxJava and RxJS. It treats events, user input, and network responses as **observable sequences** that you transform and combine with operators.
 
-## Key Topics
+RxSwift came years before Apple's Combine, and it's still in many production apps. Even if you start new projects with Combine or Swift concurrency, knowing RxSwift will help you work with existing codebases, and the concepts transfer almost one to one.
 
-### 1. Observables
-- Understanding the core concept of observables
-- Creating and subscribing to observables
-- Disposing of observables
+{% include roadmap/legend.liquid %}
 
-### 2. Subjects
-- Exploring different types of subjects (PublishSubject, BehaviorSubject, ReplaySubject, AsyncSubject)
-- Using subjects to bridge observables and observers
-- Handling errors and completions with subjects
+## 1. Observables
 
-### 3. Filtering Operators
-- Applying filtering operators like `filter`, `distinct`, `skip`, `take`, `debounce`, and `throttle`
-- Refining observable sequences based on specific criteria
+- Observables and Observers
+- Creating Observables: `just`, `of`, `from`, and `create`
+- Subscribing
+- Disposing and `DisposeBag`
+{: .roadmap-topics}
 
-### 4. Transforming Operators
-- Utilizing transforming operators such as `map`, `flatMap`, `concatMap`, and `switchMap`
-- Manipulating elements in observable sequences
+## 2. Subjects and Relays
 
-### 5. Combining Operators
-- Combining multiple observables using operators like `combineLatest`, `zip`, `merge`, and `concat`
-- Coordinating the execution of observables
+- `PublishSubject`
+- `BehaviorSubject`
+- `ReplaySubject`
+- `AsyncSubject`
+- Relays: `PublishRelay` and `BehaviorRelay`
+{: .roadmap-topics}
 
-### 6. Time-based Operators
-- Exploring time-based operators like `delay`, `interval`, `timer`, and `timeout`
-- Controlling the timing of observable emissions
+## 3. Traits
 
-### 7. RxCocoa
-- Integrating RxSwift with RxCocoa for reactive UI programming
-- Binding observables to UI elements and handling user interactions
+- `Single`, `Maybe`, and `Completable`
+- `Driver` and `Signal` for the UI
+{: .roadmap-topics}
 
-### 8. Error Handling
-- Implementing error handling strategies using operators like `catchError` and `retry`
-- Gracefully handling errors in observable sequences
+## 4. Operators
 
-### 9. Schedulers
-- Understanding schedulers and their role in managing concurrency
-- Controlling the execution context of observables
+- Filtering: `filter`, `distinctUntilChanged`, `skip`, `take`
+- Time: `debounce`, `throttle`, `delay`, `interval`, `timer`, `timeout`
+- Transforming: `map`, `flatMap`, `flatMapLatest`, `concatMap`
+- Combining: `combineLatest`, `zip`, `merge`, `concat`, `withLatestFrom`
+{: .roadmap-topics}
 
-### 10. RxTest
-- Exploring RxTest for unit testing and debugging RxSwift applications
-- Writing comprehensive tests for observable sequences
+## 5. Errors and Threading
 
-### 11. Custom Reactive Extensions
-- Creating custom reactive extensions to encapsulate common functionality
-- Extending the capabilities of RxSwift
+- Error Handling: `catch`, `catchAndReturn`, and `retry`
+- Schedulers: `observe(on:)` and `subscribe(on:)`
+{: .roadmap-topics}
 
-### 12. MVVM with RxSwift
-- Applying the Model-View-ViewModel (MVVM) architecture with RxSwift
-- Leveraging RxSwift for data binding and event handling in MVVM
+## 6. RxSwift in Apps
 
-By mastering the concepts and techniques covered in this guide, you will be well-equipped to leverage the power of RxSwift in your Swift projects. RxSwift provides a flexible and expressive way to handle asynchronous events, making your code more readable, maintainable, and testable. As you continue your RxSwift journey, remember to practice, experiment, and stay curious. The reactive programming paradigm offers endless possibilities for building robust and responsive applications.
+- RxCocoa: Binding Observables to UIKit
+- MVVM with RxSwift
+- Writing Custom Reactive Extensions
+- Testing with RxTest and RxBlocking
+{: .roadmap-topics}
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+{% include roadmap/guide_footer.liquid next_url="/swift-different-topics/" next_title="More Swift Topics" %}

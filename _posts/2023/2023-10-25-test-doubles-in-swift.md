@@ -2,11 +2,12 @@
 layout: post
 title: "Test Doubles In Swift"
 date: "2023-10-25"
-last_modified_at: "2024-09-08"
+last_modified_at: "2026-10-20"
 permalink: /test-doubles-in-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/test_doubles_full.webp"
+thumbnail: "images/covers/test_doubles_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -29,26 +30,26 @@ Testing is an essential part of software development, ensuring the correctness a
 
 
 {%
- include centered-image.html 
- image_path="../images/covers/test_doubles_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/test_doubles_thumbnail.webp"
+ alt_text="A translucent substitute service plugging into a test rig with passing checks"
+ caption="Replacing real dependencies with controlled test doubles"
+ width="640"
+ height="400"
 %}
 
-It's important to understand the basics of unit testing, see this blog post [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/), especially since certain architectural patterns, like MVC can introduce complexities that make them less testable. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
+It's important to understand the basics of unit testing first (see [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/)), especially since some architectures, like MVC with logic packed into view controllers, can make code harder to test. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
 
 In this post, we’ll explore the different types of test doubles, their purpose, and practical examples. By the end, you’ll be able to confidently use them to create more effective, reliable tests.
 
 ## What is a Test Double?
-A **test double** is a substitute that stands in for a real dependency during testing. These dependencies, which can include external services, databases, or complex components, often introduce complexity that makes testing challenging. Test doubles enable us to isolate the code under test and concentrate on specific behaviors, resulting in more predictable and efficient tests. By using test doubles, we can create controlled environments that facilitate thorough testing without the overhead of managing real dependencies. This revision broadens the definition of a test double while maintaining clarity and focus on its purpose in testing.
+A **test double** is a substitute that stands in for a real dependency during testing. These dependencies, which can include external services, databases, or complex components, often introduce complexity that makes testing challenging. Test doubles enable us to isolate the code under test and concentrate on specific behaviors, resulting in more predictable and efficient tests. By using test doubles, we can create controlled environments that facilitate thorough testing without the overhead of managing real dependencies.
 
 Test doubles mimic the behavior of real dependencies, but they provide simplified or controlled implementations. By replacing real dependencies with test doubles, we create an environment where we control every interaction, avoiding side effects from external systems.
 
 ### Types of Test Doubles
 
-There are five common types of test doubles, each serving a distinct purpose:
+The most widely used vocabulary comes from Gerard Meszaros's book *xUnit Test Patterns*, which describes five types of test doubles, each serving a distinct purpose:
 
 1. **Dummy**
 2. **Fake**
@@ -56,9 +57,9 @@ There are five common types of test doubles, each serving a distinct purpose:
 4. **Spy**
 5. **Mock**
 
-Let's dive into each of these with practical Swift examples. We'll use a sample `UserManager` class that has dependencies carefully picked for demonstrating all types of test doubles, it may be needed to create multiple test doubles of different types for each dependency in some cases, this depends on the test cases needs, but in this example, only one test double is created for each dependency, for demo purpose.
+Let's dive into each of these with practical Swift examples. We'll use a sample `UserManager` class whose dependencies were picked to demonstrate every type of test double. In a real project, you may need several different doubles for the same dependency, depending on what each test needs. To keep this example short, we create only one test double per dependency.
 
-`UserManager` also uses default values that can be changed, this is dependency injection by init.
+`UserManager` receives its dependencies through its initializer, with default values for production use. This is called *initializer injection*, a form of dependency injection.
 
 ```swift
 // UserManager.swift
@@ -84,7 +85,7 @@ class UserManager {
     }
     
     func authenticate(username: String, password: String) -> Bool {
-        loggerService.log("Authenticating user \(username) \(password)")
+        loggerService.log("Authenticating user \(username)") // Never log passwords
         
         // Check cache first
         if let cachedPasswordHash = cacheService.get(username) {
@@ -145,7 +146,7 @@ class UserManager {
 }
 ```
 
-Below you can see the protocols used to create our dependencies, for example the `LoggerService` protocol can be used to either created a `LoggerServiceImpl` or `DummyLogger`, and the same goes for other dependencies, each protocol can be used to create either an implementation or a test double, this way we ensure the code is properly testable, we can simply plug in whatever needed in the `UserManager`.
+Below are the protocols that describe our dependencies. For example, the `LoggerService` protocol is implemented both by `LoggerServiceImpl` (used in production) and by `DummyLogger` (used in tests). The same goes for every other dependency: each protocol can be implemented by either a real type or a test double, so we can plug whichever one we need into `UserManager`. This is what makes the code testable.
 
 ```swift
 // LoggerService.swift
@@ -182,7 +183,7 @@ protocol NotificationService {
 }
 ```
 
-Below is a simple hasher, this is simplified for demo purpose.
+Below is a simple "hasher", simplified for demo purposes. Real apps should never store or compare passwords like this: use a slow, salted password hashing algorithm, ideally on the server.
 
 ```swift
 // String+Hasher.swift
@@ -193,10 +194,12 @@ extension String {
 }
 ```
 
-Below you can find the implementations we will be using in production code, this is useful to compare when reading about the test double examples.
+Below are the implementations we use in production code. They're useful to compare against when reading the test double examples.
 
 ```swift
 // LoggerServiceImpl.swift
+import os
+
 class LoggerServiceImpl: LoggerService {
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp", category: "default")
     func log(_ message: String) {
@@ -207,17 +210,19 @@ class LoggerServiceImpl: LoggerService {
 ```swift
 // CacheServiceImpl.swift
 class CacheServiceImpl: CacheService {
-    private var cache: [String: String] = [:]
+    private let userDefaults = UserDefaults.standard
     
     func get(_ key: String) -> String? {
-        return cache[key] // Retrieve value from cache
+        return userDefaults.string(forKey: key) // Retrieve value from UserDefaults
     }
     
     func set(_ key: String, value: String) {
-        cache[key] = value // Store value in cache
+        userDefaults.set(value, forKey: key) // Store value in UserDefaults
     }
 }
 ```
+
+> Note: UserDefaults should never be used to store sensitive data like passwords, even hashed ones. Use the Keychain for that. It's only used here for demo purposes.
 ```swift
 // DatabaseHelperImpl.swift
 class DatabaseHelperImpl: DatabaseHelper {
@@ -227,7 +232,6 @@ class DatabaseHelperImpl: DatabaseHelper {
         return users[username] // Retrieve password hash for the given username
     }
     
-    // Helper method to add users to the database for testing purposes
     func addUser(username: String, passwordHash: String) {
         users[username] = passwordHash // Add user to the simulated database
     }
@@ -244,37 +248,35 @@ class SecurityHelperImpl: SecurityHelper {
     }
     
     func recordAuthenticationAttempt(username: String, success: Bool) {
-        let logEntry = "\(Date()): Authentication attempt for \(username): \(success ? "Success" : "Failure")\n"
+        // One tab-separated line per attempt: timestamp, username, result
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let logEntry = "\(timestamp)\t\(username)\t\(success ? "Success" : "Failure")\n"
         
         do {
-            try logEntry.write(to: logFileURL, atomically: true, encoding: .utf8)
+            if let handle = try? FileHandle(forWritingTo: logFileURL) {
+                // Append to the existing log
+                defer { try? handle.close() }
+                try handle.seekToEnd()
+                try handle.write(contentsOf: Data(logEntry.utf8))
+            } else {
+                // First attempt: create the file
+                try logEntry.write(to: logFileURL, atomically: true, encoding: .utf8)
+            }
         } catch {
             print("Error writing to log file: \(error)")
         }
     }
 
     func readAuthenticationAttempts() -> [(username: String, success: Bool)] {
-        var attempts: [(username: String, success: Bool)] = []
-        
-        do {
-            let logContents = try String(contentsOf: logFileURL, encoding: .utf8)
-            let lines = logContents.split(separator: "\n")
-            
-            for line in lines {
-                // Parse each line to extract the username and success status
-                let components = line.split(separator: ":")
-                if components.count >= 3 {
-                    let username = components[2].split(separator: " ")[3] // Extract the username
-                    let successString = components[3].trimmingCharacters(in: .whitespaces) // Extract "Success" or "Failure"
-                    let success = successString == "Success"
-                    attempts.append((username: String(username), success: success))
-                }
-            }
-        } catch {
-            print("Error reading log file: \(error)")
+        guard let logContents = try? String(contentsOf: logFileURL, encoding: .utf8) else {
+            return []
         }
         
-        return attempts
+        return logContents.split(separator: "\n").compactMap { line in
+            let fields = line.split(separator: "\t", omittingEmptySubsequences: false)
+            guard fields.count == 3 else { return nil }
+            return (username: String(fields[1]), success: fields[2] == "Success")
+        }
     }
 }
 ```
@@ -298,7 +300,7 @@ class NotificationServiceImpl: NotificationService {
 }
 ```
 
-After getting familiar with `UserManager`, Let's explore the different types of test doubles, along with examples and further details.
+Now that we're familiar with `UserManager`, let's explore the different types of test doubles, along with examples and further details.
 
 ## 1. Dummies
 
@@ -315,9 +317,11 @@ class DummyLogger: LoggerService {
 }
 ```
 
-In this example, `DummyLogger` is a **dummy** that satisfies the `LoggerService` protocol, but doesn't actually perform any actions. It’s only used to fulfill the constructor requirements, notice that it has no `Logger`, in the unit tests cases, you can see the usage of that dummy, only to satisfy the needs we have.
+In this example, `DummyLogger` satisfies the `LoggerService` protocol but doesn't do anything. Notice that it has no `Logger`. It exists only to fulfill the initializer's requirements, because none of our tests care about logging.
 
-If we had a complicated logging system that is supposed to be tested, we simply create another test double for the `LoggerService`, but again, we are trying to demonstrate the different types of test doubles, and the logger in this case seems to be the most simple dependency.
+> Note: Strictly speaking, a dummy is never *used* at all, only passed around. `UserManager` does call `log(_:)`, so a do-nothing logger like this one is technically closer to a stub that returns nothing, also known as a *null object*. In practice, many developers call any placeholder the tests don't care about a dummy. A stricter dummy would call `fatalError()` in its methods, to prove the code under test never touches it.
+
+If we had a complicated logging system that needed testing, we would create a different test double for `LoggerService`. Here, the logger is simply the easiest dependency to use for demonstrating a dummy.
 
 ## 2. Fakes
 
@@ -340,51 +344,34 @@ class FakeDatabase: DatabaseHelper {
 }
 ```
 
-Here, the `FakeDatabase` simulates a database with an in-memory data structure, making it useful for testing without involving a real database. The original implementation is similar due to the demo-purpose, we can have the original implementation to really talk to a simple sqlite database or a coredata database.
+Here, `FakeDatabase` simulates a database with an in-memory dictionary, so tests can run without a real database. It really *works*: users you add can be read back later, just like with the real thing.
 
-The fake test double only does a dictionary manipulation, using an original database example will make this blog post very lengthy, in the next example we can see a usage of user defaults.
+In this demo, the production `DatabaseHelperImpl` happens to be just as simple. In a real app, it would talk to SQLite, Core Data, or SwiftData, and a fake like this one is what lets your tests stay fast and independent of that storage.
 
 ## 3. Stubs
 
-A **stub** is a test double that provides predefined answers to method calls. Stubs don’t perform any logic; they just return canned responses. Stubs are helpful when you want to control the return values of a dependency in a test scenario.
+A **stub** is a test double that provides predefined answers to method calls. Stubs don't perform any logic; they just return canned responses. Stubs are helpful when you want to control the return values of a dependency in a test scenario.
 
 ### Example:
 
 ```swift
 // StubCache.swift
 class StubCache: CacheService {
-    var storedData: [String: String] = [:]
+    var cachedValue: String? // The canned answer: nil simulates a cache miss
     
     func get(_ key: String) -> String? {
-        return storedData[key] // Simulates cache hit or miss
+        return cachedValue // Same answer for every key
     }
     
     func set(_ key: String, value: String) {
-        storedData[key] = value // Simulates setting a value in the cache
+        // Ignored: a stub answers questions, it doesn't remember anything
     }
 }
 ```
 
-If we compare with the original implementation, stubs use a dictionary to store data, instead of using `UserDefaults`.
+Setting `cachedValue = "hashed_password123"` puts `UserManager` on the cache-hit path, and leaving it `nil` forces the cache-miss path, without involving `UserDefaults` at all.
 
-```swift
-// CacheServiceImpl.swift
-class CacheServiceImpl: CacheService {
-    private let userDefaults = UserDefaults.standard
-    
-    func get(_ key: String) -> String? {
-        return userDefaults.string(forKey: key) // Retrieve value from UserDefaults
-    }
-    
-    func set(_ key: String, value: String) {
-        userDefaults.set(value, forKey: key) // Store value in UserDefaults
-    }
-}
-```
-
-> Note: Stubs provide canned responses to method calls, while fakes provide a simplified implementation of the real thing.
-
-> Note: the usage of UserDefaults should not be used with critical data storage like passwords, even if hashed, this is only for demo purpose.
+> Note: Stubs provide canned responses to method calls, while fakes provide a simplified implementation of the real thing. If `StubCache` stored values in a dictionary in `set` and returned them from `get`, it would be a working cache, and therefore a fake, like `FakeDatabase`.
 
 ## 4. Spies
 
@@ -413,51 +400,70 @@ class SpySecurityHelper: SecurityHelper {
 }
 ```
 
-We can see that the `SpySecurityHelper` is more simple than the original implementation, the spy test double records all attempts of login, and checks the side effects of the dependency.
+`SpySecurityHelper` is much simpler than the original implementation. Instead of writing to a file, it records every authentication attempt in memory, so a test can check afterwards that `UserManager` reported the right attempts.
 
 ## 5. Mocks
 
-A **mock** is the most sophisticated type of test double. It allows you to set expectations about interactions with the object and verify that those expectations are met. Mocks are often used in combination with testing frameworks.
+A **mock** is the most sophisticated type of test double. You tell it up front which calls to expect, and it verifies by itself that exactly those calls happened. In other languages, mocks are usually generated by mocking frameworks. In Swift, they're most often written by hand.
 
 ### Example:
 
 ```swift
 // MockNotificationService.swift
+import XCTest
+
 class MockNotificationService: NotificationService {
-    var sentEmails: [(username: String, success: Bool)] = []
+    enum Email: Equatable {
+        case authentication(username: String, success: Bool)
+        case registration(username: String, success: Bool)
+        case failedAuthenticationAttempt(username: String)
+    }
+    
+    private var expectedEmails: [Email] = []
+    private var sentEmails: [Email] = []
+    
+    // Arrange: describe the emails the test expects, in order
+    func expect(_ email: Email) {
+        expectedEmails.append(email)
+    }
+    
+    func sendAuthenticationEmail(username: String, success: Bool) {
+        sentEmails.append(.authentication(username: username, success: success))
+    }
     
     func sendRegistrationEmail(username: String, success: Bool) {
-        sentEmails.append((username, success))
-    }
-
-    func sendAuthenticationEmail(username: String, success: Bool) {
-        sentEmails.append((username, success))
-    }
-
-    func sendFailedAuthenticationAttemptEmail(username: String, success: Bool) {
-        sentEmails.append((username, success))
-    }
-
-    // Helper to verify that an email was sent
-    func verifyEmailSent(to username: String, success: Bool) -> Bool {
-        return sentEmails.contains { $0.username == username && $0.success == success }
+        sentEmails.append(.registration(username: username, success: success))
     }
     
-    // Helper to verify the total number of emails sent
-    func verifyTotalEmailsSent(expectedCount: Int) -> Bool {
-        return sentEmails.count == expectedCount
+    func sendFailedAuthenticationAttemptEmail(username: String, success: Bool) {
+        sentEmails.append(.failedAuthenticationAttempt(username: username))
+    }
+    
+    // Assert: fails the test if the emails sent don't match the expectations
+    func verify(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(sentEmails, expectedEmails, "Unexpected notification emails", file: file, line: line)
     }
 }
 ```
 
+A test then reads like this:
+
+```swift
+mockNotificationService.expect(.authentication(username: "john_doe", success: true))
+_ = userManager.authenticate(username: "john_doe", password: "password123")
+mockNotificationService.verify()
+```
+
+> Note: The difference between a spy and a mock is *who checks*. A spy only records what happened, and the test asserts on the recording afterwards. A mock is given its expectations beforehand and does the verification itself. Because each email type is a separate `Email` case, this mock can also tell a failed-attempt email apart from a regular authentication email.
+
 ## Sample Code
 
-It's best to use a real project to test our the code, you can download the source code [Here](/assets/test_doubles.zip).
+It's best to try out the code in a real project. You can download the source code [here](/assets/test_doubles.zip).
 
 {%
  include centered-image.html 
  image_path="/images/posts/auth_screen.webp"
- alt_text="" 
+ alt_text="A simple SwiftUI login screen with username and password fields" 
  caption="Simple SwiftUI Screen"
 %}
 

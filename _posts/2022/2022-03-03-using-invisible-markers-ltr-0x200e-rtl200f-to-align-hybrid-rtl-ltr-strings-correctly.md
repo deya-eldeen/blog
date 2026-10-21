@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /invisible-markers-ltr-0x200e-rtl200f-to-align-text-correctly/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/arrows_full.webp"
+thumbnail: "images/covers/unicode_direction_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -32,12 +33,12 @@ The use of specific Unicode characters, such as the Left-to-Right Mark (0x200E) 
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/arrows_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/unicode_direction_thumbnail.webp"
+ alt_text="English and Arabic text panels with opposing direction arrows and alignment markers"
+ caption="Controlling left-to-right and right-to-left text direction"
+ width="640"
+ height="400"
 %}
 
 ## Working With Multiple Languages

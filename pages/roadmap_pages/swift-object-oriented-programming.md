@@ -1,153 +1,108 @@
 ---
 layout: page
-title: "Swift Object Oriented Programming"
+title: "Object-Oriented Programming in Swift"
+subtitle: "Model your app's world with types that know what they are and what they do"
 permalink: /swift-object-oriented-programming/
 hide: true
 excluded: true
 ---
 
-Object-Oriented Programming (OOP) is a fundamental paradigm in software development that allows developers to model real-world entities using classes and objects. Swift, Apple's powerful programming language, fully supports OOP principles, making it essential for iOS and macOS development. This roadmap covers key concepts and practices in Swift OOP to help you master this essential programming style.
+Object-oriented programming (OOP) organizes code around *objects*: bundles of data and the behavior that belongs to it. UIKit, Foundation, and most of Apple's older frameworks are built this way, so understanding OOP is essential for reading and writing real iOS code.
 
-## Swift Object Oriented Programming
+Swift supports OOP fully, with its own twists: structs and enums can have methods too, there's no multiple class inheritance, and protocols often take the place of abstract classes. This guide covers the classic ideas and how they translate to Swift.
 
-### 1. Foundations of OOP
+{% include roadmap/legend.liquid %}
 
-- UML<br>
-- Objects from the Real World<br>
-- Structures, Classes, and Instances<br>
+## 1. Foundations
 
-### 2. Core OOP Principles
+- [Thinking in Objects: Modeling the Real World](/swift-thinking-in-objects/)
+- [Classes, Structures, and Instances](/swift-structures-and-classes/)
+- [Value Types vs. Reference Types](/swift-value-vs-reference-types/)
+- [Reading and Drawing UML Class Diagrams](/swift-uml-class-diagrams/)
+{: .roadmap-topics}
 
-- Encapsulation<br>
-- Inheritance, Abstraction, and Specialization<br>
-- Contracting with Protocols<br>
-- Polymorphism<br>
+## 2. The Four Pillars
 
-### 3. Advanced OOP Concepts
+- [Encapsulation](/swift-encapsulation/)
+- [Abstraction](/swift-abstraction/)
+- [Inheritance and Specialization](/swift-inheritance/)
+- [Polymorphism](/swift-polymorphism/)
+{: .roadmap-topics}
 
-- OOP and Functional Programming (FP)<br>
-- Extending and Building OOP Code<br>
-- SOLID Principles<br>
+## 3. How Classes Work in Swift
 
-### 4. Class and Object Mechanics
+- [Initializers and Deinitializers](/swift-initializers-and-deinitializers/)
+- [Designated and Convenience Initializers](/swift-designated-convenience-initializers/)
+- [Overriding Methods and Properties](/swift-overriding-methods-properties/)
+- [Method Overloading](/swift-method-overloading/)
+- [`final` and Preventing Inheritance](/swift-final/)
+- [Type Properties and Methods (`static` and `class`)](/swift-static-class-members/)
+- [The Root Class and NSObject](/swift-root-class-nsobject/)
+{: .roadmap-topics}
 
-- Classes and Objects<br>
-- Constructors and Destructors<br>
-- Function Overloading<br>
-- Virtual Functions and Methods<br>
+## 4. Contracts and Relationships
 
-### 5. Advanced Features
+- [Contracting with Protocols](/swift-protocols/)
+- [Protocols Instead of Abstract Classes](/swift-protocols-instead-of-abstract-classes/)
+- [Protocols Instead of Multiple Inheritance](/swift-protocols-instead-of-multiple-inheritance/)
+- [Parent and Child Classes](/swift-parent-child-classes/)
+- [Composition Over Inheritance](/swift-composition-over-inheritance/)
+- [Delegation](/swift-delegation/)
+{: .roadmap-topics}
 
-- Abstract Classes and Methods<br>
-- Static Constructors and Destructors<br>
-- Access Modifiers<br>
-- Reflection and Introspection<br>
+## 5. Under the Hood
 
-### 6. Relationships and Inheritance
+- [Static vs. Dynamic Dispatch](/swift-static-vs-dynamic-dispatch/)
+- [Access Control](/swift-access-control/)
+- [Reflection and Introspection](/swift-reflection-with-mirror/)
+- [Equality, Identity, and `Hashable`](/swift-equality-identity-hashable/)
+- [Deep Copy vs. Shallow Copy](/swift-deep-vs-shallow-copy/)
+{: .roadmap-topics}
 
-- Parent Classes vs. Child Classes<br>
-- Multiple Inheritance and Virtual Inheritance<br>
-- Real World Modeling and Relationships<br>
+## 6. Designing Good Objects
 
-### 7. Additional OOP Concepts
+- [The SOLID Principles](/swift-solid-principles/)
+- [Dependency Injection](/swift-dependency-injection/)
+- [The Law of Demeter](/swift-law-of-demeter/)
+- [Common Anti-Patterns](/swift-oop-anti-patterns/)
+- [Mixing OOP with Functional Programming](/swift-oop-functional-programming/)
+{: .roadmap-topics}
 
-- Dynamic Dispatch<br>
-- Dependency Injection<br>
-- Hashing & Hashmaps<br>
-- Delegates and Iterators<br>
+## A Quick Tour of the Key Ideas
 
-### 8. Best Practices and Patterns
+**Encapsulation** keeps an object's data and the code that changes it together, and hides the details behind a small public interface. In Swift, access control (`private`, `fileprivate`, `internal`, `public`) is how you draw that line.
 
-- Anti-Patterns<br>
-- Composition and the Law of Demeter<br>
-- Deep Copy vs. Shallow Copy<br>
+**Abstraction** means exposing *what* something does while hiding *how*. A `PaymentProcessor` should offer `pay(amount:)`, not a dozen network details.
 
-## Overview of OOP Concepts
+**Inheritance** lets a subclass reuse and extend a parent class. In Swift, only classes can inherit, and each class has at most one superclass. Structs and enums share behavior through protocols and extensions instead.
 
-### UML
+**Polymorphism** lets you treat different types through a common interface: a `[Shape]` array can hold circles and squares, and calling `area()` runs the right implementation for each. Swift achieves this with class inheritance *and* with protocols.
 
-Unified Modeling Language (UML) is a standardized modeling language used to visualize the design of a system. It helps in representing the structure and behavior of classes and their relationships.
+**SOLID** is a set of five design principles that keep object-oriented code flexible:
 
-### Objects from the Real World
+- **S**ingle Responsibility: a type should have one reason to change.
+- **O**pen/Closed: open for extension, closed for modification.
+- **L**iskov Substitution: subclasses must work anywhere their parent does.
+- **I**nterface Segregation: prefer small, focused protocols over big ones.
+- **D**ependency Inversion: depend on abstractions, not concrete types.
 
-In OOP, objects are instances of classes that represent real-world entities. Understanding how to model these entities effectively is crucial for creating intuitive applications.
+## Where OOP Falls Short
 
-### Structures, Classes, and Instances
+OOP is powerful, but it isn't free. Knowing its weak spots helps you decide when to reach for something else:
 
-Swift provides both structures and classes. While structures are value types, classes are reference types that support inheritance. Instances are the concrete manifestations of these types.
+- **Shared mutable state.** Objects are references, so two parts of an app can change the same object, and bugs appear far from their cause. Swift's value types avoid this by giving each owner its own copy.
+- **Fragile base classes.** A change in a parent class can quietly break its subclasses. Deep inheritance hierarchies make this worse.
+- **Tight coupling.** Classes that create and depend on concrete classes are hard to test and hard to change. Protocols and dependency injection loosen this up.
+- **Boilerplate.** Simple ideas can end up spread across many small classes.
+- **Some runtime cost.** Dynamic dispatch and reference counting (ARC) add a little overhead compared with value types and static dispatch. It rarely matters, but it's there.
 
-### Encapsulation
+### The alternatives
 
-Encapsulation is the principle of bundling data and methods that operate on that data within a single unit, or class. This helps protect the integrity of the data and restricts unauthorized access.
+Swift is a multi-paradigm language, so you can mix approaches freely:
 
-### Inheritance, Abstraction, and Specialization
+- **Protocol-oriented programming:** share behavior through protocols and extensions, and use value types by default. This is the style Apple recommends for Swift.
+- **Functional programming:** build programs from small, pure functions and immutable data, which makes code easier to test and reason about.
+- **Declarative programming:** describe *what* you want and let the framework work out *how*. SwiftUI is the best-known example in the Apple world.
+- **Procedural programming:** plain functions operating on data, a perfectly good fit for small scripts and tools.
 
-Inheritance allows one class to inherit properties and methods from another, promoting code reuse. Abstraction simplifies complex systems by modeling classes based on essential characteristics, while specialization involves creating subclasses that extend the functionality of parent classes.
-
-### Contracting with Protocols
-
-Protocols define a blueprint of methods and properties that classes or structures can adopt. They enable a form of contract, ensuring that conforming types implement required functionalities.
-
-### OOP and Functional Programming
-
-Understanding the relationship between OOP and functional programming (FP) can enhance your coding practices. While OOP focuses on objects and their interactions, FP emphasizes functions and immutability.
-
-### Extending and Building OOP Code
-
-Explore how to extend existing classes and build upon them to create more complex systems, ensuring your code remains modular and maintainable.
-
-### SOLID Principles
-
-The SOLID principles are a set of design principles that help developers create more understandable, flexible, and maintainable software. They include:
-
-- **Single Responsibility Principle**
-- **Open/Closed Principle**
-- **Liskov Substitution Principle**
-- **Interface Segregation Principle**
-- **Dependency Inversion Principle**
-
-Mastering Object-Oriented Programming in Swift is essential for developing robust and scalable applications. By understanding and applying these concepts, you can create code that is not only functional but also easy to maintain and extend.
-
-## Limitations of Object-Oriented Programming and Alternatives
-
-While Object-Oriented Programming (OOP) has been a dominant paradigm for software development, it is not without its drawbacks. Understanding these limitations can help developers choose the most appropriate programming paradigm for their specific needs and projects.
-
-### Drawbacks of OOP
-
-1. **Complexity and Verbosity**: OOP often leads to more complex and verbose code compared to other paradigms. The need to define classes, methods, and relationships can result in a significant amount of boilerplate code, making it harder to read and maintain.
-
-2. **State Management Issues**: OOP relies heavily on maintaining the state of objects. As systems grow in size and complexity, managing state can become cumbersome. This can lead to issues such as unintended side effects, where changes to one object inadvertently affect others.
-
-3. **Inheritance Problems**: While inheritance promotes code reuse, it can also introduce fragility. Changes in a base class can have unforeseen consequences on derived classes, leading to a phenomenon known as the "fragile base class problem." This can complicate debugging and maintenance.
-
-4. **Tight Coupling**: OOP can lead to tightly coupled classes, making it difficult to modify or replace components without affecting the entire system. This can hinder scalability and adaptability, especially in large applications.
-
-5. **Performance Overhead**: OOP can introduce performance overhead due to the use of dynamic dispatch and the need for memory management, particularly in languages that rely on garbage collection.
-
-### Alternatives to OOP
-
-Given these limitations, several alternative programming paradigms have emerged, each with its own strengths and use cases:
-
-1. **Functional Programming (FP)**: 
-   - **Concept**: FP treats computation as the evaluation of mathematical functions and avoids changing state and mutable data. It emphasizes immutability and first-class functions.
-   - **Advantages**: FP can lead to more predictable and easier-to-test code, as functions do not have side effects. It also promotes code reuse through higher-order functions and function composition.
-   - **Languages**: Haskell, Scala, and Erlang are prominent examples of functional programming languages.
-
-2. **Procedural Programming**:
-   - **Concept**: This paradigm focuses on the concept of procedure calls, where programs are structured as a series of procedures or routines.
-   - **Advantages**: Procedural programming can be simpler and more straightforward than OOP, especially for smaller programs. It emphasizes a linear flow of control, which can be easier to understand.
-   - **Languages**: C, Pascal, and Python support procedural programming.
-
-3. **Declarative Programming**:
-   - **Concept**: Declarative programming focuses on what the program should accomplish without specifying how to achieve it. It abstracts the implementation details.
-   - **Advantages**: This paradigm can lead to clearer and more concise code, as it allows developers to express logic without getting bogged down in control flow.
-   - **Languages**: SQL and Prolog are examples of declarative programming languages.
-
-4. **Logic Programming**:
-   - **Concept**: Logic programming is based on formal logic and uses a set of facts and rules to express computations. It focuses on what is true rather than how to compute it.
-   - **Advantages**: This paradigm is particularly useful for problems involving complex relationships and constraints, such as in artificial intelligence and database querying.
-   - **Languages**: Prolog is the most well-known logic programming language.
-
-While OOP remains a powerful and widely used paradigm, it is essential to recognize its limitations and consider alternatives when appropriate. Functional programming, procedural programming, declarative programming, and logic programming each offer unique benefits that can lead to cleaner, more maintainable, and efficient code. By understanding these paradigms, developers can make informed decisions about the best approach for their specific projects and requirements.
-
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+{% include roadmap/guide_footer.liquid next_url="/swift-protocol-oriented-programming/" next_title="Protocol-Oriented Programming" %}

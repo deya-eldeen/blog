@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /backup-on-spaces/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/do_space_full.webp"
+thumbnail: "images/covers/cloud_backup_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -26,12 +27,12 @@ I'm one of those who experienced the evolution of data storage firsthand, starti
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/do_space_full.webp"
- alt_text="" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/cloud_backup_thumbnail.webp"
+ alt_text="Files transferring from a laptop into a locked cloud storage bucket"
+ caption="Backing up files to object storage"
+ width="640"
+ height="400"
 %}
 
 I vividly remember the first flash drive my father gifted me as a teenager; it had a mere 128 MB of storage. At that time, such a device was considered a luxury and not affordable for many where I live. Fast forward to today, and we now have SSDs that are over 1000 times larger in capacity and available at significantly lower prices.

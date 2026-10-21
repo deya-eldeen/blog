@@ -1,64 +1,75 @@
 ---
 layout: page
-title: "Swift Protocol Oriented Programming"
+title: "Protocol-Oriented Programming in Swift"
+subtitle: "Share behavior through protocols, not class hierarchies"
 permalink: /swift-protocol-oriented-programming/
 hide: true
 excluded: true
 ---
 
-In the dynamic world of software development, mastering Protocol-Oriented Programming (POP) in Swift is essential for creating robust and efficient applications. This roadmap serves as your structured guide to navigating POP, covering key topics from the basics of Swift to advanced features like generics and design patterns.
+When Apple introduced Swift, it also introduced a slogan: *"Swift is a protocol-oriented language."* Instead of building deep class hierarchies, you describe capabilities with protocols, give them default behavior with extensions, and let any type, whether a struct, an enum, or a class, adopt exactly the capabilities it needs.
 
-As you embark on this journey, remember that learning is an ongoing process. By following this roadmap and embracing the principles of POP, you'll develop the skills needed to excel as a Swift developer. Let's dive in and unlock the potential of Protocol-Oriented Programming to enhance your app development capabilities!
+Most of the Swift standard library works this way, from `Equatable` and `Hashable` to `Sequence` and `Collection`. This guide shows how to use the same approach in your own code.
 
-## Swift Protocol Oriented Programming
+{% include roadmap/legend.liquid %}
 
-### 1. Understanding Object-Oriented Programming (OOP)
-- Key OOP Principles
-  - Encapsulation
-  - Inheritance
-  - Polymorphism
-- Limitations of OOP in Swift
+## 1. Why Not Just OOP?
 
-### 2. Transitioning to Protocol-Oriented Programming (POP)
-- OOP vs. POP
-- Core Concepts of POP
-  - Definition of Protocols
-  - Protocol Requirements
-  - Protocol Composition
+- A Quick Refresher on OOP: Encapsulation, Inheritance, Polymorphism
+- The Limits of Class Inheritance in Swift
+- OOP vs. POP: Two Ways to Share Behavior
+{: .roadmap-topics}
 
-### 3. Working with Protocols
+## 2. Protocol Basics
+
 - Defining Protocols
-- Implementing Protocols in Classes and Structs
-- Protocol Extensions
-  - Default Implementations
-  - Adding Functionality to Existing Types
+- Property and Method Requirements
+- Adopting Protocols in Structs, Enums, and Classes
+- Protocol Composition (`A & B`)
+- Class-Only Protocols (`AnyObject`)
+{: .roadmap-topics}
 
-### 4. Advanced Protocol Features
-- Generics with Protocols
+## 3. Protocol Extensions
+
+- Default Implementations
+- Adding Behavior to Existing Types
+- Constrained Extensions (`where` Clauses)
+- Static vs. Dynamic Dispatch in Protocol Extensions
+{: .roadmap-topics}
+
+## 4. Protocols and Generics
+
+- Generic Functions and Types with Protocol Constraints
 - Associated Types
+- Primary Associated Types
 - Protocol Inheritance
+- Opaque Types (`some`) vs. Existentials (`any`)
+- [Phantom Types](/swift-phantom-types/)
+{: .roadmap-topics}
 
-### 5. Error Handling in POP
-- Defining Error Types
-- Using Protocols for Error Handling
-- Best Practices for Error Management
+## 5. Errors and Protocols
 
-### 6. Design Patterns in Protocol-Oriented Programming
-- Delegate Pattern
-- Observer Pattern
-- Factory Pattern
-- Strategy Pattern
+- The `Error` Protocol and Custom Error Types
+- Typed Throws
+- Designing Error Handling Around Protocols
+{: .roadmap-topics}
 
-### 7. Case Studies and Practical Applications
-- Building a Simple App with POP
-- Refactoring OOP Code to POP
-- Real-World Examples of POP in Action
+## 6. Design Patterns, the Protocol Way
 
-### 8. Best Practices and Performance Considerations
-- Code Organization and Structure
-- Performance Optimization Techniques
-- Testing Protocols and Implementations
+- Delegation
+- Observer
+- Factory
+- Strategy
+- Dependency Injection with Protocols
+{: .roadmap-topics}
 
-By following this roadmap, you will systematically cover the essential topics needed to master Protocol-Oriented Programming in Swift. Embrace the learning journey and apply these concepts to enhance your coding practices!
+## 7. Putting It Into Practice
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+- Building a Small App with POP
+- Refactoring Class Hierarchies into Protocols
+- [Testing with Protocols and Test Doubles](/test-doubles-in-swift/)
+- Performance Considerations
+- When Protocols Are Overkill
+{: .roadmap-topics}
+
+{% include roadmap/guide_footer.liquid next_url="/swift-functional-programming/" next_title="Functional Programming" %}

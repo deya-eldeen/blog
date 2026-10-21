@@ -1,104 +1,118 @@
 ---
 layout: page
 title: "Swift Language"
+subtitle: "The vocabulary you'll use in every line of code you write"
 permalink: /swift-language/
 hide: true
 excluded: true
 ---
 
-Swift is a powerful and intuitive programming language developed by Apple for building apps on iOS, macOS, watchOS, and tvOS. Since its introduction in 2014, Swift has gained popularity for its modern syntax, safety features, and performance enhancements over its predecessor, Objective-C.
+Swift is Apple's modern programming language for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS, and it also runs on Linux, Windows, and servers. Since its release in 2014, it has won developers over with clean syntax, strong safety guarantees, and great performance.
 
-## Swift Language
+This guide walks through the language from the very first `let` to generics and opaque types. Go in order if you're new; every section builds on the ones before it.
 
-### 1. Introduction to Swift
+{% include roadmap/legend.liquid %}
 
-- [What is Swift?]({{ site.url }}/what-is-swift)<br>
-- [Swift Pros over Obj-C]({{ site.url }}/swift-pros-over-obj-c)<br>
-- [Swift Lexical Structure]({{ site.url }}/swift-lexical-structure)<br>
-- [Swift Reserved Keywords]({{ site.url }}/swift-keywords)<br>
-- [Swift Style Guides]({{ site.url }}/swift-style-guides)<br>
+## 1. Meet Swift
 
-### 2. Variables and Data Types
+- [What Is Swift?](/what-is-swift/)
+- [Advantages of Swift Over Objective-C](/swift-pros-over-obj-c/)
+- [Swift Lexical Structure](/swift-lexical-structure/)
+- [Swift Reserved Keywords](/swift-keywords/)
+- [Swift Style Guides](/swift-style-guides/)
+{: .roadmap-topics}
 
-- [Variables and Constants]({{ site.url }}/swift-variables-and-constants)<br>
-- [Swift Basic Data Types & Type Inference]({{ site.url }}/swift-built-in-data-types)<br>
-- [Never Use Floating-Point / Double Data Types for Monetary Calculations!]({{ site.url }}/never-use-floating-point-double-data-types-for-monetary-calculations)<br>
-- [Any / AnyObject / AnyHashable]({{ site.url }}/swift-any-anyobject)<br>
-- [Void / Void()]({{ site.url }}/swift-void-and)<br>
-- [Optionals]({{ site.url }}/swift-optionals)<br>
-- [nil, Null, NSNull]({{ site.url }}/swift-the-difference-between-nil-nil-null-nsnull)<br>
+## 2. Variables and Data Types
 
-### 3. Operators and Strings
+- [Variables and Constants](/swift-variables-and-constants/)
+- [Basic Data Types & Type Inference](/swift-built-in-data-types/)
+- [Never Use Floating-Point Types for Money!](/never-use-floating-point-double-data-types-for-monetary-calculations/)
+- [Any, AnyObject, and AnyHashable](/swift-any-anyobject/)
+- [Void vs. ()](/swift-void-and/)
+- [Optionals](/swift-optionals/)
+- [nil, Nil, NULL, and NSNull](/swift-the-difference-between-nil-nil-null-nsnull/)
+{: .roadmap-topics}
 
-- [Basic Operators]({{ site.url }}/swift-basics-operators)<br>
-- [Bitwise Operators]({{ site.url }}/swift-bitwise-operators-with-real-examples)<br>
-- [Strings and Characters]({{ site.url }}/swift-basics-strings-characters)<br>
+## 3. Operators and Strings
 
-### 4. Collections and Control Flow
+- [Basic Operators](/swift-basics-operators/)
+- [Bitwise Operators](/swift-bitwise-operators-with-real-examples/)
+- [Strings and Characters](/swift-basics-strings-characters/)
+- [Aligning Mixed Right-to-Left and Left-to-Right Text](/invisible-markers-ltr-0x200e-rtl200f-to-align-text-correctly/)
+{: .roadmap-topics}
 
-- Collection Types<br>
-- [Dealing With Sets]({{ site.url }}/swift-set-data-structure-with-practical-example-pizza-cooking)<br>
-- Control Flow<br>
+## 4. Collections and Control Flow
 
-### 5. Functions and Closures
+- [Arrays and Dictionaries](/swift-arrays-and-dictionaries/)
+- [Sets](/swift-set-data-structure-with-practical-example-pizza-cooking/)
+- [Control Flow: `if`, `guard`, `switch`, and Loops](/swift-control-flow/)
+- [Pattern Matching](/swift-pattern-matching/)
+{: .roadmap-topics}
 
-- Functions<br>
-- Closures (escaping closures) & (capturing)<br>
+## 5. Functions and Closures
 
-### 6. Object-Oriented Concepts
+- [Functions](/swift-functions/)
+- [Closures](/swift-closures/)
+- [Escaping and Non-Escaping Closures](/swift-escaping-closures/)
+- [Capture Lists](/swift-capture-lists/)
+{: .roadmap-topics}
 
-- Enumerations<br>
-- Structures and Classes & (stacks vs heaps)<br>
-- Properties<br>
-- Methods<br>
-- Subscripts<br>
-- Inheritance<br>
-- [Swift Root Class & NSObject]({{ site.url }}/swift-root-class-nsobject)<br>
+## 6. Building Your Own Types
 
-### 7. Memory Management and Safety
+- [Enumerations](/swift-enumerations/)
+- [Structures and Classes: Value vs. Reference Types](/swift-structures-and-classes/)
+- [Properties](/swift-properties/)
+- [Methods and `mutating`](/swift-methods-and-mutating/)
+- [Subscripts](/swift-subscripts/)
+- [Inheritance](/swift-inheritance/)
+- [The Root Class and NSObject](/swift-root-class-nsobject/)
+{: .roadmap-topics}
 
-- Initialization<br>
-- De-initialization<br>
-- Optional Chaining<br>
-- Error Handling<br>
-- Automatic Reference Counting<br>
-- Memory Safety<br>
-- Access Control<br>
-- Memory Management<br>
+## 7. Lifetime, Safety, and Errors
 
-### 8. Advanced Swift Features
+- [Initialization](/swift-initialization/)
+- [Deinitialization](/swift-deinitialization/)
+- [Automatic Reference Counting (ARC)](/swift-automatic-reference-counting/)
+- [Zombies: Use-After-Free Bugs](/swift-zombies/)
+- [Memory Safety](/swift-memory-safety/)
+- [Optional Chaining](/swift-optional-chaining/)
+- [Error Handling](/swift-error-handling/)
+- [Access Control](/swift-access-control/)
+{: .roadmap-topics}
 
-- Concurrency<br>
-- Type Casting<br>
-- Nested Types<br>
-- Extensions<br>
-- Protocols<br>
-- Generics<br>
-- Opaque Types<br>
-- Advanced Operators<br>
+## 8. Advanced Features
 
-## Other Topics
+- [Protocols](/swift-protocols/)
+- [Extensions](/swift-extensions/)
+- [Generics](/swift-generics/)
+- [Phantom Types](/swift-phantom-types/)
+- [Opaque and Boxed Types (`some` and `any`)](/swift-opaque-and-boxed-types/)
+- [Type Casting](/swift-type-casting/)
+- [Nested Types](/swift-nested-types/)
+- [Property Wrappers](/swift-property-wrappers/)
+- [Macros](/swift-macros/)
+- [Advanced and Custom Operators](/swift-advanced-and-custom-operators/)
+- [Concurrency: `async`/`await`, Tasks, and Actors](/swift-concurrency/)
+{: .roadmap-topics}
 
-- Dynamic Dispatch / Static Dispatch / Virtual Dispatch<br>
-- Method Swizzling<br>
-- Interoperability<br>
-- Stride<br>
-- KVO<br>
-- Defer<br>
-- Mutating<br>
-- Pattern Matching<br>
-- Address Sanitizer<br>
-- Swift Evolution<br>
-- ABI<br>
-- Swift Package Manager<br>
-- RunLoop<br>
-- NSOperations<br>
-- Property Wrapper<br>
-- Clean Code<br>
-- Zombies<br>
-- Custom Operators<br>
-- Mirroring<br>
+## 9. Under the Hood
 
-Swift is a versatile language that combines powerful features with a user-friendly syntax, making it an excellent choice for both beginners and experienced developers. Dive into the provided links to explore each topic in detail and enhance your Swift programming skills!
+These topics come up in day-to-day work, in debugging sessions, and very often in interviews:
 
-> **Note:** This roadmap is a work in progress and will be updated regularly to reflect the latest trends and best practices in iOS development.
+- [Static vs. Dynamic Dispatch](/swift-static-vs-dynamic-dispatch/)
+- [Method Swizzling](/swift-method-swizzling/)
+- [Key-Value Observing (KVO)](/swift-key-value-observing/)
+- [`defer`](/swift-defer/)
+- [`stride`](/swift-stride/)
+- [Reflection with `Mirror`](/swift-reflection-with-mirror/)
+- [Interoperability with Objective-C, C, and C++](/swift-interoperability/)
+- [RunLoop](/swift-runloop/)
+- [Operation and OperationQueue](/swift-operation-and-operationqueue/)
+- [ABI Stability](/swift-abi-stability/)
+- [Swift Package Manager](/swift-package-manager/)
+- [Swift Evolution: How the Language Changes](/swift-evolution/)
+- [Address Sanitizer](/swift-address-sanitizer/)
+- [Clean Code in Swift](/swift-clean-code/)
+{: .roadmap-topics}
+
+{% include roadmap/guide_footer.liquid next_url="/swift-object-oriented-programming/" next_title="Object-Oriented Programming" %}

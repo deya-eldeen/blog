@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /swift-bitwise-operators-with-real-examples/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/bitwise_full.webp"
+thumbnail: "images/covers/swift_bitwise_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -28,12 +29,12 @@ By understanding these operators, developers can harness their power to optimize
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/bitwise_full.webp"
- alt_text="Tiling Images in Interface Builder" 
- caption=""
- width="960" 
- height="1568"
+ include centered-image.html
+ image_path="../images/covers/swift_bitwise_thumbnail.webp"
+ alt_text="Two binary inputs passing through an AND gate to produce 1000"
+ caption="Bitwise AND applied to individual binary digits"
+ width="640"
+ height="400"
 %}
 
 ## Overview of Bitwise Operators

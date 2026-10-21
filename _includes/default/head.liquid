@@ -1,31 +1,28 @@
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=5">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Theme Mode-->
     <script>
-        const darkBtn = "{{ site.data.language.str_dark | default: "Dark" }}";
-        const lightBtn = "{{ site.data.language.str_light | default: "Light" }}";
-        const isAutoTheme = {% if site.color_theme == 'auto' %}true{% else %}false{% endif %};
-        const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        if (isAutoTheme) {
-            document.documentElement.setAttribute('data-theme', sessionStorage.getItem('theme') ?? preferredTheme);
-        } else {
-            document.documentElement.setAttribute('data-theme', "{{ site.color_theme | default: 'light' }}");
-        }
+      (() => {
+        const preference = "{{ site.color_theme | default: 'light' }}";
+        let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference;
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme;
+        } catch (_) { /* Use the configured theme when storage is disabled. */ }
+        document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+      })();
     </script>
-
-    <!-- Main JS (navbar.js, katex_init.js and masonry_init.js)-->
-    <script defer src="{{ '/assets/js/main.min.js' | relative_url }}"></script>
-
-    <!-- CSS -->
-    
-    <!-- <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}"> -->
-
-    <link rel="stylesheet" href="{{ site.url }}/assets/css/main.css">
+    <script defer src="{{ '/assets/js/site.js' | relative_url }}"></script>
+    <script defer src="{{ '/assets/js/partials/cookie_consent_init.js' | relative_url }}"></script>
+    <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+    {% if page.layout == 'home' %}<link rel="preload" as="image" href="{{ '/assets/img/hero/deya-studio.webp' | relative_url }}">{% endif %}
 
     <!--Favicon-->
-    <link rel="shortcut icon" href="{{ site.favicon | relative_url }}" type="image/x-icon">
+    <link rel="icon" href="{{ site.favicon | relative_url }}" type="image/x-icon">
+    <link rel="icon" href="{{ '/assets/img/favicon/deya-face-32.png' | relative_url }}" type="image/png" sizes="32x32">
+    <link rel="icon" href="{{ '/assets/img/favicon/deya-face-16.png' | relative_url }}" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="{{ '/assets/img/favicon/deya-face-180.png' | relative_url }}" sizes="180x180">
 
     {% if page.bootstrap %}
     <!-- Bootstrap-4.1.3 isolation CSS -->
@@ -45,8 +42,9 @@
     {% endif %}
 
     <!-- Mermaid 10.8.0 -->
-    {% if site.mermaid %}
+    {% if site.mermaid or page.mermaid or content contains 'language-mermaid' or content contains 'class="mermaid"' %}
     <script defer src="{{ '/assets/js/vendor/mermaid.min.js' | relative_url }}"></script>
+    <script defer src="{{ '/assets/js/mermaid.js' | relative_url }}" data-theme="{{ site.mermaid | default: 'default' | escape }}"></script>
     {% endif %}
 
     <link rel="alternate" hreflang="x-default" href="{{ site.url }}" />
@@ -62,11 +60,6 @@
       const analyticsNameGA4 = '{{ site.google_analytics_ga4 }}';
     </script>
 
-    {% if site.cookie_consent %}
-        <span id="cookie-notice"><span>{{ site.data.language.str_cookie_disclaimer | default: "We would like to use third party cookies and scripts to improve the functionality of this website." }}
-          </span><a id="cookie-notice-accept" class="button">{{ site.data.language.str_cookie_approve | default: "Approve" }}</a>
-        </span>
-    {% endif %}
     {% if site.google_analytics %}
         <!-- Global site tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"></script>

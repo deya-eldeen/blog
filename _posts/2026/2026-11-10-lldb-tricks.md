@@ -6,7 +6,8 @@ last_modified_at: "2026-04-04"
 permalink: /lldb-survival-guide/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/lldb_full.webp"
+thumbnail: "images/covers/lldb_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "Debugging"
@@ -26,11 +27,11 @@ LLDB is more than a place to set breakpoints. You can inspect app state, test qu
 
 {%
  include centered-image.html
- image_path="../images/covers/lldb_full.webp"
- alt_text="LLDB console close up"
- caption="LLDB in its natural habitat"
- width="960"
- height="1568"
+ image_path="../images/covers/lldb_thumbnail.webp"
+ alt_text="LLDB debugger with a breakpoint, magnifying glass, and Python hook"
+ caption="Debugging with LLDB and Python hooks"
+ width="640"
+ height="400"
 %}
 
 ## Start Here: What LLDB Is and How to Run It

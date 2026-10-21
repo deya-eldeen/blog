@@ -6,7 +6,8 @@ last_modified_at: "2021-10-20"
 permalink: /swift-basics-operators/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_article.webp"
+thumbnail: "images/covers/swift_operators_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "Programming"
@@ -22,12 +23,12 @@ Swift’s operator set is broad, but a small set covers 95% of what you write da
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/swift_article.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_operators_thumbnail.webp"
+ alt_text="Connected tiles displaying arithmetic, assignment, and nil-coalescing operators"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Arithmetic and assignment

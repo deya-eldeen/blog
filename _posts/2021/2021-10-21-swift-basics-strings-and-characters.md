@@ -6,7 +6,8 @@ last_modified_at: "2021-10-21"
 permalink: /swift-basics-strings-characters/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/swift_article.webp"
+thumbnail: "images/covers/swift_strings_characters_thumbnail.webp"
+thumbnail_ready: true
 categories:
   - "Development"
   - "Programming"
@@ -22,12 +23,12 @@ Swift strings are Unicode-correct, safe, and come with a few sharp edges if you 
 <!--more-->
 
 {%
- include centered-image.html 
- image_path="../images/covers/swift_article.webp"
- alt_text="" 
+ include centered-image.html
+ image_path="../images/covers/swift_strings_characters_thumbnail.webp"
+ alt_text="Individual character tiles forming the string Swift beside an accented Unicode character"
  caption=""
- width="960" 
- height="1568"
+ width="640"
+ height="400"
 %}
 
 ## Creating and combining

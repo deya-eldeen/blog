@@ -6,7 +6,8 @@ last_modified_at: "2024-09-08"
 permalink: /ios-android-developer-security-basics/
 excerpt_separator: <!--more-->
 author: deyaeldeen
-thumbnail: "images/covers/security_basics_full.webp"
+thumbnail: "images/covers/mobile_security_thumbnail.webp"
+thumbnail_ready: true
 categories: 
   - "Development"
   - "iOS"
@@ -29,13 +30,13 @@ Presented in an engaging dialogue format between two developers, Sam 🥸 and Jo
 
 <!--more-->
 
-{% 
+{%
  include centered-image.html
- image_path="../images/covers/security_basics_full.webp"
- alt_text="Mobile Security Basics"
- caption="JomJom!" 
- width="960" 
- height="1568"
+ image_path="../images/covers/mobile_security_thumbnail.webp"
+ alt_text="Two smartphones protected by a glass shield, padlock, key, and certificate"
+ caption="Protecting mobile applications and their data"
+ width="640"
+ height="400"
 %}
 
 ## The Importance of Security in Mobile Development
