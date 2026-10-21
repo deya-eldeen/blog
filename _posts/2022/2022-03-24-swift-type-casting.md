@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Type Casting in Swift"
 date: "2022-03-24"
 last_modified_at: "2022-03-24"

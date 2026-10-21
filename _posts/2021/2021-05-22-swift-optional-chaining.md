@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Optional Chaining in Swift"
 date: "2021-05-22"
 last_modified_at: "2021-05-22"

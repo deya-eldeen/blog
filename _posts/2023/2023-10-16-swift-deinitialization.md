@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Deinitialization in Swift"
 date: "2023-10-16"
 last_modified_at: "2023-10-16"

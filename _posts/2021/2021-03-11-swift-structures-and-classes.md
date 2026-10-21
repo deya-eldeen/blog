@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Structures and Classes in Swift: Value vs. Reference Types"
 date: "2021-03-11"
 last_modified_at: "2021-03-11"

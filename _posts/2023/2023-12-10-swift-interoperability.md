@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Swift Interoperability with Objective-C, C, and C++"
 date: "2023-12-10"
 last_modified_at: "2023-12-10"

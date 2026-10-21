@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Property Wrappers in Swift"
 date: "2023-11-13"
 last_modified_at: "2023-11-13"

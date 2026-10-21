@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Control Flow in Swift: if, guard, switch, and Loops"
 date: "2023-09-28"
 last_modified_at: "2023-09-28"

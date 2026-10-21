@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Access Control in Swift"
 date: "2023-10-26"
 last_modified_at: "2023-10-26"

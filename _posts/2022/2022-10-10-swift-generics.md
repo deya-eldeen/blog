@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Generics in Swift"
 date: "2022-10-10"
 last_modified_at: "2022-10-10"

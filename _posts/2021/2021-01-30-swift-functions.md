@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Functions in Swift"
 date: "2021-01-30"
 last_modified_at: "2021-01-30"

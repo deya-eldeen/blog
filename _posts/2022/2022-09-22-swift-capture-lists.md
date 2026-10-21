@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Capture Lists in Swift Closures"
 date: "2022-09-22"
 last_modified_at: "2022-09-22"

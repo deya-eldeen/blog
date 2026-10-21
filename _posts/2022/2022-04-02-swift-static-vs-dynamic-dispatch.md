@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Static vs. Dynamic Dispatch in Swift"
 date: "2022-04-02"
 last_modified_at: "2022-04-02"
