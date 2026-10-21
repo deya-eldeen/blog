@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "SOLID", "Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_solid_principles_thumbnail.webp"
+thumbnail_ready: true
 ---
 SOLID names five design principles for managing change in object-oriented programs. The principles are useful questions to ask about dependencies and contracts; they are less useful as a demand to create an interface for every class.
 
 A small export feature shows how they work together without turning the application into a maze of abstractions.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_solid_principles_thumbnail.webp"
+ alt_text="Five complementary structural pillars support one stable modular design"
+ caption="The SOLID Principles in Swift: Boundaries That Survive Change"
+ width="640"
+ height="400"
+%}
 
 ## S: Single Responsibility
 

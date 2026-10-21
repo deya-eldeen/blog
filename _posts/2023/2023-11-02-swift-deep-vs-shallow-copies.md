@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Value Types", "Copying"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_deep_vs_shallow_copy_thumbnail.webp"
+thumbnail_ready: true
 ---
 Assigning a class reference does not copy its object. Copying a container of class references does not recursively clone its elements either. To make an independent edit buffer, you must decide which state should be duplicated and which relationships should remain shared.
 
 That decision is a domain policy, not a universal operation Swift can infer from an assignment.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_deep_vs_shallow_copy_thumbnail.webp"
+ alt_text="Two document containers share child objects while a third owns independent copied children"
+ caption="Deep Copy vs. Shallow Copy in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Follow the references
 

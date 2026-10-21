@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Methods", "API Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_method_overloading_thumbnail.webp"
+thumbnail_ready: true
 ---
 Overloading lets several methods share a name while accepting different argument lists or types. Used carefully, it makes related operations easy to discover. Used carelessly, it makes a call depend on subtle type inference that a reader cannot see.
 
 The distinction from overriding is especially important when objects are involved.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_method_overloading_thumbnail.webp"
+ alt_text="Different input shapes select matching entry points on one operation station"
+ caption="Method Overloading in Swift: Let the Call Site Explain the Choice"
+ width="640"
+ height="400"
+%}
 
 ## Begin with visible differences
 

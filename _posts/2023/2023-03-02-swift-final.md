@@ -9,11 +9,21 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Inheritance", "final"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_final_thumbnail.webp"
+thumbnail_ready: true
 ---
 A subclass can customize behavior its parent exposes, which means a subclassable class has a larger contract than its public method list suggests. Its author must also consider how inherited behavior interacts with overrides. `final` closes that extension path when subclassing is not part of the design.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_final_thumbnail.webp"
+ alt_text="A completed class block with its extension socket capped and its operation port available"
+ caption="final in Swift: Closing Inheritance Deliberately"
+ width="640"
+ height="400"
+%}
 
 ## Final classes and final members
 

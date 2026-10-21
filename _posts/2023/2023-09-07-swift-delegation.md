@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Delegation", "Memory"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_delegation_thumbnail.webp"
+thumbnail_ready: true
 ---
 A picker knows which item the user selected. The screen that owns the picker knows what that selection means for the application. Delegation lets the picker report an event through a small contract without importing the screen's decisions into the picker.
 
 The protocol is only half the design. The lifetime of the delegate matters just as much.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_delegation_thumbnail.webp"
+ alt_text="A producer reports a selection event along a single path to its coordinator"
+ caption="Delegation in Swift: One Object Reporting to Another"
+ width="640"
+ height="400"
+%}
 
 ## Define the event contract
 

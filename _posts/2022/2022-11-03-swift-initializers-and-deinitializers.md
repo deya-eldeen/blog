@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Initialization", "ARC"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_initializers_and_deinitializers_thumbnail.webp"
+thumbnail_ready: true
 ---
 An initializer establishes the state an object needs to be usable. A deinitializer performs cleanup when that object's lifetime ends. They are related, but they do not form a reliable “screen opened, screen closed” pair: an object can outlive the feature that created it.
 
 Understanding that distinction helps avoid both invalid initial state and cleanup that happens too late.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_initializers_and_deinitializers_thumbnail.webp"
+ alt_text="An object being initialized, used, and releasing its resource at the end of its lifetime"
+ caption="Initializers and Deinitializers: The Lifetime of a Swift Object"
+ width="640"
+ height="400"
+%}
 
 ## Establish a valid instance
 

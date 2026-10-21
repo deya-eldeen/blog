@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Methods", "Properties"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_static_class_members_thumbnail.webp"
+thumbnail_ready: true
 ---
 Some behavior belongs to an instance, and some belongs to the type. Formatting a particular document title uses instance state; the default document extension does not. Swift uses `static` for type members and also permits `class` on overridable class type members.
 
 The two keywords express different inheritance contracts.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_static_class_members_thumbnail.webp"
+ alt_text="Several instances connect to one elevated type-level resource"
+ caption="Type Properties and Methods in Swift: static vs. class"
+ width="640"
+ height="400"
+%}
 
 ## Start with a static member
 

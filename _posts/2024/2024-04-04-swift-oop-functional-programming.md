@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Functional Programming", "Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_oop_functional_programming_thumbnail.webp"
+thumbnail_ready: true
 ---
 An application needs effects: reading files, requesting data, and updating state. It also needs calculations that should be predictable. Swift lets you keep an object responsible for coordinating effects while moving calculations into functions that depend only on their inputs.
 
 You do not have to choose one programming style for the entire application.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_oop_functional_programming_thumbnail.webp"
+ alt_text="A coordinator owns an effect cable while immutable values pass through a pure transformation pipeline"
+ caption="Mixing Object-Oriented and Functional Programming in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Separate a decision from the work around it
 

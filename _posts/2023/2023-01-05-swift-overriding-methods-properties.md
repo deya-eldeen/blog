@@ -9,11 +9,21 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Inheritance", "Overriding"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_overriding_methods_properties_thumbnail.webp"
+thumbnail_ready: true
 ---
 An override customizes behavior that a superclass already promises. It is useful when the subclass remains a valid replacement for the parent, but needs a different implementation of one operation. The `override` keyword also asks the compiler to check that the parent actually has the member you intend to customize.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_overriding_methods_properties_thumbnail.webp"
+ alt_text="A specialized object replaces one behavior module while preserving the base interface"
+ caption="Overriding Methods and Properties in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Override a method
 

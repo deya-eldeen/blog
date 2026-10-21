@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Law of Demeter", "Coupling"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_law_of_demeter_thumbnail.webp"
+thumbnail_ready: true
 ---
 A checkout screen that reads `order.customer.account.deliverySettings.preferredAddress` knows the internal shape of several collaborators. Changing account storage can now break checkout code that should only need an address.
 
 The Law of Demeter asks us to limit that knowledge. Its value comes from reducing coupling, not from mechanically counting dots.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_law_of_demeter_thumbnail.webp"
+ alt_text="A client receives one destination value through a facade that hides nested collaborators"
+ caption="The Law of Demeter in Swift: Reduce Knowledge of Object Internals"
+ width="640"
+ height="400"
+%}
 
 ## Notice the information the caller requires
 

@@ -9,11 +9,21 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Hashable", "Equality"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_equality_identity_hashable_thumbnail.webp"
+thumbnail_ready: true
 ---
 Two user objects can represent the same account without being the same instance. Two values can also produce the same hash without being equal. Equality, identity, and hashing answer different questions, and collection bugs often come from treating them as interchangeable.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_equality_identity_hashable_thumbnail.webp"
+ alt_text="Equal identity cards with different content beside two references to one physical instance"
+ caption="Equality, Identity, and Hashable in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Equality is a domain decision
 

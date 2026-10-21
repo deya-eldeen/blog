@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Modeling", "Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_thinking_in_objects_thumbnail.webp"
+thumbnail_ready: true
 ---
 A library application has books, readers, and loans. Turning every noun into a class gives you a diagram, but not necessarily a useful design. A good object model answers more practical questions: who owns a decision, what state must remain valid, and which things need a lasting identity?
 
 Let's model borrowing a book and use those questions to choose our types.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_thinking_in_objects_thumbnail.webp"
+ alt_text="Two library copies share a description while one is linked to a reader through a loan"
+ caption="Thinking in Objects: Modeling a Domain in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Start with a use case
 

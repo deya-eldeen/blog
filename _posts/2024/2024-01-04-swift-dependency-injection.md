@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Dependency Injection", "Testing"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_dependency_injection_thumbnail.webp"
+thumbnail_ready: true
 ---
 A feature is difficult to test when it secretly reads the clock, opens a database, or creates its own network client. Dependency injection makes those collaborators explicit: the caller supplies what the feature needs instead of the feature reaching out for it.
 
 You can start with a plain initializer. A dependency injection framework is optional.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_dependency_injection_thumbnail.webp"
+ alt_text="An external assembly mechanism supplies a service capsule to a feature object"
+ caption="Dependency Injection in Swift Without a Container"
+ width="640"
+ height="400"
+%}
 
 ## Move construction to the boundary
 

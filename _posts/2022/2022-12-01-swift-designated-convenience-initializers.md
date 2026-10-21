@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Initialization", "Inheritance"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_designated_convenience_initializers_thumbnail.webp"
+thumbnail_ready: true
 ---
 A class can offer several ways to create an instance without having several independent implementations of its setup rules. Designated initializers establish the class's stored state. Convenience initializers provide alternate entry points that delegate to that setup.
 
 The distinction becomes especially useful when a subclass adds state of its own.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_designated_convenience_initializers_thumbnail.webp"
+ alt_text="Two convenience routes converge on one designated construction gate"
+ caption="Designated and Convenience Initializers in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Build one primary path
 

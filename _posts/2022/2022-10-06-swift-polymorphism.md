@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Polymorphism", "Protocols"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_polymorphism_thumbnail.webp"
+thumbnail_ready: true
 ---
 A notification can be written to a console, recorded in a test, or sent to another service. Code that requests a notification should not have to switch on every concrete notifier type. Polymorphism lets the same operation select behavior supplied by different implementations.
 
 Swift supports this through class hierarchies, protocols, and generic code, with different rules for each.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_polymorphism_thumbnail.webp"
+ alt_text="One shared interface connected to three distinct implementations and results"
+ caption="Polymorphism in Swift: One Interface, Different Behavior"
+ width="640"
+ height="400"
+%}
 
 ## Subclass polymorphism
 

@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Protocols", "Abstraction"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_protocols_instead_of_abstract_classes_thumbnail.webp"
+thumbnail_ready: true
 ---
 In some languages, an abstract class defines operations that subclasses must implement and also provides shared behavior. Swift does not have an `abstract` class keyword. A base method that calls `fatalError` imitates the shape, but a missing implementation becomes a runtime failure.
 
 A protocol can express the required behavior directly, with an extension supplying useful shared operations.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_protocols_instead_of_abstract_classes_thumbnail.webp"
+ alt_text="Two distinct implementations satisfy the same interface stencil beside a shared helper"
+ caption="Protocols Instead of Abstract Classes in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Express a requirement the compiler can check
 

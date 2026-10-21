@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Protocols", "Composition"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_protocols_instead_of_multiple_inheritance_thumbnail.webp"
+thumbnail_ready: true
 ---
 A downloadable report may be identifiable, serializable, and shareable. Those capabilities do not require three parent classes. Swift classes have at most one superclass, while a type can conform to several protocols.
 
 This lets you combine contracts without combining several competing sets of inherited storage and lifecycle rules.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_protocols_instead_of_multiple_inheritance_thumbnail.webp"
+ alt_text="One concrete object combines three independent protocol capabilities"
+ caption="Protocols Instead of Multiple Inheritance in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Model capabilities independently
 

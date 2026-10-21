@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Abstraction", "API Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_abstraction_thumbnail.webp"
+thumbnail_ready: true
 ---
 A delivery screen needs to find out where a parcel is. It should not need to know an endpoint path, a JSON key, or how many network retries happened. Abstraction gives the caller a useful concept and puts the mechanics behind that concept.
 
 The difficult part is choosing an interface that still tells the truth about failure and behavior.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_abstraction_thumbnail.webp"
+ alt_text="A simple control interface concealing a complex implementation behind it"
+ caption="Abstraction in Swift: Designing Interfaces Around Intent"
+ width="640"
+ height="400"
+%}
 
 ## Start from what the caller needs
 

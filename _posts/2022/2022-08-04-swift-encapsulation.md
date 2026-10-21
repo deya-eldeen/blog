@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Encapsulation", "Access Control"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_encapsulation_thumbnail.webp"
+thumbnail_ready: true
 ---
 A type is not well encapsulated just because its properties are private. Encapsulation is useful when the type controls the rules that make its state valid. A reservation should not become confirmed with no seats, and a counter should not drift below a limit because a caller forgot a check.
 
 Let's put the rule beside the state it protects.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_encapsulation_thumbnail.webp"
+ alt_text="Protected internal state inside an object with one controlled access port"
+ caption="Encapsulation in Swift: Protecting Valid State"
+ width="640"
+ height="400"
+%}
 
 ## Replace arbitrary writes with meaningful operations
 

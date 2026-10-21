@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Inheritance", "ARC"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_parent_child_classes_thumbnail.webp"
+thumbnail_ready: true
 ---
 “Parent” and “child” can describe two very different relationships. A child class may mean a subclass that inherits behavior. A child object may mean an instance owned by another instance. Confusing these meanings can produce both awkward models and memory leaks.
 
 Use superclass and subclass for the first relationship, and owner and owned object for the second whenever precision helps.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_parent_child_classes_thumbnail.webp"
+ alt_text="An owner contains child objects with strong links and a lighter return reference"
+ caption="Parent and Child Classes in Swift: Inheritance vs. Ownership"
+ width="640"
+ height="400"
+%}
 
 ## Inheritance is a relationship between types
 

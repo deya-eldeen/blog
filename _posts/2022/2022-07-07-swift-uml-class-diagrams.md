@@ -9,11 +9,21 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "UML", "Modeling"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_uml_class_diagrams_thumbnail.webp"
+thumbnail_ready: true
 ---
 A class diagram is useful when it explains relationships that are difficult to see in one source file. It becomes less useful when it lists every property in the project. For Swift code, start with a handful of types and distinguish inheritance, conformance, and references between instances.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_uml_class_diagrams_thumbnail.webp"
+ alt_text="Three compartmented class cards joined by inheritance and protocol relationship paths"
+ caption="Reading and Drawing UML Class Diagrams for Swift"
+ width="640"
+ height="400"
+%}
 
 ## Read a type box
 

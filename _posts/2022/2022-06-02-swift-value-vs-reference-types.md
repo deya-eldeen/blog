@@ -9,11 +9,21 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Value Types", "Memory"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_value_vs_reference_types_thumbnail.webp"
+thumbnail_ready: true
 ---
 Choosing between a struct and a class is often a question about ownership: should two parts of the program share one changing thing, or should each receive its own value? Syntax is the easy part. The surprising bugs begin when a copy does not mean what the caller expects.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_value_vs_reference_types_thumbnail.webp"
+ alt_text="Independent document snapshots beside two handles connected to one shared document"
+ caption="Value Types vs. Reference Types in Swift: Choosing Ownership"
+ width="640"
+ height="400"
+%}
 
 ## Observe the difference at the call site
 

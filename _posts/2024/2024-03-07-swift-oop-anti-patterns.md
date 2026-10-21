@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Anti-Patterns", "Refactoring"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_oop_anti_patterns_thumbnail.webp"
+thumbnail_ready: true
 ---
 An object-oriented design becomes difficult to change when responsibilities and ownership stop matching the feature's behavior. The symptoms often appear before the class becomes enormous: tests need global setup, overrides disable inherited methods, or a simple request passes through several managers.
 
 Here are concrete patterns to recognize and small ways to improve them.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_oop_anti_patterns_thumbnail.webp"
+ alt_text="An overloaded tangled object beside a clearer assembly of focused collaborating modules"
+ caption="Common Object-Oriented Anti-Patterns in Swift"
+ width="640"
+ height="400"
+%}
 
 ## The object that owns every decision
 

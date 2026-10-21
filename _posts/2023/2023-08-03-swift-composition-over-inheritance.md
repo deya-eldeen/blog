@@ -9,13 +9,23 @@ excerpt_separator: <!--more-->
 author: deyaeldeen
 categories: [Development, iOS, Programming, Swift]
 tags: ["Swift", "OOP", "Composition", "Design"]
-thumbnail: assets/img/article-placeholder.svg
+thumbnail: "images/covers/swift_composition_over_inheritance_thumbnail.webp"
+thumbnail_ready: true
 ---
 A class hierarchy is tempting when two features share behavior. But “uses the same behavior” is weaker than “is a valid kind of this parent.” Composition lets an object receive the behavior it needs as a collaborator, without making all variation fit one family tree.
 
 A search service with interchangeable matching rules is a good example.
 
 <!--more-->
+
+{%
+ include centered-image.html
+ image_path="../images/covers/swift_composition_over_inheritance_thumbnail.webp"
+ alt_text="A service assembled from separate matching, caching, and measurement collaborators"
+ caption="Composition Over Inheritance in Swift"
+ width="640"
+ height="400"
+%}
 
 ## Separate the stable workflow from the varying policy
 
