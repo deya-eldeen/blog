@@ -17,57 +17,57 @@ Swift supports OOP fully, with its own twists: structs and enums can have method
 
 ## 1. Foundations
 
-- Thinking in Objects: Modeling the Real World
-- Classes, Structures, and Instances
-- Value Types vs. Reference Types
-- Reading and Drawing UML Class Diagrams
+- [Thinking in Objects: Modeling the Real World](/swift-thinking-in-objects/)
+- [Classes, Structures, and Instances](/swift-structures-and-classes/)
+- [Value Types vs. Reference Types](/swift-value-vs-reference-types/)
+- [Reading and Drawing UML Class Diagrams](/swift-uml-class-diagrams/)
 {: .roadmap-topics}
 
 ## 2. The Four Pillars
 
-- Encapsulation
-- Abstraction
-- Inheritance and Specialization
-- Polymorphism
+- [Encapsulation](/swift-encapsulation/)
+- [Abstraction](/swift-abstraction/)
+- [Inheritance and Specialization](/swift-inheritance/)
+- [Polymorphism](/swift-polymorphism/)
 {: .roadmap-topics}
 
 ## 3. How Classes Work in Swift
 
-- Initializers and Deinitializers
-- Designated and Convenience Initializers
-- Overriding Methods and Properties
-- Method Overloading
-- `final` and Preventing Inheritance
-- Type Properties and Methods (`static` and `class`)
+- [Initializers and Deinitializers](/swift-initializers-and-deinitializers/)
+- [Designated and Convenience Initializers](/swift-designated-convenience-initializers/)
+- [Overriding Methods and Properties](/swift-overriding-methods-properties/)
+- [Method Overloading](/swift-method-overloading/)
+- [`final` and Preventing Inheritance](/swift-final/)
+- [Type Properties and Methods (`static` and `class`)](/swift-static-class-members/)
 - [The Root Class and NSObject](/swift-root-class-nsobject/)
 {: .roadmap-topics}
 
 ## 4. Contracts and Relationships
 
-- Contracting with Protocols
-- Protocols Instead of Abstract Classes
-- Protocols Instead of Multiple Inheritance
-- Parent and Child Classes
-- Composition Over Inheritance
-- Delegation
+- [Contracting with Protocols](/swift-protocols/)
+- [Protocols Instead of Abstract Classes](/swift-protocols-instead-of-abstract-classes/)
+- [Protocols Instead of Multiple Inheritance](/swift-protocols-instead-of-multiple-inheritance/)
+- [Parent and Child Classes](/swift-parent-child-classes/)
+- [Composition Over Inheritance](/swift-composition-over-inheritance/)
+- [Delegation](/swift-delegation/)
 {: .roadmap-topics}
 
 ## 5. Under the Hood
 
-- Static vs. Dynamic Dispatch
-- Access Control
-- Reflection and Introspection
-- Equality, Identity, and `Hashable`
-- Deep Copy vs. Shallow Copy
+- [Static vs. Dynamic Dispatch](/swift-static-vs-dynamic-dispatch/)
+- [Access Control](/swift-access-control/)
+- [Reflection and Introspection](/swift-reflection-with-mirror/)
+- [Equality, Identity, and `Hashable`](/swift-equality-identity-hashable/)
+- [Deep Copy vs. Shallow Copy](/swift-deep-vs-shallow-copy/)
 {: .roadmap-topics}
 
 ## 6. Designing Good Objects
 
-- The SOLID Principles
-- Dependency Injection
-- The Law of Demeter
-- Common Anti-Patterns
-- Mixing OOP with Functional Programming
+- [The SOLID Principles](/swift-solid-principles/)
+- [Dependency Injection](/swift-dependency-injection/)
+- [The Law of Demeter](/swift-law-of-demeter/)
+- [Common Anti-Patterns](/swift-oop-anti-patterns/)
+- [Mixing OOP with Functional Programming](/swift-oop-functional-programming/)
 {: .roadmap-topics}
 
 ## A Quick Tour of the Key Ideas
