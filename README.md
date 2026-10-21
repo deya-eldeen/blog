@@ -25,6 +25,17 @@ Set this to any published article's URL, including the leading and trailing slas
 
 Restart `jekyll serve` after changing `_config.yml`, or rebuild the site with `bundle exec jekyll build`.
 
+## Hide articles from the home feed
+
+Add `hidden: true` to an article's YAML front matter to exclude it from the home page's article cards and all subsequent pagination pages:
+
+```yaml
+layout: post
+hidden: true
+```
+
+The article remains published at its URL and available in the archive, search, and roadmap. Remove the flag or set `hidden: false` to show it in the home feed again.
+
 ## Design and artwork
 
 The shared responsive theme lives in `_sass/_reskin.scss`. It includes light and dark appearances, mobile navigation, article cards, and the styles for all content pages.

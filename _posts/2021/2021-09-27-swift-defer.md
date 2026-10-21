@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "defer in Swift"
 date: "2021-09-27"
 last_modified_at: "2021-09-27"

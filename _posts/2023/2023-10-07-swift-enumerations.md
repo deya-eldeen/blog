@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Enumerations in Swift"
 date: "2023-10-07"
 last_modified_at: "2023-10-07"

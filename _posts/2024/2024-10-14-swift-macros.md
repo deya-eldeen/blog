@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Macros in Swift"
 date: "2024-10-14"
 last_modified_at: "2024-10-14"

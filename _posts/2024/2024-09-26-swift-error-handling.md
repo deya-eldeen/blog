@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Error Handling in Swift"
 date: "2024-09-26"
 last_modified_at: "2024-09-26"

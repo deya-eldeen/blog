@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Clean Code in Swift"
 date: "2024-11-28"
 last_modified_at: "2024-11-28"

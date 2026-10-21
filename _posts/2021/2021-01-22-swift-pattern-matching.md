@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Pattern Matching in Swift"
 date: "2021-01-22"
 last_modified_at: "2021-01-22"

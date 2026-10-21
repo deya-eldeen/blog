@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Protocols in Swift"
 date: "2022-10-01"
 last_modified_at: "2022-10-01"

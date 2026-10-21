@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Automatic Reference Counting (ARC) in Swift"
 date: "2021-05-06"
 last_modified_at: "2021-05-06"

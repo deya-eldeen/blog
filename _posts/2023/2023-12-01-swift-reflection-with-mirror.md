@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Reflection in Swift with Mirror"
 date: "2023-12-01"
 last_modified_at: "2023-12-01"

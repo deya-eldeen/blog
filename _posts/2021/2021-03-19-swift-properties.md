@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Properties in Swift"
 date: "2021-03-19"
 last_modified_at: "2021-03-19"

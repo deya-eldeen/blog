@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Escaping and Non-Escaping Closures in Swift"
 date: "2021-09-30"
 last_modified_at: "2021-09-30"

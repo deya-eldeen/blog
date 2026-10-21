@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Nested Types in Swift"
 date: "2024-10-05"
 last_modified_at: "2024-10-05"

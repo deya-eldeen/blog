@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Subscripts in Swift"
 date: "2021-04-04"
 last_modified_at: "2021-04-04"

@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Initialization in Swift"
 date: "2021-04-20"
 last_modified_at: "2021-04-20"

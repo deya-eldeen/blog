@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Opaque and Boxed Types in Swift: some vs. any"
 date: "2022-10-19"
 last_modified_at: "2022-10-19"

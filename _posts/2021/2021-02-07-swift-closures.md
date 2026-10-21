@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Closures in Swift"
 date: "2021-02-07"
 last_modified_at: "2021-02-07"

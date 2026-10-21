@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Extensions in Swift"
 date: "2023-11-04"
 last_modified_at: "2023-11-04"

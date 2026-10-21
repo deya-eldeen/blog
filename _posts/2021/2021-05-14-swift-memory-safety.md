@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Memory Safety in Swift: Exclusive Access"
 date: "2021-05-14"
 last_modified_at: "2021-05-14"

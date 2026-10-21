@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Swift Evolution: How the Language Changes"
 date: "2024-11-19"
 last_modified_at: "2024-11-19"

@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Key-Value Observing (KVO) in Swift"
 date: "2023-11-22"
 last_modified_at: "2023-11-22"

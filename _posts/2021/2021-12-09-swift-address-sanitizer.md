@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Finding Memory Bugs with Address Sanitizer"
 date: "2021-12-09"
 last_modified_at: "2021-12-09"

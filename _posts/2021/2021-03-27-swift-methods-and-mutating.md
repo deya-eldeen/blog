@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Methods and mutating in Swift"
 date: "2021-03-27"
 last_modified_at: "2021-03-27"

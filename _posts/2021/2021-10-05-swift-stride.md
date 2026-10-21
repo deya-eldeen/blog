@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "stride in Swift"
 date: "2021-10-05"
 last_modified_at: "2021-10-05"

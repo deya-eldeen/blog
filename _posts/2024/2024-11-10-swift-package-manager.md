@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Swift Package Manager: A Practical Guide"
 date: "2024-11-10"
 last_modified_at: "2024-11-10"

@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Method Swizzling in Swift"
 date: "2021-09-11"
 last_modified_at: "2021-09-11"

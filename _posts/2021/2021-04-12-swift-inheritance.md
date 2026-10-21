@@ -1,5 +1,6 @@
 ---
 layout: post
+hidden: true
 title: "Inheritance in Swift"
 date: "2021-04-12"
 last_modified_at: "2021-04-12"
