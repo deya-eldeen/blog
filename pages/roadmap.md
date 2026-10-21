@@ -23,12 +23,7 @@ These roadmaps are that map. They break the journey into stages, put the topics 
 
 ## How to Use These Roadmaps 🧭
 
-- **Go in order if you're new.** Each stage builds on the one before it.
-- **Jump around if you're not.** Already comfortable with the basics? Skip to the stage that challenges you.
-- **Build something at every stage.** Reading teaches you the words; small projects teach you the language.
-- **Don't aim for perfect.** Nobody knows all of this by heart, including me. Aim for "I know where to look".
-
-Topics marked **Coming soon** don't have a guide yet. They're still in the right place on the map, so you know what to look up in the meantime.
+If you're new, follow the stages in order, since each builds on the one before it. If you're comfortable with the basics, jump to a topic that challenges you. Build a small project at each stage to put what you learn into practice, and focus on knowing where to look rather than memorizing everything. Topics marked **Coming soon** don't have a guide yet, but they're included so you know what to explore next.
 
 ## The Swift Roadmap 🐦
 
