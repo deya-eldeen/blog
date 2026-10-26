@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Value Types and Copy-on-Write in Swift: Independence Without Eager Copies | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Value Types and Copy-on-Write in Swift: Independence Without Eager Copies" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Value semantics describe what a caller can observe: changing one value does not unexpectedly change another independent value. Copy-on-write describes an implementation strategy: share storage while it is safe, then make it unique before mutation. Keeping those ideas separate helps explain Swift arrays, diagnose reference-sharing bugs, and decide whether a custom storage wrapper is justified at all." /> <meta property="og:description" content="Value semantics describe what a caller can observe: changing one value does not unexpectedly change another independent value. Copy-on-write describes an implementation strategy: share storage while it is safe, then make it unique before mutation. Keeping those ideas separate helps explain Swift arrays, diagnose reference-sharing bugs, and decide whether a custom storage wrapper is justified at all." /> <link rel="canonical" href="http://localhost:4000/swift-copy-on-write/" /> <meta property="og:url" content="http://localhost:4000/swift-copy-on-write/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-09-21T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Value Types and Copy-on-Write in Swift: Independence Without Eager Copies" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-09-21T00:00:00+03:00","datePublished":"2023-09-21T00:00:00+03:00","description":"Value semantics describe what a caller can observe: changing one value does not unexpectedly change another independent value. Copy-on-write describes an implementation strategy: share storage while it is safe, then make it unique before mutation. Keeping those ideas separate helps explain Swift arrays, diagnose reference-sharing bugs, and decide whether a custom storage wrapper is justified at all.","headline":"Value Types and Copy-on-Write in Swift: Independence Without Eager Copies","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-copy-on-write/"},"url":"http://localhost:4000/swift-copy-on-write/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Value Types and Copy-on-Write in Swift: Independence Without Eager Copies"> <meta name="twitter:description" content="Value semantics describe what a caller can observe: changing one value does not unexpectedly change another independent value. Copy-on-write describes an imp..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Value Types and Copy-on-Write in Swift: Independence Without Eager Copies"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Value Types and Copy-on-Write in Swift: Independence Without Eager Copies</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-09-21T00:00:00+03:00">September 21, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Value semantics describe what a caller can observe: changing one value does not unexpectedly change another independent value. Copy-on-write describes an implementation strategy: share storage while it is safe, then make it unique before mutation.</p>
+
+<p>Keeping those ideas separate helps explain Swift arrays, diagnose reference-sharing bugs, and decide whether a custom storage wrapper is justified at all.</p>
+
+<!--more-->
+
+<p>The examples use Swift 5.7. We will first observe the standard library’s behavior, then build a small copy-on-write value with a deliberately narrow mutation surface.</p>
+
+<h2 id="start-with-observable-independence">Start with observable independence</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">first</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="k">var</span> <span class="nv">second</span> <span class="o">=</span> <span class="n">first</span>
+<span class="n">second</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">first</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">second</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The array assignment behaves like a value copy. Its implementation can share underlying storage until mutation requires separation. The program should depend on the independence, not on a particular address or allocation count.</p>
+
+<p>Copy-on-write lets APIs pass and return collection values without necessarily duplicating their entire buffers immediately. It is a reason to start with a clear value interface before introducing manual shared ownership.</p>
+
+<p>It is not a promise that copying is always free. Holding multiple versions and mutating each can require substantial memory and element copying. A workload repeatedly modifying a large shared array can pay a large cost at each fork.</p>
+
+<h2 id="an-array-of-references-still-contains-references">An array of references still contains references</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MutableNote</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">notes</span> <span class="o">=</span> <span class="p">[</span><span class="kt">MutableNote</span><span class="p">(</span><span class="s">"Draft"</span><span class="p">)]</span>
+<span class="k">let</span> <span class="nv">copiedNotes</span> <span class="o">=</span> <span class="n">notes</span>
+<span class="n">copiedNotes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">"Published"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">notes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">"Published"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The two arrays are independent collections of references, but those references point to the same note. Array copy-on-write does not recursively clone arbitrary object graphs.</p>
+
+<p>The same issue can hide inside a struct wrapper. A value type is a language category; full value semantics require its implementation to prevent unexpected shared observable mutation.</p>
+
+<p>Deep cloning is not always the answer either. Object graphs may contain cycles, shared identities, or external resources whose duplication has no sensible meaning. Often the right snapshot stores the few immutable facts a calculation actually needs.</p>
+
+<h2 id="a-naive-reference-backed-struct-is-not-enough">A naive reference-backed struct is not enough</h2>
+
+<p>Suppose a log-like value stores a reference to a buffer. Assigning the struct copies that reference. If append mutates the same buffer unconditionally, both apparent values change together.</p>
+
+<p>The remedy is to keep storage private and establish uniqueness before every mutation that can affect another owner. Here is a complete minimal wrapper:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ValueLog</span><span class="o">&lt;</span><span class="kt">Element</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Storage</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">elements</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">]</span>
+
+        <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">elements</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">])</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="n">elements</span> <span class="p">}</span>
+        <span class="kd">func</span> <span class="nf">copy</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Storage</span> <span class="p">{</span> <span class="kt">Storage</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">storage</span><span class="p">:</span> <span class="kt">Storage</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">elements</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="p">{</span>
+        <span class="n">storage</span> <span class="o">=</span> <span class="kt">Storage</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">elements</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">]</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">elements</span> <span class="p">}</span>
+
+    <span class="nf">subscript</span><span class="p">(</span><span class="nv">index</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Element</span> <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">elements</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span>
+            <span class="nf">ensureUniqueStorage</span><span class="p">()</span>
+            <span class="n">storage</span><span class="o">.</span><span class="n">elements</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">element</span><span class="p">:</span> <span class="kt">Element</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">ensureUniqueStorage</span><span class="p">()</span>
+        <span class="n">storage</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">ensureUniqueStorage</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="o">!</span><span class="nf">isKnownUniquelyReferenced</span><span class="p">(</span><span class="o">&amp;</span><span class="n">storage</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">storage</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="nf">copy</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">logA</span> <span class="o">=</span> <span class="kt">ValueLog</span><span class="p">([</span><span class="s">"opened"</span><span class="p">])</span>
+<span class="k">var</span> <span class="nv">logB</span> <span class="o">=</span> <span class="n">logA</span>
+<span class="n">logB</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"saved"</span><span class="p">)</span>
+<span class="n">logB</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s">"restored"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logA</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="s">"opened"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logB</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="s">"restored"</span><span class="p">,</span> <span class="s">"saved"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The uniqueness check receives an <code class="language-plaintext highlighter-rouge">inout</code> reference to the storage property. A false result means the wrapper must not assume exclusive ownership, so it replaces the storage before changing it.</p>
+
+<p>This wrapper demonstrates the mechanism. Since its payload is already a Swift array, it adds a storage layer that an ordinary application probably does not need. Real custom copy-on-write types are useful when several fields must share one ownership decision or when wrapping a lower-level buffer.</p>
+
+<h2 id="audit-every-mutation-route">Audit every mutation route</h2>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Copy-on-write preserves independent contents
+    accDescr: Two values initially share storage. After the second value mutates, the first retains its original contents and the second has changed contents.
+    subgraph Shared[After assignment]
+        A[First value] --&gt; S[Shared storage]
+        B[Second value] --&gt; S
+    end
+    subgraph Separate[After the second value mutates]
+        C[First value] --&gt; T[Original contents]
+        D[Second value] --&gt; U[Changed contents]
+    end
+</code></pre>
+
+<p>This is an ownership illustration, not a promise about physical addresses or the exact number of allocations. The required observation is that the first value’s contents remain unchanged.</p>
+
+<p>Append is not the only way to mutate a collection-like value. Subscript setters, removal, sorting, bulk replacement, and mutable buffer access all need the same ownership discipline.</p>
+
+<p>Returning <code class="language-plaintext highlighter-rouge">Storage</code> or exposing an unsafe mutable pointer would let callers bypass the check. A small public interface makes the invariant easier to maintain. Advanced accessors that yield mutable storage require careful lifetime and exclusivity reasoning.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">elements</code> getter returns an array value. Mutating that returned array preserves the wrapper’s collection storage semantics, but an <code class="language-plaintext highlighter-rouge">Element</code> that is itself a mutable reference can still expose shared objects. The wrapper’s generic parameter does not promise deep independence of arbitrary element internals.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">extracted</span> <span class="o">=</span> <span class="n">logA</span><span class="o">.</span><span class="n">elements</span>
+<span class="n">extracted</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"outside"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logA</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">objectLog</span> <span class="o">=</span> <span class="kt">ValueLog</span><span class="p">([</span><span class="kt">MutableNote</span><span class="p">(</span><span class="s">"One"</span><span class="p">)])</span>
+<span class="k">let</span> <span class="nv">anotherObjectLog</span> <span class="o">=</span> <span class="n">objectLog</span>
+<span class="n">anotherObjectLog</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">"Two"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">objectLog</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">"Two"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Document what the value owns: the sequence of elements, not an automatic clone of every resource reachable through each element.</p>
+
+<h2 id="uniqueness-is-an-optimization-under-an-ownership-contract">Uniqueness is an optimization under an ownership contract</h2>
+
+<p><code class="language-plaintext highlighter-rouge">isKnownUniquelyReferenced</code> is not a general-purpose lock. Concurrent access to the same mutable variable can race before or during the uniqueness decision. Synchronization or actor isolation must establish safe access independently.</p>
+
+<p>Nor should code make user-visible behavior depend on whether a uniqueness check returns true. The two paths must implement the same semantics; one simply avoids a copy when safe.</p>
+
+<p>Unnecessary local references can also interfere with uniqueness opportunities. Keep the storage reference private, perform the check at the mutation boundary, and avoid clever ownership tricks unless measurement justifies them. Apple’s <a href="https://developer.apple.com/documentation/swift/isknownuniquelyreferenced(_:)">isKnownUniquelyReferenced documentation</a> describes the primitive and its synchronization caveats.</p>
+
+<h2 id="copy-on-write-and-persistence-have-different-cost-shapes">Copy-on-write and persistence have different cost shapes</h2>
+
+<p>Copying an array value is cheap while storage remains shared. Editing one element of a shared large array can require copying a buffer proportional to its size.</p>
+
+<p>A persistent tree instead reconstructs the path to the edited element while sharing untouched branches. A balanced tree can therefore have a smaller edit cost for many retained versions, at the price of pointer traversal, allocation, and less contiguous storage.</p>
+
+<p>Choose from the workload. A mostly read-only contiguous array is excellent for many app features. An editor retaining many versions of a very large structure may benefit from a persistent representation. Neither label establishes performance without representative measurements.</p>
+
+<h2 id="test-the-invariant-through-public-behavior">Test the invariant through public behavior</h2>
+
+<p>Create two copies, mutate one through every public route, and verify the other is unchanged. Repeat with three copies and interleaved edits so one uniqueness transition cannot accidentally hide a later aliasing bug.</p>
+
+<p>Test extraction too: obtaining an array snapshot and mutating it should not alter the wrapper’s sequence. Include empty storage and replacement of the first and last element.</p>
+
+<p>Reference-element tests should assert the documented sharing behavior or enforce a stronger element contract. A test expecting arbitrary objects to be deep-cloned would demand a feature the implementation never claimed to provide.</p>
+
+<p>Performance tests should separate unique-owner mutation, shared-owner first mutation, and repeated mutation after separation. Those scenarios exercise different paths and can have very different costs.</p>
+
+<h2 id="test-several-owners-and-several-mutation-routes">Test several owners and several mutation routes</h2>
+
+<p>A single copy followed by append can miss a bug in another setter. Interleave operations on several values and compare complete public snapshots:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">ownerOne</span> <span class="o">=</span> <span class="kt">ValueLog</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="k">var</span> <span class="nv">ownerTwo</span> <span class="o">=</span> <span class="n">ownerOne</span>
+<span class="k">var</span> <span class="nv">ownerThree</span> <span class="o">=</span> <span class="n">ownerTwo</span>
+<span class="n">ownerOne</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">ownerTwo</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9</span>
+<span class="n">ownerThree</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ownerOne</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ownerTwo</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ownerThree</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">copyAfterSeparation</span> <span class="o">=</span> <span class="n">ownerOne</span>
+<span class="n">copyAfterSeparation</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ownerOne</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">copyAfterSeparation</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The second phase copies a value after an earlier uniqueness transition. That catches implementations which accidentally treat storage as permanently unique after the first write.</p>
+
+<p>Use the same pattern for every new mutator. A method that clears or sorts storage must preserve independence just as append does. A code review can maintain an explicit list of mutation entry points and verify each reaches the uniqueness guard.</p>
+
+<h2 id="equality-should-observe-content-rather-than-storage-identity">Equality should observe content rather than storage identity</h2>
+
+<p>Two independently constructed logs with equal elements should be equal if the type claims ordinary sequence value semantics:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ValueLog</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="k">where</span> <span class="kt">Element</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="o">==</span> <span class="p">(</span><span class="nv">left</span><span class="p">:</span> <span class="kt">ValueLog</span><span class="o">&lt;</span><span class="kt">Element</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">right</span><span class="p">:</span> <span class="kt">ValueLog</span><span class="o">&lt;</span><span class="kt">Element</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">left</span><span class="o">.</span><span class="n">elements</span> <span class="o">==</span> <span class="k">right</span><span class="o">.</span><span class="n">elements</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">ValueLog</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">==</span> <span class="kt">ValueLog</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ownerOne</span> <span class="o">!=</span> <span class="n">ownerTwo</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A shared storage identity can be a fast path when it is safe, but it should not be the definition of equality. Different buffers can hold the same value, and a caller should not need to know which copies the optimizer avoided.</p>
+
+<p>For mutable reference elements, <code class="language-plaintext highlighter-rouge">Element</code>’s own equality and mutation semantics still matter. The wrapper cannot make equality stable over time if the element’s comparison-relevant state changes through an external alias.</p>
+
+<h2 id="in-place-access-is-a-larger-contract-than-a-setter">In-place access is a larger contract than a setter</h2>
+
+<p>The simple subscript getter and setter keep mutation paths visible. More advanced collection implementations may yield direct mutable access to storage for efficiency. That access must begin only after uniqueness is established and must not escape its valid lifetime.</p>
+
+<p>Unsafe buffers introduce additional obligations: initialized element counts, capacity, alignment, destruction, and exclusivity. A correct uniqueness check is only one part of implementing such storage safely.</p>
+
+<p>Do not add unsafe storage merely to imitate the standard library’s internals. A wrapper around ordinary arrays can often deliver the needed behavior with far less maintenance risk. If a profile identifies a real buffer-copy bottleneck, narrow the optimization to that path and retain semantic tests.</p>
+
+<h2 id="measure-the-first-write-separately-from-later-writes">Measure the first write separately from later writes</h2>
+
+<p>A benchmark that assigns a large value and then performs many writes may hide the cost of the first separation inside a long average. Conversely, a benchmark creating a new alias before every write may exaggerate a workload that normally has one owner.</p>
+
+<p>Use separate scenarios: unique storage, one shared copy followed by many edits, and many retained versions each receiving one edit. Track peak memory as well as elapsed time, because history retention changes which buffers can be released.</p>
+
+<p>Element destruction and reference counting may also contribute significantly when elements own resources. Copy-on-write reduces some copies; it does not erase element lifetime costs.</p>
+
+<p>The result should guide whether to keep an array, introduce a custom buffer, or choose a persistent tree. Those designs have different traversal and update behavior, so compare complete representative operations rather than one isolated assignment.</p>
+
+<h2 id="exercise-add-removelast">Exercise: add removeLast</h2>
+
+<p>Implement an optional-returning <code class="language-plaintext highlighter-rouge">removeLast</code> that leaves an empty log unchanged. Establish unique storage before modifying nonempty storage. Test removal from one of several copies.</p>
+
+<p>Then ask whether the wrapper provides enough benefit over <code class="language-plaintext highlighter-rouge">[Element]</code> to keep. A successful exercise can end by removing an abstraction whose only purpose was demonstrating a mechanism.</p>
+
+<p>Continue with <a href="/swift-persistent-data-structures/">Purely Functional Data Structures</a> or return to the <a href="/swift-functional-programming/">Functional Programming roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-copy-on-write/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Value+Types+and+Copy-on-Write+in+Swift%3A+Independence+Without+Eager+Copies%20http%3A%2F%2Flocalhost%3A4000%2Fswift-copy-on-write%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-copy-on-write/&title=Value+Types+and+Copy-on-Write+in+Swift%3A+Independence+Without+Eager+Copies%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-copy-on-write/&title=Value+Types+and+Copy-on-Write+in+Swift%3A+Independence+Without+Eager+Copies%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-copy-on-write/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Value Types and Copy-on-Write in Swift: Independence Without Eager Copies%20%7C%20Swift By Deya&body=http://localhost:4000/swift-copy-on-write/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Functional+Programming">Functional Programming</a></li>
+    
+    <li><a href="/tag/#Memory">Memory</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Value+Semantics">Value Semantics</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Control Flow in Swift: if, guard, switch, and Loops" href="/swift-control-flow/"> <p>Previous post</p> Control Flow in Swift: if, guard, switch, and Loops </a> </div> <div id="next-post"> <a alt="Associated Types in Swift: Preserve Relationships Between Capabilities" href="/swift-associated-types/"> <p>Next post</p> Associated Types in Swift: Preserve Relationships Between Capabilities </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

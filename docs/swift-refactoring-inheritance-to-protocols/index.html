@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Refactoring a Swift Class Hierarchy into Protocols | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Refactoring a Swift Class Hierarchy into Protocols" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A useful refactor changes where behavior lives while preserving what callers can observe. Replacing class with protocol is not enough: initialization, shared state, effect ordering, and error behavior can all change accidentally during the move. We will migrate a small exporter with a formatting subclass into a composed design. The safety net checks actual exported text and forbidden writes after validation failure, rather than freezing the old private call graph." /> <meta property="og:description" content="A useful refactor changes where behavior lives while preserving what callers can observe. Replacing class with protocol is not enough: initialization, shared state, effect ordering, and error behavior can all change accidentally during the move. We will migrate a small exporter with a formatting subclass into a composed design. The safety net checks actual exported text and forbidden writes after validation failure, rather than freezing the old private call graph." /> <link rel="canonical" href="http://localhost:4000/swift-refactoring-inheritance-to-protocols/" /> <meta property="og:url" content="http://localhost:4000/swift-refactoring-inheritance-to-protocols/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2025-02-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Refactoring a Swift Class Hierarchy into Protocols" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2025-02-13T00:00:00+03:00","datePublished":"2025-02-13T00:00:00+03:00","description":"A useful refactor changes where behavior lives while preserving what callers can observe. Replacing class with protocol is not enough: initialization, shared state, effect ordering, and error behavior can all change accidentally during the move. We will migrate a small exporter with a formatting subclass into a composed design. The safety net checks actual exported text and forbidden writes after validation failure, rather than freezing the old private call graph.","headline":"Refactoring a Swift Class Hierarchy into Protocols","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-refactoring-inheritance-to-protocols/"},"url":"http://localhost:4000/swift-refactoring-inheritance-to-protocols/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Refactoring a Swift Class Hierarchy into Protocols"> <meta name="twitter:description" content="A useful refactor changes where behavior lives while preserving what callers can observe. Replacing class with protocol is not enough: initialization, shared..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Refactoring a Swift Class Hierarchy into Protocols"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Refactoring a Swift Class Hierarchy into Protocols</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2025-02-13T00:00:00+03:00">February 13, 2025</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A useful refactor changes where behavior lives while preserving what callers can observe. Replacing <code class="language-plaintext highlighter-rouge">class</code> with <code class="language-plaintext highlighter-rouge">protocol</code> is not enough: initialization, shared state, effect ordering, and error behavior can all change accidentally during the move.</p>
+
+<p>We will migrate a small exporter with a formatting subclass into a composed design. The safety net checks actual exported text and forbidden writes after validation failure, rather than freezing the old private call graph.</p>
+
+<!--more-->
+
+<h2 id="establish-a-behavior-worth-preserving">Establish a behavior worth preserving</h2>
+
+<p>The exporter accepts one or more nonempty lines. It formats them, then writes the complete result once. Invalid input must never reach storage. Storage errors must propagate without reporting success.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ExportFailure</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">invalidInput</span>
+    <span class="k">case</span> <span class="n">destinationUnavailable</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">ExportWriting</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ExportRecorder</span><span class="p">:</span> <span class="kt">ExportWriting</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">texts</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">rejectsWrites</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">rejectsWrites</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">ExportFailure</span><span class="o">.</span><span class="n">destinationUnavailable</span> <span class="p">}</span>
+        <span class="n">texts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="kt">LegacyLineExporter</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">destination</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ExportWriting</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">destination</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ExportWriting</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">destination</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">format</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">lines</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">final</span> <span class="kd">func</span> <span class="nf">export</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">lines</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">,</span> <span class="n">lines</span><span class="o">.</span><span class="nf">allSatisfy</span><span class="p">({</span> <span class="o">!</span><span class="nv">$0</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">ExportFailure</span><span class="o">.</span><span class="n">invalidInput</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="nf">format</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">destination</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyBulletExporter</span><span class="p">:</span> <span class="kt">LegacyLineExporter</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">format</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"- "</span> <span class="o">+</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The base class is not inherently broken. It provides a clear workflow and one customization hook. The refactoring pressure appears when formatting should be reused by previews and unrelated exporters without inheriting the storage lifecycle.</p>
+
+<p>Use that actual requirement to select the boundary. A protocol for the mutable recorder itself is unnecessary; the consumer needs the existing writing capability, not every method of the concrete test helper.</p>
+
+<h2 id="characterize-the-existing-public-operation">Characterize the existing public operation</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">legacyDestination</span> <span class="o">=</span> <span class="kt">ExportRecorder</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">legacyExporter</span><span class="p">:</span> <span class="kt">LegacyLineExporter</span> <span class="o">=</span> <span class="kt">LegacyBulletExporter</span><span class="p">(</span><span class="nv">destination</span><span class="p">:</span> <span class="n">legacyDestination</span><span class="p">)</span>
+<span class="k">try</span> <span class="n">legacyExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"One"</span><span class="p">,</span> <span class="s">"Two"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">legacyDestination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="p">[</span><span class="s">"- One</span><span class="se">\n</span><span class="s">- Two"</span><span class="p">])</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">legacyExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"One"</span><span class="p">,</span> <span class="s">""</span><span class="p">])</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"An empty line must be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">ExportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">invalidInput</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">legacyDestination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="p">[</span><span class="s">"- One</span><span class="se">\n</span><span class="s">- Two"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The second case matters because failure happens after inspecting at least one valid line. The assertion establishes that rejected input does not produce a partial export.</p>
+
+<p>The test uses a base-typed reference, which exercises the substitution path existing callers use. A test calling only the subclass’s <code class="language-plaintext highlighter-rouge">format</code> method would miss sequencing and validation behavior in <code class="language-plaintext highlighter-rouge">export</code>.</p>
+
+<p>If the old behavior is itself a bug, record the intended change separately. A structural refactor and a product-rule change are easier to review when their effects are distinguishable.</p>
+
+<h2 id="extract-the-varying-calculation">Extract the varying calculation</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ExportFormatting</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">format</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">PlainExportFormat</span><span class="p">:</span> <span class="kt">ExportFormatting</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">format</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">lines</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BulletExportFormat</span><span class="p">:</span> <span class="kt">ExportFormatting</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">format</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"- "</span> <span class="o">+</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ComposedLineExporter</span><span class="o">&lt;</span><span class="kt">F</span><span class="p">:</span> <span class="kt">ExportFormatting</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">formatter</span><span class="p">:</span> <span class="kt">F</span>
+    <span class="k">let</span> <span class="nv">destination</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ExportWriting</span>
+
+    <span class="kd">func</span> <span class="nf">export</span><span class="p">(</span><span class="n">_</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">lines</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">,</span> <span class="n">lines</span><span class="o">.</span><span class="nf">allSatisfy</span><span class="p">({</span> <span class="o">!</span><span class="nv">$0</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">ExportFailure</span><span class="o">.</span><span class="n">invalidInput</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="nf">format</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">destination</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Formatting is now a capability with value implementations. The exporter still reads as one workflow. The destination remains a separately owned effect, and formatting does not gain a storage dependency.</p>
+
+<p>The exporter is generic because its configured formatter type remains stable for that constructed value. An existential property would also be reasonable if runtime replacement or simpler non-generic storage were important. That representation decision is separate from extracting the capability.</p>
+
+<p>Swift’s <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/protocols/">Protocols</a> and <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/">Generics</a> chapters describe the mechanics. The tests here establish whether the migration preserved the behavior that matters.</p>
+
+<h2 id="run-the-same-observations-against-the-new-design">Run the same observations against the new design</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">composedDestination</span> <span class="o">=</span> <span class="kt">ExportRecorder</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">composedExporter</span> <span class="o">=</span> <span class="kt">ComposedLineExporter</span><span class="p">(</span>
+    <span class="nv">formatter</span><span class="p">:</span> <span class="kt">BulletExportFormat</span><span class="p">(),</span> <span class="nv">destination</span><span class="p">:</span> <span class="n">composedDestination</span>
+<span class="p">)</span>
+<span class="k">try</span> <span class="n">composedExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"One"</span><span class="p">,</span> <span class="s">"Two"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">composedDestination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="n">legacyDestination</span><span class="o">.</span><span class="n">texts</span><span class="p">)</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">composedExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"One"</span><span class="p">,</span> <span class="s">""</span><span class="p">])</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"An empty line must still be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">ExportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">invalidInput</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">composedDestination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="p">[</span><span class="s">"- One</span><span class="se">\n</span><span class="s">- Two"</span><span class="p">])</span>
+
+<span class="n">legacyDestination</span><span class="o">.</span><span class="n">rejectsWrites</span> <span class="o">=</span> <span class="kc">true</span>
+<span class="n">composedDestination</span><span class="o">.</span><span class="n">rejectsWrites</span> <span class="o">=</span> <span class="kc">true</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">legacyExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"Three"</span><span class="p">])</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The legacy write should fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">ExportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">destinationUnavailable</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">composedExporter</span><span class="o">.</span><span class="nf">export</span><span class="p">([</span><span class="s">"Three"</span><span class="p">])</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The composed write should fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">ExportFailure</span> <span class="o">==</span> <span class="o">.</span><span class="n">destinationUnavailable</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">composedDestination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="n">legacyDestination</span><span class="o">.</span><span class="n">texts</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>These assertions compare observable outcomes across both designs. They do not require the new exporter to call an inherited hook, preserve a private method name, or construct the same object graph.</p>
+
+<p>The recorder fails before appending. A real destination might have more complicated partial-failure semantics. If the contract requires atomic replacement, name that requirement and test the infrastructure implementation rather than assuming this fake proves it.</p>
+
+<h2 id="migrate-consumers-incrementally">Migrate consumers incrementally</h2>
+
+<p>A preview can now use <code class="language-plaintext highlighter-rouge">BulletExportFormat</code> directly without constructing a storage collaborator. The existing export use case can move to <code class="language-plaintext highlighter-rouge">ComposedLineExporter</code> at its composition root.</p>
+
+<p>For a large codebase, the old base API can temporarily forward to the extracted formatter, preserving callers while migration proceeds. Keep that adapter behaviorally narrow; avoid turning it into another permanent abstraction layer without a consumer need.</p>
+
+<p>Remove the old hierarchy only when references and tests show that no caller depends on it. Renaming files and deleting a superclass before understanding external subclass clients can create a source compatibility break even when local tests pass.</p>
+
+<h2 id="preserve-ownership-not-just-strings">Preserve ownership, not just strings</h2>
+
+<p>In this example, both exporters retain their destinations. If several exporters should share one audit or store, assembly can pass the same instance. If they need independent state, construct separate owners.</p>
+
+<p>Moving inherited instance storage into a global singleton changes sharing. Constructing a new helper inside every call changes lifetime in the opposite direction. Either can alter caching, metrics, or resource cleanup without changing one line of formatted output.</p>
+
+<p>Document which collaborators are shared across features, scoped to an account, or fresh per operation. A protocol makes those objects replaceable; it does not choose their ownership graph.</p>
+
+<h2 id="watch-the-frequency-and-order-of-effects">Watch the frequency and order of effects</h2>
+
+<p>The old exporter validates, formats once, and writes once. A migration that moves formatting into a per-line storage loop can preserve simple output while changing effect count and partial-failure behavior.</p>
+
+<p>If a hook reads time or random values, extracting it into a repeatedly invoked policy can change results too. Take one observation where the use case requires one observation, then pass that value into the calculation.</p>
+
+<p>An algorithm’s meaningful ordering should remain visible in tests. Here the forbidden-write assertion protects validation-before-storage. If success notification were added, test that it happens only after a successful write.</p>
+
+<h2 id="decide-when-the-protocol-is-no-longer-needed">Decide when the protocol is no longer needed</h2>
+
+<p>The new formatting boundary is justified by several implementations and independent preview use. If the final product has only one small pure format, a concrete formatter may be enough. Composition can remain useful without existential dispatch or a public protocol.</p>
+
+<p>Conversely, a plugin API allowing implementations from another module may need a carefully documented public protocol and compatibility plan. The same source-level pattern serves different responsibilities depending on its consumers.</p>
+
+<h2 id="finish-with-a-change-scenario">Finish with a change scenario</h2>
+
+<p>Add a numbered format. It should require a new formatting implementation and an assembly choice, while the stable export sequence remains unchanged. Then add a new validation rule, such as a maximum number of lines. That should change the workflow’s input policy and its tests rather than every formatter.</p>
+
+<p>These changes provide evidence that responsibilities became more local. Counting the number of protocols or celebrating the absence of inheritance would not establish that benefit.</p>
+
+<p>As a final exercise, add a shared contract test function that runs valid input and invalid input against both the old and new public entry points. Keep the negative control of a destination that throws. The migration is complete when intended behavior, errors, and lifetime are preserved and the new boundary makes a real consumer simpler.</p>
+
+<h2 id="worked-shared-safety-net-one-contract-two-constructions">Worked shared safety net: one contract, two constructions</h2>
+
+<p>Turn the migration observations into a reusable check whose negative control proves it can detect changed output:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">followsExportContract</span><span class="p">(</span>
+    <span class="nv">make</span><span class="p">:</span> <span class="p">(</span><span class="kt">ExportRecorder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(([</span><span class="kt">String</span><span class="p">])</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="kt">ExportRecorder</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">export</span> <span class="o">=</span> <span class="nf">make</span><span class="p">(</span><span class="n">destination</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">expected</span> <span class="o">=</span> <span class="p">[</span><span class="s">"- One</span><span class="se">\n</span><span class="s">- Two"</span><span class="p">]</span>
+    <span class="k">do</span> <span class="p">{</span> <span class="k">try</span> <span class="nf">export</span><span class="p">([</span><span class="s">"One"</span><span class="p">,</span> <span class="s">"Two"</span><span class="p">])</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+    <span class="k">guard</span> <span class="n">destination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="n">expected</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="nf">export</span><span class="p">([</span><span class="s">""</span><span class="p">])</span>
+        <span class="k">return</span> <span class="kc">false</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="kt">ExportFailure</span><span class="o">.</span><span class="n">invalidInput</span> <span class="p">{}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+    <span class="k">guard</span> <span class="n">destination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="n">expected</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+    <span class="n">destination</span><span class="o">.</span><span class="n">rejectsWrites</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="nf">export</span><span class="p">([</span><span class="s">"Three"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="kc">false</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="kt">ExportFailure</span><span class="o">.</span><span class="n">destinationUnavailable</span> <span class="p">{}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">destination</span><span class="o">.</span><span class="n">texts</span> <span class="o">==</span> <span class="n">expected</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">followsExportContract</span> <span class="p">{</span> <span class="n">destination</span> <span class="k">in</span>
+    <span class="kt">LegacyBulletExporter</span><span class="p">(</span><span class="nv">destination</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span><span class="o">.</span><span class="n">export</span>
+<span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">followsExportContract</span> <span class="p">{</span> <span class="n">destination</span> <span class="k">in</span>
+    <span class="kt">ComposedLineExporter</span><span class="p">(</span><span class="nv">formatter</span><span class="p">:</span> <span class="kt">BulletExportFormat</span><span class="p">(),</span> <span class="nv">destination</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span><span class="o">.</span><span class="n">export</span>
+<span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">followsExportContract</span> <span class="p">{</span> <span class="n">destination</span> <span class="k">in</span>
+    <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="k">try</span> <span class="n">destination</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="s">"Wrong output"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>The injected factory returns the operation under test, so the contract check is independent of the old and new concrete exporter types. Each run gets a fresh recorder and does not inherit state from another implementation’s test.</p>
+
+<p>The check protects text, validation-before-write, and failure propagation. It intentionally does not assert that the implementation contains a protocol or avoids a superclass. Architecture is being judged by preserved behavior and a useful new boundary, not by a syntax test.</p>
+
+<p>For a large migration, keep this contract while moving one construction site at a time. A compatibility adapter can delegate to the new implementation and run through the same check. Once all consumers have moved, remove the obsolete class hierarchy and adapter together if neither serves a remaining external client.</p>
+
+<p>The negative control is small but important: a test suite that never demonstrates failure can give false confidence during a broad refactor. Here a wrong result is rejected immediately, before the failure-path checks even begin.</p>
+
+<p>Continue through the <a href="/swift-protocol-oriented-programming/">Protocol-Oriented Programming roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-refactoring-inheritance-to-protocols/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Refactoring+a+Swift+Class+Hierarchy+into+Protocols%20http%3A%2F%2Flocalhost%3A4000%2Fswift-refactoring-inheritance-to-protocols%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-refactoring-inheritance-to-protocols/&title=Refactoring+a+Swift+Class+Hierarchy+into+Protocols%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-refactoring-inheritance-to-protocols/&title=Refactoring+a+Swift+Class+Hierarchy+into+Protocols%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-refactoring-inheritance-to-protocols/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Refactoring a Swift Class Hierarchy into Protocols%20%7C%20Swift By Deya&body=http://localhost:4000/swift-refactoring-inheritance-to-protocols/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#POP">POP</a></li>
+    
+    <li><a href="/tag/#Protocols">Protocols</a></li>
+    
+    <li><a href="/tag/#Refactoring">Refactoring</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Performance Considerations for Protocol-Oriented Swift" href="/swift-protocol-performance/"> <p>Previous post</p> Performance Considerations for Protocol-Oriented Swift </a> </div> <div id="next-post"> <a alt="Build a Small Reading-List App with Protocol-Oriented Swift" href="/swift-pop-reading-list/"> <p>Next post</p> Build a Small Reading-List App with Protocol-Oriented Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
