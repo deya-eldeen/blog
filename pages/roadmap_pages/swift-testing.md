@@ -39,4 +39,4 @@ Examples identify their Swift and framework requirements. Most use XCTest with a
 - [Coverage, Test Plans, and Continuous Integration](/swift-test-coverage-and-ci/)
 {: .roadmap-topics}
 
-{% include roadmap/guide_footer.liquid next_url="/swift-concurrency/" next_title="Swift Concurrency" %}
+{% include roadmap/guide_footer.liquid next_url="/swift-concurrency-roadmap/" next_title="Swift Concurrency" %}
