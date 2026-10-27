@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Actors in Swift: Protecting State Behind an Isolation Boundary | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Actors in Swift: Protecting State Behind an Isolation Boundary" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Mutable state shared between concurrent tasks needs protection. For decades that meant locks, queues, and discipline: every access had to remember to take the lock, and nothing checked that it did. An actor makes the protection part of the type. Its mutable state can be touched only by code running on the actor, one piece at a time, and the compiler rejects every other access. This article covers what that isolation boundary guarantees, what crossing it costs, how to design actor interfaces that keep invariants intact, and when a lock is the better tool. It measures the cost of actor calls from different contexts, because that cost shapes good actor design more than anything else." /> <meta property="og:description" content="Mutable state shared between concurrent tasks needs protection. For decades that meant locks, queues, and discipline: every access had to remember to take the lock, and nothing checked that it did. An actor makes the protection part of the type. Its mutable state can be touched only by code running on the actor, one piece at a time, and the compiler rejects every other access. This article covers what that isolation boundary guarantees, what crossing it costs, how to design actor interfaces that keep invariants intact, and when a lock is the better tool. It measures the cost of actor calls from different contexts, because that cost shapes good actor design more than anything else." /> <link rel="canonical" href="http://localhost:4000/swift-actors/" /> <meta property="og:url" content="http://localhost:4000/swift-actors/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-09T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Actors in Swift: Protecting State Behind an Isolation Boundary" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-09T00:00:00+03:00","datePublished":"2026-07-09T00:00:00+03:00","description":"Mutable state shared between concurrent tasks needs protection. For decades that meant locks, queues, and discipline: every access had to remember to take the lock, and nothing checked that it did. An actor makes the protection part of the type. Its mutable state can be touched only by code running on the actor, one piece at a time, and the compiler rejects every other access. This article covers what that isolation boundary guarantees, what crossing it costs, how to design actor interfaces that keep invariants intact, and when a lock is the better tool. It measures the cost of actor calls from different contexts, because that cost shapes good actor design more than anything else.","headline":"Actors in Swift: Protecting State Behind an Isolation Boundary","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-actors/"},"url":"http://localhost:4000/swift-actors/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Actors in Swift: Protecting State Behind an Isolation Boundary"> <meta name="twitter:description" content="Mutable state shared between concurrent tasks needs protection. For decades that meant locks, queues, and discipline: every access had to remember to take th..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Actors in Swift: Protecting State Behind an Isolation Boundary"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Actors in Swift: Protecting State Behind an Isolation Boundary</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-09T00:00:00+03:00">July 9, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Mutable state shared between concurrent tasks needs protection. For decades that meant locks, queues, and discipline: every access had to remember to take the lock, and nothing checked that it did. An actor makes the protection part of the type. Its mutable state can be touched only by code running <em>on</em> the actor, one piece at a time, and the compiler rejects every other access.</p>
+
+<p>This article covers what that isolation boundary guarantees, what crossing it costs, how to design actor interfaces that keep invariants intact, and when a lock is the better tool. It measures the cost of actor calls from different contexts, because that cost shapes good actor design more than anything else.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. Performance numbers quoted in the text come from an optimized (<code class="language-plaintext highlighter-rouge">-O</code>) build on an Apple M1 Ultra. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="the-problem-actors-solve">The problem actors solve</h2>
+
+<p>In Swift 6 language mode, sharing an unprotected class between concurrent tasks does not compile:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Counter</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">value</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">counter</span> <span class="o">=</span> <span class="kt">Counter</span><span class="p">()</span>
+
+<span class="kd">func</span> <span class="nf">incrementConcurrently</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="n">counter</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// error: non-Sendable type 'Counter' of let 'counter' cannot exit main actor-isolated context</span>
+<span class="c1">// error: main actor-isolated let 'counter' cannot be accessed from outside of the actor</span>
+</code></pre></div></div>
+
+<p>Two tasks could increment <code class="language-plaintext highlighter-rouge">value</code> at the same instant. <code class="language-plaintext highlighter-rouge">+=</code> is a read followed by a write, so one increment can be lost, and in the worst case the program reads memory mid-update. That is a <strong>data race</strong>, and Swift 6 rejects programs that could contain one. The compiler offers several ways out; an actor is the one designed for state that many tasks share.</p>
+
+<h2 id="declaring-an-actor">Declaring an actor</h2>
+
+<p>An actor looks like a class: it is a reference type with stored properties, methods, and initializers. The difference is that its mutable state is <strong>isolated</strong>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">enum</span> <span class="kt">BankError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">insufficientFunds</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">requested</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">accountClosed</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">BankAccount</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">isClosed</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">history</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">id</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">deposit</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">isClosed</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">BankError</span><span class="o">.</span><span class="nf">accountClosed</span><span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+        <span class="nf">precondition</span><span class="p">(</span><span class="n">amount</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">balance</span> <span class="o">+=</span> <span class="n">amount</span>
+        <span class="n">history</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">withdraw</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">isClosed</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">BankError</span><span class="o">.</span><span class="nf">accountClosed</span><span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="n">balance</span> <span class="o">&gt;=</span> <span class="n">amount</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">BankError</span><span class="o">.</span><span class="nf">insufficientFunds</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="n">balance</span><span class="p">,</span> <span class="nv">requested</span><span class="p">:</span> <span class="n">amount</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span>
+        <span class="n">history</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="o">-</span><span class="n">amount</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">close</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">isClosed</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">transactionCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">history</span><span class="o">.</span><span class="n">count</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Inside the actor, code accesses <code class="language-plaintext highlighter-rouge">balance</code> and <code class="language-plaintext highlighter-rouge">history</code> directly, synchronously, like any class. Outside, every access to isolated state goes through <code class="language-plaintext highlighter-rouge">await</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">checking</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">checking</span><span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">checkingBalance</span> <span class="o">=</span> <span class="k">await</span> <span class="n">checking</span><span class="o">.</span><span class="n">balance</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">checkingBalance</span> <span class="o">==</span> <span class="mi">150</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">checking</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"An immutable Sendable let can be read without await"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">await</code> is not ceremony. The call may have to wait for the actor to finish other work, so it is a potential suspension point like any other. And <code class="language-plaintext highlighter-rouge">id</code>, a <code class="language-plaintext highlighter-rouge">let</code> of a <code class="language-plaintext highlighter-rouge">Sendable</code> type, needs no <code class="language-plaintext highlighter-rouge">await</code> within the same module, because an immutable value cannot race.</p>
+
+<h2 id="what-isolation-guarantees">What isolation guarantees</h2>
+
+<p>An actor runs at most one piece of isolated code at a time. Each call into the actor becomes a <em>job</em> on the actor’s queue, and the actor processes jobs one by one, so the state it protects is never touched by two threads at once.</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Calls from many tasks become jobs that an actor executes one at a time
+    T1[Task A] -- "await deposit(50)" --&gt; Q
+    T2[Task B] -- "await withdraw(20)" --&gt; Q
+    T3[Task C] -- "await balance" --&gt; Q
+    subgraph Actor["BankAccount actor"]
+        Q[["Pending jobs, ordered by priority"]] --&gt; E["Executor runs one job at a time"]
+        E --&gt; S[("balance, history")]
+    end
+</code></pre>
+
+<p>That makes thousands of concurrent deposits exact:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">savings</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">savings</span><span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">savingsBalance</span> <span class="o">=</span> <span class="k">await</span> <span class="n">savings</span><span class="o">.</span><span class="n">balance</span>
+<span class="k">let</span> <span class="nv">savingsTransactions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">savings</span><span class="o">.</span><span class="n">transactionCount</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">savingsBalance</span> <span class="o">==</span> <span class="mi">1_000</span> <span class="o">&amp;&amp;</span> <span class="n">savingsTransactions</span> <span class="o">==</span> <span class="mi">1_000</span><span class="p">,</span> <span class="s">"No increment was lost"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Each deposit is a job; jobs never overlap; no increment is lost. No lock appears in the code, and none can be forgotten.</p>
+
+<p>The guarantee has a precise boundary, which the rest of this article returns to: an actor serializes <strong>jobs</strong>, not <strong>methods</strong>. A method without <code class="language-plaintext highlighter-rouge">await</code> runs as one job, so it is atomic with respect to other isolated code. A method with an <code class="language-plaintext highlighter-rouge">await</code> in the middle is split into several jobs, and other calls can run between them. That is <a href="/swift-actor-reentrancy/">reentrancy</a>, the most important actor behavior to understand after isolation itself.</p>
+
+<h2 id="actors-and-sendable">Actors and Sendable</h2>
+
+<p>Actors are <code class="language-plaintext highlighter-rouge">Sendable</code> automatically: a reference to an actor can be passed to any task, because every access to its state is serialized. What crosses <em>into or out of</em> an actor must also be safe. Arguments and return values of isolated methods called from outside must be <code class="language-plaintext highlighter-rouge">Sendable</code>, or must be provably unshared (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0414-region-based-isolation.md">SE-0414</a>). That rule is what stops an actor from leaking a mutable reference to its internals: returning a non-<code class="language-plaintext highlighter-rouge">Sendable</code> class instance from an actor method would let callers mutate it outside the actor. Return value types and snapshots instead. The <a href="/swift-sendable/">Sendable article</a> covers these rules in detail.</p>
+
+<h2 id="operations-that-span-actors-are-not-atomic">Operations that span actors are not atomic</h2>
+
+<p>Each actor is its own unit of atomicity. An operation that touches two actors, such as a transfer between two accounts, necessarily has a suspension point between the two halves, and the system is briefly in an intermediate state:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">BankAccount</span> <span class="p">{</span>
+    <span class="c1">/// Withdraws here, then deposits there. Refunds if the deposit fails.</span>
+    <span class="kd">func</span> <span class="nf">transfer</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">to</span> <span class="nv">destination</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="nf">withdraw</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>                     <span class="c1">// Isolated, synchronous: atomic on this actor.</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">destination</span><span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="c1">// Suspension point: other work may run here.</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">balance</span> <span class="o">+=</span> <span class="n">amount</span>                     <span class="c1">// Compensate, so money is not destroyed.</span>
+            <span class="n">history</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">error</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">source</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="nf">transfer</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">afterTransfer</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span> <span class="k">await</span> <span class="n">destination</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterTransfer</span> <span class="o">==</span> <span class="p">(</span><span class="mi">70</span><span class="p">,</span> <span class="mi">30</span><span class="p">))</span>
+
+<span class="k">await</span> <span class="n">destination</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="nf">transfer</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Depositing into a closed account must fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">BankError</span><span class="o">.</span><span class="nf">accountClosed</span><span class="p">(</span><span class="k">let</span> <span class="nv">id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">id</span> <span class="o">==</span> <span class="mi">11</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">afterFailedTransfer</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span> <span class="k">await</span> <span class="n">destination</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterFailedTransfer</span> <span class="o">==</span> <span class="p">(</span><span class="mi">70</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="s">"The compensating refund preserved the total"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>While <code class="language-plaintext highlighter-rouge">transfer</code> is suspended at the <code class="language-plaintext highlighter-rouge">await</code>, the 30 units exist in neither account. An auditor summing the two balances at that moment would see money missing. Whether that matters depends on the domain. A bank needs a ledger with an explicit “in transit” state; a cache does not care.</p>
+
+<p>Two techniques keep cross-actor operations correct:</p>
+
+<ul>
+  <li><strong>Compensation</strong>, as above: perform the first half, attempt the second, and undo the first if the second fails.</li>
+  <li><strong>Putting related state in one actor.</strong> If two accounts must always be updated atomically, they belong to one <code class="language-plaintext highlighter-rouge">Ledger</code> actor, which updates both in a single synchronous method. An actor’s boundary should enclose an invariant, not a single object.</li>
+</ul>
+
+<h2 id="conforming-to-synchronous-protocols">Conforming to synchronous protocols</h2>
+
+<p>Protocol requirements that are synchronous, such as <code class="language-plaintext highlighter-rouge">CustomStringConvertible.description</code> and <code class="language-plaintext highlighter-rouge">Hashable.hash(into:)</code>, cannot be satisfied by isolated members, because a caller outside the actor would have to <code class="language-plaintext highlighter-rouge">await</code> them. Satisfy them with <code class="language-plaintext highlighter-rouge">nonisolated</code> members that use only non-isolated state:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">BankAccount</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span><span class="p">,</span> <span class="kt">Hashable</span> <span class="p">{</span>
+    <span class="kd">nonisolated</span> <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="s">"Account #</span><span class="se">\(</span><span class="n">id</span><span class="se">)</span><span class="s">"</span>
+    <span class="p">}</span>
+
+    <span class="kd">nonisolated</span> <span class="kd">static</span> <span class="kd">func</span> <span class="o">==</span> <span class="p">(</span><span class="nv">lhs</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">,</span> <span class="nv">rhs</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">lhs</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">}</span>
+
+    <span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">hash</span><span class="p">(</span><span class="n">into</span> <span class="nv">hasher</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">Hasher</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">hasher</span><span class="o">.</span><span class="nf">combine</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">checking</span><span class="o">.</span><span class="n">description</span> <span class="o">==</span> <span class="s">"Account #1"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">([</span><span class="n">checking</span><span class="p">,</span> <span class="n">savings</span><span class="p">,</span> <span class="n">checking</span><span class="p">])</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">nonisolated</code> members are compiled as ordinary methods that do not run on the actor. They can read <code class="language-plaintext highlighter-rouge">let</code> constants of <code class="language-plaintext highlighter-rouge">Sendable</code> type, but not <code class="language-plaintext highlighter-rouge">balance</code>, which the compiler enforces. The <a href="/swift-isolated-nonisolated/">isolated and nonisolated article</a> goes further, including Swift 6.2’s isolated conformances.</p>
+
+<h2 id="what-crossing-the-boundary-costs">What crossing the boundary costs</h2>
+
+<p>An actor call from outside is not a plain function call. The caller must suspend, the job must be enqueued, the actor’s executor must run it, and the caller must resume in its own isolation. How expensive that is depends mostly on whether a thread switch is involved.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs on the caller's executor, so the caller decides where the calls come from.</span>
+<span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">measureActorCalls</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">on</span> <span class="nv">account</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">account</span><span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">measureFromMainActor</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">on</span> <span class="nv">account</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">measureActorCalls</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="n">count</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">account</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">measureFromPool</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">on</span> <span class="nv">account</span><span class="p">:</span> <span class="kt">BankAccount</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">measureActorCalls</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="n">count</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">account</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">costAccount</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">99</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">fromMainActor</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">measureFromMainActor</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">costAccount</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">fromPool</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">measureFromPool</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">costAccount</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">counterLock</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">lockClock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">lockStart</span> <span class="o">=</span> <span class="n">lockClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20_000</span> <span class="p">{</span>
+    <span class="n">counterLock</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">perLock</span> <span class="o">=</span> <span class="n">lockStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">lockClock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="o">/</span> <span class="mi">20_000</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"per actor call from the main actor:"</span><span class="p">,</span> <span class="n">fromMainActor</span><span class="p">,</span> <span class="s">"from the pool:"</span><span class="p">,</span> <span class="n">fromPool</span><span class="p">,</span> <span class="s">"per Mutex lock:"</span><span class="p">,</span> <span class="n">perLock</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In an optimized build of this code on the test machine, across repeated runs:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th>Time per call</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Mutex.withLock</code> incrementing an integer</td>
+      <td>about 60 ns</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">deposit</code> call from a task on the cooperative pool</td>
+      <td>about 100 ns</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">deposit</code> call from the main actor</td>
+      <td>about 6 µs</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The pool-to-actor case is cheap because the runtime can usually run the actor’s job on the <em>same thread</em> the caller was using: switching executors without switching threads. The main-actor case is roughly 60 times more expensive because every call is two real thread switches, from the main thread to a pool thread and back again. A debug build narrows the gap between the first two rows, because unoptimized code dominates, but not the third. A loop on the main actor that makes thousands of fine-grained actor calls spends most of its time in context switches.</p>
+
+<p>Design consequence: <strong>make actor interfaces coarse-grained.</strong> One call that does the whole job beats many calls that each do a sliver:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Transaction</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">deposit</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">withdrawal</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Statement</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">applied</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">rejected</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">BankAccount</span> <span class="p">{</span>
+    <span class="c1">/// One hop for a whole batch, with a Sendable snapshot as the result.</span>
+    <span class="kd">func</span> <span class="nf">apply</span><span class="p">(</span><span class="n">_</span> <span class="nv">transactions</span><span class="p">:</span> <span class="p">[</span><span class="kt">Transaction</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Statement</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">applied</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">rejected</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">transaction</span> <span class="k">in</span> <span class="n">transactions</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">switch</span> <span class="n">transaction</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="k">let</span> <span class="nv">amount</span><span class="p">):</span> <span class="k">try</span> <span class="nf">deposit</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">withdrawal</span><span class="p">(</span><span class="k">let</span> <span class="nv">amount</span><span class="p">):</span> <span class="k">try</span> <span class="nf">withdraw</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="n">applied</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">rejected</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">Statement</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="n">balance</span><span class="p">,</span> <span class="nv">applied</span><span class="p">:</span> <span class="n">applied</span><span class="p">,</span> <span class="nv">rejected</span><span class="p">:</span> <span class="n">rejected</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">batchAccount</span> <span class="o">=</span> <span class="kt">BankAccount</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">balance</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">statement</span> <span class="o">=</span> <span class="k">await</span> <span class="n">batchAccount</span><span class="o">.</span><span class="nf">apply</span><span class="p">([</span><span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="o">.</span><span class="nf">withdrawal</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="o">.</span><span class="nf">withdrawal</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="o">.</span><span class="nf">deposit</span><span class="p">(</span><span class="mi">1</span><span class="p">)])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">statement</span> <span class="o">==</span> <span class="kt">Statement</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">applied</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">rejected</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>A batch method also solves a correctness problem that fine-grained calls create. Four separate <code class="language-plaintext highlighter-rouge">await batchAccount.withdraw(...)</code> calls from a caller could interleave with other callers’ calls; one <code class="language-plaintext highlighter-rouge">apply</code> call is a single job, and the whole batch is atomic.</p>
+
+<h2 id="how-busy-can-an-actor-get">How busy can an actor get?</h2>
+
+<p>Because an actor is serial, its throughput has a hard ceiling. If each job takes on average \(s\) seconds, the actor can complete at most \(\mu = 1/s\) jobs per second. If jobs arrive at rate \(\lambda\), its utilization is \(\rho = \lambda s\).</p>
+
+<p>Queueing theory says that waiting time grows sharply as utilization approaches one. For the simplest model, random arrivals and exponentially distributed job times (the M/M/1 queue), the mean time a job waits before it starts is</p>
+
+\[W_q = \frac{\rho}{1 - \rho}\, s .\]
+
+<p>At \(\rho = 0.5\) a job waits on average one job time. At \(\rho = 0.8\), four job times. At \(\rho = 0.95\), nineteen. An actor whose jobs take 2 ms, called 400 times per second, is 80% busy, and each caller waits about 8 ms before its call even starts. Real workloads differ from the model, but the shape holds: <strong>an actor that is busy most of the time is slow for everyone.</strong></p>
+
+<p>The remedies follow from the formula. Shorten jobs by moving computation out of isolated code, as the <a href="/swift-unstructured-detached-tasks/">unstructured and detached tasks article</a> demonstrates with a search index rebuild. Reduce arrivals by batching. Or split the state across several actors so their queues run in parallel, if the invariants allow it.</p>
+
+<h2 id="global-actors">Global actors</h2>
+
+<p>Sometimes the state that must be protected is spread across several types: a database connection, its statement cache, and the objects that use them. Making each an actor would make cross-type operations non-atomic. A <strong>global actor</strong> provides one isolation domain that many declarations can share:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@globalActor</span>
+<span class="kd">actor</span> <span class="kt">StorageActor</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">StorageActor</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">@StorageActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">StatementCache</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">statements</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">_</span> <span class="nv">sql</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">existing</span> <span class="o">=</span> <span class="n">statements</span><span class="p">[</span><span class="n">sql</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="n">existing</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">statements</span><span class="o">.</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">statements</span><span class="p">[</span><span class="n">sql</span><span class="p">]</span> <span class="o">=</span> <span class="n">handle</span>
+        <span class="k">return</span> <span class="n">handle</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@StorageActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Database</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">cache</span> <span class="o">=</span> <span class="kt">StatementCache</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">executed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">sql</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Same isolation domain as the cache: synchronous calls, no await, one atomic job.</span>
+        <span class="n">executed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="nf">prepare</span><span class="p">(</span><span class="n">sql</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">database</span> <span class="o">=</span> <span class="kt">Database</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">database</span><span class="o">.</span><span class="nf">execute</span><span class="p">(</span><span class="s">"SELECT 1"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">database</span><span class="o">.</span><span class="nf">execute</span><span class="p">(</span><span class="s">"SELECT 1"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">database</span><span class="o">.</span><span class="nf">execute</span><span class="p">(</span><span class="s">"SELECT 2"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">executedHandles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">database</span><span class="o">.</span><span class="n">executed</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">executedHandles</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Within <code class="language-plaintext highlighter-rouge">@StorageActor</code>, <code class="language-plaintext highlighter-rouge">Database</code> calls <code class="language-plaintext highlighter-rouge">StatementCache</code> synchronously, because both are isolated to the same actor. The main actor is the most familiar global actor; the <a href="/swift-main-actor/">main actor article</a> covers it. Define your own sparingly. A global actor is a single serial queue for everything it annotates, so its utilization is the sum of all of them.</p>
+
+<h2 id="deinitialization">Deinitialization</h2>
+
+<p>An actor’s <code class="language-plaintext highlighter-rouge">deinit</code> runs when the last reference goes away, which can happen on any thread. By default <code class="language-plaintext highlighter-rouge">deinit</code> is non-isolated: it can read stored properties, because no other reference exists, but it cannot call isolated methods.</p>
+
+<p>Swift 6.2 adds <code class="language-plaintext highlighter-rouge">isolated deinit</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0371-isolated-synchronous-deinit.md">SE-0371</a>) for actors and global-actor-isolated classes. The runtime arranges for the deinitializer to run on the actor’s executor, so it can call isolated, synchronous methods, for example to unregister from a main-actor registry. The runtime support shipped in iOS 18.4 and macOS 15.4. An isolated <code class="language-plaintext highlighter-rouge">deinit</code> may run later than the last release, after hopping to the executor, so it should not be relied on for prompt release of scarce resources; explicit <code class="language-plaintext highlighter-rouge">close()</code> methods remain the better lifecycle tool.</p>
+
+<h2 id="actor-or-lock">Actor or lock?</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Situation</th>
+      <th>Prefer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>State accessed from async code, operations naturally async</td>
+      <td>Actor</td>
+    </tr>
+    <tr>
+      <td>Invariants spanning several fields, updated by methods</td>
+      <td>Actor</td>
+    </tr>
+    <tr>
+      <td>Tiny critical sections, called from synchronous code, very frequently</td>
+      <td><code class="language-plaintext highlighter-rouge">Mutex</code></td>
+    </tr>
+    <tr>
+      <td>State that must be accessible from a synchronous protocol requirement or a C callback</td>
+      <td><code class="language-plaintext highlighter-rouge">Mutex</code></td>
+    </tr>
+    <tr>
+      <td>A class that is otherwise non-isolated but needs one thread-safe field</td>
+      <td><code class="language-plaintext highlighter-rouge">Mutex</code></td>
+    </tr>
+    <tr>
+      <td>UI state</td>
+      <td>The main actor</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A <code class="language-plaintext highlighter-rouge">Mutex</code> is synchronous: <code class="language-plaintext highlighter-rouge">withLock</code> cannot contain <code class="language-plaintext highlighter-rouge">await</code>, which prevents holding it across a suspension. That makes it ideal for small, fast, synchronous state. An actor is asynchronous from the outside and supports operations that themselves suspend. Neither is “more correct”; they fit different shapes. Many well-designed types use both: an actor for the operation, a <code class="language-plaintext highlighter-rouge">Mutex</code> inside a <code class="language-plaintext highlighter-rouge">Sendable</code> helper for a counter that synchronous code must read.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>An actor isolates its mutable state; only code running on the actor can touch it, and the compiler enforces that.</li>
+  <li>Calls from outside need <code class="language-plaintext highlighter-rouge">await</code>; immutable <code class="language-plaintext highlighter-rouge">Sendable</code> lets do not, within the module.</li>
+  <li>Actors serialize jobs, not methods. Code between two <code class="language-plaintext highlighter-rouge">await</code>s is atomic; code across an <code class="language-plaintext highlighter-rouge">await</code> is not.</li>
+  <li>Operations spanning several actors are not atomic. Compensate, or move the invariant into one actor.</li>
+  <li>Actor calls from the pool cost on the order of 100 ns; from the main actor, several microseconds. Design coarse-grained, batch-friendly interfaces.</li>
+  <li>A serial actor’s waiting time grows like \(\rho / (1 - \rho)\). Keep jobs short and utilization moderate.</li>
+  <li>Global actors share one isolation domain across types; <code class="language-plaintext highlighter-rouge">isolated deinit</code> (Swift 6.2) runs teardown on the actor.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Model a small ledger with three accounts that must always sum to a fixed total. Implement it twice: as three <code class="language-plaintext highlighter-rouge">BankAccount</code> actors with compensating transfers, and as one <code class="language-plaintext highlighter-rouge">Ledger</code> actor. Run a thousand random concurrent transfers in each, with an auditor task that repeatedly sums all balances. Count how often the auditor observes a wrong total in each design, and explain the difference in terms of jobs and suspension points.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0306-actors.md">SE-0306: Actors</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0316-global-actors.md">SE-0316: Global actors</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0371-isolated-synchronous-deinit.md">SE-0371: Isolated synchronous deinit</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10133/">Protect mutable state with Swift actors</a>, WWDC21.</li>
+</ul>
+
+<p>Previous: <a href="/swift-task-priority/">Task Priority, Inheritance, and Priority Inversion</a>. Next: <a href="/swift-actor-reentrancy/">Actor Reentrancy Across Suspension Points</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-actors/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Actors+in+Swift%3A+Protecting+State+Behind+an+Isolation+Boundary%20http%3A%2F%2Flocalhost%3A4000%2Fswift-actors%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-actors/&title=Actors+in+Swift%3A+Protecting+State+Behind+an+Isolation+Boundary%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-actors/&title=Actors+in+Swift%3A+Protecting+State+Behind+an+Isolation+Boundary%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-actors/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Actors in Swift: Protecting State Behind an Isolation Boundary%20%7C%20Swift By Deya&body=http://localhost:4000/swift-actors/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Actors">Actors</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Data+Races">Data Races</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points" href="/swift-actor-reentrancy/"> <p>Previous post</p> Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points </a> </div> <div id="next-post"> <a alt="Task Priority, Inheritance, and Priority Inversion in Swift" href="/swift-task-priority/"> <p>Next post</p> Task Priority, Inheritance, and Priority Inversion in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

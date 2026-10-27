@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Testing Concurrent Swift Code with Controlled Interleavings | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Testing Concurrent Swift Code with Controlled Interleavings" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A concurrent test that sleeps is a test that guesses. It guesses how long the work takes on the machine it happens to run on, under whatever load that machine happens to have. Guess short and the test fails at random on a busy CI runner. Guess long and the suite gets slow, and still fails occasionally, because no fixed duration is enough for every run. The alternative is to take control of the three things that make concurrent behavior nondeterministic: when work finishes, where it pauses, and what time it is. A test that awaits work instead of sleeping, holds operations at chosen suspension points, and advances a clock of its own can reproduce a specific interleaving every time, in microseconds. This article builds those tools, a gate, a manual test clock, and a bounded condition wait, and uses them with Swift Testing to test a debounced search model under interleavings that would otherwise appear only in production." /> <meta property="og:description" content="A concurrent test that sleeps is a test that guesses. It guesses how long the work takes on the machine it happens to run on, under whatever load that machine happens to have. Guess short and the test fails at random on a busy CI runner. Guess long and the suite gets slow, and still fails occasionally, because no fixed duration is enough for every run. The alternative is to take control of the three things that make concurrent behavior nondeterministic: when work finishes, where it pauses, and what time it is. A test that awaits work instead of sleeping, holds operations at chosen suspension points, and advances a clock of its own can reproduce a specific interleaving every time, in microseconds. This article builds those tools, a gate, a manual test clock, and a bounded condition wait, and uses them with Swift Testing to test a debounced search model under interleavings that would otherwise appear only in production." /> <link rel="canonical" href="http://localhost:4000/swift-testing-controlled-interleavings/" /> <meta property="og:url" content="http://localhost:4000/swift-testing-controlled-interleavings/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-25T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Testing Concurrent Swift Code with Controlled Interleavings" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-25T00:00:00+03:00","datePublished":"2026-08-25T00:00:00+03:00","description":"A concurrent test that sleeps is a test that guesses. It guesses how long the work takes on the machine it happens to run on, under whatever load that machine happens to have. Guess short and the test fails at random on a busy CI runner. Guess long and the suite gets slow, and still fails occasionally, because no fixed duration is enough for every run. The alternative is to take control of the three things that make concurrent behavior nondeterministic: when work finishes, where it pauses, and what time it is. A test that awaits work instead of sleeping, holds operations at chosen suspension points, and advances a clock of its own can reproduce a specific interleaving every time, in microseconds. This article builds those tools, a gate, a manual test clock, and a bounded condition wait, and uses them with Swift Testing to test a debounced search model under interleavings that would otherwise appear only in production.","headline":"Testing Concurrent Swift Code with Controlled Interleavings","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-testing-controlled-interleavings/"},"url":"http://localhost:4000/swift-testing-controlled-interleavings/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Testing Concurrent Swift Code with Controlled Interleavings"> <meta name="twitter:description" content="A concurrent test that sleeps is a test that guesses. It guesses how long the work takes on the machine it happens to run on, under whatever load that machin..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Testing Concurrent Swift Code with Controlled Interleavings"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Testing Concurrent Swift Code with Controlled Interleavings</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-25T00:00:00+03:00">August 25, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A concurrent test that sleeps is a test that guesses. It guesses how long the work takes on the machine it happens to run on, under whatever load that machine happens to have. Guess short and the test fails at random on a busy CI runner. Guess long and the suite gets slow, and still fails occasionally, because no fixed duration is enough for every run.</p>
+
+<p>The alternative is to take control of the three things that make concurrent behavior nondeterministic: <em>when work finishes</em>, <em>where it pauses</em>, and <em>what time it is</em>. A test that awaits work instead of sleeping, holds operations at chosen suspension points, and advances a clock of its own can reproduce a specific interleaving every time, in microseconds. This article builds those tools, a gate, a manual test clock, and a bounded condition wait, and uses them with Swift Testing to test a debounced search model under interleavings that would otherwise appear only in production.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and the Swift Testing framework, and were compiled and run with the Swift 6.4 toolchain on macOS 26. The production code builds on itself in one module; the tests were run with <code class="language-plaintext highlighter-rouge">swift test</code> in a package containing that module. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later. The earlier <a href="/swift-testing-asynchronous-code/">Testing Asynchronous Swift Code</a> article covers the XCTest side of the same ideas.</p>
+
+<h2 id="why-sleeping-tests-fail-quantitatively">Why sleeping tests fail, quantitatively</h2>
+
+<p>Suppose a test starts an operation, sleeps for \(d\), then checks the result. If the operation’s duration \(L\) on a given run is random, the test fails whenever \(L &gt; d\). Even a well-behaved distribution has a tail. If \(L\) is exponential with mean \(m\):</p>
+
+\[P(\text{flake}) = P(L &gt; d) = e^{-d/m}, \qquad d = m \ln\frac{1}{P(\text{flake})}.\]
+
+<p>To keep one test’s flake rate at 0.1%, it must sleep \(m \ln 1000 \approx 6.9\,m\): almost seven times the <em>average</em> duration, every run. A suite of 500 such tests, each at 0.1%, fails at least once in \(1 - 0.999^{500} \approx 39\%\) of runs. Real CI latency distributions have heavier tails than the exponential, so the real numbers are worse. Sleeping makes a suite both slow and unreliable, and there is no value of \(d\) that fixes it.</p>
+
+<p>The fix is structural: make the test <em>know</em> when things happen rather than guess.</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: A test controls completion, suspension, and time through injected dependencies
+    T["Test"] -- "await model.settle()" --&gt; M["Model under test"]
+    T -- "open gate for query" --&gt; G["Gated backend"]
+    T -- "advance(by:)" --&gt; C["Test clock"]
+    M -- "search(query)" --&gt; G
+    M -- "sleep(for: quietPeriod)" --&gt; C
+    G -. "holds each request until opened" .-&gt; M
+    C -. "wakes sleepers only when advanced" .-&gt; M
+</code></pre>
+
+<h2 id="tool-1-await-the-work-not-the-clock">Tool 1: await the work, not the clock</h2>
+
+<p>The simplest control is to give the test something to await. A model that starts unstructured tasks should expose a way to wait for them, as every model in this series has with <code class="language-plaintext highlighter-rouge">settle()</code>. Tests then await completion directly:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">model</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="cp">#expect(model.results == ["swift result"])</span>
+</code></pre></div></div>
+
+<p>This removes the guess about <em>when</em> work finishes. It does not control <em>what happens in between</em>, which is where the interesting bugs live.</p>
+
+<h2 id="tool-2-gates-that-hold-operations-mid-flight">Tool 2: gates that hold operations mid-flight</h2>
+
+<p>A gate is a dependency that suspends until the test opens it. Injected into a fake backend, it lets the test hold a request at the network boundary while other things happen:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Suspends callers until opened.</span>
+<span class="kd">actor</span> <span class="kt">Gate</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">isOpen</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waiters</span><span class="p">:</span> <span class="p">[</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">wait</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">isOpen</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">waiters</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">open</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">isOpen</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">for</span> <span class="n">waiter</span> <span class="k">in</span> <span class="n">waiters</span> <span class="p">{</span> <span class="n">waiter</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">waiters</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">SearchBackend</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="c1">/// A fake backend that records each request and holds it until the test opens that query's gate.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">GatedBackend</span><span class="p">:</span> <span class="kt">SearchBackend</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">(</span><span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">],</span> <span class="nv">gates</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Gate</span><span class="p">])</span><span class="o">&gt;</span><span class="p">(([],</span> <span class="p">[:]))</span>
+
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">gate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Gate</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">existing</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">gates</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="n">existing</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">gate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">gates</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="o">=</span> <span class="n">gate</span>
+            <span class="k">return</span> <span class="n">gate</span>
+        <span class="p">}</span>
+        <span class="k">await</span> <span class="n">gate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">]</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">release</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">gate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Gate</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">existing</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">gates</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="n">existing</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">gate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">gates</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="o">=</span> <span class="n">gate</span>
+            <span class="k">return</span> <span class="n">gate</span>
+        <span class="p">}</span>
+        <span class="k">await</span> <span class="n">gate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">requests</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>With a gate per query, the test decides the order in which responses arrive. That is the order the <a href="/swift-rejecting-stale-results/">stale results article</a> had to simulate with carefully chosen latencies; here it is a line of test code.</p>
+
+<h2 id="tool-3-a-clock-the-test-controls">Tool 3: a clock the test controls</h2>
+
+<p>Debouncing, timeouts, retries with backoff, polling intervals: any code that waits for time is untestable at speed unless time itself is a dependency. Swift’s <code class="language-plaintext highlighter-rouge">Clock</code> protocol (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0329-clock-instant-duration.md">SE-0329</a>) makes it one. Production code takes <code class="language-plaintext highlighter-rouge">some Clock&lt;Duration&gt;</code> and calls <code class="language-plaintext highlighter-rouge">clock.sleep(for:)</code>; tests pass a clock that moves only when advanced.</p>
+
+<p>The test clock below is careful about cancellation. A debounced model cancels its sleeping task on every keystroke, so the clock’s sleepers must be removed when cancelled, including when cancellation arrives before the sleeper has registered. It uses the same phase-per-waiter design as the permit pool in the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A clock that moves only when a test advances it.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TestClock</span><span class="p">:</span> <span class="kt">Clock</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">Instant</span><span class="p">:</span> <span class="kt">InstantProtocol</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">offset</span><span class="p">:</span> <span class="kt">Duration</span>
+
+        <span class="kd">func</span> <span class="nf">advanced</span><span class="p">(</span><span class="n">by</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Instant</span> <span class="p">{</span>
+            <span class="kt">Instant</span><span class="p">(</span><span class="nv">offset</span><span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">duration</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="kd">func</span> <span class="nf">duration</span><span class="p">(</span><span class="n">to</span> <span class="nv">other</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+            <span class="n">other</span><span class="o">.</span><span class="n">offset</span> <span class="o">-</span> <span class="n">offset</span>
+        <span class="p">}</span>
+
+        <span class="kd">static</span> <span class="kd">func</span> <span class="o">&lt;</span> <span class="p">(</span><span class="nv">lhs</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">rhs</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+            <span class="n">lhs</span><span class="o">.</span><span class="n">offset</span> <span class="o">&lt;</span> <span class="n">rhs</span><span class="o">.</span><span class="n">offset</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">Phase</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">registering</span>
+        <span class="k">case</span> <span class="nf">waiting</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="n">cancelledEarly</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">now</span> <span class="o">=</span> <span class="kt">Instant</span><span class="p">(</span><span class="nv">offset</span><span class="p">:</span> <span class="o">.</span><span class="n">zero</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">phases</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt64</span><span class="p">:</span> <span class="kt">Phase</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+        <span class="k">var</span> <span class="nv">nextID</span><span class="p">:</span> <span class="kt">UInt64</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+
+    <span class="k">var</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Instant</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">now</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">minimumResolution</span><span class="p">:</span> <span class="kt">Duration</span> <span class="p">{</span>
+        <span class="o">.</span><span class="n">zero</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">until</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">nextID</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">registering</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">nextID</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+                <span class="kd">enum</span> <span class="kt">Decision</span> <span class="p">{</span> <span class="k">case</span> <span class="n">resumeNow</span><span class="p">,</span> <span class="n">cancelNow</span><span class="p">,</span> <span class="n">wait</span> <span class="p">}</span>
+                <span class="k">let</span> <span class="nv">decision</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Decision</span> <span class="k">in</span>
+                    <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">cancelledEarly</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="p">{</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                        <span class="k">return</span> <span class="o">.</span><span class="n">cancelNow</span>
+                    <span class="p">}</span>
+                    <span class="k">if</span> <span class="n">deadline</span> <span class="o">&lt;=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span> <span class="p">{</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                        <span class="k">return</span> <span class="o">.</span><span class="n">resumeNow</span>
+                    <span class="p">}</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="n">deadline</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="n">continuation</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="n">wait</span>
+                <span class="p">}</span>
+                <span class="k">switch</span> <span class="n">decision</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">resumeNow</span><span class="p">:</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">cancelNow</span><span class="p">:</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">CancellationError</span><span class="p">())</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">wait</span><span class="p">:</span> <span class="k">break</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">sleeper</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span> <span class="k">in</span>
+                <span class="k">switch</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">registering</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">cancelledEarly</span>
+                    <span class="k">return</span> <span class="kc">nil</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="k">let</span> <span class="nv">continuation</span><span class="p">):</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                    <span class="k">return</span> <span class="n">continuation</span>
+                <span class="k">case</span> <span class="o">.</span><span class="n">cancelledEarly</span><span class="p">,</span> <span class="nv">nil</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">nil</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">sleeper</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">CancellationError</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Moves time forward and wakes, in deadline order, every sleeper that is now due.</span>
+    <span class="kd">func</span> <span class="nf">advance</span><span class="p">(</span><span class="n">by</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">due</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">]</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">now</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">duration</span><span class="p">)</span>
+            <span class="k">var</span> <span class="nv">due</span><span class="p">:</span> <span class="p">[(</span><span class="nv">deadline</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">phase</span><span class="p">)</span> <span class="k">in</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="k">let</span> <span class="nv">deadline</span><span class="p">,</span> <span class="k">let</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="n">phase</span><span class="p">,</span> <span class="n">deadline</span> <span class="o">&lt;=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span> <span class="p">{</span>
+                    <span class="n">due</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">deadline</span><span class="p">,</span> <span class="n">id</span><span class="p">,</span> <span class="n">continuation</span><span class="p">))</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">due</span><span class="o">.</span><span class="n">sorted</span> <span class="p">{</span> <span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">deadline</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="nv">$1</span><span class="o">.</span><span class="n">deadline</span><span class="p">,</span> <span class="nv">$1</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">continuation</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">continuation</span> <span class="k">in</span> <span class="n">due</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// The number of sleepers currently waiting for time to advance.</span>
+    <span class="k">var</span> <span class="nv">sleeperCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">phase</span> <span class="k">in</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">waiting</span> <span class="o">=</span> <span class="n">phase</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span>
+            <span class="p">}</span><span class="o">.</span><span class="n">count</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Sleepers due at the same deadline wake in registration order, so tests that advance past several deadlines see a deterministic order. <code class="language-plaintext highlighter-rouge">sleeperCount</code> lets a test wait until the code under test has actually reached its sleep before advancing, which is the step most hand-rolled test clocks forget.</p>
+
+<h2 id="tool-4-wait-for-conditions-with-a-bound">Tool 4: wait for conditions, with a bound</h2>
+
+<p>Sometimes the test must wait for a background effect that no handle exposes, such as a request reaching the backend or a sleeper registering with the clock. Polling a <em>condition</em> with <code class="language-plaintext highlighter-rouge">Task.yield()</code> waits exactly as long as needed. A real-time bound turns a bug that would hang the test into a failure with a message:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Yields until `condition` holds. Returns false after `limit` of real time instead of hanging.</span>
+<span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">waitUntil</span><span class="p">(</span><span class="n">_</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">_</span> <span class="nv">condition</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">limit</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">await</span> <span class="nf">condition</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="nf">condition</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The limit is not a sleep: a passing test never waits for it. It only bounds how long a <em>failing</em> test takes to report. <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> lets the condition closure read main-actor state when the test runs on the main actor, as the <a href="/swift-isolated-nonisolated/">isolated and nonisolated article</a> explains.</p>
+
+<h2 id="the-code-under-test">The code under test</h2>
+
+<p>The model is the debounced search from the stale results article, rewritten to take its clock and backend as dependencies:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchViewModel</span><span class="o">&lt;</span><span class="kt">C</span><span class="p">:</span> <span class="kt">Clock</span><span class="o">&lt;</span><span class="kt">Duration</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">isSearching</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">generation</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">clock</span><span class="p">:</span> <span class="kt">C</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">backend</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">SearchBackend</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">quietPeriod</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">clock</span><span class="p">:</span> <span class="kt">C</span><span class="p">,</span> <span class="nv">backend</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">SearchBackend</span><span class="p">,</span> <span class="nv">quietPeriod</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">quietPeriod</span> <span class="o">=</span> <span class="n">quietPeriod</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">generation</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">requestGeneration</span> <span class="o">=</span> <span class="n">generation</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">quietPeriod</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="k">return</span>
+            <span class="p">}</span>
+            <span class="n">isSearching</span> <span class="o">=</span> <span class="kc">true</span>
+            <span class="k">defer</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="n">requestGeneration</span> <span class="o">==</span> <span class="n">generation</span> <span class="p">{</span> <span class="n">isSearching</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">requestGeneration</span> <span class="o">==</span> <span class="n">generation</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In production it is created with <code class="language-plaintext highlighter-rouge">ContinuousClock()</code>; in tests with <code class="language-plaintext highlighter-rouge">TestClock()</code>. Nothing else about it knows it is being tested.</p>
+
+<h2 id="test-debouncing-waits-for-the-quiet-period">Test: debouncing waits for the quiet period</h2>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Testing</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">@Test</span><span class="p">(</span><span class="o">.</span><span class="nf">timeLimit</span><span class="p">(</span><span class="o">.</span><span class="nf">minutes</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+<span class="kd">func</span> <span class="nf">debounceIssuesOneRequestAfterTheQuietPeriod</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">TestClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">backend</span> <span class="o">=</span> <span class="kt">GatedBackend</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">SearchViewModel</span><span class="p">(</span><span class="nv">clock</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">backend</span><span class="p">:</span> <span class="n">backend</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="p">[</span><span class="s">"s"</span><span class="p">,</span> <span class="s">"sw"</span><span class="p">,</span> <span class="s">"swi"</span><span class="p">,</span> <span class="s">"swif"</span><span class="p">,</span> <span class="s">"swift"</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">model</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="cp">#expect(await waitUntil { clock.sleeperCount == 1 }, "Only the latest keystroke is still waiting")</span>
+
+    <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">79</span><span class="p">))</span>
+    <span class="cp">#expect(backend.requests.isEmpty, "Nothing is sent before the quiet period ends")</span>
+
+    <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="cp">#expect(await waitUntil { backend.requests == ["swift"] })</span>
+    <span class="cp">#expect(model.isSearching)</span>
+
+    <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="nf">release</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">model</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+    <span class="cp">#expect(model.results == ["swift result"])</span>
+    <span class="cp">#expect(!model.isSearching)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This test runs in about a millisecond and checks the debounce to the millisecond: nothing at 79 ms, exactly one request at 80 ms, for the last query only. A sleep-based version would need real 80 ms waits, and could not distinguish 79 from 80 at all.</p>
+
+<h2 id="test-every-arrival-order-gives-the-same-answer">Test: every arrival order gives the same answer</h2>
+
+<p>The stale-result bug depends on the order responses arrive. With gates, the test enumerates the orders instead of hoping to hit the bad one, and Swift Testing’s parameterized tests run each as a separate case:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">@Test</span><span class="p">(</span><span class="nv">arguments</span><span class="p">:</span> <span class="p">[[</span><span class="s">"first"</span><span class="p">,</span> <span class="s">"second"</span><span class="p">],</span> <span class="p">[</span><span class="s">"second"</span><span class="p">,</span> <span class="s">"first"</span><span class="p">]])</span>
+<span class="kd">func</span> <span class="nf">newestQueryWinsInEveryArrivalOrder</span><span class="p">(</span><span class="nv">releaseOrder</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">TestClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">backend</span> <span class="o">=</span> <span class="kt">GatedBackend</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">SearchViewModel</span><span class="p">(</span><span class="nv">clock</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">backend</span><span class="p">:</span> <span class="n">backend</span><span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"first"</span><span class="p">)</span>
+    <span class="cp">#expect(await waitUntil { clock.sleeperCount == 1 })</span>
+    <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span>
+    <span class="cp">#expect(await waitUntil { backend.requests == ["first"] })</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"second"</span><span class="p">)</span>
+    <span class="cp">#expect(await waitUntil { clock.sleeperCount == 1 })</span>
+    <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span>
+    <span class="cp">#expect(await waitUntil { backend.requests == ["first", "second"] })</span>
+
+    <span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">releaseOrder</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="nf">release</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="n">model</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+    <span class="cp">#expect(await waitUntil { !model.isSearching })</span>
+    <span class="cp">#expect(model.results == ["second result"], "Released in order \(releaseOrder)")</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Both requests are in flight at the same time, a situation the debounce normally prevents and the test creates deliberately. Each case then releases them in a different order. The generation check makes the newest query win in both. Removing the check, which is the kind of “cleanup” a refactor might do, makes the <code class="language-plaintext highlighter-rouge">["second", "first"]</code> case fail deterministically on every run.</p>
+
+<p>For two operations there are two orders. For \(n\) independent completions there are \(n!\), which grows too fast to enumerate beyond four or five. At that point, combine targeted cases for the orders you reason are dangerous with seeded random stress runs, sized with the formula from the <a href="/swift-continuation-ownership/">continuation ownership article</a>.</p>
+
+<h2 id="test-events-delivered-through-callbacks">Test: events delivered through callbacks</h2>
+
+<p>Some behavior is observable only through a callback: a delegate method, a closure property, a notification. Swift Testing’s <code class="language-plaintext highlighter-rouge">confirmation</code> turns “this callback must be called exactly N times” into an assertion, without sleeping:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@Test</span>
+<span class="kd">func</span> <span class="nf">backendRecordsEveryRequestExactlyOnce</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">backend</span> <span class="o">=</span> <span class="kt">GatedBackend</span><span class="p">()</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">confirmation</span><span class="p">(</span><span class="s">"each search returns"</span><span class="p">,</span> <span class="nv">expectedCount</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span> <span class="n">searchReturned</span> <span class="k">in</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+            <span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="p">[</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">]</span> <span class="p">{</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+                    <span class="nf">searchReturned</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="p">[</span><span class="s">"c"</span><span class="p">,</span> <span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">]</span> <span class="p">{</span>
+                <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="nf">release</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">waitForAll</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="cp">#expect(backend.requests.sorted() == ["a", "b", "c"])</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">confirmation</code> fails the test if the closure it provides is called fewer or more times than <code class="language-plaintext highlighter-rouge">expectedCount</code> by the time its body returns. The body must therefore <em>wait for</em> the events itself, here by awaiting the task group. A confirmation is a count, not a timer.</p>
+
+<h2 id="running-concurrent-tests-reliably">Running concurrent tests reliably</h2>
+
+<p>A few practices keep concurrent suites deterministic as they grow:</p>
+
+<ul>
+  <li><strong>Inject every source of nondeterminism.</strong> Clocks, backends, random generators, and UUID sources. If a test cannot control it, the test cannot pin it down.</li>
+  <li><strong>Prefer <code class="language-plaintext highlighter-rouge">waitUntil</code> on a condition over <code class="language-plaintext highlighter-rouge">Task.sleep</code> for a duration.</strong> A bounded condition wait never makes a passing test slower.</li>
+  <li><strong>Bound every test in time.</strong> <code class="language-plaintext highlighter-rouge">.timeLimit(.minutes(1))</code> turns a hang, usually a leaked continuation or a gate nobody opened, into a failure.</li>
+  <li><strong>Run tests in parallel, and on purpose.</strong> Swift Testing runs tests in parallel by default, which is a free stress test for shared state between tests. Use <code class="language-plaintext highlighter-rouge">.serialized</code> only for suites that share an external resource, and treat a test that fails only in parallel as a bug report about hidden shared state.</li>
+  <li><strong>Repeat suspicious tests.</strong> A test that has ever flaked should be run in a loop locally, a few hundred times, before and after the fix.</li>
+  <li><strong>Run under Thread Sanitizer periodically.</strong> Controlled interleavings find logic races; <a href="/swift-thread-sanitizer/">Thread Sanitizer</a> finds memory races in code that escapes Swift’s static checks.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Sleeping tests trade speed for reliability and get neither: a 0.1% flake rate needs about \(6.9\times\) the mean duration, and suites multiply flake rates.</li>
+  <li>Await completion directly through handles such as <code class="language-plaintext highlighter-rouge">settle()</code>.</li>
+  <li>Hold operations at chosen suspension points with gates injected into fake dependencies.</li>
+  <li>Make time a dependency with <code class="language-plaintext highlighter-rouge">Clock</code>, and drive it in tests with a manual clock that handles cancellation and reports its sleepers.</li>
+  <li>Wait for conditions with a bounded yield loop rather than fixed sleeps.</li>
+  <li>Enumerate dangerous orderings with parameterized tests; use seeded stress runs when orderings explode combinatorially.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">confirmation</code> for callback counts and <code class="language-plaintext highlighter-rouge">.timeLimit</code> to turn hangs into failures.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add retry with exponential backoff to <code class="language-plaintext highlighter-rouge">SearchViewModel</code>: on failure, wait 100 ms, then 200 ms, then 400 ms, before giving up. Write Swift Testing tests that use <code class="language-plaintext highlighter-rouge">TestClock</code> to verify the exact retry schedule, that a new query during a backoff wait cancels the pending retry, and that a success on the second attempt stops further retries. None of the tests should take more than a few milliseconds of real time.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/testing">Swift Testing</a> documentation, including <code class="language-plaintext highlighter-rouge">confirmation</code> and traits.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0329-clock-instant-duration.md">SE-0329: Clock, Instant, and Duration</a> and <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0374-clock-sleep-for.md">SE-0374: Add sleep(for:) to Clock</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2024/10179/">Meet Swift Testing</a> and <a href="https://developer.apple.com/videos/play/wwdc2024/10195/">Go further with Swift Testing</a>, WWDC24.</li>
+  <li><a href="/swift-testing-asynchronous-code/">Testing Asynchronous Swift Code</a>, the XCTest-based companion article.</li>
+</ul>
+
+<p>Previous: <a href="/swift-rejecting-stale-results/">Rejecting Stale Results After Request Replacement</a>. Next: <a href="/swift-deadlocks-blocking-waits/">Avoiding Deadlocks and Blocking Waits</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-testing-controlled-interleavings/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Testing+Concurrent+Swift+Code+with+Controlled+Interleavings%20http%3A%2F%2Flocalhost%3A4000%2Fswift-testing-controlled-interleavings%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-testing-controlled-interleavings/&title=Testing+Concurrent+Swift+Code+with+Controlled+Interleavings%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-testing-controlled-interleavings/&title=Testing+Concurrent+Swift+Code+with+Controlled+Interleavings%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-testing-controlled-interleavings/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Testing Concurrent Swift Code with Controlled Interleavings%20%7C%20Swift By Deya&body=http://localhost:4000/swift-testing-controlled-interleavings/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Swift+Testing">Swift Testing</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Avoiding Deadlocks and Blocking Waits in Swift Concurrency" href="/swift-deadlocks-blocking-waits/"> <p>Previous post</p> Avoiding Deadlocks and Blocking Waits in Swift Concurrency </a> </div> <div id="next-post"> <a alt="Rejecting Stale Results After Request Replacement in Swift" href="/swift-rejecting-stale-results/"> <p>Next post</p> Rejecting Stale Results After Request Replacement in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

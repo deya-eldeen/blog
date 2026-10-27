@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Structured Concurrency and Child-Task Lifetimes in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Structured Concurrency and Child-Task Lifetimes in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Structured programming made control flow follow the shape of the source code: a block is entered at the top and left at the bottom, and a function call returns to the line that made it. Structured concurrency applies the same rule to concurrent work. A child task begins inside a scope and is guaranteed to have finished by the time that scope ends. That one rule produces a tree of tasks with properties you can rely on: when a function returns, none of the work it started is still running; cancelling a parent reaches every descendant; an error in one branch reaches the parent and stops the siblings; context such as priority and task-local values flows down automatically. This article demonstrates each property with a running program, and shows where the guarantees end." /> <meta property="og:description" content="Structured programming made control flow follow the shape of the source code: a block is entered at the top and left at the bottom, and a function call returns to the line that made it. Structured concurrency applies the same rule to concurrent work. A child task begins inside a scope and is guaranteed to have finished by the time that scope ends. That one rule produces a tree of tasks with properties you can rely on: when a function returns, none of the work it started is still running; cancelling a parent reaches every descendant; an error in one branch reaches the parent and stops the siblings; context such as priority and task-local values flows down automatically. This article demonstrates each property with a running program, and shows where the guarantees end." /> <link rel="canonical" href="http://localhost:4000/swift-structured-concurrency/" /> <meta property="og:url" content="http://localhost:4000/swift-structured-concurrency/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-16T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Structured Concurrency and Child-Task Lifetimes in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-16T00:00:00+03:00","datePublished":"2026-06-16T00:00:00+03:00","description":"Structured programming made control flow follow the shape of the source code: a block is entered at the top and left at the bottom, and a function call returns to the line that made it. Structured concurrency applies the same rule to concurrent work. A child task begins inside a scope and is guaranteed to have finished by the time that scope ends. That one rule produces a tree of tasks with properties you can rely on: when a function returns, none of the work it started is still running; cancelling a parent reaches every descendant; an error in one branch reaches the parent and stops the siblings; context such as priority and task-local values flows down automatically. This article demonstrates each property with a running program, and shows where the guarantees end.","headline":"Structured Concurrency and Child-Task Lifetimes in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-structured-concurrency/"},"url":"http://localhost:4000/swift-structured-concurrency/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Structured Concurrency and Child-Task Lifetimes in Swift"> <meta name="twitter:description" content="Structured programming made control flow follow the shape of the source code: a block is entered at the top and left at the bottom, and a function call retur..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Structured Concurrency and Child-Task Lifetimes in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Structured Concurrency and Child-Task Lifetimes in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-16T00:00:00+03:00">June 16, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Structured programming made control flow follow the shape of the source code: a block is entered at the top and left at the bottom, and a function call returns to the line that made it. Structured concurrency applies the same rule to concurrent work. A child task begins inside a scope and is guaranteed to have finished by the time that scope ends.</p>
+
+<p>That one rule produces a tree of tasks with properties you can rely on: when a function returns, none of the work it started is still running; cancelling a parent reaches every descendant; an error in one branch reaches the parent and stops the siblings; context such as priority and task-local values flows down automatically. This article demonstrates each property with a running program, and shows where the guarantees end.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="the-rule-and-why-it-matters">The rule, and why it matters</h2>
+
+<p>Swift’s structured concurrency (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304</a>) has two ways to create child tasks: <code class="language-plaintext highlighter-rouge">async let</code> bindings and task groups. Both obey the same constraint: <strong>a child task cannot outlive the scope that created it.</strong> At the end of the scope, any child that has not completed is cancelled, then awaited.</p>
+
+<p>The argument for this rule is the same one Edsger Dijkstra made against <code class="language-plaintext highlighter-rouge">goto</code>, applied by Nathaniel J. Smith to concurrency in <a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/"><em>Notes on structured concurrency</em></a>. If a function can start work that keeps running after it returns, then calling the function no longer tells you when its effects are complete. You cannot reason locally about resource lifetimes, error handling, or cancellation, because some of the function’s behavior escapes into the future.</p>
+
+<p>With structured concurrency, the function signature tells the whole story again: when <code class="language-plaintext highlighter-rouge">importLibrary()</code> returns, every task it started has finished.</p>
+
+<pre><code class="language-mermaid">flowchart TB
+    accTitle: Structured child tasks form a tree whose lifetimes nest inside their parents
+    R["Root task: importLibrary()"]
+    R --&gt; A["async let photos"]
+    R --&gt; G["Task group: videos"]
+    A --&gt; A1["photo 0"]
+    A --&gt; A2["photo 1"]
+    A --&gt; A3["photo 2"]
+    G --&gt; G1["video 0"]
+    G --&gt; G2["video 1"]
+    classDef scope fill:#eef6ff,stroke:#4a7ab8
+    class R,A,G scope
+</code></pre>
+
+<p>Cancellation travels down the edges of this tree. Errors and results travel up. Priority and task-local values are copied down at creation. A task created with <code class="language-plaintext highlighter-rouge">Task { }</code> or <code class="language-plaintext highlighter-rouge">Task.detached { }</code> starts a <em>new</em> tree and is not connected to these edges at all.</p>
+
+<h2 id="a-timeline-to-observe-lifetimes">A timeline to observe lifetimes</h2>
+
+<p>To check lifetime claims, each task records named events against a shared clock:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Records named events and when they happened, safely from any task.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Timeline</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">Event</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+        <span class="k">let</span> <span class="nv">offset</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">origin</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Event</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">mark</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">offset</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Event</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="nv">offset</span><span class="p">:</span> <span class="n">offset</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">offset</span><span class="p">(</span><span class="n">of</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">events</span> <span class="k">in</span> <span class="n">events</span><span class="o">.</span><span class="n">first</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span> <span class="p">}?</span><span class="o">.</span><span class="n">offset</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">names</span><span class="p">(</span><span class="n">withPrefix</span> <span class="nv">prefix</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">events</span> <span class="k">in</span> <span class="n">events</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="k">prefix</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now a small importer that uses both kinds of child task. Photos are imported by an <code class="language-plaintext highlighter-rouge">async let</code> that itself runs a task group; videos by a second task group:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">importItems</span><span class="p">(</span><span class="n">_</span> <span class="nv">kind</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="k">each</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">kind</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s"> start"</span><span class="p">)</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">delay</span> <span class="o">*</span> <span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">kind</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s"> end"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">waitForAll</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">count</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">importLibrary</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"parent start"</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"parent end"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">photos</span> <span class="o">=</span> <span class="nf">importItems</span><span class="p">(</span><span class="s">"photo"</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">each</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">videos</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">importItems</span><span class="p">(</span><span class="s">"video"</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">each</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">photos</span> <span class="o">+</span> <span class="n">videos</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">importTimeline</span> <span class="o">=</span> <span class="kt">Timeline</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">imported</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">importLibrary</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="n">importTimeline</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">imported</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">parentEnd</span> <span class="o">=</span> <span class="n">importTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">"parent end"</span><span class="p">)</span><span class="o">!</span>
+<span class="k">for</span> <span class="n">name</span> <span class="k">in</span> <span class="n">importTimeline</span><span class="o">.</span><span class="nf">names</span><span class="p">(</span><span class="nv">withPrefix</span><span class="p">:</span> <span class="s">"photo"</span><span class="p">)</span> <span class="o">+</span> <span class="n">importTimeline</span><span class="o">.</span><span class="nf">names</span><span class="p">(</span><span class="nv">withPrefix</span><span class="p">:</span> <span class="s">"video"</span><span class="p">)</span> <span class="k">where</span> <span class="n">name</span><span class="o">.</span><span class="nf">hasSuffix</span><span class="p">(</span><span class="s">"end"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">importTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span><span class="o">!</span> <span class="o">&lt;=</span> <span class="n">parentEnd</span><span class="p">,</span> <span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s"> finished inside its parent's lifetime"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Every child’s end event comes before the parent’s <code class="language-plaintext highlighter-rouge">defer</code> runs. That is not a coincidence of timing: <code class="language-plaintext highlighter-rouge">withThrowingTaskGroup</code> cannot return until its children finish, and the <code class="language-plaintext highlighter-rouge">async let</code> is awaited before the function returns. If the function had forgotten to read <code class="language-plaintext highlighter-rouge">photos</code>, scope exit would cancel and await it anyway.</p>
+
+<p>This property is what lets you write <code class="language-plaintext highlighter-rouge">defer</code> cleanup in an <code class="language-plaintext highlighter-rouge">async</code> function with confidence. When the <code class="language-plaintext highlighter-rouge">defer</code> runs, no structured child is still touching the resources it is about to release.</p>
+
+<h2 id="cancellation-flows-down-the-whole-tree">Cancellation flows down the whole tree</h2>
+
+<p>Cancelling a task sets a flag on it and on every structured descendant, recursively. Each task then notices the flag in its own way: <code class="language-plaintext highlighter-rouge">Task.sleep</code> throws <code class="language-plaintext highlighter-rouge">CancellationError</code>, <code class="language-plaintext highlighter-rouge">Task.checkCancellation()</code> throws, <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> becomes <code class="language-plaintext highlighter-rouge">true</code>.</p>
+
+<p>The tree below has a root, two branches created by a task group, and two leaves per branch created by <code class="language-plaintext highlighter-rouge">async let</code>. Each leaf would sleep for five seconds if left alone.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">leaf</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s"> finished"</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s"> cancelled"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">branchyWork</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">branch</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">async</span> <span class="k">let</span> <span class="nv">first</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="nf">leaf</span><span class="p">(</span><span class="s">"leaf </span><span class="se">\(</span><span class="n">branch</span><span class="se">)</span><span class="s">a"</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+                <span class="k">async</span> <span class="k">let</span> <span class="nv">second</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="nf">leaf</span><span class="p">(</span><span class="s">"leaf </span><span class="se">\(</span><span class="n">branch</span><span class="se">)</span><span class="s">b"</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="nf">await</span> <span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cancelTimeline</span> <span class="o">=</span> <span class="kt">Timeline</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">root</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">branchyWork</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="n">cancelTimeline</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="n">root</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">root</span><span class="o">.</span><span class="n">value</span>
+
+<span class="k">let</span> <span class="nv">leaves</span> <span class="o">=</span> <span class="n">cancelTimeline</span><span class="o">.</span><span class="nf">names</span><span class="p">(</span><span class="nv">withPrefix</span><span class="p">:</span> <span class="s">"leaf"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaves</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaves</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasSuffix</span><span class="p">(</span><span class="s">"cancelled"</span><span class="p">)</span> <span class="p">},</span> <span class="s">"Cancelling the root reached every grandchild"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cancelTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">leaves</span><span class="o">.</span><span class="n">last</span><span class="o">!</span><span class="p">)</span><span class="o">!</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>One call to <code class="language-plaintext highlighter-rouge">root.cancel()</code> reached four grandchildren through two levels of structure, and <code class="language-plaintext highlighter-rouge">await root.value</code> returned in about 50 ms instead of five seconds. No branch needed a reference to the leaves, and no leaf needed a reference to the root.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Cancelling the root marks every structured descendant as cancelled
+    participant Caller
+    participant Root
+    participant Branch as Branch 0
+    participant Leaf as Leaf 0a
+    Caller-&gt;&gt;Root: cancel()
+    Root-&gt;&gt;Branch: mark cancelled
+    Branch-&gt;&gt;Leaf: mark cancelled
+    Leaf--&gt;&gt;Leaf: Task.sleep throws CancellationError
+    Leaf--&gt;&gt;Branch: returns
+    Branch--&gt;&gt;Root: returns after both leaves
+    Root--&gt;&gt;Caller: value available
+</code></pre>
+
+<p>The time the parent needs to finish after cancellation is governed by its slowest descendant. If \(r_v\) is the time task \(v\) itself takes to respond to cancellation, then the time for a subtree rooted at \(v\) to drain is</p>
+
+\[R(v) = \max\!\Big(r_v,\; \max_{c \,\in\, \text{children}(v)} R(c)\Big).\]
+
+<p>One leaf that never checks for cancellation makes \(R(\text{root})\) equal to that leaf’s remaining run time. Structure propagates the <em>request</em> instantly; <em>responding</em> is each task’s responsibility. The <a href="/swift-cooperative-cancellation/">cooperative cancellation article</a> covers how to respond well.</p>
+
+<h2 id="unstructured-tasks-are-not-part-of-the-tree">Unstructured tasks are not part of the tree</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">Task { }</code> created inside a child task is not that child’s child. It is a new root. It may inherit priority, task-local values, and, depending on where it is written, actor isolation, but it does not inherit <em>cancellation</em>, and nobody waits for it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">HandleBox</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">store</span><span class="p">(</span><span class="n">_</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">handle</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">task</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">await</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="n">task</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">workThatLeaksATask</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">,</span> <span class="nv">box</span><span class="p">:</span> <span class="kt">HandleBox</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">child</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="nf">leaf</span><span class="p">(</span><span class="s">"structured child"</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+    <span class="n">box</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+            <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"unstructured finished"</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">timeline</span><span class="o">.</span><span class="nf">mark</span><span class="p">(</span><span class="s">"unstructured cancelled"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">})</span>
+    <span class="k">await</span> <span class="n">child</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">escapeTimeline</span> <span class="o">=</span> <span class="kt">Timeline</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">escapeBox</span> <span class="o">=</span> <span class="kt">HandleBox</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">escapingRoot</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">workThatLeaksATask</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="n">escapeTimeline</span><span class="p">,</span> <span class="nv">box</span><span class="p">:</span> <span class="n">escapeBox</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">escapingRoot</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">escapingRoot</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">escapeTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">"structured child cancelled"</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">escapeTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">"unstructured finished"</span><span class="p">)</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"Still running after its creator returned"</span><span class="p">)</span>
+
+<span class="k">await</span> <span class="n">escapeBox</span><span class="o">.</span><span class="nf">await</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">escapeTimeline</span><span class="o">.</span><span class="nf">offset</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">"unstructured finished"</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"Cancelling the creator did not cancel it"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>When <code class="language-plaintext highlighter-rouge">escapingRoot</code> finished, the structured child had been cancelled, as expected, but the unstructured task was still running. It completed normally 200 ms later, unaffected by the cancellation. The only reason the program could wait for it at all is that a handle was stored in <code class="language-plaintext highlighter-rouge">HandleBox</code>. Without that, the task would be unreachable: still running, uncancellable, and invisible to whoever called <code class="language-plaintext highlighter-rouge">workThatLeaksATask</code>.</p>
+
+<p>That is exactly the “work escapes into the future” problem structured concurrency exists to prevent. Unstructured tasks are sometimes necessary, but each one needs an explicit owner that can cancel it. The <a href="/swift-task-lifetime-ownership/">task lifetime article</a> is about choosing that owner.</p>
+
+<h2 id="context-flows-down-at-creation">Context flows down at creation</h2>
+
+<p>A child task copies its parent’s <strong>priority</strong> and <strong>task-local values</strong> when it is created. Task-local values are the structured replacement for thread-local storage: values bound for the duration of an operation and visible to everything that operation runs, however it is split across tasks and threads.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">RequestContext</span> <span class="p">{</span>
+    <span class="kd">@TaskLocal</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">requestID</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">currentRequestIDs</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">?]</span> <span class="p">{</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">fromAsyncLet</span> <span class="o">=</span> <span class="kt">RequestContext</span><span class="o">.</span><span class="n">requestID</span>
+    <span class="k">let</span> <span class="nv">fromGroup</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="kt">RequestContext</span><span class="o">.</span><span class="n">requestID</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span><span class="o">!</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">fromTask</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kt">RequestContext</span><span class="o">.</span><span class="n">requestID</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">let</span> <span class="nv">fromDetached</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span> <span class="kt">RequestContext</span><span class="o">.</span><span class="n">requestID</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="p">[</span><span class="k">await</span> <span class="n">fromAsyncLet</span><span class="p">,</span> <span class="n">fromGroup</span><span class="p">,</span> <span class="n">fromTask</span><span class="p">,</span> <span class="n">fromDetached</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">observedIDs</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">RequestContext</span><span class="o">.</span><span class="n">$requestID</span><span class="o">.</span><span class="nf">withValue</span><span class="p">(</span><span class="s">"req-42"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">currentRequestIDs</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">observedIDs</span> <span class="o">==</span> <span class="p">[</span><span class="s">"req-42"</span><span class="p">,</span> <span class="s">"req-42"</span><span class="p">,</span> <span class="s">"req-42"</span><span class="p">,</span> <span class="kc">nil</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">RequestContext</span><span class="o">.</span><span class="n">requestID</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"The binding ends with the withValue scope"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Both kinds of structured child see <code class="language-plaintext highlighter-rouge">req-42</code>. So does <code class="language-plaintext highlighter-rouge">Task { }</code>, which copies task-local values even though it is unstructured. <code class="language-plaintext highlighter-rouge">Task.detached</code> sees nothing: detaching means starting with an empty context. The binding itself is scoped. Outside <code class="language-plaintext highlighter-rouge">withValue</code>, the value is gone, which is another instance of the same structural idea.</p>
+
+<p>Task-local values are ideal for tracing identifiers, logging context, and test configuration. They are not a place for mutable state: the value is read-only to children, and rebinding it in a child affects only that child’s subtree.</p>
+
+<h2 id="errors-flow-up-and-cancel-siblings">Errors flow up and cancel siblings</h2>
+
+<p>When a child task in a throwing task group fails, the error reaches the parent when the parent consumes that child’s result with <code class="language-plaintext highlighter-rouge">next()</code> or <code class="language-plaintext highlighter-rouge">for try await</code>. If the error then leaves the group’s body, the group cancels the remaining children and waits for them before rethrowing.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ImportError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">corrupt</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">importWithOneCorruptFile</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+            <span class="k">throw</span> <span class="kt">ImportError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="s">"clip.mov"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">await</span> <span class="nf">leaf</span><span class="p">(</span><span class="s">"sibling </span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">timeline</span><span class="p">:</span> <span class="n">timeline</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">errorTimeline</span> <span class="o">=</span> <span class="kt">Timeline</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">importWithOneCorruptFile</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="n">errorTimeline</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The corrupt file must fail the import"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">ImportError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="k">let</span> <span class="nv">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">name</span> <span class="o">==</span> <span class="s">"clip.mov"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">siblings</span> <span class="o">=</span> <span class="n">errorTimeline</span><span class="o">.</span><span class="nf">names</span><span class="p">(</span><span class="nv">withPrefix</span><span class="p">:</span> <span class="s">"sibling"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">siblings</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="n">siblings</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasSuffix</span><span class="p">(</span><span class="s">"cancelled"</span><span class="p">)</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<p>The three healthy siblings would each have slept for five seconds. Instead, the failure cancelled them, and the function threw after about 20 ms.</p>
+
+<p>The way the body consumes results matters more than it looks. Replace <code class="language-plaintext highlighter-rouge">for try await _ in group {}</code> with <code class="language-plaintext highlighter-rouge">try await group.waitForAll()</code> and the behavior changes: on the test toolchain, <code class="language-plaintext highlighter-rouge">waitForAll()</code> on a throwing group waited for <em>every</em> child to finish and only then rethrew the first error. With one-second siblings, the failing version took 1.04 seconds and all three siblings ran to completion; the <code class="language-plaintext highlighter-rouge">for try await</code> version took 0.03 seconds and all three were cancelled. When a failure should stop the group, consume with <code class="language-plaintext highlighter-rouge">next()</code> or <code class="language-plaintext highlighter-rouge">for try await</code>, or call <code class="language-plaintext highlighter-rouge">group.cancelAll()</code> yourself.</p>
+
+<p>There is a second subtlety: the error propagates only <em>when the parent consumes it</em>. A throwing task group whose body never calls <code class="language-plaintext highlighter-rouge">next()</code> or <code class="language-plaintext highlighter-rouge">waitForAll()</code> reaches the end of its body and implicitly awaits the remaining children, discarding their results <em>and their errors</em>. A child’s failure that nobody reads is silently lost. The <a href="/swift-task-groups/">task groups article</a> demonstrates this and shows the discarding task group, which treats any child error as fatal.</p>
+
+<h2 id="what-structure-costs-and-what-it-does-not-cover">What structure costs, and what it does not cover</h2>
+
+<p>Structured concurrency is not free:</p>
+
+<ul>
+  <li><strong>Latency coupling.</strong> A parent cannot finish before its slowest child. This is the guarantee, and it is also a cost when one child is slow to respond to cancellation.</li>
+  <li><strong>Shape constraints.</strong> A child cannot be handed to another object to finish later. Work that must outlive a view, a request handler, or a function call does not fit and needs an unstructured task with an owner.</li>
+  <li><strong>Uniform result types in groups.</strong> All children of a task group return the same type, which pushes heterogeneous work toward enums or <code class="language-plaintext highlighter-rouge">async let</code>.</li>
+</ul>
+
+<p>And it does not cover everything:</p>
+
+<ul>
+  <li><strong>Effects already performed are not rolled back.</strong> Cancelling a child after it wrote to disk or sent a network request does not undo the write. Cancellation stops future work; compensating for past work is application logic.</li>
+  <li><strong>Unstructured tasks escape.</strong> As shown above, <code class="language-plaintext highlighter-rouge">Task { }</code> inside a structured child is not cancelled with it.</li>
+  <li><strong>Callback-based APIs are outside the tree.</strong> A continuation bridging a callback does not cancel the underlying operation unless you connect them with a cancellation handler, as the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a> shows.</li>
+</ul>
+
+<h2 id="structure-in-ui-code">Structure in UI code</h2>
+
+<p>SwiftUI’s <code class="language-plaintext highlighter-rouge">.task</code> modifier is the clearest example of structured lifetimes in app code. The task starts when the view appears and is cancelled when the view disappears. Any <code class="language-plaintext highlighter-rouge">async let</code> or task group inside it is part of that task’s tree, so leaving a screen cancels everything the screen started.</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">LibraryView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">count</span><span class="se">)</span><span class="s"> items"</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">task</span> <span class="p">{</span>
+                <span class="c1">// Cancelled automatically when the view goes away, along with every child task.</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="nf">importLibrary</span><span class="p">(</span><span class="nv">timeline</span><span class="p">:</span> <span class="kt">Timeline</span><span class="p">()))</span> <span class="p">??</span> <span class="mi">0</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Compare that with <code class="language-plaintext highlighter-rouge">onAppear { Task { ... } }</code>, which creates an unstructured task that keeps running after the view disappears unless something stores and cancels it. When a framework offers a structured entry point, prefer it.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Structured child tasks, <code class="language-plaintext highlighter-rouge">async let</code> and task groups, cannot outlive the scope that created them. When a function returns, its structured work is done.</li>
+  <li>Cancellation propagates to every structured descendant at once; the subtree drains in \(R(v) = \max(r_v, \max_c R(c))\).</li>
+  <li>Errors propagate upward when the parent consumes them, and an error leaving a group cancels the remaining siblings.</li>
+  <li>Priority and task-local values flow down at creation. <code class="language-plaintext highlighter-rouge">Task { }</code> copies them; <code class="language-plaintext highlighter-rouge">Task.detached</code> starts empty.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task { }</code> inside a child is a new root: not cancelled with the child and not awaited by it.</li>
+  <li>Prefer framework entry points that are structured, such as SwiftUI’s <code class="language-plaintext highlighter-rouge">.task</code>, over ad hoc unstructured tasks.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">func mirror(folders: [String]) async throws -&gt; Int</code> that copies each folder in a child task, and inside each folder copies files in grandchild tasks. Use <code class="language-plaintext highlighter-rouge">Timeline</code> to prove three properties: no file copy event is recorded after <code class="language-plaintext highlighter-rouge">mirror</code> returns, cancelling the caller’s task stops all copies within 100 ms, and a single failing file cancels the other files in the same folder but, if you choose so, not the other folders. Decide which of those failure policies the function should have, and implement it with the appropriate group type at each level.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0311-task-locals.md">SE-0311: Task-local values</a>.</li>
+  <li>Nathaniel J. Smith, <a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/"><em>Notes on structured concurrency, or: Go statement considered harmful</em></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10134/">Explore structured concurrency in Swift</a>, WWDC21.</li>
+</ul>
+
+<p>Previous: <a href="/swift-async-let/">Running Independent Work with <code class="language-plaintext highlighter-rouge">async let</code></a>. Next: <a href="/swift-task-lifetime-ownership/">Creating Tasks and Choosing Their Lifetime Owner</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-structured-concurrency/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Structured+Concurrency+and+Child-Task+Lifetimes+in+Swift%20http%3A%2F%2Flocalhost%3A4000%2Fswift-structured-concurrency%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-structured-concurrency/&title=Structured+Concurrency+and+Child-Task+Lifetimes+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-structured-concurrency/&title=Structured+Concurrency+and+Child-Task+Lifetimes+in+Swift%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-structured-concurrency/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Structured Concurrency and Child-Task Lifetimes in Swift%20%7C%20Swift By Deya&body=http://localhost:4000/swift-structured-concurrency/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Structured+Concurrency">Structured Concurrency</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Tasks">Tasks</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Creating Tasks and Choosing Their Lifetime Owner in Swift" href="/swift-task-lifetime-ownership/"> <p>Previous post</p> Creating Tasks and Choosing Their Lifetime Owner in Swift </a> </div> <div id="next-post"> <a alt="Running Independent Work with async let in Swift" href="/swift-async-let/"> <p>Next post</p> Running Independent Work with async let in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

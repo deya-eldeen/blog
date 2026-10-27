@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An actor guarantees that only one piece of its code runs at a time. It does not guarantee that a method runs from start to finish without interruption. When an actor method reaches an await that suspends, the actor is free to run other calls, including other calls to the same method, before the first one resumes. That property is called reentrancy. Reentrancy keeps actors from deadlocking, and it lets an actor stay responsive while one of its methods waits on the network. It also means that every await inside an actor method is a point where the actor’s state may change underneath the method. The compiler cannot catch the resulting bugs, because none of them is a data race. They are logic races: duplicate work, lost updates, broken invariants, and decisions made on stale facts. This article reproduces four of them deterministically and fixes each one." /> <meta property="og:description" content="An actor guarantees that only one piece of its code runs at a time. It does not guarantee that a method runs from start to finish without interruption. When an actor method reaches an await that suspends, the actor is free to run other calls, including other calls to the same method, before the first one resumes. That property is called reentrancy. Reentrancy keeps actors from deadlocking, and it lets an actor stay responsive while one of its methods waits on the network. It also means that every await inside an actor method is a point where the actor’s state may change underneath the method. The compiler cannot catch the resulting bugs, because none of them is a data race. They are logic races: duplicate work, lost updates, broken invariants, and decisions made on stale facts. This article reproduces four of them deterministically and fixes each one." /> <link rel="canonical" href="http://localhost:4000/swift-actor-reentrancy/" /> <meta property="og:url" content="http://localhost:4000/swift-actor-reentrancy/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-14T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-14T00:00:00+03:00","datePublished":"2026-07-14T00:00:00+03:00","description":"An actor guarantees that only one piece of its code runs at a time. It does not guarantee that a method runs from start to finish without interruption. When an actor method reaches an await that suspends, the actor is free to run other calls, including other calls to the same method, before the first one resumes. That property is called reentrancy. Reentrancy keeps actors from deadlocking, and it lets an actor stay responsive while one of its methods waits on the network. It also means that every await inside an actor method is a point where the actor’s state may change underneath the method. The compiler cannot catch the resulting bugs, because none of them is a data race. They are logic races: duplicate work, lost updates, broken invariants, and decisions made on stale facts. This article reproduces four of them deterministically and fixes each one.","headline":"Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-actor-reentrancy/"},"url":"http://localhost:4000/swift-actor-reentrancy/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points"> <meta name="twitter:description" content="An actor guarantees that only one piece of its code runs at a time. It does not guarantee that a method runs from start to finish without interruption. When ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-14T00:00:00+03:00">July 14, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An actor guarantees that only one piece of its code runs at a time. It does not guarantee that a method runs from start to finish without interruption. When an actor method reaches an <code class="language-plaintext highlighter-rouge">await</code> that suspends, the actor is free to run other calls, including other calls to the same method, before the first one resumes. That property is called <strong>reentrancy</strong>.</p>
+
+<p>Reentrancy keeps actors from deadlocking, and it lets an actor stay responsive while one of its methods waits on the network. It also means that every <code class="language-plaintext highlighter-rouge">await</code> inside an actor method is a point where the actor’s state may change underneath the method. The compiler cannot catch the resulting bugs, because none of them is a data race. They are logic races: duplicate work, lost updates, broken invariants, and decisions made on stale facts. This article reproduces four of them deterministically and fixes each one.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="why-actors-are-reentrant">Why actors are reentrant</h2>
+
+<p>The alternative would be a non-reentrant actor that stays locked while one of its methods is suspended. <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0306-actors.md">SE-0306</a> considered and rejected that design, for two reasons. First, deadlock: if actor A awaits actor B while B awaits A, two non-reentrant actors would wait for each other forever. Second, responsiveness: an actor waiting on a two-second network request could serve nobody else for two seconds.</p>
+
+<p>Reentrancy trades those problems for another one. The actor is free between jobs, so the code <em>after</em> an <code class="language-plaintext highlighter-rouge">await</code> must not assume that anything it read <em>before</em> the <code class="language-plaintext highlighter-rouge">await</code> is still true.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A second call runs on the actor while the first call is suspended
+    participant A as Call A
+    participant Act as Actor state
+    participant B as Call B
+    A-&gt;&gt;Act: job 1: read state, decide
+    A--&gt;&gt;A: await network, actor released
+    B-&gt;&gt;Act: job: read the same state, decide the same way
+    B--&gt;&gt;B: await network
+    A-&gt;&gt;Act: job 2: act on a decision that may now be stale
+    B-&gt;&gt;Act: act again on its own stale decision
+</code></pre>
+
+<h2 id="a-tool-for-deterministic-interleavings">A tool for deterministic interleavings</h2>
+
+<p>Reentrancy bugs depend on timing, which makes them easy to miss in tests that “usually” pass. To reproduce them every time, the examples use a gate: an operation that suspends until the test opens it. That lets a test hold an actor method <em>at</em> its <code class="language-plaintext highlighter-rouge">await</code> while other calls run.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Suspends callers until opened. Lets a test hold an operation at its suspension point.</span>
+<span class="kd">actor</span> <span class="kt">Gate</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">isOpen</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waiters</span><span class="p">:</span> <span class="p">[</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">wait</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">isOpen</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">waiters</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">open</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">isOpen</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">for</span> <span class="n">waiter</span> <span class="k">in</span> <span class="n">waiters</span> <span class="p">{</span> <span class="n">waiter</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">waiters</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Counts events from any task, and lets a test wait until a count is reached.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Tally</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">count</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">increment</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">count</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">count</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">waitUntil</span><span class="p">(</span><span class="n">atLeast</span> <span class="nv">target</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">while</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="n">target</span> <span class="p">{</span>
+            <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Tally.waitUntil</code> polls with <code class="language-plaintext highlighter-rouge">Task.yield()</code> instead of sleeping, so the test proceeds as soon as the condition holds and never depends on a guessed duration. The <a href="/swift-testing-controlled-interleavings/">controlled interleavings article</a> develops these tools further.</p>
+
+<h2 id="bug-1-duplicate-work-in-a-cache">Bug 1: duplicate work in a cache</h2>
+
+<p>The most common reentrancy bug is a cache that checks, then loads, then stores:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Image</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">NaiveImageCache</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">images</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Image</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">load</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">load</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">load</span> <span class="o">=</span> <span class="n">load</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">image</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">cached</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">cached</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">image</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">load</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>   <span class="c1">// Suspension point: other calls run here.</span>
+        <span class="n">images</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">image</span>
+        <span class="k">return</span> <span class="n">image</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Each call checks the dictionary and finds nothing, because no load has finished. Each call then starts its own load. With a gate, the duplication is exact:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">loadGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">naiveLoads</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">naiveCache</span> <span class="o">=</span> <span class="kt">NaiveImageCache</span> <span class="p">{</span> <span class="n">key</span> <span class="k">in</span>
+    <span class="n">naiveLoads</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">loadGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kt">Image</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Image</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">naiveCache</span><span class="o">.</span><span class="nf">image</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"avatar"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="n">naiveLoads</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span>       <span class="c1">// Every caller is now suspended inside a load.</span>
+    <span class="k">await</span> <span class="n">loadGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">image</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+        <span class="nf">assert</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s">"avatar"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveLoads</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">5</span><span class="p">,</span> <span class="s">"Five callers, five loads of the same image"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The cost scales with traffic. If requests for a key arrive at rate \(\lambda\) and a load takes time \(L\), then by Little’s law about \(\lambda L\) requests arrive while the first load is in flight, and each starts its own load. A list of 30 rows showing the same avatar, scrolled into view at once, can start 30 identical downloads.</p>
+
+<h3 id="fix-cache-the-in-flight-work-not-just-the-result">Fix: cache the in-flight work, not just the result</h3>
+
+<p>Store the <em>task</em> performing the load, so later callers join it instead of starting another:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: A cache entry is absent, loading with a shared task, or ready
+    [*] --&gt; Absent
+    Absent --&gt; Loading: first caller creates the load task
+    Loading --&gt; Loading: later callers await the same task
+    Loading --&gt; Ready: task succeeds
+    Loading --&gt; Absent: task fails, entry removed
+    Ready --&gt; Absent: invalidated
+</code></pre>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">ImageCache</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">Entry</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nf">loading</span><span class="p">(</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Image</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">ready</span><span class="p">(</span><span class="kt">Image</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">entries</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Entry</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">load</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">load</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">load</span> <span class="o">=</span> <span class="n">load</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">image</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Image</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">ready</span><span class="p">(</span><span class="k">let</span> <span class="nv">image</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">image</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="k">let</span> <span class="nv">task</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="nv">nil</span><span class="p">:</span>
+            <span class="k">let</span> <span class="nv">load</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">load</span>
+            <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">load</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="p">}</span>
+            <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">image</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="k">let</span> <span class="nv">current</span><span class="p">)</span> <span class="o">=</span> <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">current</span> <span class="o">==</span> <span class="n">task</span> <span class="p">{</span>
+                    <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="nf">ready</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="n">image</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="k">let</span> <span class="nv">current</span><span class="p">)</span> <span class="o">=</span> <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">current</span> <span class="o">==</span> <span class="n">task</span> <span class="p">{</span>
+                    <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                <span class="p">}</span>
+                <span class="k">throw</span> <span class="n">error</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">invalidate</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The critical property is that the check (<code class="language-plaintext highlighter-rouge">switch entries[key]</code>) and the registration (<code class="language-plaintext highlighter-rouge">entries[key] = .loading(task)</code>) happen in one job, with no <code class="language-plaintext highlighter-rouge">await</code> between them. Any later call sees the <code class="language-plaintext highlighter-rouge">.loading</code> entry and joins.</p>
+
+<p>The identity checks after the <code class="language-plaintext highlighter-rouge">await</code> handle a second reentrancy hazard. While the load was suspended, someone may have called <code class="language-plaintext highlighter-rouge">invalidate(key)</code>, or invalidated and started a fresh load. Writing <code class="language-plaintext highlighter-rouge">.ready</code> unconditionally would resurrect an entry that was deliberately removed. <code class="language-plaintext highlighter-rouge">Task</code> is <code class="language-plaintext highlighter-rouge">Hashable</code>, so comparing the stored task with the one this call created tells the method whether its result is still wanted.</p>
+
+<p>The load closure is copied into a local before creating the task. A <code class="language-plaintext highlighter-rouge">Task { }</code> inside an actor method that captures <code class="language-plaintext highlighter-rouge">self</code> is isolated to the actor; one that does not capture <code class="language-plaintext highlighter-rouge">self</code> is not. The load itself does not need the actor, so not capturing <code class="language-plaintext highlighter-rouge">self</code> keeps it off the actor’s executor.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">sharedGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">sharedLoads</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">cache</span> <span class="o">=</span> <span class="kt">ImageCache</span> <span class="p">{</span> <span class="n">key</span> <span class="k">in</span>
+    <span class="n">sharedLoads</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">sharedGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kt">Image</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Image</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="nf">image</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"avatar"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="n">sharedLoads</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span> <span class="p">}</span>       <span class="c1">// Give the other four callers time to join.</span>
+    <span class="k">await</span> <span class="n">sharedGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">image</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+        <span class="nf">assert</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s">"avatar"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sharedLoads</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"Five callers shared one load"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">cachedAgain</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="nf">image</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"avatar"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cachedAgain</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s">"avatar"</span> <span class="o">&amp;&amp;</span> <span class="n">sharedLoads</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"Later calls hit the ready entry"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Sharing has a policy consequence for cancellation: the load is an unstructured task owned by the cache, so cancelling one caller does not cancel the load the others are waiting for. That is usually what you want; the <a href="/swift-task-lifetime-ownership/">task lifetime article</a> discusses how to cancel a shared load when its last waiter leaves.</p>
+
+<h2 id="bug-2-a-check-that-is-stale-by-the-time-you-act">Bug 2: a check that is stale by the time you act</h2>
+
+<p>A guard condition checked before an <code class="language-plaintext highlighter-rouge">await</code> may be false after it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">PaymentError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">insufficientFunds</span>
+    <span class="k">case</span> <span class="n">declined</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">Wallet</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">payCheckingFirst</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">balance</span> <span class="o">&gt;=</span> <span class="n">amount</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PaymentError</span><span class="o">.</span><span class="n">insufficientFunds</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">await</span> <span class="nf">authorize</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PaymentError</span><span class="o">.</span><span class="n">declined</span> <span class="p">}</span>   <span class="c1">// Suspension point.</span>
+        <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">authorizationGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">authorizations</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">slowAuthorize</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">authorizations</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">authorizationGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">wallet</span> <span class="o">=</span> <span class="kt">Wallet</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">firstPayment</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="n">wallet</span><span class="o">.</span><span class="nf">payCheckingFirst</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="n">slowAuthorize</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">secondPayment</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="n">wallet</span><span class="o">.</span><span class="nf">payCheckingFirst</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="n">slowAuthorize</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">authorizations</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">authorizationGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">await</span> <span class="p">(</span><span class="n">firstPayment</span><span class="p">,</span> <span class="n">secondPayment</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">overdrawn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">balance</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">overdrawn</span> <span class="o">==</span> <span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="s">"Both payments passed the balance check before either deducted"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Both calls passed the balance check, both suspended in <code class="language-plaintext highlighter-rouge">authorize</code>, and both deducted. The actor serialized every access to <code class="language-plaintext highlighter-rouge">balance</code>; the bug is that the <em>decision</em> and the <em>action</em> happened in different jobs.</p>
+
+<h3 id="fix-reserve-before-suspending-or-re-check-after">Fix: reserve before suspending, or re-check after</h3>
+
+<p>There are two correct shapes. <strong>Reserve</strong> makes the state change before suspending and rolls it back on failure:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Wallet</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">payReservingFirst</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">balance</span> <span class="o">&gt;=</span> <span class="n">amount</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PaymentError</span><span class="o">.</span><span class="n">insufficientFunds</span> <span class="p">}</span>
+        <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span>                       <span class="c1">// Same job as the check: atomic.</span>
+        <span class="k">guard</span> <span class="k">await</span> <span class="nf">authorize</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">balance</span> <span class="o">+=</span> <span class="n">amount</span>                   <span class="c1">// Roll back the reservation.</span>
+            <span class="k">throw</span> <span class="kt">PaymentError</span><span class="o">.</span><span class="n">declined</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">reservingGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">reservingAuthorizations</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">reservingWallet</span> <span class="o">=</span> <span class="kt">Wallet</span><span class="p">(</span><span class="nv">balance</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">gatedAuthorize</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">reservingAuthorizations</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">reservingGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">reservedFirst</span> <span class="o">=</span> <span class="kt">Result</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">reservingWallet</span><span class="o">.</span><span class="nf">payReservingFirst</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="n">gatedAuthorize</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">reservedSecond</span> <span class="o">=</span> <span class="kt">Result</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">reservingWallet</span><span class="o">.</span><span class="nf">payReservingFirst</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="nv">authorize</span><span class="p">:</span> <span class="n">gatedAuthorize</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">reservingAuthorizations</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">reservingGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">outcomes</span> <span class="o">=</span> <span class="k">await</span> <span class="p">[</span><span class="n">reservedFirst</span><span class="p">,</span> <span class="n">reservedSecond</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">outcomes</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">get</span><span class="p">())</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"Exactly one payment succeeded"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">reservedBalance</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reservingWallet</span><span class="o">.</span><span class="n">balance</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">reservedBalance</span> <span class="o">==</span> <span class="mi">20</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Re-check</strong> keeps the original order but validates again after the <code class="language-plaintext highlighter-rouge">await</code>, in the same job as the action: <code class="language-plaintext highlighter-rouge">guard balance &gt;= amount else { throw ... }; balance -= amount</code>. Re-checking is simpler when the suspended work has no side effects to undo; reserving is necessary when the work, such as charging a card, must only happen if the money is definitely available.</p>
+
+<p>Either way, the rule is the same: <strong>the condition and the mutation it justifies must be in the same synchronous stretch of code.</strong></p>
+
+<h2 id="bug-3-lost-updates-from-a-stale-snapshot">Bug 3: lost updates from a stale snapshot</h2>
+
+<p>A method that reads state into a local, suspends, then writes a value computed from that local, overwrites anything other calls did in between:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">Feed</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">posts</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">publish</span><span class="p">(</span><span class="n">_</span> <span class="nv">post</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">posts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">post</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">refreshLosingUpdates</span><span class="p">(</span><span class="nv">fetch</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">current</span> <span class="o">=</span> <span class="n">posts</span>
+        <span class="k">let</span> <span class="nv">fetched</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">fetch</span><span class="p">()</span>             <span class="c1">// Other calls may append here.</span>
+        <span class="n">posts</span> <span class="o">=</span> <span class="n">current</span> <span class="o">+</span> <span class="n">fetched</span>               <span class="c1">// Overwrites them.</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">refresh</span><span class="p">(</span><span class="nv">fetch</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fetched</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">fetch</span><span class="p">()</span>
+        <span class="n">posts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">fetched</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="o">!</span><span class="n">posts</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>   <span class="c1">// Mutates current state.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">refreshWhilePublishing</span><span class="p">(</span><span class="nv">lossy</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">feed</span> <span class="o">=</span> <span class="kt">Feed</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">fetchGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">fetchStarted</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">fetch</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">fetchStarted</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">fetchGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">"server post"</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">refreshing</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="n">lossy</span> <span class="p">?</span> <span class="n">feed</span><span class="o">.</span><span class="nf">refreshLosingUpdates</span><span class="p">(</span><span class="nv">fetch</span><span class="p">:</span> <span class="n">fetch</span><span class="p">)</span> <span class="p">:</span> <span class="n">feed</span><span class="o">.</span><span class="nf">refresh</span><span class="p">(</span><span class="nv">fetch</span><span class="p">:</span> <span class="n">fetch</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">fetchStarted</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">feed</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="s">"local draft"</span><span class="p">)</span>           <span class="c1">// Runs while the refresh is suspended.</span>
+    <span class="k">await</span> <span class="n">fetchGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">refreshing</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">feed</span><span class="o">.</span><span class="n">posts</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">lossyPosts</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">refreshWhilePublishing</span><span class="p">(</span><span class="nv">lossy</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">correctPosts</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">refreshWhilePublishing</span><span class="p">(</span><span class="nv">lossy</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lossyPosts</span> <span class="o">==</span> <span class="p">[</span><span class="s">"server post"</span><span class="p">],</span> <span class="s">"The local draft was silently discarded"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">correctPosts</span> <span class="o">==</span> <span class="p">[</span><span class="s">"local draft"</span><span class="p">,</span> <span class="s">"server post"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The fix is to make the post-<code class="language-plaintext highlighter-rouge">await</code> write a <em>mutation of current state</em>, not an assignment of a value derived from old state. <code class="language-plaintext highlighter-rouge">append</code>, <code class="language-plaintext highlighter-rouge">merge</code>, or a reducer applied to the state as it is now all compose with concurrent changes. When the operation genuinely needs the old value, such as a compare-and-swap, compare the current state with the snapshot and decide what to do if they differ.</p>
+
+<h2 id="bug-4-flags-that-assume-one-call-at-a-time">Bug 4: flags that assume one call at a time</h2>
+
+<p>Booleans that bracket an <code class="language-plaintext highlighter-rouge">await</code> assume they are the only call in progress:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">Syncer</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">isSyncingFlag</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">activeSyncs</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">var</span> <span class="nv">isSyncing</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">activeSyncs</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">syncWithFlag</span><span class="p">(</span><span class="n">_</span> <span class="nv">work</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="n">isSyncingFlag</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">await</span> <span class="nf">work</span><span class="p">()</span>
+        <span class="n">isSyncingFlag</span> <span class="o">=</span> <span class="kc">false</span>                   <span class="c1">// Clears the flag while another sync is still running.</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">sync</span><span class="p">(</span><span class="n">_</span> <span class="nv">work</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="n">activeSyncs</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">activeSyncs</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="nf">work</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">syncer</span> <span class="o">=</span> <span class="kt">Syncer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">shortSyncDone</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">longGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">longStarted</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">longSync</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="n">syncer</span><span class="o">.</span><span class="n">syncWithFlag</span> <span class="p">{</span>
+    <span class="n">longStarted</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">longGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">longStarted</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">syncer</span><span class="o">.</span><span class="n">syncWithFlag</span> <span class="p">{</span> <span class="n">shortSyncDone</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">flagDuringLongSync</span> <span class="o">=</span> <span class="k">await</span> <span class="n">syncer</span><span class="o">.</span><span class="n">isSyncingFlag</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">flagDuringLongSync</span> <span class="o">==</span> <span class="kc">false</span><span class="p">,</span> <span class="s">"The flag says idle while a sync is still in progress"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">longGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">longSync</span>
+
+<span class="k">let</span> <span class="nv">countingGate</span> <span class="o">=</span> <span class="kt">Gate</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">countingStarted</span> <span class="o">=</span> <span class="kt">Tally</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">countedLong</span><span class="p">:</span> <span class="kt">Void</span> <span class="o">=</span> <span class="n">syncer</span><span class="o">.</span><span class="n">sync</span> <span class="p">{</span>
+    <span class="n">countingStarted</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">countingGate</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">countingStarted</span><span class="o">.</span><span class="nf">waitUntil</span><span class="p">(</span><span class="nv">atLeast</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">syncer</span><span class="o">.</span><span class="n">sync</span> <span class="p">{}</span>
+<span class="k">let</span> <span class="nv">countedDuringLongSync</span> <span class="o">=</span> <span class="k">await</span> <span class="n">syncer</span><span class="o">.</span><span class="n">isSyncing</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">countedDuringLongSync</span> <span class="o">==</span> <span class="kc">true</span><span class="p">,</span> <span class="s">"The counter knows a sync is still running"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">countingGate</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">countedLong</span>
+<span class="k">let</span> <span class="nv">countedAfter</span> <span class="o">=</span> <span class="k">await</span> <span class="n">syncer</span><span class="o">.</span><span class="n">isSyncing</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">countedAfter</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A counter, or a set of operation identifiers, survives overlap. A boolean does not. The <code class="language-plaintext highlighter-rouge">defer</code> matters too: it decrements on every exit path, including errors and cancellation, which a final line of the method would not.</p>
+
+<h2 id="when-you-need-a-non-reentrant-section">When you need a non-reentrant section</h2>
+
+<p>Sometimes overlapping calls are simply wrong: a migration that must run once, a token refresh whose second run would invalidate the first, a file format that cannot tolerate two concurrent writers. The patterns above make overlap <em>safe</em>; occasionally you need to <em>prevent</em> it. An async serializer chains each operation after the previous one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs operations one at a time, in the order the actor receives them, even across awaits.</span>
+<span class="kd">actor</span> <span class="kt">SerialQueue</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">tail</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">tail</span>
+        <span class="k">let</span> <span class="nv">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">await</span> <span class="n">previous</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">operation</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">current</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">current</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">OverlapGauge</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">counts</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">((</span><span class="nv">current</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">peak</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="kd">func</span> <span class="nf">enter</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">peak</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">peak</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">leave</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">peak</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">peak</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">serial</span> <span class="o">=</span> <span class="kt">SerialQueue</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">overlap</span> <span class="o">=</span> <span class="kt">OverlapGauge</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">serial</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
+                <span class="n">overlap</span><span class="o">.</span><span class="nf">enter</span><span class="p">()</span>
+                <span class="k">defer</span> <span class="p">{</span> <span class="n">overlap</span><span class="o">.</span><span class="nf">leave</span><span class="p">()</span> <span class="p">}</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">index</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">waitForAll</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">overlap</span><span class="o">.</span><span class="n">peak</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"The operations never overlapped, even though each one suspended"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Use this sparingly, and know its costs:</p>
+
+<ul>
+  <li><strong>It reintroduces the deadlock that reentrancy prevents.</strong> An operation that calls <code class="language-plaintext highlighter-rouge">serial.run</code> on the same queue waits for itself forever.</li>
+  <li><strong>Cancellation does not propagate.</strong> Each operation runs in an unstructured task; cancelling a caller stops its wait, not the operation.</li>
+  <li><strong>Latency adds up.</strong> Every operation waits for all earlier ones. Long operations behind the queue make it a bottleneck, with the waiting-time growth described in the <a href="/swift-actors/">actors article</a>.</li>
+</ul>
+
+<p>Most code that reaches for a serializer is better served by the in-flight-task pattern from bug 1: instead of making the second call wait for the first and then do the same work again, make it share the first call’s result.</p>
+
+<h2 id="a-checklist-for-every-await-in-an-actor">A checklist for every <code class="language-plaintext highlighter-rouge">await</code> in an actor</h2>
+
+<p>For each <code class="language-plaintext highlighter-rouge">await</code> inside an actor method, ask:</p>
+
+<ol>
+  <li><strong>Did I read state before this <code class="language-plaintext highlighter-rouge">await</code> that I use after it?</strong> If so, re-read it, or make the decision and the mutation before suspending.</li>
+  <li><strong>Can two calls to this method be in flight at once?</strong> If so, would they do the same work twice? Share it with an in-flight task.</li>
+  <li><strong>Does the code after the <code class="language-plaintext highlighter-rouge">await</code> assign a value derived from a snapshot?</strong> Make it a mutation of current state instead.</li>
+  <li><strong>Is there a flag or “current operation” property set before and cleared after?</strong> Make it a counter or a set of identifiers, cleared in <code class="language-plaintext highlighter-rouge">defer</code>.</li>
+  <li><strong>Could the world have been reset while I was suspended,</strong> for example by a logout, an invalidation, or a newer request? Check identity or a generation counter before writing the result.</li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Actors are reentrant: while a method is suspended at an <code class="language-plaintext highlighter-rouge">await</code>, other calls run on the actor.</li>
+  <li>Reentrancy prevents deadlocks and keeps actors responsive, but makes every <code class="language-plaintext highlighter-rouge">await</code> a point where state can change.</li>
+  <li>Duplicate work: cache the in-flight task, so concurrent callers share one operation; about \(\lambda L\) duplicates disappear.</li>
+  <li>Stale checks: reserve before suspending, or re-check after, in the same job as the action.</li>
+  <li>Lost updates: after an <code class="language-plaintext highlighter-rouge">await</code>, mutate current state instead of assigning a value derived from a snapshot.</li>
+  <li>Overlapping calls: count operations instead of using a boolean, and decrement in <code class="language-plaintext highlighter-rouge">defer</code>.</li>
+  <li>A serializer prevents overlap at the cost of deadlock risk, lost cancellation, and latency. Prefer sharing work.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write an <code class="language-plaintext highlighter-rouge">AuthSession</code> actor with <code class="language-plaintext highlighter-rouge">func validToken() async throws -&gt; String</code>. Tokens expire; refreshing requires an <code class="language-plaintext highlighter-rouge">await</code> on a network call, and a refresh invalidates the previous refresh token, so two concurrent refreshes cause the second to fail. Use the gate to write a test where ten concurrent callers find an expired token, and verify exactly one refresh happens. Then add <code class="language-plaintext highlighter-rouge">logout()</code>, which may be called during a refresh, and verify that a refresh completing after logout does not store its token.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0306-actors.md">SE-0306: Actors</a>, section “Actor reentrancy.”</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10133/">Protect mutable state with Swift actors</a>, WWDC21, on the cache example.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10254/">Swift concurrency: Behind the scenes</a>, WWDC21, on why reentrancy avoids deadlocks.</li>
+</ul>
+
+<p>Previous: <a href="/swift-actors/">Actors: Protecting State Behind an Isolation Boundary</a>. Next: <a href="/swift-main-actor/">The Main Actor and UI-Facing State</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-actor-reentrancy/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Actor+Reentrancy+in+Swift%3A+Keeping+Invariants+Across+Suspension+Points%20http%3A%2F%2Flocalhost%3A4000%2Fswift-actor-reentrancy%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-actor-reentrancy/&title=Actor+Reentrancy+in+Swift%3A+Keeping+Invariants+Across+Suspension+Points%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-actor-reentrancy/&title=Actor+Reentrancy+in+Swift%3A+Keeping+Invariants+Across+Suspension+Points%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-actor-reentrancy/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points%20%7C%20Swift By Deya&body=http://localhost:4000/swift-actor-reentrancy/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Actors">Actors</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Race+Conditions">Race Conditions</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="The Main Actor and UI-Facing State in Swift" href="/swift-main-actor/"> <p>Previous post</p> The Main Actor and UI-Facing State in Swift </a> </div> <div id="next-post"> <a alt="Actors in Swift: Protecting State Behind an Isolation Boundary" href="/swift-actors/"> <p>Next post</p> Actors in Swift: Protecting State Behind an Isolation Boundary </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

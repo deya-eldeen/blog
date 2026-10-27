@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Task Priority, Inheritance, and Priority Inversion in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Task Priority, Inheritance, and Priority Inversion in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A task’s priority tells the scheduler how urgent its work is. It does not make the work faster, it does not interrupt anything already running, and it does not guarantee an order. It influences which job an executor picks next when several are waiting, and which quality-of-service class the threads running them get. Most of the time, priority takes care of itself: tasks inherit it, and the runtime raises it automatically when urgent work waits on less urgent work. The interesting cases are where that automation cannot see the dependency, because the wait goes through a continuation, a semaphore, or a lock, and urgent work ends up stuck behind background work. That is priority inversion, and this article shows how it arises, how Swift prevents most of it, and how to fix the cases it cannot see." /> <meta property="og:description" content="A task’s priority tells the scheduler how urgent its work is. It does not make the work faster, it does not interrupt anything already running, and it does not guarantee an order. It influences which job an executor picks next when several are waiting, and which quality-of-service class the threads running them get. Most of the time, priority takes care of itself: tasks inherit it, and the runtime raises it automatically when urgent work waits on less urgent work. The interesting cases are where that automation cannot see the dependency, because the wait goes through a continuation, a semaphore, or a lock, and urgent work ends up stuck behind background work. That is priority inversion, and this article shows how it arises, how Swift prevents most of it, and how to fix the cases it cannot see." /> <link rel="canonical" href="http://localhost:4000/swift-task-priority/" /> <meta property="og:url" content="http://localhost:4000/swift-task-priority/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-07T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Task Priority, Inheritance, and Priority Inversion in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-07T00:00:00+03:00","datePublished":"2026-07-07T00:00:00+03:00","description":"A task’s priority tells the scheduler how urgent its work is. It does not make the work faster, it does not interrupt anything already running, and it does not guarantee an order. It influences which job an executor picks next when several are waiting, and which quality-of-service class the threads running them get. Most of the time, priority takes care of itself: tasks inherit it, and the runtime raises it automatically when urgent work waits on less urgent work. The interesting cases are where that automation cannot see the dependency, because the wait goes through a continuation, a semaphore, or a lock, and urgent work ends up stuck behind background work. That is priority inversion, and this article shows how it arises, how Swift prevents most of it, and how to fix the cases it cannot see.","headline":"Task Priority, Inheritance, and Priority Inversion in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-task-priority/"},"url":"http://localhost:4000/swift-task-priority/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Task Priority, Inheritance, and Priority Inversion in Swift"> <meta name="twitter:description" content="A task’s priority tells the scheduler how urgent its work is. It does not make the work faster, it does not interrupt anything already running, and it does n..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Task Priority, Inheritance, and Priority Inversion in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Task Priority, Inheritance, and Priority Inversion in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-07T00:00:00+03:00">July 7, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A task’s priority tells the scheduler how urgent its work is. It does not make the work faster, it does not interrupt anything already running, and it does not guarantee an order. It influences which job an executor picks next when several are waiting, and which quality-of-service class the threads running them get.</p>
+
+<p>Most of the time, priority takes care of itself: tasks inherit it, and the runtime raises it automatically when urgent work waits on less urgent work. The interesting cases are where that automation cannot see the dependency, because the wait goes through a continuation, a semaphore, or a lock, and urgent work ends up stuck behind background work. That is priority inversion, and this article shows how it arises, how Swift prevents most of it, and how to fix the cases it cannot see.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. The priority escalation APIs from Swift 6.2 require iOS 26, macOS 26, or later; <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="the-priority-levels">The priority levels</h2>
+
+<p><code class="language-plaintext highlighter-rouge">TaskPriority</code> is a wrapper around a raw value. Several names alias the same level, which reflects the mapping onto the system’s quality-of-service classes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">TaskPriority</span><span class="o">.</span><span class="n">high</span> <span class="o">==</span> <span class="o">.</span><span class="n">userInitiated</span> <span class="o">&amp;&amp;</span> <span class="kt">TaskPriority</span><span class="o">.</span><span class="n">high</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">==</span> <span class="mi">25</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">TaskPriority</span><span class="o">.</span><span class="n">medium</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">==</span> <span class="mi">21</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">TaskPriority</span><span class="o">.</span><span class="n">low</span> <span class="o">==</span> <span class="o">.</span><span class="n">utility</span> <span class="o">&amp;&amp;</span> <span class="kt">TaskPriority</span><span class="o">.</span><span class="n">low</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">==</span> <span class="mi">17</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">TaskPriority</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">==</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Priority</th>
+      <th>Use it for</th>
+      <th>Avoid it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.high</code> / <code class="language-plaintext highlighter-rouge">.userInitiated</code></td>
+      <td>Work the user is actively waiting for: opening a document, loading the screen they tapped</td>
+      <td>Prefetching, analytics, anything speculative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.medium</code></td>
+      <td>The default for detached tasks and work with no stated urgency</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.low</code> / <code class="language-plaintext highlighter-rouge">.utility</code></td>
+      <td>Long-running work the user knows about but does not watch: imports, exports, syncing</td>
+      <td>Anything blocking a visible spinner</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.background</code></td>
+      <td>Maintenance the user never sees: pruning caches, indexing, cleanup</td>
+      <td>Anything a user or a test awaits</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Background priority can be throttled aggressively by the system, for example in Low Power Mode or under thermal pressure, especially for disk and network I/O. Work at that level may take far longer than its CPU cost suggests. That is the point of the level, and it is why nothing the user waits on belongs there.</p>
+
+<h2 id="inheritance">Inheritance</h2>
+
+<p>Priority flows through the same channels as other task context:</p>
+
+<ul>
+  <li>Child tasks, <code class="language-plaintext highlighter-rouge">async let</code> and task groups, inherit their parent’s priority.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task { }</code> inherits the current task’s priority. Outside any task, it derives one from the current thread’s quality of service.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task.detached { }</code> starts at <code class="language-plaintext highlighter-rouge">.medium</code> unless given a priority.</li>
+  <li>Any task-creating API accepts an explicit <code class="language-plaintext highlighter-rouge">priority:</code> that overrides inheritance.</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">inheritance</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">high</span><span class="p">)</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">TaskPriority</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">child</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">currentPriority</span>
+    <span class="k">let</span> <span class="nv">unstructured</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kt">Task</span><span class="o">.</span><span class="n">currentPriority</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">detached</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span> <span class="kt">Task</span><span class="o">.</span><span class="n">currentPriority</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">explicit</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">background</span><span class="p">)</span> <span class="p">{</span> <span class="kt">Task</span><span class="o">.</span><span class="n">currentPriority</span> <span class="p">}</span>
+    <span class="c1">// Let every task record its starting priority before anything awaits it.</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="k">await</span> <span class="n">child</span><span class="p">,</span> <span class="k">await</span> <span class="n">unstructured</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="k">await</span> <span class="n">detached</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="k">await</span> <span class="n">explicit</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
+<span class="p">}</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">inheritance</span> <span class="o">==</span> <span class="p">[</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="o">.</span><span class="n">medium</span><span class="p">,</span> <span class="o">.</span><span class="n">background</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The sleep and the choice of <code class="language-plaintext highlighter-rouge">.high</code> are not decoration. Awaiting a task from a higher-priority task <em>raises</em> the awaited task’s priority, as the escalation section below shows. A first version of this probe started the outer task at <code class="language-plaintext highlighter-rouge">.low</code> and awaited it from top-level code running at <code class="language-plaintext highlighter-rouge">.medium</code>. The outer task was escalated to <code class="language-plaintext highlighter-rouge">.medium</code> almost immediately, and the tasks it created reported a mixture of <code class="language-plaintext highlighter-rouge">.low</code> and <code class="language-plaintext highlighter-rouge">.medium</code> depending on exactly when each one was created. Priority measurements are only meaningful when nothing higher is waiting on the task being measured.</p>
+
+<p>Inheritance is usually what you want. A screen opened by the user starts its loading from a user-initiated context, and every child of that work inherits user-initiated priority without anyone writing it down. The main reason to pass a priority explicitly is to <em>lower</em> it, for work that is triggered by an urgent context but is not itself urgent, such as warming a cache for screens the user has not opened yet.</p>
+
+<h2 id="what-priority-does-and-does-not-do">What priority does and does not do</h2>
+
+<p>Priority orders <em>waiting</em> work. When an executor has several jobs ready, it prefers higher-priority ones. It never preempts a job that is already running: Swift’s executors are cooperative, and a job runs until it finishes or suspends.</p>
+
+<p>Both properties are visible on an actor. Below, a medium-priority job occupies the actor for 100 ms. While it runs, three low-priority calls arrive, then three high-priority calls:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">Journal</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">order</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">occupy</span><span class="p">(</span><span class="k">for</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">duration</span>
+        <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">entry</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">order</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">journal</span> <span class="o">=</span> <span class="kt">Journal</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">occupant</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">medium</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="n">journal</span><span class="o">.</span><span class="nf">occupy</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="k">var</span> <span class="nv">writers</span><span class="p">:</span> <span class="p">[</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3</span> <span class="p">{</span>
+    <span class="n">writers</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="n">journal</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"low </span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3</span> <span class="p">{</span>
+    <span class="n">writers</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">high</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="n">journal</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"high </span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="n">writer</span> <span class="k">in</span> <span class="n">writers</span> <span class="p">{</span> <span class="k">await</span> <span class="n">writer</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">occupant</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">journalOrder</span> <span class="o">=</span> <span class="k">await</span> <span class="n">journal</span><span class="o">.</span><span class="n">order</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">journalOrder</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">6</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"actor execution order:"</span><span class="p">,</span> <span class="n">journalOrder</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine this printed <code class="language-plaintext highlighter-rouge">["high 0", "high 1", "high 2", "low 0", "low 1", "low 2"]</code>. The high-priority calls arrived later but ran first, because the actor’s pending jobs are ordered by priority, not strictly by arrival. And none of them ran until the medium-priority <code class="language-plaintext highlighter-rouge">occupy</code> call finished, because nothing preempts a running job.</p>
+
+<p>Two design consequences follow. First, <strong>do not rely on FIFO order for calls to an actor from different tasks.</strong> If order matters, it must come from the program’s structure, for example one task making the calls sequentially, or a sequence number. Second, <strong>priority cannot rescue a long synchronous job.</strong> If a background job holds an actor for 200 ms, a user-initiated call waits 200 ms whatever its priority. Keep isolated jobs short, as the <a href="/swift-actors/">actors article</a> argues.</p>
+
+<h2 id="priority-inversion-and-automatic-escalation">Priority inversion and automatic escalation</h2>
+
+<p>Priority inversion happens when high-priority work waits for low-priority work, and other, medium-priority work keeps the low-priority work from running. The high-priority work is then effectively running at low priority, or worse.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Priority inversion: urgent work waits on background work that cannot get scheduled
+    participant H as High: user is waiting
+    participant L as Low: produces the result
+    participant M as Medium: unrelated work
+    L-&gt;&gt;L: starts producing
+    H-&gt;&gt;L: waits for L's result
+    M-&gt;&gt;M: keeps the CPUs busy
+    Note over L: Ready to run, but always outranked by M
+    Note over H: Waits as long as L is starved
+</code></pre>
+
+<p>Swift prevents this automatically wherever the runtime can see <em>who is waiting for whom</em>. It <strong>escalates</strong> the priority of the awaited work to match the waiter. Escalation applies when:</p>
+
+<ul>
+  <li>a task awaits another task’s <code class="language-plaintext highlighter-rouge">value</code> or <code class="language-plaintext highlighter-rouge">result</code>;</li>
+  <li>a parent awaits a child, through <code class="language-plaintext highlighter-rouge">async let</code> or a task group;</li>
+  <li>a task is waiting to run on an actor, in which case the actor’s current job is escalated so the actor gets through its queue faster.</li>
+</ul>
+
+<p>Escalation is visible from inside the escalated task:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">PriorityLog</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">samples</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">TaskPriority</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">sample</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Task</span><span class="o">.</span><span class="n">currentPriority</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">reset</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">first</span><span class="p">:</span> <span class="kt">TaskPriority</span><span class="p">?</span> <span class="p">{</span> <span class="n">samples</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">first</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">TaskPriority</span><span class="p">?</span> <span class="p">{</span> <span class="n">samples</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">last</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">escalationLog</span> <span class="o">=</span> <span class="kt">PriorityLog</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">lowWorker</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">15</span> <span class="p">{</span>
+        <span class="n">escalationLog</span><span class="o">.</span><span class="nf">sample</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">40</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">urgentWaiter</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">high</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="n">lowWorker</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">urgentWaiter</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">escalationLog</span><span class="o">.</span><span class="n">first</span> <span class="o">==</span> <span class="o">.</span><span class="n">low</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">escalationLog</span><span class="o">.</span><span class="n">last</span> <span class="o">==</span> <span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="s">"Awaiting from a high-priority task escalated the worker"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The worker sampled <code class="language-plaintext highlighter-rouge">.low</code> until the high-priority task began awaiting it, then <code class="language-plaintext highlighter-rouge">.high</code>. Escalation is permanent for the life of the task: a task’s priority can be raised, never lowered.</p>
+
+<p>Escalation is transitive. If \(W(t)\) is the set of tasks waiting on task \(t\), then the effective priority of \(t\) is</p>
+
+\[p_{\text{eff}}(t) = \max\Big(p_{\text{base}}(t),\; \max_{w \in W(t)} p_{\text{eff}}(w)\Big),\]
+
+<p>so an urgent task at the end of a chain of <code class="language-plaintext highlighter-rouge">await</code>s lifts every task along the chain, as far as the runtime can see the chain.</p>
+
+<h2 id="where-escalation-cannot-see">Where escalation cannot see</h2>
+
+<p>The runtime knows about task handles, child tasks, and actors. It does not know about:</p>
+
+<ul>
+  <li><strong>Continuations.</strong> A task suspended in <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> is waiting for <em>whoever will call <code class="language-plaintext highlighter-rouge">resume</code></em>, and the runtime has no idea who that is.</li>
+  <li><strong>Semaphores, locks, and condition variables.</strong> These block threads; they do not record which task will release them. In async code they are already a problem for other reasons, covered in the <a href="/swift-deadlocks-blocking-waits/">deadlocks article</a>.</li>
+  <li><strong>Callback-based and GCD-based work.</strong> A queue that will eventually call back has no connection to the task waiting for the callback.</li>
+</ul>
+
+<p>Here, a consumer waits for a producer through a continuation. Both start at low priority; then a high-priority task awaits the consumer:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A one-shot signal: one task waits, another fires. Invisible to priority escalation.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Signal</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">waiter</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">wait</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="n">waiter</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">continuation</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">fire</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">continuation</span> <span class="o">=</span> <span class="n">waiter</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">stored</span> <span class="k">in</span>
+            <span class="k">defer</span> <span class="p">{</span> <span class="n">stored</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">stored</span>
+        <span class="p">}</span>
+        <span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">producerPriority</span><span class="p">(</span><span class="nv">forwardingEscalation</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">TaskPriority</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">producerLog</span> <span class="o">=</span> <span class="kt">PriorityLog</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">signal</span> <span class="o">=</span> <span class="kt">Signal</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">producer</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">15</span> <span class="p">{</span>
+            <span class="n">producerLog</span><span class="o">.</span><span class="nf">sample</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="p">}</span>
+        <span class="n">signal</span><span class="o">.</span><span class="nf">fire</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">consumer</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">detached</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+        <span class="k">guard</span> <span class="n">forwardingEscalation</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">signal</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">withTaskPriorityEscalationHandler</span> <span class="p">{</span>
+            <span class="k">await</span> <span class="n">signal</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+        <span class="p">}</span> <span class="nv">onPriorityEscalated</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span><span class="p">,</span> <span class="n">newPriority</span> <span class="k">in</span>
+            <span class="n">producer</span><span class="o">.</span><span class="nf">escalatePriority</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">newPriority</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">urgent</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">high</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="n">consumer</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">urgent</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="n">producerLog</span><span class="o">.</span><span class="n">last</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">invertedPriority</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">producerPriority</span><span class="p">(</span><span class="nv">forwardingEscalation</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">forwardedPriority</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">producerPriority</span><span class="p">(</span><span class="nv">forwardingEscalation</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">invertedPriority</span> <span class="o">==</span> <span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="s">"The producer stayed low while urgent work waited on it"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">forwardedPriority</span> <span class="o">==</span> <span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="s">"Forwarding the escalation lifted the producer"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Without help, the high-priority task escalated the consumer, which it awaits directly, but the escalation stopped there. The producer, the task that actually had to run, stayed at <code class="language-plaintext highlighter-rouge">.low</code>. On a busy device, the user-facing work would wait as long as background work took to get scheduled.</p>
+
+<p>Swift 6.2 adds the tools to forward escalation by hand (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0462-task-priority-escalation-apis.md">SE-0462</a>):</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">withTaskPriorityEscalationHandler(operation:onPriorityEscalated:)</code> runs a handler whenever the current task is escalated while <code class="language-plaintext highlighter-rouge">operation</code> runs. Like a cancellation handler, it runs synchronously on whichever thread performed the escalation, so it must be <code class="language-plaintext highlighter-rouge">@Sendable</code> and quick.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task.escalatePriority(to:)</code> on a task handle, and the static <code class="language-plaintext highlighter-rouge">Task.escalatePriority(_:to:)</code> for an <code class="language-plaintext highlighter-rouge">UnsafeCurrentTask</code>, raise another task’s priority.</li>
+</ul>
+
+<p>With the handler in place, the consumer’s escalation was forwarded to the producer, which then ran at <code class="language-plaintext highlighter-rouge">.high</code>. Use this pattern whenever you build a waiting mechanism, such as a signal, an async queue, or a permit pool like the one in the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a>, where the task that will satisfy a waiter is known. If the satisfier is unknown, as with a broadcast, a priority-ordered queue of waiters is the best available tool.</p>
+
+<h2 id="starvation">Starvation</h2>
+
+<p>Priority ordering means lower-priority work runs only when no higher-priority work is ready. If urgent work keeps the executor fully busy, background work never runs. In queueing terms, if high-priority work alone occupies a fraction \(\rho_H\) of the pool’s capacity, lower-priority work receives at most the remainder:</p>
+
+\[\text{capacity}_{\text{low}} \le (1 - \rho_H)\,\text{capacity}.\]
+
+<p>As \(\rho_H \to 1\), low-priority work starves. Escalation turns this into a hazard for <em>correctness</em>, not just throughput, when urgent work transitively depends on starved work it cannot see.</p>
+
+<p>In practice, app workloads rarely saturate every core with user-initiated work for long. The common failure is subtler: a long-running loop marked <code class="language-plaintext highlighter-rouge">.high</code> because it started from a button tap, quietly outranking everything else for minutes. Tasks inherit priority by default, so it is worth lowering it explicitly when a user-initiated action starts work that the user will not watch:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LibraryModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">importStatus</span> <span class="o">=</span> <span class="s">"idle"</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">importTask</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">importTapped</span><span class="p">(</span><span class="nv">files</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">importStatus</span> <span class="o">=</span> <span class="s">"importing </span><span class="se">\(</span><span class="n">files</span><span class="se">)</span><span class="s"> files"</span>
+        <span class="c1">// The tap is urgent; the import is not. Lower it so the UI stays crisp.</span>
+        <span class="n">importTask</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">priority</span><span class="p">:</span> <span class="o">.</span><span class="n">utility</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">files</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="p">}</span>
+            <span class="n">importStatus</span> <span class="o">=</span> <span class="s">"imported </span><span class="se">\(</span><span class="n">files</span><span class="se">)</span><span class="s"> files"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">waitForImport</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">importTask</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">library</span> <span class="o">=</span> <span class="kt">LibraryModel</span><span class="p">()</span>
+<span class="n">library</span><span class="o">.</span><span class="nf">importTapped</span><span class="p">(</span><span class="nv">files</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">library</span><span class="o">.</span><span class="nf">waitForImport</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">importStatus</span> <span class="o">==</span> <span class="s">"imported 5 files"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The task still runs on the main actor, because <code class="language-plaintext highlighter-rouge">Task { }</code> inherits the main actor’s isolation, but at utility priority. If something urgent later awaits <code class="language-plaintext highlighter-rouge">importTask</code>, escalation raises it again, so lowering the priority is never a correctness risk when the dependency is visible to the runtime.</p>
+
+<h2 id="guidelines">Guidelines</h2>
+
+<ul>
+  <li><strong>Let inheritance do most of the work.</strong> User-initiated contexts produce user-initiated tasks without annotations.</li>
+  <li><strong>Lower priority explicitly</strong> for work that an urgent context triggers but the user will not wait for.</li>
+  <li><strong>Do not raise priority to make something “faster.”</strong> It only reorders waiting work; if the work is slow because it is long, priority does nothing.</li>
+  <li><strong>Never put awaited work at <code class="language-plaintext highlighter-rouge">.background</code></strong> unless the awaiting path is visible to escalation.</li>
+  <li><strong>Do not assume FIFO</strong> for calls into an actor from different tasks; pending jobs are ordered by priority.</li>
+  <li><strong>Forward escalation</strong> through any waiting mechanism you build on continuations, with <code class="language-plaintext highlighter-rouge">withTaskPriorityEscalationHandler</code> and <code class="language-plaintext highlighter-rouge">escalatePriority(to:)</code>.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Priority orders waiting work; it never preempts running work or speeds anything up.</li>
+  <li>Child tasks and <code class="language-plaintext highlighter-rouge">Task { }</code> inherit priority; <code class="language-plaintext highlighter-rouge">Task.detached</code> starts at <code class="language-plaintext highlighter-rouge">.medium</code>; explicit priorities override both.</li>
+  <li>Actors run pending jobs in priority order, not strictly FIFO, but never interrupt the running job.</li>
+  <li>Awaiting a task, a child, or an actor escalates the awaited work, transitively: \(p_{\text{eff}}(t) = \max(p_{\text{base}}(t), \max_{w} p_{\text{eff}}(w))\).</li>
+  <li>Continuations, locks, semaphores, and callbacks hide dependencies from escalation. Forward escalation by hand with the Swift 6.2 APIs.</li>
+  <li>Lower priority for work started by urgent contexts but not awaited by them.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Build an <code class="language-plaintext highlighter-rouge">AsyncQueue&lt;Element&gt;</code> where producers <code class="language-plaintext highlighter-rouge">enqueue</code> and a single consumer task awaits <code class="language-plaintext highlighter-rouge">dequeue()</code> through a continuation. Add escalation forwarding so that when a high-priority task awaits the consumer, the producer that will enqueue next is escalated. Decide what “the producer that will enqueue next” means when there are several producers, and justify the choice. Then measure, using <code class="language-plaintext highlighter-rouge">PriorityLog</code>, that a high-priority waiter no longer leaves the producers at their base priority.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0462-task-priority-escalation-apis.md">SE-0462: Task Priority Escalation APIs</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>, section “Task priorities.”</li>
+  <li><a href="https://developer.apple.com/library/archive/documentation/Performance/Conceptual/EnergyGuide-iOS/PrioritizeWorkWithQoS.html">Prioritize Work with Quality of Service Classes</a>, Apple’s energy efficiency guide.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10254/">Swift concurrency: Behind the scenes</a>, WWDC21, on actor scheduling and escalation.</li>
+</ul>
+
+<p>Previous: <a href="/swift-unstructured-detached-tasks/">Unstructured and Detached Tasks: When to Use Each</a>. Next: <a href="/swift-actors/">Actors: Protecting State Behind an Isolation Boundary</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-task-priority/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Task+Priority%2C+Inheritance%2C+and+Priority+Inversion+in+Swift%20http%3A%2F%2Flocalhost%3A4000%2Fswift-task-priority%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-task-priority/&title=Task+Priority%2C+Inheritance%2C+and+Priority+Inversion+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-task-priority/&title=Task+Priority%2C+Inheritance%2C+and+Priority+Inversion+in+Swift%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-task-priority/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Task Priority, Inheritance, and Priority Inversion in Swift%20%7C%20Swift By Deya&body=http://localhost:4000/swift-task-priority/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Tasks">Tasks</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Actors in Swift: Protecting State Behind an Isolation Boundary" href="/swift-actors/"> <p>Previous post</p> Actors in Swift: Protecting State Behind an Isolation Boundary </a> </div> <div id="next-post"> <a alt="Unstructured and Detached Tasks in Swift: When to Use Each" href="/swift-unstructured-detached-tasks/"> <p>Next post</p> Unstructured and Detached Tasks in Swift: When to Use Each </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Sendable in Swift: Moving Values Across Isolation Boundaries | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Sendable in Swift: Moving Values Across Isolation Boundaries" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every data race needs two things: a piece of mutable memory, and two concurrent contexts that can both reach it. Actors and the main actor control who can run where. Sendable controls the second half: which values may travel from one isolation domain to another. A value that is Sendable can be shared without creating a race. A value that is not must stay where it is, or be handed over completely. Sendable is where most Swift 6 migration errors come from, and also where the most misguided fixes are applied, usually @unchecked Sendable sprinkled until the compiler goes quiet. This article explains what the protocol promises, which types get it for free, how closures and region-based isolation fit in, what Swift 6.3 and 6.4 added, and how to choose between making a type Sendable, isolating it, and sending it." /> <meta property="og:description" content="Every data race needs two things: a piece of mutable memory, and two concurrent contexts that can both reach it. Actors and the main actor control who can run where. Sendable controls the second half: which values may travel from one isolation domain to another. A value that is Sendable can be shared without creating a race. A value that is not must stay where it is, or be handed over completely. Sendable is where most Swift 6 migration errors come from, and also where the most misguided fixes are applied, usually @unchecked Sendable sprinkled until the compiler goes quiet. This article explains what the protocol promises, which types get it for free, how closures and region-based isolation fit in, what Swift 6.3 and 6.4 added, and how to choose between making a type Sendable, isolating it, and sending it." /> <link rel="canonical" href="http://localhost:4000/swift-sendable/" /> <meta property="og:url" content="http://localhost:4000/swift-sendable/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-21T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Sendable in Swift: Moving Values Across Isolation Boundaries" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-21T00:00:00+03:00","datePublished":"2026-07-21T00:00:00+03:00","description":"Every data race needs two things: a piece of mutable memory, and two concurrent contexts that can both reach it. Actors and the main actor control who can run where. Sendable controls the second half: which values may travel from one isolation domain to another. A value that is Sendable can be shared without creating a race. A value that is not must stay where it is, or be handed over completely. Sendable is where most Swift 6 migration errors come from, and also where the most misguided fixes are applied, usually @unchecked Sendable sprinkled until the compiler goes quiet. This article explains what the protocol promises, which types get it for free, how closures and region-based isolation fit in, what Swift 6.3 and 6.4 added, and how to choose between making a type Sendable, isolating it, and sending it.","headline":"Sendable in Swift: Moving Values Across Isolation Boundaries","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-sendable/"},"url":"http://localhost:4000/swift-sendable/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Sendable in Swift: Moving Values Across Isolation Boundaries"> <meta name="twitter:description" content="Every data race needs two things: a piece of mutable memory, and two concurrent contexts that can both reach it. Actors and the main actor control who can ru..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Sendable in Swift: Moving Values Across Isolation Boundaries"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Sendable in Swift: Moving Values Across Isolation Boundaries</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-21T00:00:00+03:00">July 21, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every data race needs two things: a piece of mutable memory, and two concurrent contexts that can both reach it. Actors and the main actor control who can run where. <code class="language-plaintext highlighter-rouge">Sendable</code> controls the second half: which values may travel from one isolation domain to another. A value that is <code class="language-plaintext highlighter-rouge">Sendable</code> can be shared without creating a race. A value that is not must stay where it is, or be handed over completely.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Sendable</code> is where most Swift 6 migration errors come from, and also where the most misguided fixes are applied, usually <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> sprinkled until the compiler goes quiet. This article explains what the protocol promises, which types get it for free, how closures and region-based isolation fit in, what Swift 6.3 and 6.4 added, and how to choose between making a type <code class="language-plaintext highlighter-rouge">Sendable</code>, isolating it, and sending it.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. Blocks marked “Does not compile” show the diagnostics the compiler produced for them. <code class="language-plaintext highlighter-rouge">weak let</code> requires Swift 6.3, and <code class="language-plaintext highlighter-rouge">~Sendable</code> Swift 6.4.</p>
+
+<h2 id="what-sendable-promises">What <code class="language-plaintext highlighter-rouge">Sendable</code> promises</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Sendable</code> is a <em>marker protocol</em>: it has no requirements and no run-time representation. Conforming to it is a claim, checked by the compiler, that <strong>sharing a value of this type between concurrently executing code cannot cause a data race.</strong> Three kinds of types can make that claim honestly:</p>
+
+<ol>
+  <li><strong>Values that are copied when shared.</strong> Structs and enums whose stored properties are all <code class="language-plaintext highlighter-rouge">Sendable</code>. Each domain gets its own copy, so there is nothing to race on.</li>
+  <li><strong>References to things that cannot change.</strong> Final classes whose stored properties are all immutable <code class="language-plaintext highlighter-rouge">let</code>s of <code class="language-plaintext highlighter-rouge">Sendable</code> types.</li>
+  <li><strong>References to things that synchronize themselves.</strong> Actors, global-actor-isolated classes, and classes whose mutable state is protected by a lock.</li>
+</ol>
+
+<p>Everywhere a value crosses an isolation boundary, the compiler requires one of those, or proof that the value is not shared at all. The crossings are: arguments and results of calls into an actor, captures of closures that run concurrently, task results, and values handed to child tasks.</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Values cross isolation boundaries through calls, captures, and task results
+    subgraph A["Main actor"]
+        VM["View model"]
+    end
+    subgraph B["Store actor"]
+        ST["Store state"]
+    end
+    subgraph C["Child task"]
+        CT["Concurrent work"]
+    end
+    VM -- "argument: must be Sendable or sent" --&gt; ST
+    ST -- "result: must be Sendable or sent" --&gt; VM
+    VM -- "closure captures: must be Sendable" --&gt; CT
+    CT -- "task result: must be Sendable" --&gt; VM
+</code></pre>
+
+<h2 id="value-types-sendable-for-free-internally">Value types: Sendable for free, internally</h2>
+
+<p>Structs and enums are inferred <code class="language-plaintext highlighter-rouge">Sendable</code> when all their stored properties or associated values are <code class="language-plaintext highlighter-rouge">Sendable</code>, but only if they are not <code class="language-plaintext highlighter-rouge">public</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">func</span> <span class="n">requireSendable</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">T</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="kd">struct</span> <span class="kt">Coordinate</span> <span class="p">{</span>          <span class="c1">// Internal: Sendable is inferred.</span>
+    <span class="k">var</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">LoadState</span> <span class="p">{</span>             <span class="c1">// Internal: inferred, because every payload is Sendable.</span>
+    <span class="k">case</span> <span class="n">idle</span>
+    <span class="k">case</span> <span class="nf">loaded</span><span class="p">([</span><span class="kt">Coordinate</span><span class="p">])</span>
+    <span class="k">case</span> <span class="nf">failed</span><span class="p">(</span><span class="nv">message</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">Coordinate</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.12</span><span class="p">))</span>
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">LoadState</span><span class="o">.</span><span class="nf">loaded</span><span class="p">([]))</span>
+</code></pre></div></div>
+
+<p>Public types do not get inference, because conformance is part of a module’s public contract: a library that later adds a non-<code class="language-plaintext highlighter-rouge">Sendable</code> stored property to a public struct would silently break every client that relied on inferred <code class="language-plaintext highlighter-rouge">Sendable</code>. Public types must declare the conformance explicitly:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">Route</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">stopNames</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+<span class="p">}</span>
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">Route</span><span class="p">(</span><span class="nv">stopNames</span><span class="p">:</span> <span class="p">[]))</span>
+<span class="c1">// error: type 'Route' does not conform to the 'Sendable' protocol</span>
+</code></pre></div></div>
+
+<p>Adding <code class="language-plaintext highlighter-rouge">: Sendable</code> to a public type is a promise to clients. Before making it, check that the type will stay <code class="language-plaintext highlighter-rouge">Sendable</code> as it evolves.</p>
+
+<p>For generic types, the conformance is usually conditional:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">Page</span><span class="o">&lt;</span><span class="kt">Item</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">Item</span><span class="p">]</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">nextCursor</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">Item</span><span class="p">],</span> <span class="nv">nextCursor</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="n">items</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">nextCursor</span> <span class="o">=</span> <span class="n">nextCursor</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Page</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="k">where</span> <span class="kt">Item</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{}</span>
+
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">Page</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">Coordinate</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">)],</span> <span class="nv">nextCursor</span><span class="p">:</span> <span class="kc">nil</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h2 id="classes-immutable-isolated-or-locked">Classes: immutable, isolated, or locked</h2>
+
+<p>A class is a shared reference, so the compiler is strict. To be checked <code class="language-plaintext highlighter-rouge">Sendable</code>, a class must be <code class="language-plaintext highlighter-rouge">final</code> and have only immutable, <code class="language-plaintext highlighter-rouge">Sendable</code> stored properties:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Preferences</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">theme</span> <span class="o">=</span> <span class="s">"dark"</span>
+<span class="p">}</span>
+<span class="c1">// error: stored property 'theme' of 'Sendable'-conforming class 'Preferences' is mutable</span>
+
+<span class="kd">class</span> <span class="kt">Base</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">}</span>
+<span class="c1">// error: non-final class 'Base' cannot conform to the 'Sendable' protocol</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">final</code> requirement exists because a subclass could add mutable state that the base class’s conformance would vouch for.</p>
+
+<p>When a class genuinely needs mutable state <em>and</em> must be shared, there are three honest options:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Option 1: immutable. Share freely; "mutate" by creating a new instance.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Theme</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">accentHex</span><span class="p">:</span> <span class="kt">UInt32</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">accentHex</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">accentHex</span> <span class="o">=</span> <span class="n">accentHex</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Option 2: isolated to a global actor. Sendable because access is serialized on the main actor.</span>
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ThemeController</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">current</span> <span class="o">=</span> <span class="kt">Theme</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"dark"</span><span class="p">,</span> <span class="nv">accentHex</span><span class="p">:</span> <span class="mh">0x0A84FF</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Option 3: internally synchronized. `Mutex` is Sendable, so this is checked, not unchecked.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">RequestCounter</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">counts</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([:])</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">endpoint</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">endpoint</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">count</span><span class="p">(</span><span class="k">for</span> <span class="nv">endpoint</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">endpoint</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">Theme</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"light"</span><span class="p">,</span> <span class="nv">accentHex</span><span class="p">:</span> <span class="mh">0x007AFF</span><span class="p">))</span>
+<span class="nf">requireSendable</span><span class="p">(</span><span class="kt">RequestCounter</span><span class="p">())</span>
+
+<span class="k">let</span> <span class="nv">requestCounter</span> <span class="o">=</span> <span class="kt">RequestCounter</span><span class="p">()</span>
+<span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="n">requestCounter</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"/feed"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">requestCounter</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"/feed"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">100</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Notice that option 3 needs no <code class="language-plaintext highlighter-rouge">@unchecked</code>. <code class="language-plaintext highlighter-rouge">Mutex&lt;Value&gt;</code> is itself <code class="language-plaintext highlighter-rouge">Sendable</code>, so a final class whose only stored property is a <code class="language-plaintext highlighter-rouge">let</code> mutex is checked by the compiler like any other immutable class. <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> is needed only when the synchronization is something the compiler cannot see: a legacy <code class="language-plaintext highlighter-rouge">NSLock</code>, a serial dispatch queue, an atomic built from C, or an invariant like “this object is only mutated before it is published.”</p>
+
+<h3 id="weak-references-in-sendable-classes">Weak references in Sendable classes</h3>
+
+<p>Until Swift 6.3, a <code class="language-plaintext highlighter-rouge">Sendable</code> class could not hold a weak reference, because <code class="language-plaintext highlighter-rouge">weak</code> required <code class="language-plaintext highlighter-rouge">var</code>, and <code class="language-plaintext highlighter-rouge">var</code> stored properties are not allowed. Swift 6.3 adds <code class="language-plaintext highlighter-rouge">weak let</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0481-weak-let.md">SE-0481</a>): a weak reference that the program cannot reassign, though it still becomes <code class="language-plaintext highlighter-rouge">nil</code> when the object is deallocated.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Session</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">id</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SessionObserver</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">weak</span> <span class="k">let</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">Session</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="kt">Session</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">liveSession</span><span class="p">:</span> <span class="kt">Session</span><span class="p">?</span> <span class="o">=</span> <span class="kt">Session</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">observer</span> <span class="o">=</span> <span class="kt">SessionObserver</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">liveSession</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">observer</span><span class="o">.</span><span class="n">session</span><span class="p">?</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">7</span><span class="p">)</span>
+<span class="n">liveSession</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">observer</span><span class="o">.</span><span class="n">session</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"weak let still zeroes when the object goes away"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The same proposal makes explicit <code class="language-plaintext highlighter-rouge">[weak x]</code> captures immutable, so they no longer prevent a closure from being <code class="language-plaintext highlighter-rouge">@Sendable</code>.</p>
+
+<h3 id="saying-not-sendable-on-purpose">Saying “not Sendable” on purpose</h3>
+
+<p>Sometimes a type should <em>never</em> be shared, such as a handle to a non-thread-safe C resource, a cursor into a database transaction, or a builder meant to be used by one task. For internal value types, inference could silently make such a type <code class="language-plaintext highlighter-rouge">Sendable</code> as soon as all its fields happen to be. Swift 6.4 adds an explicit way to say no (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0518-tilde-sendable.md">SE-0518</a>):</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A cursor into a single-threaded transaction. Deliberately not shareable.</span>
+<span class="kd">struct</span> <span class="kt">TransactionCursor</span><span class="p">:</span> <span class="o">~</span><span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">position</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="c1">// requireSendable(TransactionCursor(position: 0))</span>
+<span class="c1">// error: type 'TransactionCursor' does not conform to the 'Sendable' protocol</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">~Sendable</code> suppresses inference and documents intent for readers and auditors. Unlike the older idiom of an <code class="language-plaintext highlighter-rouge">@available(*, unavailable)</code> <code class="language-plaintext highlighter-rouge">Sendable</code> conformance, it is not inherited, so a non-<code class="language-plaintext highlighter-rouge">Sendable</code> base class can still have a <code class="language-plaintext highlighter-rouge">Sendable</code> subclass.</p>
+
+<h2 id="closures-sendable-and-what-they-may-capture">Closures: <code class="language-plaintext highlighter-rouge">@Sendable</code> and what they may capture</h2>
+
+<p>A closure that may run concurrently with its creator, such as the body of a child task or a callback invoked on another thread, must be <code class="language-plaintext highlighter-rouge">@Sendable</code>. A <code class="language-plaintext highlighter-rouge">@Sendable</code> closure may capture only <code class="language-plaintext highlighter-rouge">Sendable</code> values, and may not capture mutable local variables at all:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="kd">func</span> <span class="nf">countTaps</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">run</span> <span class="p">{</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="c1">// error: mutation of captured var 'count' in concurrently-executing code</span>
+</code></pre></div></div>
+
+<p>The closure and the enclosing function could both touch <code class="language-plaintext highlighter-rouge">count</code> at the same time; that is a data race on a stack variable. When the closure only needs the <em>current</em> value, capture it by value:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">scheduleLog</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">into</span> <span class="nv">log</span><span class="p">:</span> <span class="kt">RequestCounter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">attempts</span> <span class="o">=</span> <span class="n">count</span>
+    <span class="n">attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="p">[</span><span class="n">attempts</span><span class="p">]</span> <span class="k">in</span>
+        <span class="n">log</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"attempt </span><span class="se">\(</span><span class="n">attempts</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>      <span class="c1">// Captures an immutable copy.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">logCounter</span> <span class="o">=</span> <span class="kt">RequestCounter</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">logOperation</span> <span class="o">=</span> <span class="nf">scheduleLog</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">into</span><span class="p">:</span> <span class="n">logCounter</span><span class="p">)</span>
+<span class="nf">logOperation</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logCounter</span><span class="o">.</span><span class="nf">count</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"attempt 3"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>When the closure needs to <em>change</em> shared state, that state must live somewhere that synchronizes it: an actor, the main actor, or a <code class="language-plaintext highlighter-rouge">Mutex</code>-backed object like <code class="language-plaintext highlighter-rouge">RequestCounter</code>.</p>
+
+<p>Functions and methods have the same rules. Swift 6 infers <code class="language-plaintext highlighter-rouge">@Sendable</code> for references to global functions and for unapplied methods of <code class="language-plaintext highlighter-rouge">Sendable</code> types, and for key paths whose components are all <code class="language-plaintext highlighter-rouge">Sendable</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0418-inferring-sendable-for-methods.md">SE-0418</a>), so <code class="language-plaintext highlighter-rouge">items.map(\.name)</code> in concurrent code needs no annotation.</p>
+
+<h2 id="region-based-isolation-sending-what-is-not-sendable">Region-based isolation: sending what is not Sendable</h2>
+
+<p>Requiring <code class="language-plaintext highlighter-rouge">Sendable</code> everywhere would make many correct programs illegal. A common shape is: create an object, configure it, and hand it to another isolation domain, never touching it again. The object is not thread-safe, but it is never <em>shared</em>: ownership moves.</p>
+
+<p>Swift 6 checks this with <strong>region-based isolation</strong> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0414-region-based-isolation.md">SE-0414</a>). The compiler tracks which values could reference each other, grouping them into regions. A value in a region that nothing else in the current domain can reach is <em>disconnected</em>, and may be <strong>sent</strong> to another domain, after which the sender cannot use it. Parameters marked <code class="language-plaintext highlighter-rouge">sending</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0430-transferring-parameters-and-results.md">SE-0430</a>) state that requirement in a function signature:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Not Sendable: a plain mutable class.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Draft</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="k">var</span> <span class="nv">paragraphs</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">DraftStore</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">drafts</span><span class="p">:</span> <span class="p">[</span><span class="kt">Draft</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1">/// Takes ownership: callers cannot keep using the draft after sending it.</span>
+    <span class="kd">func</span> <span class="nf">adopt</span><span class="p">(</span><span class="n">_</span> <span class="nv">draft</span><span class="p">:</span> <span class="n">sending</span> <span class="kt">Draft</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">drafts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">draft</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">titles</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">drafts</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">draftStore</span> <span class="o">=</span> <span class="kt">DraftStore</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">draft</span> <span class="o">=</span> <span class="kt">Draft</span><span class="p">()</span>
+<span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s">"Region-based isolation"</span>
+<span class="n">draft</span><span class="o">.</span><span class="n">paragraphs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"Values move between domains."</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">draftStore</span><span class="o">.</span><span class="nf">adopt</span><span class="p">(</span><span class="n">draft</span><span class="p">)</span>                 <span class="c1">// Ownership moves into the actor.</span>
+<span class="k">let</span> <span class="nv">storedTitles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">draftStore</span><span class="o">.</span><span class="n">titles</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">storedTitles</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Region-based isolation"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Touching the draft after sending it is rejected:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">func</span> <span class="nf">sendThenEdit</span><span class="p">(</span><span class="nv">store</span><span class="p">:</span> <span class="kt">DraftStore</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">draft</span> <span class="o">=</span> <span class="kt">Draft</span><span class="p">()</span>
+    <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s">"hello"</span>
+    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">adopt</span><span class="p">(</span><span class="n">draft</span><span class="p">)</span>
+    <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s">"after"</span>
+<span class="p">}</span>
+<span class="c1">// error: sending 'draft' risks causing data races</span>
+<span class="c1">// note: 'draft' used after being passed as a 'sending' parameter; Later uses could race</span>
+</code></pre></div></div>
+
+<p>This is the right model for builders, freshly decoded objects, and values produced by one task for consumption by another. A function can also return a <code class="language-plaintext highlighter-rouge">sending</code> result to promise that the result is disconnected from its own state, which is how <code class="language-plaintext highlighter-rouge">Task.value</code> and continuation results can hand non-<code class="language-plaintext highlighter-rouge">Sendable</code> values back safely.</p>
+
+<p>Region-based isolation makes many <code class="language-plaintext highlighter-rouge">Sendable</code> errors disappear without any annotation. When an error remains, it usually means the value really is reachable from both sides: a property of <code class="language-plaintext highlighter-rouge">self</code> captured into a task, an element of an array the caller keeps using, or a closure stored somewhere and called later.</p>
+
+<h2 id="three-strategies-for-a-non-sendable-type">Three strategies for a non-Sendable type</h2>
+
+<p>When a type is not <code class="language-plaintext highlighter-rouge">Sendable</code> and the compiler objects to it crossing a boundary, there are three good responses and one bad one:</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    accTitle: Choosing how to handle a value that is not Sendable
+    Q{"A non-Sendable value must cross a boundary"}
+    Q --&gt; V{"Can it be a value type, or immutable?"}
+    V -- Yes --&gt; S1["Make it Sendable: struct, enum, or final class of lets"]
+    V -- No --&gt; I{"Does it belong to one domain?"}
+    I -- Yes --&gt; S2["Isolate it: keep it inside one actor and pass Sendable snapshots out"]
+    I -- No --&gt; T{"Is ownership handed over and never used again?"}
+    T -- Yes --&gt; S3["Send it: rely on region isolation, mark parameters sending"]
+    T -- No --&gt; L["Synchronize it: protect state with Mutex, then it is Sendable"]
+    Q -. "avoid" .-&gt; U["@unchecked Sendable without real synchronization"]
+</code></pre>
+
+<p><strong>Make it <code class="language-plaintext highlighter-rouge">Sendable</code></strong> when the type is data. Most model types should be structs, and most structs are <code class="language-plaintext highlighter-rouge">Sendable</code> already.</p>
+
+<p><strong>Isolate it</strong> when the type is stateful and belongs to one domain. A non-<code class="language-plaintext highlighter-rouge">Sendable</code> class used only inside an actor needs no conformance at all; the actor is the protection. Pass <code class="language-plaintext highlighter-rouge">Sendable</code> snapshots out instead of the object.</p>
+
+<p><strong>Send it</strong> when ownership moves once. Configure on one side, hand over, never touch again.</p>
+
+<p><strong>Synchronize it</strong> when it is genuinely shared and mutable: put the state behind a <code class="language-plaintext highlighter-rouge">Mutex</code>, and the compiler will check the conformance.</p>
+
+<p>What you should not do is write <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> on a class with unprotected mutable state to silence an error. That converts a compile-time diagnostic into a run-time data race. Treat every <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> as a claim that needs a comment explaining the synchronization, and audit them during review.</p>
+
+<h2 id="code-you-do-not-control">Code you do not control</h2>
+
+<p>Frameworks and packages that predate concurrency annotations produce <code class="language-plaintext highlighter-rouge">Sendable</code> errors that you cannot fix at the source. <code class="language-plaintext highlighter-rouge">@preconcurrency import SomeModule</code> downgrades diagnostics about that module’s types to warnings or suppresses them, until the module adopts annotations. Use it as a migration aid, not a permanent setting; the <a href="/swift-6-data-race-safety-migration/">Swift 6 migration article</a> covers the process.</p>
+
+<p>For Objective-C APIs, Swift 6.2 imports completion-handler parameters as <code class="language-plaintext highlighter-rouge">@Sendable</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0463-sendable-completion-handlers.md">SE-0463</a>), matching the reality that such handlers are called on arbitrary queues.</p>
+
+<h2 id="common-diagnostics-and-their-usual-fixes">Common diagnostics and their usual fixes</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Diagnostic</th>
+      <th>Usual cause</th>
+      <th>Usual fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>“type ‘X’ does not conform to the ‘Sendable’ protocol”</td>
+      <td>A public type, or a type with a non-<code class="language-plaintext highlighter-rouge">Sendable</code> field</td>
+      <td>Add the conformance, make the field <code class="language-plaintext highlighter-rouge">Sendable</code>, or isolate the value</td>
+    </tr>
+    <tr>
+      <td>“stored property ‘x’ of ‘Sendable’-conforming class is mutable”</td>
+      <td><code class="language-plaintext highlighter-rouge">var</code> in a <code class="language-plaintext highlighter-rouge">Sendable</code> class</td>
+      <td>Use <code class="language-plaintext highlighter-rouge">let</code>, move state behind a <code class="language-plaintext highlighter-rouge">Mutex</code>, or make the class an actor</td>
+    </tr>
+    <tr>
+      <td>“mutation of captured var ‘x’ in concurrently-executing code”</td>
+      <td>A <code class="language-plaintext highlighter-rouge">@Sendable</code> closure modifies a local</td>
+      <td>Capture a copy, or move the state into an actor</td>
+    </tr>
+    <tr>
+      <td>“sending ‘x’ risks causing data races”</td>
+      <td>A value is used after being sent, or is reachable from both sides</td>
+      <td>Stop using it after sending, or send a copy</td>
+    </tr>
+    <tr>
+      <td>“non-Sendable type ‘X’ of let ‘x’ cannot exit main actor-isolated context”</td>
+      <td>Main-actor state captured by non-isolated code</td>
+      <td>Pass a <code class="language-plaintext highlighter-rouge">Sendable</code> snapshot, or keep the code on the main actor</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Sendable</code> is a compile-time promise that sharing a value cannot cause a data race.</li>
+  <li>Internal structs and enums with <code class="language-plaintext highlighter-rouge">Sendable</code> members are inferred <code class="language-plaintext highlighter-rouge">Sendable</code>; public types must declare it.</li>
+  <li>Classes must be final with immutable <code class="language-plaintext highlighter-rouge">Sendable</code> properties, isolated to a global actor, or internally synchronized. A <code class="language-plaintext highlighter-rouge">Mutex</code>-backed class is checked, not unchecked.</li>
+  <li>Swift 6.3’s <code class="language-plaintext highlighter-rouge">weak let</code> allows weak references in <code class="language-plaintext highlighter-rouge">Sendable</code> classes; Swift 6.4’s <code class="language-plaintext highlighter-rouge">~Sendable</code> declares a type deliberately non-shareable.</li>
+  <li><code class="language-plaintext highlighter-rouge">@Sendable</code> closures cannot capture mutable locals; capture copies or move state behind synchronization.</li>
+  <li>Region-based isolation and <code class="language-plaintext highlighter-rouge">sending</code> move non-<code class="language-plaintext highlighter-rouge">Sendable</code> values between domains safely, as long as the sender never uses them again.</li>
+  <li>Choose between making a type <code class="language-plaintext highlighter-rouge">Sendable</code>, isolating it, sending it, or synchronizing it. Reserve <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> for synchronization the compiler cannot see.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Take a non-<code class="language-plaintext highlighter-rouge">Sendable</code> <code class="language-plaintext highlighter-rouge">ImageProcessor</code> class with mutable configuration and a cache. Write three versions: one where the processor lives inside an actor and callers receive <code class="language-plaintext highlighter-rouge">Sendable</code> results, one where each task creates and configures its own processor and sends it to a pipeline actor, and one where the cache moves behind a <code class="language-plaintext highlighter-rouge">Mutex</code> so the processor can be <code class="language-plaintext highlighter-rouge">Sendable</code>. For each, list what can still go wrong at run time, and which version you would choose if the cache must be shared across all images.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0302-concurrent-value-and-concurrent-closures.md">SE-0302: Sendable and @Sendable closures</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0414-region-based-isolation.md">SE-0414: Region based isolation</a> and <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0430-transferring-parameters-and-results.md">SE-0430: <code class="language-plaintext highlighter-rouge">sending</code> parameter and result values</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0481-weak-let.md">SE-0481: <code class="language-plaintext highlighter-rouge">weak let</code></a> and <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0518-tilde-sendable.md">SE-0518: <code class="language-plaintext highlighter-rouge">~Sendable</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2022/110351/">Eliminate data races using Swift Concurrency</a>, WWDC22.</li>
+</ul>
+
+<p>Previous: <a href="/swift-main-actor/">The Main Actor and UI-Facing State</a>. Next: <a href="/swift-isolated-nonisolated/">Isolated and Nonisolated Methods</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-sendable/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Sendable+in+Swift%3A+Moving+Values+Across+Isolation+Boundaries%20http%3A%2F%2Flocalhost%3A4000%2Fswift-sendable%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-sendable/&title=Sendable+in+Swift%3A+Moving+Values+Across+Isolation+Boundaries%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-sendable/&title=Sendable+in+Swift%3A+Moving+Values+Across+Isolation+Boundaries%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-sendable/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Sendable in Swift: Moving Values Across Isolation Boundaries%20%7C%20Swift By Deya&body=http://localhost:4000/swift-sendable/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Data+Races">Data Races</a></li>
+    
+    <li><a href="/tag/#Sendable">Sendable</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Isolated and Nonisolated Methods in Swift" href="/swift-isolated-nonisolated/"> <p>Previous post</p> Isolated and Nonisolated Methods in Swift </a> </div> <div id="next-post"> <a alt="The Main Actor and UI-Facing State in Swift" href="/swift-main-actor/"> <p>Next post</p> The Main Actor and UI-Facing State in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

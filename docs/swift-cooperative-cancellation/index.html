@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Cooperative Cancellation and Cancellation Checks in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Cooperative Cancellation and Cancellation Checks in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Cancelling a Swift task does not stop it. It sets a flag. The task keeps running exactly as before until some code it executes looks at that flag and decides what to do. This is cooperative cancellation: the runtime delivers the request instantly, and each piece of code is responsible for noticing it and responding sensibly. That design avoids the classic disasters of forced termination, such as locks left held, files half-written, and invariants broken mid-update, but it moves the responsibility to you. Code that never checks is uncancellable. Code that checks wrongly can spin, swallow the signal, or commit results nobody wants. This article shows what the flag does and does not do, which APIs check it for you, how often your own code should check, and four bugs that appear in otherwise careful code." /> <meta property="og:description" content="Cancelling a Swift task does not stop it. It sets a flag. The task keeps running exactly as before until some code it executes looks at that flag and decides what to do. This is cooperative cancellation: the runtime delivers the request instantly, and each piece of code is responsible for noticing it and responding sensibly. That design avoids the classic disasters of forced termination, such as locks left held, files half-written, and invariants broken mid-update, but it moves the responsibility to you. Code that never checks is uncancellable. Code that checks wrongly can spin, swallow the signal, or commit results nobody wants. This article shows what the flag does and does not do, which APIs check it for you, how often your own code should check, and four bugs that appear in otherwise careful code." /> <link rel="canonical" href="http://localhost:4000/swift-cooperative-cancellation/" /> <meta property="og:url" content="http://localhost:4000/swift-cooperative-cancellation/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-25T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Cooperative Cancellation and Cancellation Checks in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-25T00:00:00+03:00","datePublished":"2026-06-25T00:00:00+03:00","description":"Cancelling a Swift task does not stop it. It sets a flag. The task keeps running exactly as before until some code it executes looks at that flag and decides what to do. This is cooperative cancellation: the runtime delivers the request instantly, and each piece of code is responsible for noticing it and responding sensibly. That design avoids the classic disasters of forced termination, such as locks left held, files half-written, and invariants broken mid-update, but it moves the responsibility to you. Code that never checks is uncancellable. Code that checks wrongly can spin, swallow the signal, or commit results nobody wants. This article shows what the flag does and does not do, which APIs check it for you, how often your own code should check, and four bugs that appear in otherwise careful code.","headline":"Cooperative Cancellation and Cancellation Checks in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-cooperative-cancellation/"},"url":"http://localhost:4000/swift-cooperative-cancellation/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Cooperative Cancellation and Cancellation Checks in Swift"> <meta name="twitter:description" content="Cancelling a Swift task does not stop it. It sets a flag. The task keeps running exactly as before until some code it executes looks at that flag and decides..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Cooperative Cancellation and Cancellation Checks in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Cooperative Cancellation and Cancellation Checks in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-25T00:00:00+03:00">June 25, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Cancelling a Swift task does not stop it. It sets a flag. The task keeps running exactly as before until some code it executes looks at that flag and decides what to do. This is <strong>cooperative cancellation</strong>: the runtime delivers the request instantly, and each piece of code is responsible for noticing it and responding sensibly.</p>
+
+<p>That design avoids the classic disasters of forced termination, such as locks left held, files half-written, and invariants broken mid-update, but it moves the responsibility to you. Code that never checks is uncancellable. Code that checks wrongly can spin, swallow the signal, or commit results nobody wants. This article shows what the flag does and does not do, which APIs check it for you, how often your own code should check, and four bugs that appear in otherwise careful code.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. Timings in the text come from that machine. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="what-cancel-actually-does">What <code class="language-plaintext highlighter-rouge">cancel()</code> actually does</h2>
+
+<p>Calling <code class="language-plaintext highlighter-rouge">cancel()</code> on a task handle, or cancelling a parent whose structured children inherit it, does three things:</p>
+
+<ol>
+  <li>It atomically sets the task’s cancelled flag. The flag can never be cleared.</li>
+  <li>It recursively sets the flag on every structured child.</li>
+  <li>It runs any cancellation handlers registered with <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code>, as the <a href="/swift-cancellation-handlers-cleanup/">next article</a> explains.</li>
+</ol>
+
+<p>It does <strong>not</strong> interrupt the task, throw into it, or wait for it. A task that never looks at the flag finishes normally:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Busy CPU work that takes about `duration` and never checks for cancellation.</span>
+<span class="kd">func</span> <span class="nf">uncheckedWork</span><span class="p">(</span><span class="k">for</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">duration</span>
+    <span class="k">var</span> <span class="nv">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="n">iterations</span> <span class="o">&amp;+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">iterations</span>
+<span class="p">}</span>
+
+<span class="c1">/// `@concurrent` keeps the CPU-bound work off the caller's actor.</span>
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">obliviousJob</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">iterations</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">sawCancellation</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">iterations</span> <span class="o">=</span> <span class="nf">uncheckedWork</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">oblivious</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">obliviousJob</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">cancelledAt</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="n">oblivious</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">iterations</span><span class="p">,</span> <span class="nv">sawFlag</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="n">oblivious</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">ignoredFor</span> <span class="o">=</span> <span class="n">cancelledAt</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">iterations</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">sawFlag</span><span class="p">,</span> <span class="s">"The task ran to completion with its flag set"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ignoredFor</span> <span class="o">&gt;=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The task was cancelled 10 ms in and kept computing for the remaining 140 ms.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">@concurrent</code> attribute is not incidental. This code is top-level code, which is main-actor-isolated, and <code class="language-plaintext highlighter-rouge">Task { }</code> inherits that isolation. Without a hop off the main actor, the busy loop would run <em>on</em> the main actor, the main actor could not resume the code that calls <code class="language-plaintext highlighter-rouge">cancel()</code> until the loop finished, and the cancellation would arrive after the task was already done. CPU-bound work belongs off the actors that need to stay responsive, including the actor that wants to cancel it. Its flag was set the whole time; nothing read it until the end. Everything that awaited this task, including a parent group or a view model waiting to start the next request, waited too.</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: Cancellation sets a flag that running code must observe
+    [*] --&gt; Running
+    Running --&gt; FlagSet: cancel() called
+    Running --&gt; Completed: finishes before any cancel
+    FlagSet --&gt; Running2: code keeps executing
+    state "Running with flag set" as Running2
+    Running2 --&gt; Observed: isCancelled, checkCancellation, or a cancellable await
+    Running2 --&gt; Completed: never checks
+    Observed --&gt; ThrowsCancellation: propagate CancellationError
+    Observed --&gt; PartialResult: return what is done so far
+    ThrowsCancellation --&gt; [*]
+    PartialResult --&gt; [*]
+    Completed --&gt; [*]
+</code></pre>
+
+<h2 id="which-apis-check-for-you">Which APIs check for you</h2>
+
+<p>Many asynchronous APIs observe cancellation, but not uniformly. Knowing which do, and how they report it, decides where your own checks are needed:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>API</th>
+      <th>Behavior when the current task is cancelled</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Task.sleep(for:)</code>, <code class="language-plaintext highlighter-rouge">Clock.sleep(until:)</code></td>
+      <td>Throws <code class="language-plaintext highlighter-rouge">CancellationError</code> immediately, even if called after cancellation</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Task.checkCancellation()</code></td>
+      <td>Throws <code class="language-plaintext highlighter-rouge">CancellationError</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Task.isCancelled</code></td>
+      <td>Returns <code class="language-plaintext highlighter-rouge">true</code>; does nothing else</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">URLSession</code> async methods</td>
+      <td>Cancel the network request and throw <code class="language-plaintext highlighter-rouge">URLError</code> with code <code class="language-plaintext highlighter-rouge">.cancelled</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">for await</code> over <code class="language-plaintext highlighter-rouge">AsyncStream</code></td>
+      <td>The iterator returns <code class="language-plaintext highlighter-rouge">nil</code>, so the loop ends normally</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Task.yield()</code></td>
+      <td>Suspends and returns normally; does not check</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withCheckedContinuation</code></td>
+      <td>Keeps waiting until resumed; does not check</td>
+    </tr>
+    <tr>
+      <td>Task group <code class="language-plaintext highlighter-rouge">next()</code></td>
+      <td>Children are cancelled; <code class="language-plaintext highlighter-rouge">next()</code> keeps returning their results</td>
+    </tr>
+    <tr>
+      <td>Synchronous code, GCD blocks, C libraries</td>
+      <td>Unaware of task cancellation</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two entries deserve emphasis. <code class="language-plaintext highlighter-rouge">URLSession</code> does not throw <code class="language-plaintext highlighter-rouge">CancellationError</code>. On the test machine, a cancelled <code class="language-plaintext highlighter-rouge">URLSession.shared.data(from:)</code> threw <code class="language-plaintext highlighter-rouge">NSURLErrorDomain</code> code −999, which bridges to <code class="language-plaintext highlighter-rouge">URLError(.cancelled)</code>. Code that recognizes cancellation by <code class="language-plaintext highlighter-rouge">catch is CancellationError</code> misses it. And continuations ignore cancellation entirely: a task suspended in <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> stays suspended until something resumes it, cancelled or not. On the test machine, a continuation resumed after 100 ms by another task held its cancelled waiter for the full remaining time. Bridging cancellation into callback APIs is the subject of the <a href="/swift-continuation-ownership/">continuation ownership article</a>.</p>
+
+<h2 id="checking-in-your-own-code">Checking in your own code</h2>
+
+<p>Two primitives cover nearly every case:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">try Task.checkCancellation()</code> throws <code class="language-plaintext highlighter-rouge">CancellationError</code> if the current task is cancelled. Use it where cancellation should abort the operation and propagate.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task.isCancelled</code> returns a <code class="language-plaintext highlighter-rouge">Bool</code>. Use it where cancellation should produce a different, non-throwing outcome.</li>
+</ul>
+
+<p>A multi-stage pipeline checks at stage boundaries, where stopping leaves no partial state:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Document</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">words</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">tokenize</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+    <span class="n">text</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">()</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">whereSeparator</span><span class="p">:</span> <span class="p">{</span> <span class="o">!</span><span class="nv">$0</span><span class="o">.</span><span class="n">isLetter</span> <span class="p">})</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">String</span><span class="o">.</span><span class="kd">init</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">buildIndex</span><span class="p">(</span><span class="n">from</span> <span class="nv">documents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">parsed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Document</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">text</span> <span class="k">in</span> <span class="n">documents</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">checkCancellation</span><span class="p">()</span>
+        <span class="n">parsed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Document</span><span class="p">(</span><span class="nv">words</span><span class="p">:</span> <span class="nf">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)))</span>
+    <span class="p">}</span>
+    <span class="k">try</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">checkCancellation</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">index</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span> <span class="k">in</span> <span class="n">parsed</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="k">in</span> <span class="n">document</span><span class="o">.</span><span class="n">words</span> <span class="p">{</span>
+            <span class="n">index</span><span class="p">[</span><span class="n">word</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="p">[]]</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">index</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">buildIndex</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="p">[</span><span class="s">"Swift tasks cancel"</span><span class="p">,</span> <span class="s">"Tasks check flags"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="s">"tasks"</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">cancelledIndexing</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">buildIndex</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="p">[</span><span class="s">"never"</span><span class="p">,</span> <span class="s">"parsed"</span><span class="p">])</span>
+<span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">cancelledIndexing</span><span class="o">.</span><span class="n">value</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A cancelled build must throw"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">CancellationError</span> <span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">withUnsafeCurrentTask { $0?.cancel() }</code> cancels the running task from inside itself, a compact way to put a task into the cancelled state for a test. The handle it provides is only valid inside the closure.</p>
+
+<h2 id="how-often-to-check">How often to check</h2>
+
+<p>A loop that checks after every item responds quickly but pays for every check. One that checks rarely is cheaper but slower to stop. The trade-off is easy to quantify.</p>
+
+<p>If each item takes time \(t\) and the loop checks every \(N\) items, the worst-case delay between <code class="language-plaintext highlighter-rouge">cancel()</code> and the loop noticing is</p>
+
+\[L_{\text{worst}} \approx N t ,\]
+
+<p>and if one check costs \(c\), the overhead relative to the useful work is</p>
+
+\[\frac{c}{N t} .\]
+
+<p>On the test machine, an optimized build performed ten million <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> checks in 0.24 seconds, so \(c \approx 24\,\text{ns}\). Choose \(N\) so that \(N t\) meets your responsiveness target, typically 5 to 20 ms for user-initiated work. With a target of 10 ms, the overhead is about \(24\,\text{ns} / 10\,\text{ms} = 2.4 \times 10^{-6}\), negligible. Checking per item is only worth avoiding when each item is itself only nanoseconds of work.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Processes items that take about `itemCost` each, checking every `stride` items.</span>
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">itemCost</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="n">checkEvery</span> <span class="nv">stride</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">items</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="o">%</span> <span class="n">stride</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">checkCancellation</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="nf">uncheckedWork</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">itemCost</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">items</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">cancellationLatency</span><span class="p">(</span><span class="n">checkEvery</span> <span class="nv">stride</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">worker</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">process</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">,</span> <span class="nv">itemCost</span><span class="p">:</span> <span class="o">.</span><span class="nf">microseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">),</span> <span class="nv">checkEvery</span><span class="p">:</span> <span class="n">stride</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="n">worker</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">worker</span><span class="o">.</span><span class="n">result</span>
+    <span class="k">return</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">frequentChecks</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">cancellationLatency</span><span class="p">(</span><span class="nv">checkEvery</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">rareChecks</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">cancellationLatency</span><span class="p">(</span><span class="nv">checkEvery</span><span class="p">:</span> <span class="mi">500</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">frequentChecks</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">rareChecks</span> <span class="o">&gt;</span> <span class="n">frequentChecks</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"check every 10 items:"</span><span class="p">,</span> <span class="n">frequentChecks</span><span class="p">,</span> <span class="s">"every 500 items:"</span><span class="p">,</span> <span class="n">rareChecks</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>With 0.2 ms items, checking every 10 items bounds the delay at about 2 ms; every 500 items, at about 100 ms. On the test machine one run measured 0.05 ms and 70 ms respectively, both within their bounds. Where the cancellation lands within a stride is effectively random, so the expected latency is about half the worst case.</p>
+
+<h2 id="bug-1-try-around-a-cancellable-sleep-turns-a-loop-into-a-spin">Bug 1: <code class="language-plaintext highlighter-rouge">try?</code> around a cancellable sleep turns a loop into a spin</h2>
+
+<p>Polling loops often look like this:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">pollIgnoringErrors</span><span class="p">(</span><span class="n">until</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">wakeUps</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>   <span class="c1">// Swallows CancellationError.</span>
+        <span class="n">wakeUps</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">wakeUps</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">spinning</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">pollIgnoringErrors</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">25</span><span class="p">))</span>
+<span class="n">spinning</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">wakeUps</span> <span class="o">=</span> <span class="k">await</span> <span class="n">spinning</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">wakeUps</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">,</span> <span class="s">"After cancellation every sleep returns immediately, so the loop spins"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"wake-ups in 100 ms with a swallowed cancellation:"</span><span class="p">,</span> <span class="n">wakeUps</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Before cancellation, the loop wakes up about every 10 ms. After it, <code class="language-plaintext highlighter-rouge">Task.sleep</code> throws immediately on every call, because the flag is permanent, and <code class="language-plaintext highlighter-rouge">try?</code> discards that error. The loop becomes a busy spin that burns a core until its other exit condition is met. On the test machine, in a debug build, the loop above woke up about 145,000 times in total, nearly all of them in the 75 ms after cancellation; an open-ended polling loop would spin forever.</p>
+
+<p>The fix is to let cancellation end the loop:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">poll</span><span class="p">(</span><span class="n">until</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">wakeUps</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="k">break</span>
+        <span class="p">}</span>
+        <span class="n">wakeUps</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">wakeUps</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">polite</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">poll</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">25</span><span class="p">))</span>
+<span class="n">polite</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">politeWakeUps</span> <span class="o">=</span> <span class="k">await</span> <span class="n">polite</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">politeWakeUps</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">while !Task.isCancelled</code> in the loop condition is equally correct. What is never correct is a <code class="language-plaintext highlighter-rouge">try?</code> that discards the only signal the loop had.</p>
+
+<h2 id="bug-2-treating-cancellation-as-a-failure">Bug 2: treating cancellation as a failure</h2>
+
+<p>A catch-all <code class="language-plaintext highlighter-rouge">catch</code> sees <code class="language-plaintext highlighter-rouge">CancellationError</code> and <code class="language-plaintext highlighter-rouge">URLError(.cancelled)</code> like any other error. In UI code, that becomes an error alert that appears when the user navigates away, or a “Something went wrong” banner after typing a second character in a search field. Cancellation is not a failure. It is the caller saying the result is no longer wanted, and the right response is usually to do nothing.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">isCancellation</span><span class="p">(</span><span class="n">_</span> <span class="nv">error</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">error</span> <span class="k">is</span> <span class="kt">CancellationError</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">urlError</span> <span class="o">=</span> <span class="n">error</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">,</span> <span class="n">urlError</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">false</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ArticleModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">errorMessage</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">loadTask</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">load</span><span class="p">(</span><span class="n">_</span> <span class="nv">fetch</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">loadTask</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">loadTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="n">title</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetch</span><span class="p">()</span>
+                <span class="n">errorMessage</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="k">where</span> <span class="nf">isCancellation</span><span class="p">(</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// The caller replaced or abandoned this load. Not an error to show.</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">errorMessage</span> <span class="o">=</span> <span class="s">"Could not load the article."</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">loadTask</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">loadTask</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">articleModel</span> <span class="o">=</span> <span class="kt">ArticleModel</span><span class="p">()</span>
+<span class="n">articleModel</span><span class="o">.</span><span class="n">load</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">"Never shown"</span>
+<span class="p">}</span>
+<span class="n">articleModel</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">articleModel</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleModel</span><span class="o">.</span><span class="n">errorMessage</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"Cancelling must not surface an error"</span><span class="p">)</span>
+
+<span class="n">articleModel</span><span class="o">.</span><span class="n">load</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">articleModel</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleModel</span><span class="o">.</span><span class="n">errorMessage</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"URLSession cancellations are cancellations too"</span><span class="p">)</span>
+
+<span class="n">articleModel</span><span class="o">.</span><span class="n">load</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">notConnectedToInternet</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">articleModel</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">articleModel</span><span class="o">.</span><span class="n">errorMessage</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Put the cancellation clause first and keep it in one helper, so every catch site agrees on what counts as cancellation. If a lower layer translates errors into its own domain type, have it preserve cancellation as a distinct case rather than wrapping it as a generic failure.</p>
+
+<h2 id="bug-3-committing-a-result-after-cancellation">Bug 3: committing a result after cancellation</h2>
+
+<p>A cancellation check guards the code <em>after</em> it. If the task is cancelled while it is suspended in an <code class="language-plaintext highlighter-rouge">await</code> that does not throw on cancellation, such as a continuation-based API, a non-cancellable computation, or an <code class="language-plaintext highlighter-rouge">await</code> on another task’s value, then execution resumes as if nothing happened. Writing the result into shared state at that point publishes work nobody asked for.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Simulates an API that completes normally even if its caller is cancelled.</span>
+<span class="kd">func</span> <span class="nf">uncancellableLookup</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">40</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="s">"value for </span><span class="se">\(</span><span class="n">key</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LookupModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">committed</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">lookUpCarelessly</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">uncancellableLookup</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">committed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">lookUp</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">uncancellableLookup</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">committed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">lookupModel</span> <span class="o">=</span> <span class="kt">LookupModel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">careless</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="n">lookupModel</span><span class="o">.</span><span class="nf">lookUpCarelessly</span><span class="p">(</span><span class="s">"stale"</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">careful</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="n">lookupModel</span><span class="o">.</span><span class="nf">lookUp</span><span class="p">(</span><span class="s">"also stale"</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">careless</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">careful</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">careless</span><span class="o">.</span><span class="n">value</span>
+<span class="k">await</span> <span class="n">careful</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lookupModel</span><span class="o">.</span><span class="n">committed</span> <span class="o">==</span> <span class="p">[</span><span class="s">"value for stale"</span><span class="p">],</span> <span class="s">"Only the careless version committed after cancellation"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The rule: <strong>check for cancellation after the last <code class="language-plaintext highlighter-rouge">await</code> and before the first irreversible effect</strong>, such as writing to model state, the disk, or a cache. For operations that replace one another, a cancellation check is still not sufficient, because the replaced task may have passed the check just before being cancelled; the <a href="/swift-rejecting-stale-results/">stale results article</a> adds a generation token for that case.</p>
+
+<h2 id="bug-4-assuming-cleanup-can-await-normally">Bug 4: assuming cleanup can await normally</h2>
+
+<p>The cancelled flag is permanent, so it also affects cleanup code that runs after cancellation is observed. Any cancellable <code class="language-plaintext highlighter-rouge">await</code> in that cleanup, including a <code class="language-plaintext highlighter-rouge">Task.sleep</code> for a retry delay, a <code class="language-plaintext highlighter-rouge">URLSession</code> call that reports an abandoned upload to the server, or a child task, sees the flag and fails immediately.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">cleanupProbe</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">in</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">checkCancellation</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s">"not reached"</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="c1">// Cleanup after cancellation: try to wait briefly before releasing a resource.</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+            <span class="k">return</span> <span class="s">"cleanup slept"</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="s">"cleanup sleep threw immediately"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">cleanupOutcome</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cleanupProbe</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cleanupOutcome</span> <span class="o">==</span> <span class="s">"cleanup sleep threw immediately"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Cleanup in a cancelled task must therefore be synchronous, run inside a cancellation shield, which Swift 6.4 adds for iOS 27 and macOS 27 (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0504-task-cancellation-shields.md">SE-0504</a>), or be handed to work that is not cancelled. All three approaches are covered in the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers and cleanup article</a>.</p>
+
+<h2 id="returning-partial-results">Returning partial results</h2>
+
+<p>Throwing <code class="language-plaintext highlighter-rouge">CancellationError</code> is not the only valid response. Some computations get better the longer they run, and a caller who cancels may still want the best answer so far. Such <em>anytime</em> algorithms check <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> and return what they have.</p>
+
+<p>Estimating \(\pi\) by Monte Carlo sampling is a small example. A point drawn uniformly from the unit square lands inside the quarter circle with probability \(p = \pi/4\), so after \(n\) samples with \(h\) hits, \(\hat\pi = 4h/n\), with standard error</p>
+
+\[\sigma_{\hat\pi} = 4\sqrt{\frac{p(1-p)}{n}} \approx \frac{1.64}{\sqrt{n}} .\]
+
+<p>The longer the task runs, the more samples it takes and the smaller the error, and the caller decides when “good enough” has arrived.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">PiEstimate</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">samples</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="k">var</span> <span class="nv">standardError</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">p</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span>
+        <span class="k">return</span> <span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Samples in batches until cancelled, then returns the estimate so far instead of throwing.</span>
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">estimatePi</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">,</span> <span class="nv">batch</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">10_000</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">PiEstimate</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">hits</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">samples</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">repeat</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">batch</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="p">{</span> <span class="n">hits</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">samples</span> <span class="o">+=</span> <span class="n">batch</span>
+        <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span>
+    <span class="k">return</span> <span class="kt">PiEstimate</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">4</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="nv">samples</span><span class="p">:</span> <span class="n">samples</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">estimator</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">estimatePi</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">2026</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">estimator</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">estimate</span> <span class="o">=</span> <span class="k">await</span> <span class="n">estimator</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">estimate</span><span class="o">.</span><span class="n">samples</span> <span class="o">&gt;=</span> <span class="mi">10_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">estimate</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">estimate</span><span class="o">.</span><span class="n">standardError</span><span class="p">,</span> <span class="s">"Within five standard errors"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"pi ≈"</span><span class="p">,</span> <span class="n">estimate</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s">"from"</span><span class="p">,</span> <span class="n">estimate</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="s">"samples, standard error"</span><span class="p">,</span> <span class="n">estimate</span><span class="o">.</span><span class="n">standardError</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">repeat ... while</code> structure guarantees at least one batch, so the estimate is always defined. The <code class="language-plaintext highlighter-rouge">Task.yield()</code> between batches is not needed for cancellation, since the flag is checked regardless, but it keeps the estimator from monopolizing its thread when other work is waiting.</p>
+
+<p>Whether to throw or return partially is an API decision. Make it explicit in the documentation, because callers handle the two very differently: a throwing function’s caller writes a <code class="language-plaintext highlighter-rouge">catch</code>, while a partial-result caller must check how complete the result is.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cancel()</code> sets a permanent flag on a task and its structured children. Nothing stops until code observes the flag.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task.sleep</code>, <code class="language-plaintext highlighter-rouge">checkCancellation</code>, and <code class="language-plaintext highlighter-rouge">URLSession</code> observe it; continuations, <code class="language-plaintext highlighter-rouge">Task.yield</code>, and synchronous code do not. <code class="language-plaintext highlighter-rouge">URLSession</code> reports <code class="language-plaintext highlighter-rouge">URLError(.cancelled)</code>, not <code class="language-plaintext highlighter-rouge">CancellationError</code>.</li>
+  <li>Check every \(N\) items so that \(N t\) meets your latency target. At about 24 ns per check, overhead is rarely a concern.</li>
+  <li>Never wrap a cancellable sleep in <code class="language-plaintext highlighter-rouge">try?</code> inside a loop: after cancellation it spins.</li>
+  <li>Treat cancellation as its own outcome, not a failure; recognize both error forms in one place.</li>
+  <li>Check after the last <code class="language-plaintext highlighter-rouge">await</code> and before the first irreversible effect.</li>
+  <li>Cleanup in a cancelled task cannot rely on cancellable awaits.</li>
+  <li>Anytime algorithms can return the best result so far instead of throwing; document which contract you chose.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">func compress(_ chunks: [Data]) async throws -&gt; Data</code> that compresses chunks sequentially with a synchronous compression function taking about 3 ms per chunk. Measure cancellation latency with checks before every chunk, every 10 chunks, and every 100 chunks, and confirm the \(N t\) bound. Then make the function return a valid partial archive on cancellation, containing only fully compressed chunks plus a footer, and write a test that cancels at random points and verifies the partial archive always decompresses correctly.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>, section “Cancellation.”</li>
+  <li><a href="https://developer.apple.com/documentation/swift/task/checkcancellation()">Task.checkCancellation()</a> and <a href="https://developer.apple.com/documentation/swift/task/iscancelled-swift.type.property">Task.isCancelled</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10170/">Beyond the basics of structured concurrency</a>, WWDC23, on cancellation propagation and task trees.</li>
+</ul>
+
+<p>Previous: <a href="/swift-task-groups/">Task Groups: Fan-Out, Aggregation, and Early Exit</a>. Next: <a href="/swift-cancellation-handlers-cleanup/">Cancellation Handlers and Reliable Resource Cleanup</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-cooperative-cancellation/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Cooperative+Cancellation+and+Cancellation+Checks+in+Swift%20http%3A%2F%2Flocalhost%3A4000%2Fswift-cooperative-cancellation%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-cooperative-cancellation/&title=Cooperative+Cancellation+and+Cancellation+Checks+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-cooperative-cancellation/&title=Cooperative+Cancellation+and+Cancellation+Checks+in+Swift%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-cooperative-cancellation/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Cooperative Cancellation and Cancellation Checks in Swift%20%7C%20Swift By Deya&body=http://localhost:4000/swift-cooperative-cancellation/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Cancellation">Cancellation</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Tasks">Tasks</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Cancellation Handlers and Reliable Resource Cleanup in Swift" href="/swift-cancellation-handlers-cleanup/"> <p>Previous post</p> Cancellation Handlers and Reliable Resource Cleanup in Swift </a> </div> <div id="next-post"> <a alt="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit" href="/swift-task-groups/"> <p>Next post</p> Task Groups in Swift: Fan-Out, Aggregation, and Early Exit </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
