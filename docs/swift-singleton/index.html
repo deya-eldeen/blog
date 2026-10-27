@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A singleton gives a service one shared identity and a globally reachable access point. Those are two separate decisions: an application may need one catalog instance without needing every feature to discover it through global state. Swift makes one-time construction concise with static let. The harder questions are what the shared object owns, whether it can change, and how callers can be tested without resetting the whole process." /> <meta property="og:description" content="A singleton gives a service one shared identity and a globally reachable access point. Those are two separate decisions: an application may need one catalog instance without needing every feature to discover it through global state. Swift makes one-time construction concise with static let. The harder questions are what the shared object owns, whether it can change, and how callers can be tested without resetting the whole process." /> <link rel="canonical" href="http://localhost:4000/swift-singleton/" /> <meta property="og:url" content="http://localhost:4000/swift-singleton/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-01-10T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-01-10T00:00:00+03:00","datePublished":"2023-01-10T00:00:00+03:00","description":"A singleton gives a service one shared identity and a globally reachable access point. Those are two separate decisions: an application may need one catalog instance without needing every feature to discover it through global state. Swift makes one-time construction concise with static let. The harder questions are what the shared object owns, whether it can change, and how callers can be tested without resetting the whole process.","headline":"Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-singleton/"},"url":"http://localhost:4000/swift-singleton/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies"> <meta name="twitter:description" content="A singleton gives a service one shared identity and a globally reachable access point. Those are two separate decisions: an application may need one catalog ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-01-10T00:00:00+03:00">January 10, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A singleton gives a service one shared identity and a globally reachable access point. Those are two separate decisions: an application may need one catalog instance without needing every feature to discover it through global state.</p>
+
+<p>Swift makes one-time construction concise with <code class="language-plaintext highlighter-rouge">static let</code>. The harder questions are what the shared object owns, whether it can change, and how callers can be tested without resetting the whole process.</p>
+
+<!--more-->
+
+<p>These examples use Swift 5.7, including actors introduced in Swift 5.5. They distinguish safe initialization from safe access to mutable state.</p>
+
+<h2 id="start-with-an-immutable-shared-capability">Start with an immutable shared capability</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">FeatureReading</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">contains</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">FeatureCatalog</span><span class="p">:</span> <span class="kt">FeatureReading</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">FeatureCatalog</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">enabled</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"reading"</span><span class="p">,</span> <span class="s">"search"</span><span class="p">]</span>
+    <span class="kd">private</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="kd">func</span> <span class="nf">contains</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">enabled</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">firstCatalog</span> <span class="o">=</span> <span class="kt">FeatureCatalog</span><span class="o">.</span><span class="n">shared</span>
+<span class="k">let</span> <span class="nv">secondCatalog</span> <span class="o">=</span> <span class="kt">FeatureCatalog</span><span class="o">.</span><span class="n">shared</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstCatalog</span> <span class="o">===</span> <span class="n">secondCatalog</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstCatalog</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"reading"</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The private initializer prevents ordinary callers from constructing another instance of this type. The stored type property supplies the shared instance on first use. Swift’s <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/properties/">type-property rules</a> guarantee one-time initialization even with simultaneous access.</p>
+
+<p>That guarantee covers construction of the stored property. It does not serialize arbitrary mutations performed later by methods on the object. A <code class="language-plaintext highlighter-rouge">static let</code> reference to a mutable dictionary owner does not make that dictionary thread-safe.</p>
+
+<p>This catalog has immutable value storage and exposes no mutation. Its sharing contract is consequently much smaller than that of a process-wide session manager.</p>
+
+<h2 id="a-singleton-can-still-arrive-through-injection">A singleton can still arrive through injection</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">FixedFeatures</span><span class="p">:</span> <span class="kt">FeatureReading</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">enabled</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span>
+    <span class="kd">func</span> <span class="nf">contains</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">enabled</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ReadingMenu</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">features</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">FeatureReading</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">features</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">FeatureReading</span> <span class="o">=</span> <span class="kt">FeatureCatalog</span><span class="o">.</span><span class="n">shared</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">features</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">showsReading</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">features</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"reading"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">ReadingMenu</span><span class="p">()</span><span class="o">.</span><span class="n">showsReading</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">ReadingMenu</span><span class="p">(</span><span class="nv">features</span><span class="p">:</span> <span class="kt">FixedFeatures</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="p">[]))</span><span class="o">.</span><span class="n">showsReading</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Production assembly chooses the shared default, while a test can supply a small value. The menu does not need a reset method on the catalog or a mutable global override.</p>
+
+<p>A default argument is still a dependency policy. Larger applications may prefer to remove the default and pass the shared catalog only at the composition root, making every feature’s construction explicit.</p>
+
+<p>Injection does not require constructing several production catalogs. It separates the consumer’s capability from the application’s lifetime choice. See <a href="/swift-dependency-injection/">Dependency Injection</a> for that distinction.</p>
+
+<h2 id="mutable-shared-state-needs-its-own-isolation">Mutable shared state needs its own isolation</h2>
+
+<p>An actor can own a shared counter while serializing updates:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">TicketNumbers</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">TicketNumbers</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">next</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{}</span>
+
+    <span class="kd">func</span> <span class="nf">issue</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="nf">precondition</span><span class="p">(</span><span class="n">next</span> <span class="o">&lt;</span> <span class="kt">Int</span><span class="o">.</span><span class="n">max</span><span class="p">)</span>
+        <span class="n">next</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">next</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">issued</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">returning</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">await</span> <span class="kt">TicketNumbers</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">issue</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">result</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">result</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">result</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">issued</span><span class="p">)</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">20</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The actor’s isolation, rather than <code class="language-plaintext highlighter-rouge">shared</code>, protects the increment. Results arrive in task completion order, which need not match numeric order.</p>
+
+<p>This is a process-local sequence, not a durable identifier generator. Restarting the app resets it; several processes each have their own counter. Persistence, cross-process coordination, and overflow are different requirements.</p>
+
+<p>An actor also does not make an entire multi-step asynchronous workflow atomic. If a method suspends, other actor work can run before it resumes. Validate version-sensitive assumptions again after suspension when necessary.</p>
+
+<h2 id="draw-the-dependency-and-ownership-separately">Draw the dependency and ownership separately</h2>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Assembly can share one service without hiding consumer dependencies
+    Root[Application assembly] --&gt; Shared[Shared catalog]
+    Root --&gt; Menu[Reading menu]
+    Menu --&gt; Contract[FeatureReading capability]
+    Contract --&gt; Shared
+    Test[Test assembly] --&gt; Fixed[Fixed feature value]
+    Contract -. alternative .-&gt; Fixed
+</code></pre>
+
+<p>The singleton owns a process-lifetime access point. The consumer owns a required capability. A test selects another implementation without pretending it changed the real shared instance.</p>
+
+<p>If a singleton retains a delegate, closure, or coordinator, its long lifetime can retain those features indefinitely. Use ownership rules appropriate to those relationships, and provide explicit subscription cancellation when observation ends.</p>
+
+<h2 id="global-reach-can-hide-temporal-coupling">Global reach can hide temporal coupling</h2>
+
+<p>A shared object configured by <code class="language-plaintext highlighter-rouge">configure</code>, then <code class="language-plaintext highlighter-rouge">login</code>, then <code class="language-plaintext highlighter-rouge">load</code> contains a state machine even if its API exposes only unrelated methods. Callers can obtain the singleton before it is ready and then depend on undocumented setup order.</p>
+
+<p>Prefer construction from valid configuration or an explicit state model. If configuration must change, define who may change it and what happens to existing work. A reset method used by tests can invalidate objects still retained by other tests or screens.</p>
+
+<p>Singleton initialization should also avoid surprising effects. Starting network work or calling back into the same singleton while constructing it creates difficult lifetime and reentrancy questions. Keep initialization local and use an explicit activation boundary for effects that need one.</p>
+
+<h2 id="case-study-one-process-two-signed-in-accounts">Case study: one process, two signed-in accounts</h2>
+
+<p>Suppose a reader app starts with one account and stores bookmarks in <code class="language-plaintext highlighter-rouge">BookmarkStore.shared</code>. Every screen works because “current account” is a process-wide assumption. Later, the app adds two windows, each showing a different account. The singleton now combines two distinct decisions: how many stores should exist, and which account owns each store.</p>
+
+<p>Changing a global <code class="language-plaintext highlighter-rouge">currentAccountID</code> when a window becomes active does not restore that separation. A background save started by the first window may finish after the second window changes the ID. Even serializing access to the singleton cannot make the ID represent both windows at once. Synchronization protects the storage; it does not choose the correct ownership scope.</p>
+
+<p>A better composition root creates one store per account and injects that store into the window’s feature graph. Both stores may share an immutable catalog of supported bookmark formats. The catalog has process scope, while account data has account scope. The useful question is therefore “which consumers must share this identity?” rather than “which type should have a static property?”</p>
+
+<p>That distinction also improves tests. Two tests can construct independent account stores while sharing read-only fixtures. A test that verifies one-time static initialization should run in a fresh process if its correctness depends on initialization happening during that test. Resetting a shared instance halfway through a test suite changes the lifecycle being tested.</p>
+
+<h2 id="test-the-contract-not-initialization-timing-accidents">Test the contract, not initialization timing accidents</h2>
+
+<p>Verify repeated access yields the same identity when that is the promise. Test consumer behavior through injected capabilities. For mutable shared actors, test uniqueness or state-transition invariants rather than assuming task scheduling order.</p>
+
+<p>Do not make one test depend on being the first accessor in a whole test process. Such a test becomes fragile as the suite grows. A constructor or factory used by tests can provide isolated instances when the domain permits them; the production shared instance can still be unique by assembly policy.</p>
+
+<h2 id="initialization-and-lifetime-are-separate-contracts">Initialization and lifetime are separate contracts</h2>
+
+<p>Swift initializes a stored type property lazily and guarantees its initialization happens once even when several threads access it. This guarantee applies to creating the stored value. Later calls on the returned object still need an appropriate isolation model, such as the actor used above.</p>
+
+<p>A reference held by a static property normally remains reachable for the process lifetime. Do not rely on its <code class="language-plaintext highlighter-rouge">deinit</code> to flush an essential file or finish an account session. Make shutdown, logout, and persistence explicit operations with observable success or failure.</p>
+
+<p>For a dependency that owns resources, write down three policies before choosing a singleton: who may use it, who may replace it, and who closes it. When all three answers are “the entire process,” a shared instance can be a reasonable convenience. When the answers mention a document, session, window, or test, construct the object at that boundary instead.</p>
+
+<h2 id="exercise-replace-a-global-session">Exercise: replace a global session</h2>
+
+<p>Take a service containing an active account and downloaded drafts. Move it into an account-scoped owner, inject the capability into two screens, and construct two independent account scopes in one test. Verify logging out of one scope does not change the other.</p>
+
+<p>Explain which requirement still benefits from sharing and which requirement never needed a process-wide access point.</p>
+
+<h2 id="language-and-api-reference">Language and API reference</h2>
+
+<p>For Swift’s type-property initialization guarantee, see Apple’s <a href="https://developer.apple.com/documentation/swift/managing-a-shared-resource-using-a-singleton">Managing a Shared Resource Using a Singleton</a>.</p>
+
+<p>Return to the <a href="/swift-design-patterns/">Design Patterns roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-singleton/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Singleton+in+Swift%3A+Shared+Identity%2C+Initialization%2C+and+Hidden+Dependencies%20http%3A%2F%2Flocalhost%3A4000%2Fswift-singleton%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-singleton/&title=Singleton+in+Swift%3A+Shared+Identity%2C+Initialization%2C+and+Hidden+Dependencies%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-singleton/&title=Singleton+in+Swift%3A+Shared+Identity%2C+Initialization%2C+and+Hidden+Dependencies%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-singleton/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Singleton in Swift: Shared Identity, Initialization, and Hidden Dependencies%20%7C%20Swift By Deya&body=http://localhost:4000/swift-singleton/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Architecture">Architecture</a></li>
+    
+    <li><a href="/tag/#Design+Patterns">Design Patterns</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="An OOP Refresher Before Protocol-Oriented Swift" href="/swift-oop-refresher-for-pop/"> <p>Previous post</p> An OOP Refresher Before Protocol-Oriented Swift </a> </div> <div id="next-post"> <a alt="Overriding Methods and Properties in Swift" href="/swift-overriding-methods-properties/"> <p>Next post</p> Overriding Methods and Properties in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

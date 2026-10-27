@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Object Pools in Swift: Bounded Resources, Leases, and Reliable Return | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Object Pools in Swift: Bounded Resources, Leases, and Reliable Return" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An object pool reuses a bounded set of resources instead of constructing a fresh resource for every operation. It is useful when acquisition is expensive and reset is safe. It is counterproductive when ordinary allocation is already cheap or reused objects carry stale state between borrowers. A pool’s important API is the lease: who may use the resource, when it returns, and what happens after return. An array of available objects alone does not establish those rules." /> <meta property="og:description" content="An object pool reuses a bounded set of resources instead of constructing a fresh resource for every operation. It is useful when acquisition is expensive and reset is safe. It is counterproductive when ordinary allocation is already cheap or reused objects carry stale state between borrowers. A pool’s important API is the lease: who may use the resource, when it returns, and what happens after return. An array of available objects alone does not establish those rules." /> <link rel="canonical" href="http://localhost:4000/swift-object-pool/" /> <meta property="og:url" content="http://localhost:4000/swift-object-pool/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-06-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Object Pools in Swift: Bounded Resources, Leases, and Reliable Return" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-06-13T00:00:00+03:00","datePublished":"2023-06-13T00:00:00+03:00","description":"An object pool reuses a bounded set of resources instead of constructing a fresh resource for every operation. It is useful when acquisition is expensive and reset is safe. It is counterproductive when ordinary allocation is already cheap or reused objects carry stale state between borrowers. A pool’s important API is the lease: who may use the resource, when it returns, and what happens after return. An array of available objects alone does not establish those rules.","headline":"Object Pools in Swift: Bounded Resources, Leases, and Reliable Return","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-object-pool/"},"url":"http://localhost:4000/swift-object-pool/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Object Pools in Swift: Bounded Resources, Leases, and Reliable Return"> <meta name="twitter:description" content="An object pool reuses a bounded set of resources instead of constructing a fresh resource for every operation. It is useful when acquisition is expensive and..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Object Pools in Swift: Bounded Resources, Leases, and Reliable Return"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Object Pools in Swift: Bounded Resources, Leases, and Reliable Return</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-06-13T00:00:00+03:00">June 13, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An object pool reuses a bounded set of resources instead of constructing a fresh resource for every operation. It is useful when acquisition is expensive and reset is safe. It is counterproductive when ordinary allocation is already cheap or reused objects carry stale state between borrowers.</p>
+
+<p>A pool’s important API is the lease: who may use the resource, when it returns, and what happens after return. An array of available objects alone does not establish those rules.</p>
+
+<!--more-->
+
+<p>The Swift 5.7 demonstration uses scratch buffers under a serial-access contract. It rejects acquisition when capacity is exhausted and resets buffers before reuse. It is not a concurrent waiting channel or a production memory allocator.</p>
+
+<h2 id="hide-the-pooled-resource-behind-a-lease">Hide the pooled resource behind a lease</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">PoolFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">exhausted</span><span class="p">,</span> <span class="n">returned</span> <span class="p">}</span>
+
+<span class="kd">fileprivate</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ScratchBuffer</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">reset</span><span class="p">()</span> <span class="p">{</span> <span class="n">values</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">(</span><span class="nv">keepingCapacity</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BufferLease</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">buffer</span><span class="p">:</span> <span class="kt">ScratchBuffer</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">returnAction</span><span class="p">:</span> <span class="p">((</span><span class="kt">ScratchBuffer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="kd">fileprivate</span> <span class="nf">init</span><span class="p">(</span><span class="nv">buffer</span><span class="p">:</span> <span class="kt">ScratchBuffer</span><span class="p">,</span> <span class="nv">onReturn</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">ScratchBuffer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">buffer</span>
+        <span class="n">returnAction</span> <span class="o">=</span> <span class="n">onReturn</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">buffer</span> <span class="o">=</span> <span class="n">buffer</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PoolFailure</span><span class="o">.</span><span class="n">returned</span> <span class="p">}</span>
+        <span class="n">buffer</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">snapshot</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">buffer</span> <span class="o">=</span> <span class="n">buffer</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PoolFailure</span><span class="o">.</span><span class="n">returned</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">buffer</span><span class="o">.</span><span class="n">values</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">close</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">resource</span> <span class="o">=</span> <span class="n">buffer</span>
+        <span class="k">let</span> <span class="nv">action</span> <span class="o">=</span> <span class="n">returnAction</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">returnAction</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">resource</span> <span class="o">=</span> <span class="n">resource</span> <span class="p">{</span> <span class="nf">action</span><span class="p">?(</span><span class="n">resource</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="nf">close</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BufferPool</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">created</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">available</span><span class="p">:</span> <span class="p">[</span><span class="kt">ScratchBuffer</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">availableCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">available</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="nf">precondition</span><span class="p">(</span><span class="n">capacity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span> <span class="k">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">borrow</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">BufferLease</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">buffer</span><span class="p">:</span> <span class="kt">ScratchBuffer</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">reused</span> <span class="o">=</span> <span class="n">available</span><span class="o">.</span><span class="nf">popLast</span><span class="p">()</span> <span class="p">{</span> <span class="n">buffer</span> <span class="o">=</span> <span class="n">reused</span> <span class="p">}</span>
+        <span class="k">else</span> <span class="k">if</span> <span class="n">created</span> <span class="o">&lt;</span> <span class="n">capacity</span> <span class="p">{</span> <span class="n">buffer</span> <span class="o">=</span> <span class="kt">ScratchBuffer</span><span class="p">();</span> <span class="n">created</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">BufferLease</span><span class="p">(</span><span class="nv">buffer</span><span class="p">:</span> <span class="n">buffer</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">resource</span> <span class="k">in</span>
+            <span class="n">resource</span><span class="o">.</span><span class="nf">reset</span><span class="p">()</span>
+            <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">available</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="n">withLease</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">(</span><span class="kt">BufferLease</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">lease</span> <span class="o">=</span> <span class="nf">borrow</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PoolFailure</span><span class="o">.</span><span class="n">exhausted</span> <span class="p">}</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">lease</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="nf">body</span><span class="p">(</span><span class="n">lease</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">close</code> clears the lease before invoking its return action. Repeated or reentrant close therefore cannot insert the same resource into the available list twice.</p>
+
+<p>The return closure weakly references the pool, so a retained lease does not keep an abandoned pool alive. The lease itself keeps its resource alive until close. If the pool has gone away, closing releases that resource instead of returning it to a dead owner.</p>
+
+<h2 id="test-exhaustion-reset-and-use-after-return">Test exhaustion, reset, and use after return</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">pool</span> <span class="o">=</span> <span class="kt">BufferPool</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="nf">borrow</span><span class="p">()</span><span class="o">!</span>
+<span class="k">try</span> <span class="n">first</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="nf">borrow</span><span class="p">()</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="n">first</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span>
+<span class="n">first</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">availableCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="nf">borrow</span><span class="p">()</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">clean</span> <span class="o">=</span> <span class="k">try</span> <span class="n">second</span><span class="o">.</span><span class="nf">snapshot</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">clean</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="n">first</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A returned lease must not access a reused resource"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">PoolFailure</span><span class="o">.</span><span class="n">returned</span> <span class="p">{}</span>
+<span class="n">second</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>The stale lease still exists as an object, but its resource reference is gone. It cannot mutate a buffer now borrowed by another caller.</p>
+
+<p>A raw-resource-returning API would require callers never to retain an alias after returning it. A restricted lease interface makes that rule easier to maintain and test, though the exact protection depends on which operations it exposes.</p>
+
+<h2 id="structured-borrowing-handles-failures">Structured borrowing handles failures</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">WorkFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">stopped</span> <span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">_</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="k">try</span> <span class="n">pool</span><span class="o">.</span><span class="n">withLease</span> <span class="p">{</span> <span class="n">lease</span> <span class="k">in</span>
+        <span class="k">try</span> <span class="n">lease</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">throw</span> <span class="kt">WorkFailure</span><span class="o">.</span><span class="n">stopped</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">WorkFailure</span><span class="o">.</span><span class="n">stopped</span> <span class="p">{}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">availableCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">nextCount</span> <span class="o">=</span> <span class="k">try</span> <span class="n">pool</span><span class="o">.</span><span class="n">withLease</span> <span class="p">{</span> <span class="n">lease</span> <span class="k">in</span> <span class="k">try</span> <span class="n">lease</span><span class="o">.</span><span class="nf">snapshot</span><span class="p">()</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">nextCount</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">defer</code> returns the resource on success and failure. Deinitialization is a fallback, not the only reliable signal that work has ended.</p>
+
+<p>If a caller returns the lease object from <code class="language-plaintext highlighter-rouge">withLease</code>, it receives an already closed lease. The wrapper owns the borrowing interval. A resource API should not imply a returned alias remains valid beyond that interval.</p>
+
+<h2 id="capacity-bounds-objects-not-necessarily-bytes">Capacity bounds objects, not necessarily bytes</h2>
+
+<p>For capacity <code class="language-plaintext highlighter-rouge">K</code>, the serial implementation maintains:</p>
+
+\[\text{active}+\text{available}=\text{created}\le K.\]
+
+<p>Each scratch array can still grow without a byte limit. Retaining capacity on reset reuses storage but can retain the largest allocation each buffer ever reached. A pool of four buffers is not automatically a small-memory pool.</p>
+
+<p>For image or decoding resources, define maximum payload size, trimming policy, and failure behavior. Reset must clear all borrower-specific state, including delegates, credentials, and cancellation tokens where those exist.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A lease returns a reset resource exactly once
+    participant Caller
+    participant Pool
+    participant Lease
+    Caller-&gt;&gt;Pool: borrow
+    Pool--&gt;&gt;Caller: lease
+    Caller-&gt;&gt;Lease: use resource
+    Caller-&gt;&gt;Lease: close
+    Lease-&gt;&gt;Pool: reset and return
+    Caller-&gt;&gt;Lease: close again
+    Note over Lease: No second return
+</code></pre>
+
+<h2 id="add-concurrency-only-with-a-complete-policy">Add concurrency only with a complete policy</h2>
+
+<p>Every method here requires serialized access. Protecting only the available array would be insufficient if lease close can race with resource use. A concurrent design needs an isolation boundary covering lease state and pool bookkeeping.</p>
+
+<p>An actor can serialize acquisition and return, but awaiting a lease requires a waiting queue, cancellation, and fairness decisions. Performing an entire synchronous operation inside the actor may serialize all useful work and eliminate the expected parallel benefit.</p>
+
+<p>A nonblocking pool can report exhaustion. A suspending pool can wait. An unbounded fallback can construct more resources but abandons the capacity guarantee. Choose the behavior required by the feature rather than hiding it in a default branch.</p>
+
+<h2 id="pool-only-measured-acquisition-costs">Pool only measured acquisition costs</h2>
+
+<p>Benchmark resource creation, reset, and reuse under representative payloads. Ordinary small Swift objects often do not benefit enough to justify pool lifetime complexity.</p>
+
+<p>A pooled database connection or decoder may carry external state that reset cannot cheaply or safely restore. Test failed work and cancellation before returning such resources; some failures should discard and replace a resource rather than reuse it.</p>
+
+<h2 id="what-the-capacity-bound-does-and-does-not-bound">What the capacity bound does and does not bound</h2>
+
+<p>A pool with capacity four limits the number of scratch buffers it creates. It does not automatically limit their total allocated bytes. One borrower can append a very large payload, and a reset that retains capacity can leave that allocation resident for later borrowers.</p>
+
+<p>For a memory budget, define both a lease count and a buffer-size policy. Options include rejecting an append that exceeds a maximum, dropping oversized buffers on return, or maintaining separate size classes. The correct choice depends on observed workload sizes and the cost of rebuilding storage.</p>
+
+<p>Measure the entire acquire-use-return cycle. A pool adds bookkeeping, reset work, and potentially waiting. If creating the underlying resource is cheap, these costs can exceed the allocation work saved. Benchmarking only acquisition from an already warm pool omits precisely the costs that often determine whether pooling helps.</p>
+
+<h2 id="waiting-turns-the-pool-into-a-scheduler">Waiting turns the pool into a scheduler</h2>
+
+<p>This implementation rejects an acquisition when all resources are leased. An asynchronous variant could suspend borrowers instead, but that requires a queue and a defined fairness policy. A cancellation must remove a waiting borrower without losing the resource that might be returned at the same time.</p>
+
+<p>Decide what happens when the pool closes while borrowers are waiting or working. Do waiting calls fail immediately? Can active borrowers finish? Are returned resources destroyed rather than made available again? These are observable lifecycle rules, so represent them explicitly rather than hiding them inside a semaphore count.</p>
+
+<p>The serialized assumption matters here. Making the pool an actor is a possible starting point, but moving a mutable buffer outside that actor can still create unsynchronized access. An async API should either keep resource use isolated or transfer exclusive ownership through a contract that actually enforces it.</p>
+
+<h2 id="reset-is-part-of-correctness">Reset is part of correctness</h2>
+
+<p>Resetting a pooled resource is not merely an optimization. A buffer that still contains a previous borrower’s account data can leak information to the next borrower. A connection that still has an open transaction can apply the next operation in the wrong context.</p>
+
+<p>List every piece of state that must be cleared before a resource reenters the available set. If reset can fail, discard that resource and adjust the created-resource accounting; do not publish it as healthy. Repeated <code class="language-plaintext highlighter-rouge">close()</code> calls should remain harmless even on that failure path.</p>
+
+<p>The lease makes the return boundary visible, but callers still have to avoid storing sensitive snapshots longer than needed. Returning the buffer does not revoke copies of data that were intentionally handed out.</p>
+
+<h2 id="exercise-discard-a-damaged-resource">Exercise: discard a damaged resource</h2>
+
+<p>Add a lease operation that marks its resource unusable. On close, discard it and decrement the created count so a later borrow can construct a replacement. Verify a failed borrower cannot return a damaged buffer to another caller and capacity remains consistent.</p>
+
+<p>Return to the <a href="/swift-design-patterns/">Design Patterns roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-object-pool/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Object+Pools+in+Swift%3A+Bounded+Resources%2C+Leases%2C+and+Reliable+Return%20http%3A%2F%2Flocalhost%3A4000%2Fswift-object-pool%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-object-pool/&title=Object+Pools+in+Swift%3A+Bounded+Resources%2C+Leases%2C+and+Reliable+Return%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-object-pool/&title=Object+Pools+in+Swift%3A+Bounded+Resources%2C+Leases%2C+and+Reliable+Return%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-object-pool/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Object Pools in Swift: Bounded Resources, Leases, and Reliable Return%20%7C%20Swift By Deya&body=http://localhost:4000/swift-object-pool/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Architecture">Architecture</a></li>
+    
+    <li><a href="/tag/#Design+Patterns">Design Patterns</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Optionals as a Functional Tool in Swift" href="/swift-functional-optionals/"> <p>Previous post</p> Optionals as a Functional Tool in Swift </a> </div> <div id="next-post"> <a alt="Class-Only Protocols in Swift: AnyObject and Ownership" href="/swift-class-only-protocols/"> <p>Next post</p> Class-Only Protocols in Swift: AnyObject and Ownership </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

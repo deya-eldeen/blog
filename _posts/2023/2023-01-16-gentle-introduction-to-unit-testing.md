@@ -2,7 +2,7 @@
 layout: post
 title: "Gentle Introduction To Unit Testing."
 date: "2023-01-16"
-last_modified_at: "2024-09-08"
+last_modified_at: "2026-10-27"
 permalink: /gentle-introduction-to-unit-testing/
 excerpt_separator: <!--more-->
 author: deyaeldeen
@@ -37,7 +37,7 @@ One crisp Monday morning, a fresh-faced software engineer, affectionately nickna
 
 **Rex 🦖:** Writing unit tests doesn't just ensure that features behave correctly after being developed or shipped; it also ensures that when someone writes new code, it doesn't break any existing code. The QA team can't test everything all over again when a new feature is introduced. It's like an investment: you spend extra time writing unit tests while developing a feature, but you prevent potential bugs from happening in the future.
 
-A CI/CD job running all tests will prevent any developer from merging code that breaks an existing feature, provided that the feature has well-written tests. Tests can also serve as good documentation for anyone intending to read your code.
+A required CI job can block changes that fail the behaviors covered by its tests. It cannot prove that every feature is correct, so meaningful assertions and coverage of important failure paths still matter. Tests can also document the behavior a future reader needs to preserve.
 
 **Penguin 🐧:** My first function checks if the application needs a force update by comparing two version strings, like 1.0.2 and 1.1.2. Should my test function iterate through all possible cases, from the minimum value 000.000.000 to the maximum 999.999.999?
 
@@ -57,7 +57,7 @@ testMinimumNumbersComparesCorrectly
 
 ...plus some random normal cases.
 
-Remember, the naming convention should show the developer's intention, even if the test function name becomes lengthy. Covering all cases will make tests take a long time, possibly minutes in your case. You must avoid that. Unit tests need to be fast, ideally running in 50ms or less.
+Remember, the naming convention should show the developer's intention, even if the test function name becomes lengthy. Choose representative cases and meaningful boundaries rather than enumerating an enormous input space without a reason. Keep unit tests fast enough to run frequently, measuring setup and cleanup as well as execution. Integration and UI tests have broader responsibilities and different runtime budgets.
 
 ### Unit Tests Criteria "F.I.R.S.T":
 
@@ -71,7 +71,7 @@ The F.I.R.S.T criteria for unit tests is a set of principles designed to promote
 
 **Penguin 🐧:** But we must have high test coverage, like 100% coverage to cover all cases, right?
 
-**Rex 🦖:** Test coverage refers to the percentage of code logic that is tested, not the "possible values coverage." By the way, test coverage is a flawed metric; it only means we have test functions that call our code. It doesn't guarantee that the test functions are good.
+**Rex 🦖:** Coverage reports which instrumented lines, functions, or regions executed, depending on the metric. It does not measure all possible inputs or prove that assertions checked the right outcome. Use it to find missing evidence, then review what the tests actually establish.
 
 **Penguin 🐧:** Got it. Are there any other benefits to having unit tests?
 
@@ -100,7 +100,9 @@ The F.I.R.S.T criteria for unit tests is a set of principles designed to promote
 
 **Rex 🦖:** Here are a few:
 
-- In network testing for mobile apps, no HTTP request should be made. You test the networking feature itself.
-- Tests run alphabetically, so you shouldn't rename your tests to change their order of execution. Remember, tests should be independent; changing the order intentionally will break this criterion.
+- Keep unit tests independent of live services. Networking integration tests can deliberately exercise request construction, response handling, or a controlled server boundary with isolated fixtures.
+- Do not depend on test execution order. Runners can reorder tests or execute them in parallel; names should describe behavior, and each test should establish its own state.
 - Xcode provides performance tests that compare previous runs. You can also change the baseline, and it gives nicely formatted test coverage markers.
-- Writing no tests is better than writing flaky tests!
+- Investigate flaky tests instead of accepting a passing retry as proof of correctness. Control timing and shared state, preserve failure evidence, and check whether the intermittent result exposes a real product race.
+
+Continue with [FIRST principles](/swift-first-testing-principles/) and [avoiding flaky tests](/swift-avoiding-flaky-tests/), or follow all eight articles in the [Testing roadmap](/swift-testing/).

@@ -2,7 +2,7 @@
 layout: post
 title: "Test Doubles In Swift"
 date: "2023-10-25"
-last_modified_at: "2026-10-20"
+last_modified_at: "2026-10-27"
 permalink: /test-doubles-in-swift/
 excerpt_separator: <!--more-->
 author: deyaeldeen
@@ -38,7 +38,7 @@ Testing is an essential part of software development, ensuring the correctness a
  height="400"
 %}
 
-It's important to understand the basics of unit testing first (see [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/)), especially since some architectures, like MVC with logic packed into view controllers, can make code harder to test. Familiarity with the FIRST principles—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that flaky tests, which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
+It's important to understand the basics of unit testing first (see [Gentle Introduction to Unit Testing]({{ site.url }}/gentle-introduction-to-unit-testing/)), especially since some architectures, like MVC with logic packed into view controllers, can make code harder to test. Familiarity with the [FIRST principles](/swift-first-testing-principles/)—Fast, Independent, Repeatable, Self-validating, and Timely—is crucial for writing effective tests. Additionally, it's vital to recognize that [flaky tests](/swift-avoiding-flaky-tests/), which produce inconsistent results, can undermine the reliability of your testing suite and lead to wasted time and effort.
 
 In this post, we’ll explore the different types of test doubles, their purpose, and practical examples. By the end, you’ll be able to confidently use them to create more effective, reliable tests.
 
@@ -476,3 +476,5 @@ Test doubles are a powerful concept that can significantly improve the reliabili
 By understanding when and how to use each type, you’ll be able to write more focused and effective unit tests in Swift, ensuring your code is both high quality and easier to maintain.
 
 **Happy testing!** 🎉
+
+Continue with [testing asynchronous code](/swift-testing-asynchronous-code/) and [avoiding flaky tests](/swift-avoiding-flaky-tests/), or return to the eight-article [Testing roadmap](/swift-testing/).

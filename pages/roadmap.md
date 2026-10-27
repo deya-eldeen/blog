@@ -44,7 +44,7 @@ Swift is the foundation everything else stands on. A solid grasp of the language
 {% include roadmap/card.liquid art="algorithms" title="Data Structures & Algorithms" url="/swift-data-structures-and-algorithms/" text="Elementary data structures, sorting, trees, graphs, and Big O notation for reasoning about performance." %}
 {% include roadmap/card.liquid art="patterns" title="Design Patterns" url="/swift-design-patterns/" text="Creational, structural, and behavioral patterns: proven solutions to problems you'll meet again and again." %}
 {% include roadmap/card.liquid art="architecture" title="Architectures" url="/swift-architectures/" text="MVC, MVP, MVVM, VIPER, Redux, and more: how to organize an app so it stays easy to change." %}
-{% include roadmap/card.liquid art="testing" title="Unit Testing" url="/gentle-introduction-to-unit-testing/" text="Catch bugs before your users do. Continue with test doubles to test code that has dependencies." %}
+{% include roadmap/card.liquid art="testing" title="Testing" url="/swift-testing/" text="Eight guides covering unit testing, FIRST principles, test doubles, async code, flaky tests, integration, UI testing, and CI." %}
 </div>
 
 ### Stage 3: Work With Time and Data
@@ -100,7 +100,7 @@ Knowing Swift is half the story. The other half is Apple's frameworks: how to bu
 <div class="roadmap-grid">
 {% include roadmap/card.liquid art="accessibility" title="Accessibility" url="/ios-accessibility/" text="VoiceOver, Dynamic Type, and building apps everyone can use." %}
 {% include roadmap/card.liquid art="security" title="Security" url="/ios-android-developer-security-basics/" text="Protecting your users' data, from secure storage to network security. Want to go deeper? See my book." %}
-{% include roadmap/card.liquid art="testing" title="Testing" url="/test-doubles-in-swift/" text="Unit tests with test doubles, plus UI tests that check your app end to end." %}
+{% include roadmap/card.liquid art="testing" title="Testing" url="/swift-testing/" text="Build confidence across unit, integration, and UI tests, with deterministic fixtures and reliable CI feedback." %}
 </div>
 
 ## Keep Going 🚀
