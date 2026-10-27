@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Authentication Headers and Credential Scope | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Authentication Headers and Credential Scope" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A credential is only as safe as the set of requests it is attached to. An access token that the app sends to its own API over HTTPS is protected by TLS and the API’s checks. The same token attached to a request that follows a redirect to a CDN, an analytics host, or an attacker’s server is simply handed over. Most credential leaks in mobile apps are not cryptographic failures. They are scope failures: the right secret in the wrong request. This article covers how credentials travel in HTTP, the Authorization header and its common schemes, API keys, and URLs, and then measures what URLSession does with each of them when a redirect sends a request somewhere else. The results are not uniform, and one of them leaks a credential to another origin by default. It ends with a transport that attaches credentials only to the origins that should receive them, and a redirect policy that enforces the same rule." /> <meta property="og:description" content="A credential is only as safe as the set of requests it is attached to. An access token that the app sends to its own API over HTTPS is protected by TLS and the API’s checks. The same token attached to a request that follows a redirect to a CDN, an analytics host, or an attacker’s server is simply handed over. Most credential leaks in mobile apps are not cryptographic failures. They are scope failures: the right secret in the wrong request. This article covers how credentials travel in HTTP, the Authorization header and its common schemes, API keys, and URLs, and then measures what URLSession does with each of them when a redirect sends a request somewhere else. The results are not uniform, and one of them leaks a credential to another origin by default. It ends with a transport that attaches credentials only to the origins that should receive them, and a redirect policy that enforces the same rule." /> <link rel="canonical" href="http://localhost:4000/swift-authentication-headers-credential-scope/" /> <meta property="og:url" content="http://localhost:4000/swift-authentication-headers-credential-scope/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-22T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Authentication Headers and Credential Scope" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-22T00:00:00+03:00","datePublished":"2026-09-22T00:00:00+03:00","description":"A credential is only as safe as the set of requests it is attached to. An access token that the app sends to its own API over HTTPS is protected by TLS and the API’s checks. The same token attached to a request that follows a redirect to a CDN, an analytics host, or an attacker’s server is simply handed over. Most credential leaks in mobile apps are not cryptographic failures. They are scope failures: the right secret in the wrong request. This article covers how credentials travel in HTTP, the Authorization header and its common schemes, API keys, and URLs, and then measures what URLSession does with each of them when a redirect sends a request somewhere else. The results are not uniform, and one of them leaks a credential to another origin by default. It ends with a transport that attaches credentials only to the origins that should receive them, and a redirect policy that enforces the same rule.","headline":"Authentication Headers and Credential Scope","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-authentication-headers-credential-scope/"},"url":"http://localhost:4000/swift-authentication-headers-credential-scope/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Authentication Headers and Credential Scope"> <meta name="twitter:description" content="A credential is only as safe as the set of requests it is attached to. An access token that the app sends to its own API over HTTPS is protected by TLS and t..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Authentication Headers and Credential Scope"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Authentication Headers and Credential Scope</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-22T00:00:00+03:00">September 22, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A credential is only as safe as the set of requests it is attached to. An access token that the app sends to its own API over HTTPS is protected by TLS and the API’s checks. The same token attached to a request that follows a redirect to a CDN, an analytics host, or an attacker’s server is simply handed over. Most credential leaks in mobile apps are not cryptographic failures. They are scope failures: the right secret in the wrong request.</p>
+
+<p>This article covers how credentials travel in HTTP, the <code class="language-plaintext highlighter-rouge">Authorization</code> header and its common schemes, API keys, and URLs, and then measures what <code class="language-plaintext highlighter-rouge">URLSession</code> does with each of them when a redirect sends a request somewhere else. The results are not uniform, and one of them leaks a credential to another origin by default. It ends with a transport that attaches credentials only to the origins that should receive them, and a redirect policy that enforces the same rule.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. Plain HTTP on the loopback interface stands in for HTTPS here so that the server can be read; real credentials must only ever travel over HTTPS.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="how-credentials-travel">How credentials travel</h2>
+
+<p>HTTP’s authentication framework, defined in <a href="https://www.rfc-editor.org/rfc/rfc9110#section-11">RFC 9110 §11</a>, has a server send a <code class="language-plaintext highlighter-rouge">401 Unauthorized</code> with a <code class="language-plaintext highlighter-rouge">WWW-Authenticate</code> header naming one or more <strong>schemes</strong>, and a client answer with an <code class="language-plaintext highlighter-rouge">Authorization</code> header in one of them:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="library", error="invalid_token"
+
+GET /me/loans HTTP/1.1
+Authorization: Bearer eyJhbGciOiJFUzI1NiJ9...
+</code></pre></div></div>
+
+<p>Three schemes cover almost all app traffic:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scheme</th>
+      <th>Header value</th>
+      <th>Defined in</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Basic</td>
+      <td><code class="language-plaintext highlighter-rouge">Basic base64(user:password)</code></td>
+      <td><a href="https://www.rfc-editor.org/rfc/rfc7617">RFC 7617</a></td>
+      <td>The password itself, encoded, not encrypted, on every request</td>
+    </tr>
+    <tr>
+      <td>Bearer</td>
+      <td><code class="language-plaintext highlighter-rouge">Bearer &lt;token&gt;</code></td>
+      <td><a href="https://www.rfc-editor.org/rfc/rfc6750">RFC 6750</a></td>
+      <td>Whoever holds the token is authorized; OAuth 2.0 access tokens</td>
+    </tr>
+    <tr>
+      <td>API key</td>
+      <td>a custom header such as <code class="language-plaintext highlighter-rouge">X-API-Key: &lt;key&gt;</code></td>
+      <td>none</td>
+      <td>Identifies the app or project, often not the user</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Bearer tokens are the norm for app APIs because they can be short-lived, scoped to specific permissions, and revoked without changing a password. The name states the risk exactly: the <em>bearer</em> of the token is authorized. There is no proof that the sender is the client the token was issued to, unless the server adds <a href="https://www.rfc-editor.org/rfc/rfc9449">sender-constrained tokens</a> such as DPoP. Anything that reads the header can use the token.</p>
+
+<p>Two other places credentials end up should be avoided:</p>
+
+<ul>
+  <li><strong>In the URL</strong>, as <code class="language-plaintext highlighter-rouge">?access_token=...</code>. URLs are logged by servers, proxies, CDNs, and crash reporters, and they are shown in debugging tools. RFC 6750 permits the query form only as a last resort, and <a href="/swift-urls-query-percent-encoding/">URLs, Query Parameters, and Percent Encoding</a> covered why URL userinfo is no better.</li>
+  <li><strong>In cookies</strong>, for an API that is not a website. Cookies are attached automatically to every request to the domain by the session’s cookie storage, which is the opposite of a narrow scope. Web views and APIs that share a domain are where this matters.</li>
+</ul>
+
+<h2 id="basic-authentication-and-the-challenge-flow">Basic authentication and the challenge flow</h2>
+
+<p>For Basic authentication, <code class="language-plaintext highlighter-rouge">URLSession</code> implements the challenge flow itself. When a response is a <code class="language-plaintext highlighter-rouge">401</code> with <code class="language-plaintext highlighter-rouge">WWW-Authenticate: Basic</code>, the session asks its delegate for a credential, then repeats the request with the <code class="language-plaintext highlighter-rouge">Authorization</code> header:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">api</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/basic"</span><span class="p">:</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">header</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">401</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"WWW-Authenticate"</span><span class="p">,</span> <span class="err">#</span><span class="s">"Basic realm="</span><span class="n">library</span><span class="s">""</span><span class="err">#</span><span class="p">)])</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="k">case</span> <span class="s">"/bearer-only"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">401</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"WWW-Authenticate"</span><span class="p">,</span> <span class="err">#</span><span class="s">"Bearer realm="</span><span class="n">library</span><span class="s">", error="</span><span class="n">invalid_token</span><span class="s">""</span><span class="err">#</span><span class="p">)])</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"auth=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s"> key=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"X-API-Key"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BasicCredentials</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionTaskDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">challenges</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span>
+                    <span class="n">didReceive</span> <span class="nv">challenge</span><span class="p">:</span> <span class="kt">URLAuthenticationChallenge</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">URLSession</span><span class="o">.</span><span class="kt">AuthChallengeDisposition</span><span class="p">,</span> <span class="kt">URLCredential</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">space</span> <span class="o">=</span> <span class="n">challenge</span><span class="o">.</span><span class="n">protectionSpace</span>
+        <span class="n">challenges</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">space</span><span class="o">.</span><span class="n">authenticationMethod</span><span class="se">)</span><span class="s"> realm=</span><span class="se">\(</span><span class="n">space</span><span class="o">.</span><span class="n">realm</span> <span class="p">??</span> <span class="s">""</span><span class="se">)</span><span class="s"> secure=</span><span class="se">\(</span><span class="n">space</span><span class="o">.</span><span class="n">receivesCredentialSecurely</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="n">space</span><span class="o">.</span><span class="n">authenticationMethod</span> <span class="o">==</span> <span class="kt">NSURLAuthenticationMethodHTTPBasic</span><span class="p">,</span> <span class="n">challenge</span><span class="o">.</span><span class="n">previousFailureCount</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nf">return</span> <span class="p">(</span><span class="o">.</span><span class="n">performDefaultHandling</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="o">.</span><span class="n">useCredential</span><span class="p">,</span> <span class="kt">URLCredential</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="s">"reader"</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="s">"pä:ss"</span><span class="p">,</span> <span class="nv">persistence</span><span class="p">:</span> <span class="o">.</span><span class="n">forSession</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">basicDelegate</span> <span class="o">=</span> <span class="kt">BasicCredentials</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">before</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">basicData</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"basic"</span><span class="p">),</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">basicDelegate</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sentHeader</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">basicData</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">before</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1">// the 401, then the authenticated retry</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sentHeader</span> <span class="o">==</span> <span class="s">"Basic cmVhZGVyOnDDpDpzcw=="</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">base64Encoded</span><span class="p">:</span> <span class="s">"cmVhZGVyOnDDpDpzcw=="</span><span class="p">)</span><span class="o">!</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="s">"reader:pä:ss"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">basicDelegate</span><span class="o">.</span><span class="n">challenges</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"NSURLAuthenticationMethodHTTPBasic realm=library secure=false"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Three details from that run:</p>
+
+<ul>
+  <li>The header is the password in base64, nothing more. Base64 is an encoding, so anyone who sees the header has the password. Basic authentication is acceptable only over TLS, which is what <code class="language-plaintext highlighter-rouge">receivesCredentialSecurely</code> reports. It is <code class="language-plaintext highlighter-rouge">false</code> here because the server uses plain HTTP; a delegate should refuse to answer a Basic challenge when it is <code class="language-plaintext highlighter-rouge">false</code>.</li>
+  <li>The password contains a colon and a non-ASCII character, and both survive: RFC 7617 splits at the <em>first</em> colon, so only the user name must not contain one, and modern servers decode the bytes as UTF-8.</li>
+  <li>Checking <code class="language-plaintext highlighter-rouge">previousFailureCount</code> stops an infinite loop with a server that keeps rejecting the credential.</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">URLSession</code> does not run this flow for Bearer tokens. A <code class="language-plaintext highlighter-rouge">401</code> with <code class="language-plaintext highlighter-rouge">WWW-Authenticate: Bearer</code> is returned to the caller without a delegate callback, because only the app knows how to obtain a new token:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">bearerResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"bearer-only"</span><span class="p">),</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">basicDelegate</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">bearerResponse</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">401</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">basicDelegate</span><span class="o">.</span><span class="n">challenges</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1">// no new challenge for Bearer</span>
+</code></pre></div></div>
+
+<p>That is the job of <a href="/swift-token-refresh/">Refreshing Credentials Without Duplicate Requests</a>. The rest of this article is about where the header goes once the app has a token.</p>
+
+<h2 id="what-a-redirect-does-with-each-credential">What a redirect does with each credential</h2>
+
+<p>A redirect asks the client to send a new request to a new URL. If that URL is on another <strong>origin</strong>, the new request should not carry credentials meant for the first one. An origin, as defined in <a href="https://www.rfc-editor.org/rfc/rfc6454">RFC 6454</a>, is the triple of scheme, host, and port: <code class="language-plaintext highlighter-rouge">https://api.library.example</code> and <code class="language-plaintext highlighter-rouge">https://cdn.library.example</code> are different origins, and so are <code class="language-plaintext highlighter-rouge">http://</code> and <code class="language-plaintext highlighter-rouge">https://</code> versions of the same host, or the same host on two ports.</p>
+
+<p>The experiment uses two servers, so the two ports are two origins. The main server redirects to the other one, and also to a path on itself, and the other server reports the credentials it received:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">other</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"auth=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s"> key=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"X-API-Key"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">redirecting</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/to-self"</span><span class="p">:</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">302</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Location"</span><span class="p">,</span> <span class="s">"/echo"</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="s">"/to-other"</span><span class="p">:</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">302</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Location"</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"steal"</span><span class="p">)</span><span class="o">.</span><span class="n">absoluteString</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="s">"/to-other-307"</span><span class="p">:</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">307</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Location"</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"steal"</span><span class="p">)</span><span class="o">.</span><span class="n">absoluteString</span><span class="p">)])</span>
+    <span class="k">default</span><span class="p">:</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"auth=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s"> key=</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"X-API-Key"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">received</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="o">.</span><span class="n">shared</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">redirecting</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">in</span> <span class="n">headers</span> <span class="p">{</span> <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">credentials</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Authorization"</span><span class="p">:</span> <span class="s">"Bearer secret-token"</span><span class="p">,</span> <span class="s">"X-API-Key"</span><span class="p">:</span> <span class="s">"key-123"</span><span class="p">]</span>
+<span class="k">let</span> <span class="nv">toSelf</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">received</span><span class="p">(</span><span class="s">"to-self"</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="n">credentials</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">toOther</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">received</span><span class="p">(</span><span class="s">"to-other"</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="n">credentials</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">toOther307</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">received</span><span class="p">(</span><span class="s">"to-other-307"</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="n">credentials</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">sessionConfiguration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="n">ephemeral</span>
+<span class="n">sessionConfiguration</span><span class="o">.</span><span class="n">httpAdditionalHeaders</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Authorization"</span><span class="p">:</span> <span class="s">"Bearer session-token"</span><span class="p">]</span>
+<span class="k">let</span> <span class="nv">headerSession</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">sessionConfiguration</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sessionToOther</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">received</span><span class="p">(</span><span class="s">"to-other"</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">headerSession</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[:])</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">toSelf</span> <span class="o">==</span> <span class="s">"auth=none key=key-123"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">toOther</span> <span class="o">==</span> <span class="s">"auth=none key=key-123"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">toOther307</span> <span class="o">==</span> <span class="s">"auth=none key=key-123"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sessionToOther</span> <span class="o">==</span> <span class="s">"auth=Bearer session-token key=none"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Where the credential was set</th>
+      <th>Redirect to the same origin</th>
+      <th>Redirect to another origin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Authorization</code> on the <code class="language-plaintext highlighter-rouge">URLRequest</code></td>
+      <td><strong>Dropped</strong></td>
+      <td>Dropped</td>
+    </tr>
+    <tr>
+      <td>Custom header (<code class="language-plaintext highlighter-rouge">X-API-Key</code>) on the <code class="language-plaintext highlighter-rouge">URLRequest</code></td>
+      <td>Kept</td>
+      <td><strong>Kept: leaked</strong></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Authorization</code> in <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code></td>
+      <td>Kept</td>
+      <td><strong>Kept: leaked</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The behavior is consistent in its own terms. <code class="language-plaintext highlighter-rouge">URLSession</code> removes <code class="language-plaintext highlighter-rouge">Authorization</code> from a redirected request because it is a reserved header, and it cannot know which custom headers are secrets, so it copies them all. Session-level headers are applied to every request the session sends, including redirected ones.</p>
+
+<p>The consequences are not consistent with what an app wants:</p>
+
+<ul>
+  <li>An API key in a custom header <strong>follows a redirect to any host</strong>. A compromised or misconfigured server that redirects to an attacker-controlled host collects the key. So does an open redirect anywhere on the API’s domain, a common web vulnerability.</li>
+  <li>A token in <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code> <strong>follows a redirect to any host</strong>, for the same reason. This is one more reason, beyond those in <a href="/swift-urlsession-configuration/">Choosing a <code class="language-plaintext highlighter-rouge">URLSession</code> Configuration</a>, not to put credentials there.</li>
+  <li>A token set on the request is <strong>lost even on a same-origin redirect</strong>, so an API that redirects <code class="language-plaintext highlighter-rouge">/me</code> to <code class="language-plaintext highlighter-rouge">/users/42</code> answers the redirected request with <code class="language-plaintext highlighter-rouge">401</code>. Apps work around that, often by moving the token into a custom header or session headers, which converts a functional bug into a security bug.</li>
+</ul>
+
+<h2 id="attaching-credentials-by-origin">Attaching credentials by origin</h2>
+
+<p>The fix has two parts that enforce one rule: a credential is attached only to requests whose origin is on its list, and that check runs again for every redirect.</p>
+
+<p>First, a value type for an origin, normalized so that <code class="language-plaintext highlighter-rouge">https://API.example</code> and <code class="language-plaintext highlighter-rouge">https://api.example:443</code> compare equal:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Origin</span><span class="p">:</span> <span class="kt">Hashable</span><span class="p">,</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">CustomStringConvertible</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">scheme</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">host</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">?(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">scheme</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">scheme</span><span class="p">?</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">(),</span> <span class="k">let</span> <span class="nv">host</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="nf">host</span><span class="p">(</span><span class="nv">percentEncoded</span><span class="p">:</span> <span class="kc">false</span><span class="p">)?</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">(),</span>
+              <span class="o">!</span><span class="n">host</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">defaultPort</span> <span class="o">=</span> <span class="p">[</span><span class="s">"https"</span><span class="p">:</span> <span class="mi">443</span><span class="p">,</span> <span class="s">"http"</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="s">"wss"</span><span class="p">:</span> <span class="mi">443</span><span class="p">,</span> <span class="s">"ws"</span><span class="p">:</span> <span class="mi">80</span><span class="p">][</span><span class="n">scheme</span><span class="p">]</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">port</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">port</span> <span class="p">??</span> <span class="n">defaultPort</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="n">scheme</span><span class="se">)</span><span class="s">://</span><span class="se">\(</span><span class="n">host</span><span class="se">)</span><span class="s">:</span><span class="se">\(</span><span class="n">port</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://API.Library.example/v1"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example:443/v2"</span><span class="p">)</span><span class="o">!</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span> <span class="o">!=</span> <span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"http://api.library.example"</span><span class="p">)</span><span class="o">!</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span> <span class="o">!=</span> <span class="kt">Origin</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://cdn.library.example"</span><span class="p">)</span><span class="o">!</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Second, a credential type that knows its own scope. The token is fetched through a closure, so the transport always uses the current one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ScopedCredential</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">headerName</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">origins</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Origin</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">requireHTTPS</span><span class="p">:</span> <span class="kt">Bool</span>
+    <span class="k">let</span> <span class="nv">value</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">applies</span><span class="p">(</span><span class="n">to</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">url</span><span class="p">,</span> <span class="k">let</span> <span class="nv">origin</span> <span class="o">=</span> <span class="kt">Origin</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="n">origins</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">origin</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="o">!</span><span class="n">requireHTTPS</span> <span class="o">||</span> <span class="n">origin</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s">"https"</span>
+    <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">sensitiveHeaders</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"authorization"</span><span class="p">,</span> <span class="s">"x-api-key"</span><span class="p">,</span> <span class="s">"cookie"</span><span class="p">,</span> <span class="s">"proxy-authorization"</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The transport attaches the credential when the scope matches. It also handles redirects through a per-task delegate, which re-evaluates every redirected request: credentials are stripped when the new origin is out of scope, and restored when it is in scope, which fixes the same-origin case as well:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ScopedRedirects</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionTaskDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">credentials</span><span class="p">:</span> <span class="p">[</span><span class="kt">ScopedCredential</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">decisions</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">credentials</span><span class="p">:</span> <span class="p">[</span><span class="kt">ScopedCredential</span><span class="p">])</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="n">credentials</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span>
+                    <span class="n">willPerformHTTPRedirection</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">HTTPURLResponse</span><span class="p">,</span>
+                    <span class="n">newRequest</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">URLRequest</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="nf">in</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">allHTTPHeaderFields</span> <span class="p">??</span> <span class="p">[:])</span><span class="o">.</span><span class="n">keys</span>
+        <span class="k">where</span> <span class="kt">ScopedCredential</span><span class="o">.</span><span class="n">sensitiveHeaders</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">())</span> <span class="p">{</span>
+            <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">credential</span> <span class="k">in</span> <span class="n">credentials</span> <span class="k">where</span> <span class="n">credential</span><span class="o">.</span><span class="nf">applies</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">credential</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span> <span class="p">{</span>
+                <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="n">credential</span><span class="o">.</span><span class="n">headerName</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">attached</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">request</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">headerName</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">headerName</span><span class="p">)</span>
+        <span class="n">decisions</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="nf">flatMap</span><span class="p">(</span><span class="kt">Origin</span><span class="o">.</span><span class="kd">init</span><span class="p">)?</span><span class="o">.</span><span class="n">description</span> <span class="p">??</span> <span class="s">"?"</span><span class="se">)</span><span class="s"> gets </span><span class="se">\(</span><span class="n">attached</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">request</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ScopedAuthTransport</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span>
+    <span class="k">let</span> <span class="nv">credentials</span><span class="p">:</span> <span class="p">[</span><span class="kt">ScopedCredential</span><span class="p">]</span>
+
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">HTTPURLResponse</span><span class="p">,</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="k">for</span> <span class="n">credential</span> <span class="k">in</span> <span class="n">credentials</span> <span class="k">where</span> <span class="n">credential</span><span class="o">.</span><span class="nf">applies</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">credential</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span> <span class="p">{</span>
+                <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="n">credential</span><span class="o">.</span><span class="n">headerName</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">redirects</span> <span class="o">=</span> <span class="kt">ScopedRedirects</span><span class="p">(</span><span class="nv">credentials</span><span class="p">:</span> <span class="n">credentials</span><span class="p">)</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">redirects</span><span class="p">)</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">,</span> <span class="n">redirects</span><span class="o">.</span><span class="n">decisions</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The redirect handler strips by a fixed list of sensitive header names, not just the ones this transport added. A caller that set a secret header directly, bypassing the transport, is still protected. Running the same three redirects through the transport:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">apiOrigin</span> <span class="o">=</span> <span class="kt">Origin</span><span class="p">(</span><span class="n">redirecting</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">scoped</span> <span class="o">=</span> <span class="kt">ScopedAuthTransport</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">),</span> <span class="nv">credentials</span><span class="p">:</span> <span class="p">[</span>
+    <span class="kt">ScopedCredential</span><span class="p">(</span><span class="nv">headerName</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">,</span> <span class="nv">origins</span><span class="p">:</span> <span class="p">[</span><span class="n">apiOrigin</span><span class="p">],</span> <span class="nv">requireHTTPS</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+                     <span class="nv">value</span><span class="p">:</span> <span class="p">{</span> <span class="s">"Bearer secret-token"</span> <span class="p">}),</span>
+    <span class="kt">ScopedCredential</span><span class="p">(</span><span class="nv">headerName</span><span class="p">:</span> <span class="s">"X-API-Key"</span><span class="p">,</span> <span class="nv">origins</span><span class="p">:</span> <span class="p">[</span><span class="n">apiOrigin</span><span class="p">],</span> <span class="nv">requireHTTPS</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+                     <span class="nv">value</span><span class="p">:</span> <span class="p">{</span> <span class="s">"key-123"</span> <span class="p">}),</span>
+<span class="p">])</span>
+
+<span class="kd">func</span> <span class="nf">scopedResult</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">String</span><span class="p">,</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">,</span> <span class="nv">decisions</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">scoped</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">redirecting</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">)))</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">),</span> <span class="n">decisions</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">scopedSelf</span><span class="p">,</span> <span class="nv">selfDecisions</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">scopedResult</span><span class="p">(</span><span class="s">"to-self"</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">scopedOther</span><span class="p">,</span> <span class="nv">otherDecisions</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">scopedResult</span><span class="p">(</span><span class="s">"to-other"</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">scopedOther307</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">scopedResult</span><span class="p">(</span><span class="s">"to-other-307"</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">scopedSelf</span> <span class="o">==</span> <span class="s">"auth=Bearer secret-token key=key-123"</span><span class="p">)</span>  <span class="c1">// restored on the same origin</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">scopedOther</span> <span class="o">==</span> <span class="s">"auth=none key=none"</span><span class="p">)</span>                   <span class="c1">// nothing leaves the origin</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">scopedOther307</span> <span class="o">==</span> <span class="s">"auth=none key=none"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">selfDecisions</span> <span class="o">==</span> <span class="p">[</span><span class="s">"</span><span class="se">\(</span><span class="n">apiOrigin</span><span class="se">)</span><span class="s"> gets [</span><span class="se">\"</span><span class="s">Authorization</span><span class="se">\"</span><span class="s">, </span><span class="se">\"</span><span class="s">X-API-Key</span><span class="se">\"</span><span class="s">]"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">otherDecisions</span> <span class="o">==</span> <span class="p">[</span><span class="s">"</span><span class="se">\(</span><span class="kt">Origin</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span><span class="o">!</span><span class="se">)</span><span class="s"> gets []"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">requireHTTPS: false</code> exists only because the example’s server is plain HTTP. In an app it is always <code class="language-plaintext highlighter-rouge">true</code>, and the origin list contains only <code class="language-plaintext highlighter-rouge">https</code> origins, so a redirect from <code class="language-plaintext highlighter-rouge">https</code> to <code class="language-plaintext highlighter-rouge">http</code>, a <strong>downgrade</strong>, also loses its credentials. App Transport Security blocks most plain HTTP anyway, as <a href="/swift-ats-tls-trust/">App Transport Security and TLS Trust</a> explains, but the scope check should not depend on it.</p>
+
+<h2 id="scope-is-more-than-origin">Scope is more than origin</h2>
+
+<p>Origin scoping limits <em>where</em> a credential is sent. The credential’s own scope limits <em>what it can do</em> once it gets there, and an app controls more of that than it might seem:</p>
+
+<ul>
+  <li><strong>Request narrow OAuth scopes.</strong> A token that can read loans should not be able to change the account’s email address. If the token leaks, the scope limits the damage.</li>
+  <li><strong>Keep access tokens short-lived.</strong> Minutes, not days. The refresh token, which can mint new access tokens, is the high-value secret, and it is sent to exactly one endpoint, the token endpoint, which deserves its own <code class="language-plaintext highlighter-rouge">ScopedCredential</code> with a one-element origin set.</li>
+  <li><strong>Separate app identity from user identity.</strong> An API key identifies the app build and can be extracted from the binary by anyone who downloads it. It must never grant access to user data on its own, and server-side abuse controls should assume it is public.</li>
+  <li><strong>Bind tokens to the user session that obtained them.</strong> When the user signs out, every token and every request in flight on their behalf should become useless. <a href="/swift-logout-in-flight-requests/">Handling Logout During an In-Flight Request</a> shows why that is harder than deleting the token.</li>
+</ul>
+
+<h2 id="storing-the-secret">Storing the secret</h2>
+
+<p>Tokens belong in the Keychain, not in <code class="language-plaintext highlighter-rouge">UserDefaults</code> or a file. The accessibility class decides when the item can be read: <code class="language-plaintext highlighter-rouge">kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly</code> allows background refreshes after the device has been unlocked once since boot, and the <code class="language-plaintext highlighter-rouge">ThisDeviceOnly</code> suffix keeps the item out of backups and device migrations, so a restored backup does not carry a live session to another device. The functions below compile with the example but are not called by it, because running them would write to the login keychain of the machine running the example:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">TokenStore</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">service</span> <span class="o">=</span> <span class="s">"com.example.library.auth"</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">save</span><span class="p">(</span><span class="n">_</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">account</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">query</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">kSecClass</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">kSecClassGenericPassword</span><span class="p">,</span>
+                                    <span class="n">kSecAttrService</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">service</span><span class="p">,</span>
+                                    <span class="n">kSecAttrAccount</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">account</span><span class="p">]</span>
+        <span class="kt">SecItemDelete</span><span class="p">(</span><span class="n">query</span> <span class="k">as</span> <span class="kt">CFDictionary</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">attributes</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="n">attributes</span><span class="p">[</span><span class="n">kSecValueData</span> <span class="k">as</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+        <span class="n">attributes</span><span class="p">[</span><span class="n">kSecAttrAccessible</span> <span class="k">as</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="n">kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly</span>
+        <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="kt">SecItemAdd</span><span class="p">(</span><span class="n">attributes</span> <span class="k">as</span> <span class="kt">CFDictionary</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="n">status</span> <span class="o">==</span> <span class="n">errSecSuccess</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="p">(</span><span class="nv">domain</span><span class="p">:</span> <span class="kt">NSOSStatusErrorDomain</span><span class="p">,</span> <span class="nv">code</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">status</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">load</span><span class="p">(</span><span class="nv">account</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">query</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">kSecClass</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">kSecClassGenericPassword</span><span class="p">,</span>
+                                    <span class="n">kSecAttrService</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">service</span><span class="p">,</span>
+                                    <span class="n">kSecAttrAccount</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">account</span><span class="p">,</span>
+                                    <span class="n">kSecReturnData</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                                    <span class="n">kSecMatchLimit</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="n">kSecMatchLimitOne</span><span class="p">]</span>
+        <span class="k">var</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">CFTypeRef</span><span class="p">?</span>
+        <span class="k">guard</span> <span class="kt">SecItemCopyMatching</span><span class="p">(</span><span class="n">query</span> <span class="k">as</span> <span class="kt">CFDictionary</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="n">errSecSuccess</span><span class="p">,</span>
+              <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="n">result</span> <span class="k">as?</span> <span class="kt">Data</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The Keychain protects the token at rest. It does nothing for the token in transit or in memory, which is why scope and lifetime matter as much as storage.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Credentials travel in <code class="language-plaintext highlighter-rouge">Authorization</code> (Basic, Bearer), in custom headers (API keys), and unfortunately in URLs and cookies. Keep them out of URLs.</li>
+  <li><code class="language-plaintext highlighter-rouge">URLSession</code> runs the challenge flow for Basic but not for Bearer. Basic sends the password in base64 and is acceptable only over TLS; check <code class="language-plaintext highlighter-rouge">receivesCredentialSecurely</code>.</li>
+  <li>Measured redirect behavior: <code class="language-plaintext highlighter-rouge">Authorization</code> set on a request is dropped on every redirect, even to the same origin. Custom headers and <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code> are kept on every redirect, including to other origins, which leaks them.</li>
+  <li>An origin is scheme, host, and port. Attach each credential only to its origins, over HTTPS, and re-check on every redirect with a delegate that strips sensitive headers by name.</li>
+  <li>Limit what a leaked credential can do: narrow scopes, short lifetimes, a separately scoped refresh token, and API keys that grant nothing on their own.</li>
+  <li>Store tokens in the Keychain with a <code class="language-plaintext highlighter-rouge">ThisDeviceOnly</code> accessibility class.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">cdn</code> server to the redirect experiment that should receive a <em>different</em> credential, a signed-URL token in a header, and extend <code class="language-plaintext highlighter-rouge">ScopedAuthTransport</code> so that a redirect from the API to the CDN swaps the API token for the CDN token instead of dropping both. Then add a test for a redirect chain that goes API → CDN → attacker and assert that the attacker receives neither credential. Finally, write a test that fails if anyone adds <code class="language-plaintext highlighter-rouge">Authorization</code> or <code class="language-plaintext highlighter-rouge">X-API-Key</code> to a session’s <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code>.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc6750">RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage</a> and <a href="https://www.rfc-editor.org/rfc/rfc9700">RFC 9700: Best Current Practice for OAuth 2.0 Security</a>.</li>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc8252">RFC 8252: OAuth 2.0 for Native Apps</a>, on how apps should obtain tokens.</li>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc6454">RFC 6454: The Web Origin Concept</a>.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/handling-an-authentication-challenge">Handling an authentication challenge</a> and <a href="https://developer.apple.com/documentation/security/storing-keys-in-the-keychain">Storing keys in the keychain</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-api-client-design/">Designing an API Client Around Consumer Needs</a>. Next: <a href="/swift-token-refresh/">Refreshing Credentials Without Duplicate Requests</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-authentication-headers-credential-scope/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Authentication+Headers+and+Credential+Scope%20http%3A%2F%2Flocalhost%3A4000%2Fswift-authentication-headers-credential-scope%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-authentication-headers-credential-scope/&title=Authentication+Headers+and+Credential+Scope%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-authentication-headers-credential-scope/&title=Authentication+Headers+and+Credential+Scope%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-authentication-headers-credential-scope/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Authentication Headers and Credential Scope%20%7C%20Swift By Deya&body=http://localhost:4000/swift-authentication-headers-credential-scope/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Authentication">Authentication</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Security">Security</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Refreshing Credentials Without Duplicate Requests" href="/swift-token-refresh/"> <p>Previous post</p> Refreshing Credentials Without Duplicate Requests </a> </div> <div id="next-post"> <a alt="Designing an API Client Around Consumer Needs" href="/swift-api-client-design/"> <p>Next post</p> Designing an API Client Around Consumer Needs </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Timeouts, Cancellation, and Request Lifetimes | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Timeouts, Cancellation, and Request Lifetimes" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every request ends in one of three ways: it completes, it fails, or somebody stops waiting for it. The third way is the one most clients leave to chance. The default request timeout is 60 seconds, which is longer than anyone will look at a spinner, and the default resource timeout is seven days. Meanwhile, the screen that started the request may have been closed a minute ago, and the request is still running, holding a connection, burning data, and preparing to write its result into a view model nobody is looking at. This article separates the three questions that decide when a request stops: how long the network may be silent (an idle timeout), how long the whole operation may take (a deadline), and who still cares about the result (the request’s owner). It measures what URLSession’s two timeout settings actually do, builds a deadline that spans retries, and shows how to tie a request’s lifetime to the object that needs its result." /> <meta property="og:description" content="Every request ends in one of three ways: it completes, it fails, or somebody stops waiting for it. The third way is the one most clients leave to chance. The default request timeout is 60 seconds, which is longer than anyone will look at a spinner, and the default resource timeout is seven days. Meanwhile, the screen that started the request may have been closed a minute ago, and the request is still running, holding a connection, burning data, and preparing to write its result into a view model nobody is looking at. This article separates the three questions that decide when a request stops: how long the network may be silent (an idle timeout), how long the whole operation may take (a deadline), and who still cares about the result (the request’s owner). It measures what URLSession’s two timeout settings actually do, builds a deadline that spans retries, and shows how to tie a request’s lifetime to the object that needs its result." /> <link rel="canonical" href="http://localhost:4000/swift-network-timeouts-cancellation/" /> <meta property="og:url" content="http://localhost:4000/swift-network-timeouts-cancellation/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-29T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Timeouts, Cancellation, and Request Lifetimes" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-29T00:00:00+03:00","datePublished":"2026-09-29T00:00:00+03:00","description":"Every request ends in one of three ways: it completes, it fails, or somebody stops waiting for it. The third way is the one most clients leave to chance. The default request timeout is 60 seconds, which is longer than anyone will look at a spinner, and the default resource timeout is seven days. Meanwhile, the screen that started the request may have been closed a minute ago, and the request is still running, holding a connection, burning data, and preparing to write its result into a view model nobody is looking at. This article separates the three questions that decide when a request stops: how long the network may be silent (an idle timeout), how long the whole operation may take (a deadline), and who still cares about the result (the request’s owner). It measures what URLSession’s two timeout settings actually do, builds a deadline that spans retries, and shows how to tie a request’s lifetime to the object that needs its result.","headline":"Timeouts, Cancellation, and Request Lifetimes","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-network-timeouts-cancellation/"},"url":"http://localhost:4000/swift-network-timeouts-cancellation/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Timeouts, Cancellation, and Request Lifetimes"> <meta name="twitter:description" content="Every request ends in one of three ways: it completes, it fails, or somebody stops waiting for it. The third way is the one most clients leave to chance. The..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Timeouts, Cancellation, and Request Lifetimes"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Timeouts, Cancellation, and Request Lifetimes</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-29T00:00:00+03:00">September 29, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every request ends in one of three ways: it completes, it fails, or somebody stops waiting for it. The third way is the one most clients leave to chance. The default request timeout is 60 seconds, which is longer than anyone will look at a spinner, and the default resource timeout is seven days. Meanwhile, the screen that started the request may have been closed a minute ago, and the request is still running, holding a connection, burning data, and preparing to write its result into a view model nobody is looking at.</p>
+
+<p>This article separates the three questions that decide when a request stops: how long the network may be silent (an idle timeout), how long the whole operation may take (a deadline), and who still cares about the result (the request’s owner). It measures what <code class="language-plaintext highlighter-rouge">URLSession</code>’s two timeout settings actually do, builds a deadline that spans retries, and shows how to tie a request’s lifetime to the object that needs its result.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The <a href="/swift-cooperative-cancellation/">Cooperative Cancellation</a> article covers the cancellation model used here.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="two-clocks-in-urlsession">Two clocks in <code class="language-plaintext highlighter-rouge">URLSession</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">URLSessionConfiguration</code> has two timeouts, and their names suggest more similarity than there is:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">timeoutIntervalForRequest</code> is an <strong>idle</strong> timer. It starts when the request starts and <strong>resets every time data arrives</strong>. It fires when the connection has been silent for that long: no connection established, no response headers, or no body bytes.</li>
+  <li><code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code> is a <strong>total</strong> timer for the whole transfer. It does not reset. Its default, 604,800 seconds, is a week, because it was designed for background downloads.</li>
+</ul>
+
+<p>A server that trickles a body, one byte every 0.6 seconds for eight bytes, separates the two:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/trickle"</span><span class="p">:</span>
+        <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">8</span> <span class="p">{</span> <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"x"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)),</span> <span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">600</span><span class="p">))]</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/octet-stream"</span><span class="p">),</span> <span class="p">(</span><span class="s">"Content-Length"</span><span class="p">,</span> <span class="s">"8"</span><span class="p">)],</span>
+                            <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">)</span>
+    <span class="k">case</span> <span class="s">"/late-headers"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"ok"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))],</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1500</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/search"</span><span class="p">:</span>
+        <span class="k">let</span> <span class="nv">delay</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"delay"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"100"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">100</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">)],</span>
+                            <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"["</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"q"</span><span class="p">]</span> <span class="p">??</span> <span class="s">""</span><span class="p">)</span><span class="s">"]"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))],</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">delay</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/flaky"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">503</span><span class="p">,</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="kt">Int</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"delay"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"300"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">300</span><span class="p">))</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">seconds</span><span class="p">(</span><span class="n">_</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="kt">Double</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e18</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">timed</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">resource</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">code</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="n">ephemeral</span>
+    <span class="n">configuration</span><span class="o">.</span><span class="n">timeoutIntervalForRequest</span> <span class="o">=</span> <span class="n">request</span>
+    <span class="n">configuration</span><span class="o">.</span><span class="n">timeoutIntervalForResource</span> <span class="o">=</span> <span class="n">resource</span>
+    <span class="k">let</span> <span class="nv">session</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">session</span><span class="o">.</span><span class="nf">invalidateAndCancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">))</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="nf">return</span> <span class="p">((</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">)?</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">rawValue</span> <span class="p">??</span> <span class="mi">0</span><span class="p">,</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">neverIdle</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">timed</span><span class="p">(</span><span class="s">"trickle"</span><span class="p">,</span> <span class="nv">request</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">resource</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">totalCap</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">timed</span><span class="p">(</span><span class="s">"trickle"</span><span class="p">,</span> <span class="nv">request</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">resource</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">tooQuiet</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">timed</span><span class="p">(</span><span class="s">"trickle"</span><span class="p">,</span> <span class="nv">request</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">resource</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">slowHeaders</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">timed</span><span class="p">(</span><span class="s">"late-headers"</span><span class="p">,</span> <span class="nv">request</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">resource</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">neverIdle</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="n">neverIdle</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">)</span>            <span class="c1">// 4.4 s with a 1 s request timeout</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">totalCap</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1001</span> <span class="o">&amp;&amp;</span> <span class="n">totalCap</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&lt;</span> <span class="mf">2.6</span><span class="p">)</span>          <span class="c1">// the total cap fired</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">tooQuiet</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1001</span> <span class="o">&amp;&amp;</span> <span class="n">tooQuiet</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&lt;</span> <span class="mf">0.7</span><span class="p">)</span>          <span class="c1">// a 0.6 s gap exceeded 0.5 s</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">slowHeaders</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1001</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">slowHeaders</span><span class="o">.</span><span class="n">seconds</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Server behavior</th>
+      <th>Request timeout</th>
+      <th>Resource timeout</th>
+      <th>Outcome (measured)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 byte every 0.6 s, 8 bytes</td>
+      <td>1 s</td>
+      <td>60 s</td>
+      <td>Completes after 4.43 s</td>
+    </tr>
+    <tr>
+      <td>1 byte every 0.6 s, 8 bytes</td>
+      <td>1 s</td>
+      <td>2 s</td>
+      <td><code class="language-plaintext highlighter-rouge">timedOut</code> after 2.28 s</td>
+    </tr>
+    <tr>
+      <td>1 byte every 0.6 s, 8 bytes</td>
+      <td>0.5 s</td>
+      <td>60 s</td>
+      <td><code class="language-plaintext highlighter-rouge">timedOut</code> after 0.51 s</td>
+    </tr>
+    <tr>
+      <td>Headers after 1.5 s</td>
+      <td>1 s</td>
+      <td>60 s</td>
+      <td><code class="language-plaintext highlighter-rouge">timedOut</code> after 1.01 s</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The first row is the important one. A request timeout of one second did not stop a request that took more than four, because the server never went quiet for a full second. A slow, steady response, from a struggling server or a congested link, is invisible to the idle timer. The second row shows the resource timer catching it, about 0.3 seconds after its nominal two seconds; it is checked less precisely than the idle timer.</p>
+
+<pre><code class="language-mermaid">gantt
+    accTitle: The idle timer resets with each byte while the resource timer runs continuously
+    dateFormat x
+    axisFormat %L ms
+    section Bytes arriving
+    byte 1 :milestone, 0, 0
+    byte 2 :milestone, 600, 600
+    byte 3 :milestone, 1200, 1200
+    byte 4 :milestone, 1800, 1800
+    section Idle timer, 1 s
+    running :0, 600
+    reset :600, 1200
+    reset :1200, 1800
+    reset :1800, 2400
+    section Resource timer, 2 s
+    running :0, 2000
+    fires :milestone, 2000, 2000
+</code></pre>
+
+<p>Two consequences follow. A request timeout bounds how long the user waits for <em>nothing to happen</em>, which is useful for detecting a dead connection. It does not bound how long the user waits, period. And the resource timeout, the one that does, is a session-wide setting, so it cannot express “this search is useless after three seconds, but this upload may take five minutes.” That needs a deadline per operation.</p>
+
+<h2 id="a-deadline-per-operation">A deadline per operation</h2>
+
+<p>A <strong>deadline</strong> is a point in time after which the result is no longer wanted. The simplest correct implementation races the operation against a sleep in a task group and cancels the loser:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">DeadlineExceeded</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{}</span>
+
+<span class="kd">func</span> <span class="n">withDeadline</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">_</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span>
+    <span class="n">_</span> <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span>
+<span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Value</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">operation</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">duration</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="kt">DeadlineExceeded</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span><span class="o">!</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">trickleURL</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"trickle"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">deadlineStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withDeadline</span><span class="p">(</span><span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">trickleURL</span><span class="p">)</span> <span class="p">}</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the deadline should have won"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">DeadlineExceeded</span> <span class="o">==</span> <span class="kt">DeadlineExceeded</span><span class="p">())</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">deadlineStart</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The deadline fired after one second, on the request that the idle timer let run for four. When the sleep wins, <code class="language-plaintext highlighter-rouge">group.next()</code> throws <code class="language-plaintext highlighter-rouge">DeadlineExceeded</code>, the <code class="language-plaintext highlighter-rouge">defer</code> cancels the request, and the request’s own <code class="language-plaintext highlighter-rouge">URLError.cancelled</code> is discarded with the group. Callers see one clear error that means “too slow,” distinct from “the user cancelled,” which matters for the error mapping in <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>.</p>
+
+<p>The task group waits for both children before returning, so the function cannot return while the request is still running. That is the structured-concurrency guarantee from <a href="/swift-structured-concurrency/">Structured Concurrency and Child-Task Lifetimes</a>, and it is why this is preferable to a timer that cancels a stored task. Swift Evolution has accepted a standard <code class="language-plaintext highlighter-rouge">withDeadline</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0526-deadline.md">SE-0526</a>) built on the same idea; until it ships in your toolchain, the version above is a dozen lines.</p>
+
+<h2 id="deadlines-across-retries">Deadlines across retries</h2>
+
+<p>Retries make timeouts compound. A client with a 10-second timeout that retries three times with backoffs of 1 and 2 seconds can keep the user waiting for:</p>
+
+\[T_{\max} = n\,\tau + \sum_{i=1}^{n-1} b_i = 3 \times 10 + (1 + 2) = 33\ \text{seconds}\]
+
+<p>That is not a number anyone chose. The fix is to choose the overall deadline \(D\) first, from what the user will tolerate, and derive everything else from the time that remains. Each attempt gets the remaining budget, or less, as its own timeout:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Deadline</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">end</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">after</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span> <span class="n">end</span> <span class="o">=</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">duration</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">remaining</span><span class="p">:</span> <span class="kt">Duration</span> <span class="p">{</span> <span class="nf">max</span><span class="p">(</span><span class="o">.</span><span class="n">zero</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">hasPassed</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">remaining</span> <span class="o">==</span> <span class="o">.</span><span class="n">zero</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">searchWithRetries</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">Deadline</span><span class="p">,</span> <span class="n">perAttempt</span> <span class="nv">cap</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+        <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">budget</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">cap</span><span class="p">,</span> <span class="n">deadline</span><span class="o">.</span><span class="n">remaining</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="n">budget</span> <span class="o">&gt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">DeadlineExceeded</span><span class="p">()</span> <span class="p">}</span>  <span class="c1">// not enough time to be useful</span>
+
+        <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"flaky"</span><span class="p">),</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"q"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">query</span><span class="p">),</span> <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"delay"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">delay</span><span class="se">)</span><span class="s">"</span><span class="p">)]</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">timeoutInterval</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="n">budget</span><span class="p">)</span>
+        <span class="c1">// Tell the server how long the client will wait, so it can give up too.</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="nf">seconds</span><span class="p">(</span><span class="n">budget</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"X-Client-Deadline-Ms"</span><span class="p">)</span>
+
+        <span class="k">let</span> <span class="nv">attemptRequest</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withDeadline</span><span class="p">(</span><span class="n">budget</span><span class="p">)</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">attemptRequest</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">!=</span> <span class="mi">503</span> <span class="p">{</span> <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">attempt</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="nf">min</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span> <span class="o">*</span> <span class="n">attempt</span><span class="p">,</span> <span class="n">deadline</span><span class="o">.</span><span class="n">remaining</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">budgetStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">flakyBefore</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">searchWithRetries</span><span class="p">(</span><span class="s">"dune"</span><span class="p">,</span> <span class="nv">delay</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">Deadline</span><span class="p">(</span><span class="nv">after</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the server always answers 503"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">is</span> <span class="kt">DeadlineExceeded</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">budgetElapsed</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">budgetStart</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">attemptsMade</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">flakyBefore</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">budgetElapsed</span> <span class="o">&lt;</span> <span class="mf">2.2</span><span class="p">)</span>                      <span class="c1">// the overall deadline held</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">attemptsMade</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="n">attemptsMade</span> <span class="o">&lt;=</span> <span class="mi">4</span><span class="p">)</span>   <span class="c1">// as many attempts as fit in two seconds</span>
+<span class="k">let</span> <span class="nv">advertised</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">last</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/flaky"</span> <span class="p">}?</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"X-Client-Deadline-Ms"</span><span class="p">)</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="kt">Int</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span> <span class="p">??</span> <span class="mi">0</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">advertised</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">advertised</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">)</span>      <span class="c1">// later attempts advertise the shrinking budget</span>
+</code></pre></div></div>
+
+<p>The loop never exceeded its two-second budget, however many attempts it made. The last attempt’s advertised deadline was less than a second, because the remaining budget was. Sending the deadline to the server is the client half of <strong>deadline propagation</strong>, which gRPC makes standard with its <code class="language-plaintext highlighter-rouge">grpc-timeout</code> header: a server that knows the client will give up after 400 ms can stop work at 400 ms instead of finishing a result nobody will read.</p>
+
+<p><a href="/swift-retry-backoff-idempotency/">Retry Policies, Backoff, and Idempotency</a> adds jitter and the rules for which failures to retry; the deadline is the frame they fit in.</p>
+
+<h3 id="choosing-the-numbers">Choosing the numbers</h3>
+
+<p>Deadlines come from the user’s side: how long will someone wait for this before the wait itself is the failure? A few seconds for a search, longer for a save the user explicitly asked for, minutes for an upload with a progress bar. Idle timeouts come from the network’s side: a connection that has been silent for longer than the slow tail of normal latency is probably dead. If \(L\) is the time between bytes, choose the idle timeout \(\tau\) so that the false-timeout rate \(P(L &gt; \tau)\) is small, for example at the 99.9th percentile of measured gaps. <a href="/swift-urlsessiontaskmetrics/">Reading <code class="language-plaintext highlighter-rouge">URLSessionTaskMetrics</code></a> shows how to collect those measurements from real traffic.</p>
+
+<p>A timeout is also a statement about <strong>outcome</strong>. When a client stops waiting, the server does not know. A <code class="language-plaintext highlighter-rouge">GET</code> that timed out is harmless to repeat. A <code class="language-plaintext highlighter-rouge">POST</code> that timed out may have been applied, and the client must treat its outcome as unknown rather than failed, as the <code class="language-plaintext highlighter-rouge">outcomeIsUnknown</code> property in the error model expresses.</p>
+
+<h2 id="cancellation-follows-ownership">Cancellation follows ownership</h2>
+
+<p>A deadline answers “how long is the result useful?” Cancellation answers “is anyone still interested?” In Swift concurrency, a request is cancelled when the task awaiting it is cancelled, as <a href="/swift-urlsession-async-await/">Requests and Responses with <code class="language-plaintext highlighter-rouge">async</code> and <code class="language-plaintext highlighter-rouge">await</code></a> measured. So the question becomes: who owns the task?</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Owner</th>
+      <th>Example</th>
+      <th>The request ends when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>A view</td>
+      <td>SwiftUI <code class="language-plaintext highlighter-rouge">.task { }</code> loading a screen’s data</td>
+      <td>The view disappears, or <code class="language-plaintext highlighter-rouge">.task(id:)</code>’s value changes</td>
+    </tr>
+    <tr>
+      <td>A model</td>
+      <td>A search model’s current query</td>
+      <td>The model starts a new query or is deallocated</td>
+    </tr>
+    <tr>
+      <td>The app</td>
+      <td>A sync engine, an outbox</td>
+      <td>The app decides; survives screens</td>
+    </tr>
+    <tr>
+      <td>The system</td>
+      <td>A background <code class="language-plaintext highlighter-rouge">URLSession</code> transfer</td>
+      <td>The transfer completes, even if the app is terminated</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Most bugs come from requests whose owner is wrong. A “Send” button whose request is started in <code class="language-plaintext highlighter-rouge">.task</code> is cancelled when the user navigates away, so the message is lost. A search started in an unstructured <code class="language-plaintext highlighter-rouge">Task { }</code> that nobody stores is never cancelled, so the result of the previous query arrives after the current one. The fix is the same in both cases: decide who owns the request, and give that owner the <code class="language-plaintext highlighter-rouge">Task</code>.</p>
+
+<h3 id="a-model-that-owns-its-request">A model that owns its request</h3>
+
+<p>A search model owns one request at a time. Starting a new search cancels the previous one, and so does the model going away:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"search"</span><span class="p">),</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+            <span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"q"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">query</span><span class="p">),</span> <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"delay"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">delay</span><span class="se">)</span><span class="s">"</span><span class="p">)]</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span><span class="p">)</span>
+                <span class="k">let</span> <span class="nv">decoded</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">decoded</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="k">where</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span> <span class="p">{</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">waitForCurrent</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span> <span class="k">await</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">search</span> <span class="o">=</span> <span class="kt">SearchModel</span><span class="p">()</span>
+<span class="n">search</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="s">"du"</span><span class="p">)</span>
+<span class="n">search</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="s">"dun"</span><span class="p">)</span>
+<span class="n">search</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="s">"dune"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">search</span><span class="o">.</span><span class="nf">waitForCurrent</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"dune"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1">// the two superseded requests were cancelled, not merely ignored</span>
+</code></pre></div></div>
+
+<p>Two details deserve attention. The task captures <code class="language-plaintext highlighter-rouge">self</code> <strong>weakly</strong>. A <code class="language-plaintext highlighter-rouge">Task { }</code> started from a method retains everything it captures until it finishes, so a strong capture keeps the model alive for as long as the request runs, and the model’s <code class="language-plaintext highlighter-rouge">deinit</code>, which is supposed to cancel the request, cannot run until the request is over:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LeakyModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">result</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">func</span> <span class="nf">load</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kt">Task</span> <span class="p">{</span> <span class="c1">// strong capture of self</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"late-headers"</span><span class="p">))</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">weak</span> <span class="k">var</span> <span class="nv">leaky</span><span class="p">:</span> <span class="kt">LeakyModel</span><span class="p">?</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">LeakyModel</span><span class="p">()</span>
+    <span class="n">leaky</span> <span class="o">=</span> <span class="n">model</span>
+    <span class="n">model</span><span class="o">.</span><span class="nf">load</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaky</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>  <span class="c1">// the screen is gone, but the model lives on until the request finishes</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1500</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaky</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>  <span class="c1">// released only after the response arrived</span>
+</code></pre></div></div>
+
+<p>And cancellation is not the same as ignoring. The superseded searches in <code class="language-plaintext highlighter-rouge">SearchModel</code> were cancelled, so their connections were released and their responses never decoded. A model that merely ignores old results, by checking a sequence number, still pays for every request. <a href="/swift-request-coalescing/">Coalescing Duplicate Requests and Rejecting Stale Results</a> and the concurrency roadmap’s <a href="/swift-rejecting-stale-results/">Rejecting Stale Results After Request Replacement</a> cover the cases where both are needed, because some results arrive too fast to cancel.</p>
+
+<h3 id="work-that-must-outlive-the-screen">Work that must outlive the screen</h3>
+
+<p>For work the user expects to finish regardless of navigation, such as sending a message, saving an edit, or uploading a photo, the owner must be something that outlives the screen: an app-level service that holds the task, or a background <code class="language-plaintext highlighter-rouge">URLSession</code> for transfers large enough that the app may be suspended. Making that choice explicit in the code is what prevents a request from being cancelled by a view’s lifecycle that has nothing to do with it. <a href="/swift-background-transfers/">Background Transfers and App Relaunch</a> covers the system-owned case.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">timeoutIntervalForRequest</code> is an idle timer that resets with every byte; a steady trickle never trips it. Measured: a four-second response completed under a one-second request timeout.</li>
+  <li><code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code> is a total timer for the session, checked less precisely (it fired 0.28 s late in the measurement).</li>
+  <li>Express per-operation limits as a deadline: race the request against a sleep in a task group and cancel the loser. Report <code class="language-plaintext highlighter-rouge">DeadlineExceeded</code> separately from user cancellation.</li>
+  <li>Choose an overall deadline first, give each retry the remaining budget, and advertise it to the server. Without that, timeouts and retries compound to \(n\tau + \sum b_i\).</li>
+  <li>A timed-out write has an unknown outcome.</li>
+  <li>Every request needs an owner whose lifetime matches the result’s usefulness. Cancel superseded requests rather than ignoring them, capture <code class="language-plaintext highlighter-rouge">self</code> weakly in stored tasks, and move work that must finish out of view-owned tasks.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">/progressive</code> route that sends headers immediately and a 1 MB body at 100 KB per second. Write a download function that has a 30-second deadline but also fails if throughput drops below 50 KB/s for more than three consecutive seconds, using <code class="language-plaintext highlighter-rouge">bytes(for:)</code> to measure throughput as it goes. Test it against the route at full speed, at 40 KB/s, and with a two-second stall in the middle, and decide which of the three should succeed.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/foundation/urlsessionconfiguration/timeoutintervalforrequest"><code class="language-plaintext highlighter-rouge">timeoutIntervalForRequest</code></a> and <a href="https://developer.apple.com/documentation/foundation/urlsessionconfiguration/timeoutintervalforresource"><code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code></a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0526-deadline.md">SE-0526: <code class="language-plaintext highlighter-rouge">withDeadline</code></a>.</li>
+  <li>gRPC’s <a href="https://grpc.io/docs/guides/deadlines/">Deadlines guide</a>, on deadline propagation between client and server.</li>
+</ul>
+
+<p>Previous: <a href="/swift-redacting-network-logs/">Redacting Sensitive Data from Network Logs</a>. Next: <a href="/swift-retry-backoff-idempotency/">Retry Policies, Backoff, and Idempotency</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-network-timeouts-cancellation/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Timeouts%2C+Cancellation%2C+and+Request+Lifetimes%20http%3A%2F%2Flocalhost%3A4000%2Fswift-network-timeouts-cancellation%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-network-timeouts-cancellation/&title=Timeouts%2C+Cancellation%2C+and+Request+Lifetimes%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-network-timeouts-cancellation/&title=Timeouts%2C+Cancellation%2C+and+Request+Lifetimes%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-network-timeouts-cancellation/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Timeouts, Cancellation, and Request Lifetimes%20%7C%20Swift By Deya&body=http://localhost:4000/swift-network-timeouts-cancellation/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Timeouts">Timeouts</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Retry Policies, Backoff, and Idempotency" href="/swift-retry-backoff-idempotency/"> <p>Previous post</p> Retry Policies, Backoff, and Idempotency </a> </div> <div id="next-post"> <a alt="Redacting Sensitive Data from Network Logs" href="/swift-redacting-network-logs/"> <p>Next post</p> Redacting Sensitive Data from Network Logs </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Isolating HTTP Fixtures with URLProtocol | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Isolating HTTP Fixtures with URLProtocol" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A test that talks to a real server is slow, depends on the network and the server’s data, and cannot easily produce the responses that matter most: the 503, the truncated body, the timeout. The standard way to give URLSession canned responses without changing the code under test is URLProtocol, the extension point the URL Loading System uses to decide how to load a request. A test registers a protocol class on a session’s configuration, and every request through that session is answered by the test’s own code. It is an old API with sharp edges, and two of them cut most test suites: a shared static handler that races once tests run in parallel, which Swift Testing does by default, and request bodies that are not where the code expects them. This article builds a fixture protocol that is safe under parallel tests and Swift 6 strict concurrency, uses it to test a small client’s success, failure, redirect, timeout, and cancellation paths, and then measures what a URLProtocol stub does not reproduce from the real HTTP stack, so the tests’ claims stay honest." /> <meta property="og:description" content="A test that talks to a real server is slow, depends on the network and the server’s data, and cannot easily produce the responses that matter most: the 503, the truncated body, the timeout. The standard way to give URLSession canned responses without changing the code under test is URLProtocol, the extension point the URL Loading System uses to decide how to load a request. A test registers a protocol class on a session’s configuration, and every request through that session is answered by the test’s own code. It is an old API with sharp edges, and two of them cut most test suites: a shared static handler that races once tests run in parallel, which Swift Testing does by default, and request bodies that are not where the code expects them. This article builds a fixture protocol that is safe under parallel tests and Swift 6 strict concurrency, uses it to test a small client’s success, failure, redirect, timeout, and cancellation paths, and then measures what a URLProtocol stub does not reproduce from the real HTTP stack, so the tests’ claims stay honest." /> <link rel="canonical" href="http://localhost:4000/swift-urlprotocol-fixtures/" /> <meta property="og:url" content="http://localhost:4000/swift-urlprotocol-fixtures/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Isolating HTTP Fixtures with URLProtocol" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-13T00:00:00+03:00","datePublished":"2026-10-13T00:00:00+03:00","description":"A test that talks to a real server is slow, depends on the network and the server’s data, and cannot easily produce the responses that matter most: the 503, the truncated body, the timeout. The standard way to give URLSession canned responses without changing the code under test is URLProtocol, the extension point the URL Loading System uses to decide how to load a request. A test registers a protocol class on a session’s configuration, and every request through that session is answered by the test’s own code. It is an old API with sharp edges, and two of them cut most test suites: a shared static handler that races once tests run in parallel, which Swift Testing does by default, and request bodies that are not where the code expects them. This article builds a fixture protocol that is safe under parallel tests and Swift 6 strict concurrency, uses it to test a small client’s success, failure, redirect, timeout, and cancellation paths, and then measures what a URLProtocol stub does not reproduce from the real HTTP stack, so the tests’ claims stay honest.","headline":"Isolating HTTP Fixtures with URLProtocol","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-urlprotocol-fixtures/"},"url":"http://localhost:4000/swift-urlprotocol-fixtures/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Isolating HTTP Fixtures with URLProtocol"> <meta name="twitter:description" content="A test that talks to a real server is slow, depends on the network and the server’s data, and cannot easily produce the responses that matter most: the 503, ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Isolating HTTP Fixtures with URLProtocol"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Isolating HTTP Fixtures with URLProtocol</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-13T00:00:00+03:00">October 13, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A test that talks to a real server is slow, depends on the network and the server’s data, and cannot easily produce the responses that matter most: the <code class="language-plaintext highlighter-rouge">503</code>, the truncated body, the timeout. The standard way to give <code class="language-plaintext highlighter-rouge">URLSession</code> canned responses without changing the code under test is <code class="language-plaintext highlighter-rouge">URLProtocol</code>, the extension point the URL Loading System uses to decide how to load a request. A test registers a protocol class on a session’s configuration, and every request through that session is answered by the test’s own code.</p>
+
+<p>It is an old API with sharp edges, and two of them cut most test suites: a shared static handler that races once tests run in parallel, which Swift Testing does by default, and request bodies that are not where the code expects them. This article builds a fixture protocol that is safe under parallel tests and Swift 6 strict concurrency, uses it to test a small client’s success, failure, redirect, timeout, and cancellation paths, and then measures what a <code class="language-plaintext highlighter-rouge">URLProtocol</code> stub does <em>not</em> reproduce from the real HTTP stack, so the tests’ claims stay honest.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and Swift Testing, and were run with <code class="language-plaintext highlighter-rouge">swift test</code> using the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Each block is labeled with the file it belongs to in a Swift package with a <code class="language-plaintext highlighter-rouge">Library</code> target and a <code class="language-plaintext highlighter-rouge">LibraryTests</code> test target.</p>
+
+<h2 id="how-urlprotocol-fits-in">How <code class="language-plaintext highlighter-rouge">URLProtocol</code> fits in</h2>
+
+<p>When a session starts a task, it asks each class in its configuration’s <code class="language-plaintext highlighter-rouge">protocolClasses</code>, in order, whether it can handle the request. The first class whose <code class="language-plaintext highlighter-rouge">canInit(with:)</code> returns <code class="language-plaintext highlighter-rouge">true</code> is instantiated for the request, and its <code class="language-plaintext highlighter-rouge">startLoading()</code> produces the response by calling methods on its <code class="language-plaintext highlighter-rouge">client</code>:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: How URLSession hands a request to a URLProtocol subclass
+    participant Code as Code under test
+    participant Session as URLSession
+    participant Stub as StubProtocol
+    Code-&gt;&gt;Session: data(for: request)
+    Session-&gt;&gt;Stub: canInit(with: request)? → true
+    Session-&gt;&gt;Stub: init(request:cachedResponse:client:), startLoading()
+    Stub--&gt;&gt;Session: client.urlProtocol(_, didReceive: response, cacheStoragePolicy:)
+    Stub--&gt;&gt;Session: client.urlProtocol(_, didLoad: data)
+    Stub--&gt;&gt;Session: client.urlProtocolDidFinishLoading(_)
+    Session--&gt;&gt;Code: (data, response)
+    Note over Session,Stub: On cancellation, the session calls stopLoading()
+</code></pre>
+
+<p>Registering the class on a <em>configuration</em> scopes it to sessions created from that configuration. <code class="language-plaintext highlighter-rouge">URLProtocol.registerClass(_:)</code> registers it globally, for <code class="language-plaintext highlighter-rouge">URLSession.shared</code> and everything else in the process, which is exactly the coupling between tests that a fixture should avoid.</p>
+
+<h2 id="the-code-under-test">The code under test</h2>
+
+<p>The client below is ordinary production code. It takes a session and a base URL, and maps outcomes into a small error type in the spirit of <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>:</p>
+
+<!-- file: Sources/Library/BookClient.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">Book</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="kd">public</span> <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">title</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">public</span> <span class="kd">enum</span> <span class="kt">ClientError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">status</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">transport</span><span class="p">(</span><span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">decoding</span>
+<span class="p">}</span>
+
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BookClient</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span>
+    <span class="k">let</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="kt">URL</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">baseURL</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="kd">func</span> <span class="nf">book</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="nf">throws</span><span class="p">(</span><span class="kt">ClientError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Book</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">components</span><span class="p">:</span> <span class="s">"books"</span><span class="p">,</span> <span class="n">id</span><span class="p">)))</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="kd">func</span> <span class="nf">create</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="nf">throws</span><span class="p">(</span><span class="kt">ClientError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Book</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books"</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="kt">JSONEncoder</span><span class="p">()</span><span class="o">.</span><span class="nf">encode</span><span class="p">([</span><span class="s">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">])</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">send</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="n">send</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">:</span> <span class="kt">Decodable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="k">async</span> <span class="nf">throws</span><span class="p">(</span><span class="kt">ClientError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Value</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span>
+        <span class="k">let</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">URLResponse</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="o">.</span><span class="nf">transport</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="o">.</span><span class="nf">transport</span><span class="p">(</span><span class="o">.</span><span class="n">unknown</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="p">(</span><span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span><span class="p">)?</span><span class="o">.</span><span class="n">statusCode</span> <span class="p">??</span> <span class="mi">0</span>
+        <span class="nf">guard</span> <span class="p">(</span><span class="mi">200</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="o">.</span><span class="nf">status</span><span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">do</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Value</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">throw</span> <span class="o">.</span><span class="n">decoding</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Nothing in it knows about tests. The seam is the <code class="language-plaintext highlighter-rouge">URLSession</code> it receives, which is all a <code class="language-plaintext highlighter-rouge">URLProtocol</code> fixture needs.</p>
+
+<h2 id="the-shared-handler-trap">The shared-handler trap</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">URLProtocol</code> stub found in many codebases looks like this:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 language mode.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyStub</span><span class="p">:</span> <span class="kt">URLProtocol</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">var</span> <span class="nv">handler</span><span class="p">:</span> <span class="p">((</span><span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">HTTPURLResponse</span><span class="p">,</span> <span class="kt">Data</span><span class="p">))?</span>
+    <span class="k">override</span> <span class="kd">class</span> <span class="kd">func</span> <span class="nf">canInit</span><span class="p">(</span><span class="n">with</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span>
+    <span class="k">override</span> <span class="kd">class</span> <span class="kd">func</span> <span class="nf">canonicalRequest</span><span class="p">(</span><span class="k">for</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URLRequest</span> <span class="p">{</span> <span class="n">request</span> <span class="p">}</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">startLoading</span><span class="p">()</span> <span class="p">{</span> <span class="cm">/* uses LegacyStub.handler */</span> <span class="p">}</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">stopLoading</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">}</span>
+<span class="c1">// error: static property 'handler' is not concurrency-safe because it is nonisolated global shared mutable state</span>
+</code></pre></div></div>
+
+<p>Swift 6 rejects it, and the error is not pedantry. Each test sets <code class="language-plaintext highlighter-rouge">LegacyStub.handler</code> and then makes a request; with tests running in parallel, which Swift Testing does by default, test A’s request can be answered by test B’s handler. The resulting failures are intermittent and depend on scheduling, the worst kind. Marking the property <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code> silences the compiler and keeps the race. The fix is to give every test its own fixture and route each request to the right one.</p>
+
+<h2 id="a-fixture-registry-that-is-safe-in-parallel">A fixture registry that is safe in parallel</h2>
+
+<p>Each test creates a <code class="language-plaintext highlighter-rouge">Fixture</code>, which holds its handler and records the requests it receives. The fixture is registered under a unique ID, and the test’s session sends that ID as a header on every request, through <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code>. The protocol looks up the fixture by the header, so concurrent tests never see each other’s fixtures:</p>
+
+<!-- file: Tests/LibraryTests/StubProtocol.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">StubResponse</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">status</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="k">var</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Content-Type"</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">body</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="n">zero</span>
+    <span class="k">var</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">redirect</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">json</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">StubResponse</span> <span class="p">{</span>
+        <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">failure</span><span class="p">(</span><span class="n">_</span> <span class="nv">code</span><span class="p">:</span> <span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">StubResponse</span> <span class="p">{</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="n">code</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">RecordedRequest</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">method</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span>
+    <span class="k">let</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Fixture</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">RecordedRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">StubResponse</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">recorded</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">RecordedRequest</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">stops</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">RecordedRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">StubResponse</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="n">handler</span> <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">RecordedRequest</span><span class="p">]</span> <span class="p">{</span> <span class="n">recorded</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">stopCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">stops</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">respond</span><span class="p">(</span><span class="n">to</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">RecordedRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">StubResponse</span> <span class="p">{</span>
+        <span class="n">recorded</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="nf">handler</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">stopped</span><span class="p">()</span> <span class="p">{</span> <span class="n">stops</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="c1">/// A session whose every request is answered by this fixture, and only this fixture.</span>
+    <span class="kd">func</span> <span class="nf">session</span><span class="p">(</span><span class="nv">timeout</span><span class="p">:</span> <span class="kt">TimeInterval</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URLSession</span> <span class="p">{</span>
+        <span class="kt">FixtureRegistry</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">register</span><span class="p">(</span><span class="k">self</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="n">ephemeral</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">protocolClasses</span> <span class="o">=</span> <span class="p">[</span><span class="kt">StubProtocol</span><span class="o">.</span><span class="k">self</span><span class="p">]</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">httpAdditionalHeaders</span> <span class="o">=</span> <span class="p">[</span><span class="kt">StubProtocol</span><span class="o">.</span><span class="nv">fixtureHeader</span><span class="p">:</span> <span class="n">id</span><span class="p">]</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">timeoutIntervalForRequest</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="k">return</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">FixtureRegistry</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">FixtureRegistry</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">fixtures</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Fixture</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([:])</span>
+    <span class="kd">func</span> <span class="nf">register</span><span class="p">(</span><span class="n">_</span> <span class="nv">fixture</span><span class="p">:</span> <span class="kt">Fixture</span><span class="p">)</span> <span class="p">{</span> <span class="n">fixtures</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">fixture</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">fixture</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">fixture</span><span class="p">(</span><span class="k">for</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">Fixture</span><span class="p">?</span> <span class="p">{</span> <span class="n">id</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">id</span> <span class="k">in</span> <span class="n">fixtures</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The protocol itself does four things in <code class="language-plaintext highlighter-rouge">startLoading()</code>: find the fixture, reconstruct the request including its body, wait if the response is delayed, and deliver the response through the client. Its only stored state is the in-flight delay task, so <code class="language-plaintext highlighter-rouge">stopLoading()</code> can cancel it:</p>
+
+<!-- file: Tests/LibraryTests/StubProtocol.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">StubProtocol</span><span class="p">:</span> <span class="kt">URLProtocol</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">fixtureHeader</span> <span class="o">=</span> <span class="s">"X-Fixture-ID"</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">pending</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+
+    <span class="c1">// Only sessions configured by `Fixture.session()` list this class, so it can claim every request:</span>
+    <span class="c1">// a request without a fixture fails loudly instead of reaching the real network.</span>
+    <span class="k">override</span> <span class="kd">class</span> <span class="kd">func</span> <span class="nf">canInit</span><span class="p">(</span><span class="n">with</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span>
+    <span class="k">override</span> <span class="kd">class</span> <span class="kd">func</span> <span class="nf">canonicalRequest</span><span class="p">(</span><span class="k">for</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URLRequest</span> <span class="p">{</span> <span class="n">request</span> <span class="p">}</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">startLoading</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">FixtureRegistry</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">fixture</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="n">fixtureHeader</span><span class="p">))</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocol</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="nv">didFailWithError</span><span class="p">:</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">unsupportedURL</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">recorded</span> <span class="o">=</span> <span class="kt">RecordedRequest</span><span class="p">(</span><span class="nv">method</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="p">??</span> <span class="s">"GET"</span><span class="p">,</span> <span class="nv">url</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">!</span><span class="p">,</span>
+                                       <span class="nv">headers</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">allHTTPHeaderFields</span> <span class="p">??</span> <span class="p">[:],</span> <span class="nv">body</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="nf">body</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">request</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">response</span> <span class="o">=</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">respond</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">recorded</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="n">response</span><span class="o">.</span><span class="n">delay</span> <span class="o">&gt;</span> <span class="o">.</span><span class="n">zero</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">deliver</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nv">for</span><span class="p">:</span> <span class="n">recorded</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">protocolInstance</span> <span class="o">=</span> <span class="kt">UncheckedSendable</span><span class="p">(</span><span class="k">self</span><span class="p">)</span>  <span class="c1">// see below</span>
+        <span class="k">let</span> <span class="nv">delayed</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">delay</span><span class="p">)</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">protocolInstance</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="nf">deliver</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nv">for</span><span class="p">:</span> <span class="n">recorded</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">pending</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">delayed</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">stopLoading</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">pending</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+        <span class="kt">FixtureRegistry</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">fixture</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="n">fixtureHeader</span><span class="p">))?</span><span class="o">.</span><span class="nf">stopped</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">deliver</span><span class="p">(</span><span class="n">_</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">StubResponse</span><span class="p">,</span> <span class="k">for</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">RecordedRequest</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">code</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">error</span> <span class="p">{</span>
+            <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocol</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="nv">didFailWithError</span><span class="p">:</span> <span class="kt">URLError</span><span class="p">(</span><span class="n">code</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="kt">HTTPURLResponse</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="nv">statusCode</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="nv">httpVersion</span><span class="p">:</span> <span class="s">"HTTP/1.1"</span><span class="p">,</span>
+                                   <span class="nv">headerFields</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span><span class="o">!</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">target</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">redirect</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">next</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">next</span><span class="o">.</span><span class="n">allHTTPHeaderFields</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span>
+            <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocol</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="nv">wasRedirectedTo</span><span class="p">:</span> <span class="n">next</span><span class="p">,</span> <span class="nv">redirectResponse</span><span class="p">:</span> <span class="n">http</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocol</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="nv">didReceive</span><span class="p">:</span> <span class="n">http</span><span class="p">,</span> <span class="nv">cacheStoragePolicy</span><span class="p">:</span> <span class="o">.</span><span class="n">notAllowed</span><span class="p">)</span>
+        <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocol</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="nv">didLoad</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="n">client</span><span class="p">?</span><span class="o">.</span><span class="nf">urlProtocolDidFinishLoading</span><span class="p">(</span><span class="k">self</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Inside a URLProtocol, a body set with `httpBody` arrives as `httpBodyStream`.</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">body</span><span class="p">(</span><span class="n">of</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="p">{</span> <span class="k">return</span> <span class="n">body</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">stream</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">httpBodyStream</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kt">Data</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">stream</span><span class="o">.</span><span class="nf">open</span><span class="p">()</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">stream</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">data</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+        <span class="k">var</span> <span class="nv">buffer</span> <span class="o">=</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">](</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">16_384</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">stream</span><span class="o">.</span><span class="n">hasBytesAvailable</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">count</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="nv">maxLength</span><span class="p">:</span> <span class="n">buffer</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+            <span class="k">guard</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+            <span class="n">data</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">count</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// URLProtocol inherits from a non-Sendable Objective-C class, so even an `@unchecked Sendable`</span>
+<span class="c1">/// subclass's `self` cannot be captured by a `Task`. This wrapper makes that one hand-off explicit.</span>
+<span class="kd">struct</span> <span class="kt">UncheckedSendable</span><span class="o">&lt;</span><span class="kt">Value</span><span class="o">&gt;</span><span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Value</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Value</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The class is <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> because <code class="language-plaintext highlighter-rouge">URLProtocol</code> is an Objective-C class the compiler cannot reason about; its own state is behind a <code class="language-plaintext highlighter-rouge">Mutex</code>, and the fixture it talks to is <code class="language-plaintext highlighter-rouge">Sendable</code>. The body reconstruction handles the second trap from the introduction, measured below: by the time a request reaches a protocol, <code class="language-plaintext highlighter-rouge">httpBody</code> is <code class="language-plaintext highlighter-rouge">nil</code> and the body is in <code class="language-plaintext highlighter-rouge">httpBodyStream</code>.</p>
+
+<h2 id="tests">Tests</h2>
+
+<p>With the fixture in place, tests read as a description of the exchange: what the server answers, what the client returns, and what the server received.</p>
+
+<!-- file: Tests/LibraryTests/BookClientTests.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Testing</span>
+<span class="kd">@testable</span> <span class="kd">import</span> <span class="kt">Library</span>
+
+<span class="k">let</span> <span class="nv">api</span> <span class="o">=</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example/v2"</span><span class="p">)</span><span class="o">!</span>
+
+<span class="kd">@Suite</span> <span class="kd">struct</span> <span class="kt">BookClientTests</span> <span class="p">{</span>
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">decodesABook</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+
+        <span class="k">let</span> <span class="nv">book</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">)</span>
+
+        <span class="cp">#expect(book == Book(id: "b-7", title: "Dune"))</span>
+        <span class="k">let</span> <span class="nv">request</span> <span class="o">=</span> <span class="k">try</span> <span class="k">#require</span><span class="p">(</span><span class="n">fixture</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">first</span><span class="p">)</span>
+        <span class="cp">#expect(request.method == "GET")</span>
+        <span class="cp">#expect(request.url.absoluteString == "https://api.library.example/v2/books/b-7")</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">sendsTheBodyItCreates</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">sent</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+            <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">9</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">sent</span><span class="p">?[</span><span class="s">"title"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"?"</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">201</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+
+        <span class="k">let</span> <span class="nv">created</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">create</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Children of Dune"</span><span class="p">)</span>
+
+        <span class="cp">#expect(created.title == "Children of Dune")</span>
+        <span class="k">let</span> <span class="nv">request</span> <span class="o">=</span> <span class="k">try</span> <span class="k">#require</span><span class="p">(</span><span class="n">fixture</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">first</span><span class="p">)</span>
+        <span class="cp">#expect(request.method == "POST")</span>
+        <span class="cp">#expect(request.headers["Content-Type"] == "application/json")</span>
+        <span class="cp">#expect(request.body == Data(#"{"title":"Children of Dune"}"#.utf8))</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">mapsAStatusCode</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">error</span><span class="s">":"</span><span class="n">not</span> <span class="n">found</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="k">await</span> <span class="k">#expect</span><span class="p">(</span><span class="nv">throws</span><span class="p">:</span> <span class="kt">ClientError</span><span class="o">.</span><span class="nf">status</span><span class="p">(</span><span class="mi">404</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="s">"missing"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">mapsATransportError</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="k">await</span> <span class="k">#expect</span><span class="p">(</span><span class="nv">throws</span><span class="p">:</span> <span class="kt">ClientError</span><span class="o">.</span><span class="nf">transport</span><span class="p">(</span><span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="cp">#expect(fixture.requests.count == 1)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">followsARedirect</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="nf">path</span><span class="p">()</span><span class="o">.</span><span class="nf">hasSuffix</span><span class="p">(</span><span class="s">"/old"</span><span class="p">)</span>
+                <span class="p">?</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">301</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="s">"Location"</span><span class="p">:</span> <span class="s">"/v2/books/b-7"</span><span class="p">],</span>
+                               <span class="nv">redirect</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example/v2/books/b-7"</span><span class="p">))</span>
+                <span class="p">:</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="cp">#expect(try await client.book("old").title == "Dune")</span>
+        <span class="cp">#expect(fixture.requests.map { $0.url.lastPathComponent } == ["old", "b-7"])</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">timesOut</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"{}"</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(</span><span class="nv">timeout</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">await</span> <span class="k">#expect</span><span class="p">(</span><span class="nv">throws</span><span class="p">:</span> <span class="kt">ClientError</span><span class="o">.</span><span class="nf">transport</span><span class="p">(</span><span class="o">.</span><span class="n">timedOut</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="s">"slow"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="cp">#expect(ContinuousClock.now - start &lt; .seconds(2))</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">cancellationStopsLoading</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"{}"</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="s">"slow"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+        <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">result</span>
+        <span class="cp">#expect(throws: ClientError.transport(.cancelled)) { try result.get() }</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+        <span class="cp">#expect(fixture.stopCount == 1)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span><span class="p">(</span><span class="nv">arguments</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">50</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">parallelFixturesNeverCross</span><span class="p">(</span><span class="nv">index</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Book</span> <span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">BookClient</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">(),</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="n">api</span><span class="p">)</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">...</span><span class="mi">20</span><span class="p">)))</span>
+        <span class="cp">#expect(try await client.book("b-\(index)").title == "Book \(index)")</span>
+        <span class="cp">#expect(fixture.requests.count == 1)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>All 13 tests, 62 test cases counting the parameterized ones, pass under <code class="language-plaintext highlighter-rouge">swift test</code>, which runs them in parallel. The 50 parameterized cases start in random order with random delays, each with its own fixture, and each receives its own response. The timeout test also documents that <code class="language-plaintext highlighter-rouge">timeoutIntervalForRequest</code> is enforced for protocol-backed tasks: a 0.3 s timeout against a response delayed by ten seconds failed with <code class="language-plaintext highlighter-rouge">timedOut</code> in well under two seconds. The cancellation test shows the other half of the contract: cancelling the Swift task made the session call <code class="language-plaintext highlighter-rouge">stopLoading()</code>, which cancelled the pending delivery.</p>
+
+<h2 id="what-a-stub-does-not-test">What a stub does not test</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">URLProtocol</code> replaces the entire HTTP layer of <code class="language-plaintext highlighter-rouge">URLSession</code>, not just the server. Everything that layer does is therefore absent in a stubbed test. A probe that sent requests through a stub and inspected what arrived and what came back measured the differences on macOS 26:</p>
+
+<!-- file: Tests/LibraryTests/FidelityTests.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Testing</span>
+
+<span class="kd">@Suite</span> <span class="kd">struct</span> <span class="kt">StubFidelity</span> <span class="p">{</span>
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">headersTheSystemWouldAddAreAbsent</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="s">"{}"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">()</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"probe"</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">headers</span> <span class="o">=</span> <span class="k">try</span> <span class="k">#require</span><span class="p">(</span><span class="n">fixture</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">first</span><span class="p">)</span><span class="o">.</span><span class="n">headers</span>
+        <span class="cp">#expect(headers["User-Agent"] == nil &amp;&amp; headers["Accept-Encoding"] == nil &amp;&amp; headers["Accept-Language"] == nil)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">bodiesArriveAsStreams</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="s">"{}"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"probe"</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"hello"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">()</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="cp">#expect(try #require(fixture.requests.first).body == Data("hello".utf8))  // only because StubProtocol read the stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">lostConnectionsAreNotRetried</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">()</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"probe"</span><span class="p">))</span>
+        <span class="cp">#expect(fixture.requests.count == 1)   // the real stack tried a GET three times</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">contentEncodingIsNotDecoded</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">gzippedHello</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">([</span><span class="mh">0x1f</span><span class="p">,</span> <span class="mh">0x8b</span><span class="p">,</span> <span class="mh">0x08</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x03</span><span class="p">,</span> <span class="mh">0xcb</span><span class="p">,</span> <span class="mh">0x48</span><span class="p">,</span> <span class="mh">0xcd</span><span class="p">,</span> <span class="mh">0xc9</span><span class="p">,</span>
+                                 <span class="mh">0xc9</span><span class="p">,</span> <span class="mh">0x07</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x86</span><span class="p">,</span> <span class="mh">0xa6</span><span class="p">,</span> <span class="mh">0x10</span><span class="p">,</span> <span class="mh">0x36</span><span class="p">,</span> <span class="mh">0x05</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">])</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="s">"Content-Encoding"</span><span class="p">:</span> <span class="s">"gzip"</span><span class="p">],</span> <span class="nv">body</span><span class="p">:</span> <span class="n">gzippedHello</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">()</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"probe"</span><span class="p">))</span>
+        <span class="cp">#expect(data == gzippedHello)          // the real stack would return "hello"</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">redirectResponsesAreNotFollowedAutomatically</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fixture</span> <span class="o">=</span> <span class="kt">Fixture</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">StubResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">302</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="s">"Location"</span><span class="p">:</span> <span class="s">"/elsewhere"</span><span class="p">])</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">fixture</span><span class="o">.</span><span class="nf">session</span><span class="p">()</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">api</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"probe"</span><span class="p">))</span>
+        <span class="cp">#expect((response as? HTTPURLResponse)?.statusCode == 302)   // only wasRedirectedTo makes it redirect</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Behavior of the real HTTP stack</th>
+      <th>Under a <code class="language-plaintext highlighter-rouge">URLProtocol</code> stub (measured)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Adds <code class="language-plaintext highlighter-rouge">User-Agent</code>, <code class="language-plaintext highlighter-rouge">Accept-Encoding</code>, <code class="language-plaintext highlighter-rouge">Accept-Language</code></td>
+      <td>Absent</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">httpBody</code> on the request</td>
+      <td><code class="language-plaintext highlighter-rouge">nil</code>; the body is in <code class="language-plaintext highlighter-rouge">httpBodyStream</code></td>
+    </tr>
+    <tr>
+      <td>Retries <code class="language-plaintext highlighter-rouge">GET</code> up to three times on a lost connection</td>
+      <td>One attempt</td>
+    </tr>
+    <tr>
+      <td>Decompresses <code class="language-plaintext highlighter-rouge">Content-Encoding: gzip</code></td>
+      <td>Raw compressed bytes returned</td>
+    </tr>
+    <tr>
+      <td>Follows <code class="language-plaintext highlighter-rouge">3xx</code> with <code class="language-plaintext highlighter-rouge">Location</code></td>
+      <td>Only if the protocol calls <code class="language-plaintext highlighter-rouge">wasRedirectedTo</code></td>
+    </tr>
+    <tr>
+      <td>Stores <code class="language-plaintext highlighter-rouge">Set-Cookie</code>, applies <code class="language-plaintext highlighter-rouge">URLCache</code></td>
+      <td>Not observed in the probe; do not rely on either</td>
+    </tr>
+    <tr>
+      <td>Connection reuse, DNS, TLS, HTTP/2, timing</td>
+      <td>Not involved at all</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>None of this makes stubs less useful. It defines what a stubbed test proves: that the code under test builds the right requests and handles the responses it is given, including ones that are hard to produce for real. It does not prove that the real stack and a real server will produce those responses. That is the job of tests against a controlled server, which <a href="/swift-contract-testing-controlled-server/">Verifying Contracts Against a Controlled Server</a> builds with the same <code class="language-plaintext highlighter-rouge">LocalServer</code> used throughout this series, and a stub that emulates redirects, retries, or compression is a second HTTP implementation that can drift from the first.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">URLProtocol</code> subclasses registered in a configuration’s <code class="language-plaintext highlighter-rouge">protocolClasses</code> answer every request of sessions made from it; avoid global registration.</li>
+  <li>A static, mutable handler is rejected by Swift 6 for good reason: it races under parallel tests. Give each test a fixture, register it under an ID, and route by a header set in <code class="language-plaintext highlighter-rouge">httpAdditionalHeaders</code>.</li>
+  <li>Claim every request in <code class="language-plaintext highlighter-rouge">canInit</code> for stub sessions, and fail requests without a fixture, so tests never reach the network by accident.</li>
+  <li>Read request bodies from <code class="language-plaintext highlighter-rouge">httpBodyStream</code>; <code class="language-plaintext highlighter-rouge">httpBody</code> is <code class="language-plaintext highlighter-rouge">nil</code> inside a protocol.</li>
+  <li>Measured: request timeouts and cancellation (<code class="language-plaintext highlighter-rouge">stopLoading</code>) work with protocol-backed tasks; 50 parallel parameterized tests with separate fixtures never crossed.</li>
+  <li>Measured gaps: no system headers, no retry on lost connections, no decompression, no automatic redirects. Stubs test the client’s logic, not the HTTP stack.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">StubResponse.chunks</code> option that delivers the body in several <code class="language-plaintext highlighter-rouge">didLoad</code> calls with delays between them, and use it to test a function that reads <code class="language-plaintext highlighter-rouge">bytes(for:)</code> and reports progress. Then write a test that fails if any test in the suite makes a request without a fixture: record unmatched requests in the registry, and check the record in a test that runs last, or with a custom Swift Testing trait. Finally, try to reproduce the shared-handler race with <code class="language-plaintext highlighter-rouge">nonisolated(unsafe) static var</code> and 50 parallel tests, and count how often it fails in 20 runs.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/urlprotocol"><code class="language-plaintext highlighter-rouge">URLProtocol</code></a> and <a href="https://developer.apple.com/documentation/foundation/urlsessionconfiguration/protocolclasses"><code class="language-plaintext highlighter-rouge">URLSessionConfiguration.protocolClasses</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2024/10179/">Meet Swift Testing</a>, WWDC24, on parameterized tests and parallel execution.</li>
+  <li>The concurrency roadmap’s <a href="/swift-testing-controlled-interleavings/">Testing Concurrent Work with Controlled Interleavings</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-streaming-responses/">Streaming Responses and Incremental Parsing</a>. Next: <a href="/swift-testing-network-failures/">Testing Status Codes, Invalid Payloads, and Transport Errors</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-urlprotocol-fixtures/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Isolating+HTTP+Fixtures+with+URLProtocol%20http%3A%2F%2Flocalhost%3A4000%2Fswift-urlprotocol-fixtures%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-urlprotocol-fixtures/&title=Isolating+HTTP+Fixtures+with+URLProtocol%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-urlprotocol-fixtures/&title=Isolating+HTTP+Fixtures+with+URLProtocol%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-urlprotocol-fixtures/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Isolating HTTP Fixtures with URLProtocol%20%7C%20Swift By Deya&body=http://localhost:4000/swift-urlprotocol-fixtures/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+    <li><a href="/tag/#URLProtocol">URLProtocol</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Testing Status Codes, Invalid Payloads, and Transport Errors" href="/swift-testing-network-failures/"> <p>Previous post</p> Testing Status Codes, Invalid Payloads, and Transport Errors </a> </div> <div id="next-post"> <a alt="Streaming Responses and Incremental Parsing" href="/swift-streaming-responses/"> <p>Next post</p> Streaming Responses and Incremental Parsing </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

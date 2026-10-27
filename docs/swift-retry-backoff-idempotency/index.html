@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Retry Policies, Backoff, and Idempotency | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Retry Policies, Backoff, and Idempotency" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Retrying a failed request is the cheapest reliability improvement a client can make, and one of the easiest ways for a client to make an outage worse. A transient failure, such as a dropped connection on a moving train or a 503 while a server restarts, often succeeds a second later, and retrying turns it into a short delay the user never notices. A million clients retrying at once against a server that is already overloaded keep it overloaded, and a POST retried after its response was lost may charge a card twice. A retry policy has to answer four questions: which failures are worth retrying, whether this request is safe to send again, how long to wait between attempts, and when to stop. This article answers each one with a measurement or a simulation: a server that dedupes payments with an idempotency key, a herd of 1,000 simulated clients with and without jitter, retry amplification across layers, and a retry budget that keeps a total outage from multiplying load." /> <meta property="og:description" content="Retrying a failed request is the cheapest reliability improvement a client can make, and one of the easiest ways for a client to make an outage worse. A transient failure, such as a dropped connection on a moving train or a 503 while a server restarts, often succeeds a second later, and retrying turns it into a short delay the user never notices. A million clients retrying at once against a server that is already overloaded keep it overloaded, and a POST retried after its response was lost may charge a card twice. A retry policy has to answer four questions: which failures are worth retrying, whether this request is safe to send again, how long to wait between attempts, and when to stop. This article answers each one with a measurement or a simulation: a server that dedupes payments with an idempotency key, a herd of 1,000 simulated clients with and without jitter, retry amplification across layers, and a retry budget that keeps a total outage from multiplying load." /> <link rel="canonical" href="http://localhost:4000/swift-retry-backoff-idempotency/" /> <meta property="og:url" content="http://localhost:4000/swift-retry-backoff-idempotency/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-30T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Retry Policies, Backoff, and Idempotency" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-30T00:00:00+03:00","datePublished":"2026-09-30T00:00:00+03:00","description":"Retrying a failed request is the cheapest reliability improvement a client can make, and one of the easiest ways for a client to make an outage worse. A transient failure, such as a dropped connection on a moving train or a 503 while a server restarts, often succeeds a second later, and retrying turns it into a short delay the user never notices. A million clients retrying at once against a server that is already overloaded keep it overloaded, and a POST retried after its response was lost may charge a card twice. A retry policy has to answer four questions: which failures are worth retrying, whether this request is safe to send again, how long to wait between attempts, and when to stop. This article answers each one with a measurement or a simulation: a server that dedupes payments with an idempotency key, a herd of 1,000 simulated clients with and without jitter, retry amplification across layers, and a retry budget that keeps a total outage from multiplying load.","headline":"Retry Policies, Backoff, and Idempotency","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-retry-backoff-idempotency/"},"url":"http://localhost:4000/swift-retry-backoff-idempotency/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Retry Policies, Backoff, and Idempotency"> <meta name="twitter:description" content="Retrying a failed request is the cheapest reliability improvement a client can make, and one of the easiest ways for a client to make an outage worse. A tran..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Retry Policies, Backoff, and Idempotency"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Retry Policies, Backoff, and Idempotency</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-30T00:00:00+03:00">September 30, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Retrying a failed request is the cheapest reliability improvement a client can make, and one of the easiest ways for a client to make an outage worse. A transient failure, such as a dropped connection on a moving train or a <code class="language-plaintext highlighter-rouge">503</code> while a server restarts, often succeeds a second later, and retrying turns it into a short delay the user never notices. A million clients retrying at once against a server that is already overloaded keep it overloaded, and a <code class="language-plaintext highlighter-rouge">POST</code> retried after its response was lost may charge a card twice.</p>
+
+<p>A retry policy has to answer four questions: which failures are worth retrying, whether <em>this</em> request is safe to send again, how long to wait between attempts, and when to stop. This article answers each one with a measurement or a simulation: a server that dedupes payments with an idempotency key, a herd of 1,000 simulated clients with and without jitter, retry amplification across layers, and a retry budget that keeps a total outage from multiplying load.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="which-failures-to-retry">Which failures to retry</h2>
+
+<p>A retry helps only if the next attempt has a reasonable chance of a different outcome. The classification from <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a> gives the answer for most cases:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Failure</th>
+      <th>Retry?</th>
+      <th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">networkConnectionLost</code>, <code class="language-plaintext highlighter-rouge">timedOut</code>, <code class="language-plaintext highlighter-rouge">cannotConnectToHost</code>, <code class="language-plaintext highlighter-rouge">cannotFindHost</code></td>
+      <td>Yes, with backoff</td>
+      <td>Transient network conditions</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notConnectedToInternet</code></td>
+      <td>Not on a timer</td>
+      <td>Wait for connectivity instead (see <a href="/swift-offline-reachability/">Offline Behavior</a>)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">cancelled</code></td>
+      <td>Never</td>
+      <td>Someone stopped waiting</td>
+    </tr>
+    <tr>
+      <td>TLS and trust failures</td>
+      <td>Never</td>
+      <td>The next attempt will meet the same certificate</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">408</code>, <code class="language-plaintext highlighter-rouge">429</code>, <code class="language-plaintext highlighter-rouge">502</code>, <code class="language-plaintext highlighter-rouge">503</code>, <code class="language-plaintext highlighter-rouge">504</code></td>
+      <td>Yes, honoring <code class="language-plaintext highlighter-rouge">Retry-After</code></td>
+      <td>The server or a gateway says “later”</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">500</code></td>
+      <td>Rarely</td>
+      <td>Usually a bug that repeats for the same request</td>
+    </tr>
+    <tr>
+      <td>Other <code class="language-plaintext highlighter-rouge">4xx</code></td>
+      <td>Never</td>
+      <td>The request itself is wrong; sending it again sends the same mistake</td>
+    </tr>
+    <tr>
+      <td>Decoding failures</td>
+      <td>Never</td>
+      <td>The response arrived; it will arrive again</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code class="language-plaintext highlighter-rouge">Retry-After</code> (<a href="https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3">RFC 9110 §10.2.3</a>) is the server telling the client exactly how long to wait, either as a number of seconds or as an HTTP date. When it is present it replaces the client’s own backoff for that attempt, and a client that ignores it on a <code class="language-plaintext highlighter-rouge">429</code> is the reason servers start returning <code class="language-plaintext highlighter-rouge">429</code> more often.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">func</span> <span class="nf">retryAfter</span><span class="p">(</span><span class="n">_</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">HTTPURLResponse</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Date</span> <span class="o">=</span> <span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Retry-After"</span><span class="p">)?</span><span class="o">.</span><span class="nf">trimmingCharacters</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">.</span><span class="n">whitespaces</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">seconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">seconds</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">formatter</span> <span class="o">=</span> <span class="kt">DateFormatter</span><span class="p">()</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">locale</span> <span class="o">=</span> <span class="kt">Locale</span><span class="p">(</span><span class="nv">identifier</span><span class="p">:</span> <span class="s">"en_US_POSIX"</span><span class="p">)</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">timeZone</span> <span class="o">=</span> <span class="kt">TimeZone</span><span class="p">(</span><span class="nv">identifier</span><span class="p">:</span> <span class="s">"GMT"</span><span class="p">)</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">dateFormat</span> <span class="o">=</span> <span class="s">"EEE, dd MMM yyyy HH:mm:ss 'GMT'"</span>   <span class="c1">// IMF-fixdate, RFC 9110 §5.6.7</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">date</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="nf">date</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">value</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="nf">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kt">Int</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">now</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)))</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sample</span> <span class="o">=</span> <span class="kt">HTTPURLResponse</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://x.example"</span><span class="p">)</span><span class="o">!</span><span class="p">,</span> <span class="nv">statusCode</span><span class="p">:</span> <span class="mi">503</span><span class="p">,</span> <span class="nv">httpVersion</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span>
+                             <span class="nv">headerFields</span><span class="p">:</span> <span class="p">[</span><span class="s">"Retry-After"</span><span class="p">:</span> <span class="s">"Wed, 30 Sep 2026 12:00:30 GMT"</span><span class="p">])</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">reference</span> <span class="o">=</span> <span class="kt">ISO8601DateFormatter</span><span class="p">()</span><span class="o">.</span><span class="nf">date</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="s">"2026-09-30T12:00:00Z"</span><span class="p">)</span><span class="o">!</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">retryAfter</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="n">reference</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h2 id="whether-this-request-may-be-sent-again">Whether this request may be sent again</h2>
+
+<p>The second question is about the request, not the failure. <a href="/swift-http-methods-status-codes-headers/">The first article</a> defined an idempotent request as one where \(n\) deliveries leave the server in the same state as one. <code class="language-plaintext highlighter-rouge">GET</code>, <code class="language-plaintext highlighter-rouge">HEAD</code>, <code class="language-plaintext highlighter-rouge">PUT</code>, and <code class="language-plaintext highlighter-rouge">DELETE</code> are idempotent by definition, so retrying them is always safe. <code class="language-plaintext highlighter-rouge">POST</code> is not, and the dangerous case is precisely the one retries exist for: the request reached the server, the server acted on it, and the response was lost.</p>
+
+<p>The standard solution is an <strong>idempotency key</strong>: a unique value the client generates once per logical operation and sends with every attempt. The server records the key with the result of the first request that carried it, and answers any later request with the same key by returning that recorded result instead of acting again. The IETF is standardizing the header as <a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/"><code class="language-plaintext highlighter-rouge">Idempotency-Key</code></a>, and payment APIs such as Stripe’s have used it for years.</p>
+
+<p>The server below creates a payment and then, on the first attempt only, closes the connection <em>after</em> processing it, which is the lost-response case:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">PaymentServer</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">payments</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>  <span class="c1">// idempotency key -&gt; response body</span>
+        <span class="k">var</span> <span class="nv">dropNext</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+
+    <span class="kd">func</span> <span class="nf">handle</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">HTTPRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">HTTPResponse</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s">"POST"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/payments"</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Idempotency-Key"</span><span class="p">),</span> <span class="k">let</span> <span class="nv">recorded</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">recorded</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">201</span><span class="p">)</span>        <span class="c1">// replay: no second payment</span>
+            <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="s">"pay-</span><span class="se">\(</span><span class="n">state</span><span class="o">.</span><span class="n">payments</span><span class="o">.</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="se">)</span><span class="s">"</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">payments</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Idempotency-Key"</span><span class="p">)</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">body</span> <span class="p">}</span>
+            <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">dropNext</span> <span class="p">{</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">dropNext</span> <span class="o">=</span> <span class="kc">false</span>
+                <span class="k">return</span> <span class="o">.</span><span class="n">drop</span>                                <span class="c1">// processed, but the response is lost</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">201</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">pay</span><span class="p">(</span><span class="n">at</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"payments"</span><span class="p">))</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+    <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">amount</span><span class="s">":1999,"</span><span class="n">currency</span><span class="s">":"</span><span class="kt">EUR</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">key</span> <span class="p">{</span> <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Idempotency-Key"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">)</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">payWithOneRetry</span><span class="p">(</span><span class="n">at</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">pay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="k">where</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">networkConnectionLost</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">pay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>  <span class="c1">// the outcome was unknown, so try again</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">withoutKey</span> <span class="o">=</span> <span class="kt">PaymentServer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">unkeyedServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">withoutKey</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">payWithOneRetry</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">unkeyedServer</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withoutKey</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">payments</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"pay-1"</span><span class="p">,</span> <span class="s">"pay-2"</span><span class="p">])</span>  <span class="c1">// charged twice</span>
+
+<span class="k">let</span> <span class="nv">withKey</span> <span class="o">=</span> <span class="kt">PaymentServer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">keyedServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">withKey</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">operationKey</span> <span class="o">=</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span>  <span class="c1">// generated once per user action, reused on every attempt</span>
+<span class="k">let</span> <span class="nv">receipt</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">payWithOneRetry</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">keyedServer</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="n">operationKey</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withKey</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">payments</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"pay-1"</span><span class="p">])</span>              <span class="c1">// charged once</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">receipt</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">pay</span><span class="o">-</span><span class="mi">1</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>                                    <span class="c1">// and the client learned the result</span>
+</code></pre></div></div>
+
+<p>The key must be created when the <em>user</em> acts, stored with the operation, and reused for every attempt, including attempts after an app restart if the operation is queued, as in <a href="/swift-offline-reachability/">Offline Behavior and Reachability Assumptions</a>. Generating a fresh key inside the retry loop defeats the mechanism entirely. Recall also that <code class="language-plaintext highlighter-rouge">URLSession</code> itself retries only <code class="language-plaintext highlighter-rouge">GET</code> and <code class="language-plaintext highlighter-rouge">HEAD</code> on a lost connection, never <code class="language-plaintext highlighter-rouge">POST</code>, so for a <code class="language-plaintext highlighter-rouge">POST</code> this retry is entirely the app’s decision.</p>
+
+<h2 id="how-long-to-wait-backoff-and-jitter">How long to wait: backoff and jitter</h2>
+
+<p>Retrying immediately is right only for a failure that is purely local to one connection. For anything that might be load-related, the client should wait, and wait longer after each failure, so that the load it adds falls as the failure persists. <strong>Exponential backoff</strong> waits \(b \cdot 2^n\) before attempt \(n+1\), capped at some maximum \(c\):</p>
+
+\[d_n = \min(c,\; b \cdot 2^n)\]
+
+<p>Exponential backoff alone has a flaw that only shows up at scale. Clients that fail at the same moment, because the server restarted, retry at the same moments too: all of them after \(b\), again after \(2b\), and so on. The load arrives in synchronized waves, each one as large as the original spike. The fix is <strong>jitter</strong>, randomizing each delay. The “full jitter” variant from Marc Brooker’s analysis on the <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">AWS Architecture Blog</a> draws the delay uniformly between zero and the exponential value:</p>
+
+\[d_n \sim \mathcal{U}\big(0,\; \min(c,\; b \cdot 2^n)\big),
+\qquad
+\mathbb{E}[d_n] = \tfrac{1}{2}\min(c,\; b \cdot 2^n)\]
+
+<p>Full jitter waits half as long on average and spreads the retries uniformly over each window instead of stacking them at its end. The simulation below makes the difference concrete. A thousand clients fail at time zero, and each retries up to five times with \(b = 100\) ms and \(c = 2\) s. It counts the retries that land in each 10 ms bucket:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Backoff</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">base</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">cap</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">jitter</span> <span class="o">=</span> <span class="kc">true</span>
+
+    <span class="kd">func</span> <span class="nf">delay</span><span class="p">(</span><span class="n">forAttempt</span> <span class="nv">attempt</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">using</span> <span class="nv">random</span><span class="p">:</span> <span class="k">inout</span> <span class="kd">some</span> <span class="kt">RandomNumberGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">exponential</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">cap</span><span class="p">,</span> <span class="n">base</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nf">min</span><span class="p">(</span><span class="n">attempt</span><span class="p">,</span> <span class="mi">30</span><span class="p">)))</span>
+        <span class="k">guard</span> <span class="n">jitter</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">exponential</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">milliseconds</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">exponential</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">exponential</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e15</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">...</span><span class="kt">Int</span><span class="p">(</span><span class="n">milliseconds</span><span class="p">),</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">random</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">peakRetriesPerBucket</span><span class="p">(</span><span class="nv">clients</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">backoff</span><span class="p">:</span> <span class="kt">Backoff</span><span class="p">,</span> <span class="nv">bucket</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SystemRandomNumberGenerator</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">buckets</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="k">let</span> <span class="nv">bucketMilliseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">bucket</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span> <span class="o">/</span> <span class="mi">1_000_000_000_000_000</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Int</span><span class="p">(</span><span class="n">bucket</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">clients</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">time</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="n">zero</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5</span> <span class="p">{</span>
+            <span class="n">time</span> <span class="o">+=</span> <span class="n">backoff</span><span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">forAttempt</span><span class="p">:</span> <span class="n">attempt</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">milliseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> <span class="kt">Int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span> <span class="o">/</span> <span class="mi">1_000_000_000_000_000</span><span class="p">)</span>
+            <span class="n">buckets</span><span class="p">[</span><span class="n">milliseconds</span> <span class="o">/</span> <span class="n">bucketMilliseconds</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">buckets</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span> <span class="p">??</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">synchronized</span> <span class="o">=</span> <span class="nf">peakRetriesPerBucket</span><span class="p">(</span><span class="nv">clients</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="nv">backoff</span><span class="p">:</span> <span class="kt">Backoff</span><span class="p">(</span><span class="nv">jitter</span><span class="p">:</span> <span class="kc">false</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">jittered</span> <span class="o">=</span> <span class="nf">peakRetriesPerBucket</span><span class="p">(</span><span class="nv">clients</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="nv">backoff</span><span class="p">:</span> <span class="kt">Backoff</span><span class="p">(</span><span class="nv">jitter</span><span class="p">:</span> <span class="kc">true</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"peak retries per 10 ms: without jitter </span><span class="se">\(</span><span class="n">synchronized</span><span class="se">)</span><span class="s">, with full jitter </span><span class="se">\(</span><span class="n">jittered</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">synchronized</span> <span class="o">==</span> <span class="mi">1000</span><span class="p">)</span>        <span class="c1">// every client retries in the same bucket, five times over</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">jittered</span> <span class="o">&lt;</span> <span class="mi">250</span><span class="p">)</span>              <span class="c1">// spread out by a factor of six or more</span>
+</code></pre></div></div>
+
+<p>Without jitter, the peak was exactly 1,000: every client retried in the same 10 ms window, and did so five times, at 100, 300, 700, 1,500, and 3,100 ms. With full jitter, the peak over six runs was between 149 and 164. The first retry window alone spreads 1,000 clients over 100 ms, ten buckets of about 100, and later attempts overlapping it add the rest. The server sees the same total number of retries in both cases. What changes is whether they arrive as five spikes the size of the original failure or as a spread it can absorb.</p>
+
+<h2 id="when-to-stop-amplification-and-budgets">When to stop: amplification and budgets</h2>
+
+<p>Retries multiply load, and the multiplication compounds when several layers retry independently. If each of \(k\) layers makes up to \(r + 1\) attempts for every attempt it receives, a single user action can reach the bottom layer:</p>
+
+\[A = (r + 1)^k\]
+
+<p>times. An app that tries three times, over a <code class="language-plaintext highlighter-rouge">URLSession</code> that replays a <code class="language-plaintext highlighter-rouge">GET</code> up to three times on a lost connection (as measured in <a href="/swift-http-methods-status-codes-headers/">HTTP Methods, Status Codes, and Headers</a>), through a gateway that tries twice, can send \(3 \times 3 \times 2 = 18\) requests to the backend for one tap. During an outage, every user’s traffic is multiplied by that factor at exactly the moment the backend can least afford it.</p>
+
+<p>Two rules contain it. Retry at <strong>one layer</strong> only, ideally the one closest to the user, which knows whether anyone is still waiting. And cap retries with a <strong>retry budget</strong>: a client may retry only while recent retries are a small fraction of recent requests. This is the approach of gRPC’s <a href="https://github.com/grpc/proposal/blob/master/A6-client-retries.md">retry throttling</a> and Finagle’s retry budgets. A token bucket implements it: each successful request adds a fraction of a token, each retry spends one, and retries stop when the bucket is empty.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">RetryBudget</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">ratio</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Double</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">ratio</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">recordRequest</span><span class="p">()</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="nv">$0</span> <span class="o">+</span> <span class="n">ratio</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">tryRetry</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">tokens</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="n">tokens</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+            <span class="n">tokens</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="kc">true</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">simulatedLoad</span><span class="p">(</span><span class="nv">requests</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">failureRate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">attempts</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">budget</span><span class="p">:</span> <span class="kt">RetryBudget</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">sent</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">requests</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">attempts</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">attempt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="k">let</span> <span class="nv">budget</span><span class="p">,</span> <span class="o">!</span><span class="n">budget</span><span class="o">.</span><span class="nf">tryRetry</span><span class="p">()</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+            <span class="n">sent</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">budget</span><span class="p">?</span><span class="o">.</span><span class="nf">recordRequest</span><span class="p">()</span>
+            <span class="k">if</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">failureRate</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">sent</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">healthy</span> <span class="o">=</span> <span class="nf">simulatedLoad</span><span class="p">(</span><span class="nv">requests</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">,</span> <span class="nv">failureRate</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="nv">attempts</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">budget</span><span class="p">:</span> <span class="kt">RetryBudget</span><span class="p">())</span>
+<span class="k">let</span> <span class="nv">outageNoBudget</span> <span class="o">=</span> <span class="nf">simulatedLoad</span><span class="p">(</span><span class="nv">requests</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">,</span> <span class="nv">failureRate</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nv">attempts</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">budget</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">outageWithBudget</span> <span class="o">=</span> <span class="nf">simulatedLoad</span><span class="p">(</span><span class="nv">requests</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">,</span> <span class="nv">failureRate</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nv">attempts</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">budget</span><span class="p">:</span> <span class="kt">RetryBudget</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"healthy </span><span class="se">\(</span><span class="n">healthy</span><span class="se">)</span><span class="s">, outage without budget </span><span class="se">\(</span><span class="n">outageNoBudget</span><span class="se">)</span><span class="s">, with budget </span><span class="se">\(</span><span class="n">outageWithBudget</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">healthy</span> <span class="o">&lt;</span> <span class="mi">10_200</span><span class="p">)</span>                                  <span class="c1">// transient failures are still retried</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">outageNoBudget</span> <span class="o">==</span> <span class="mi">30_000</span><span class="p">)</span>                          <span class="c1">// a total outage triples the load</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">outageWithBudget</span> <span class="o">&lt;</span> <span class="mi">11_200</span><span class="p">)</span>                         <span class="c1">// the budget holds it near 1.1×</span>
+</code></pre></div></div>
+
+<p>In a healthy system with 1% transient failures, the budget never runs out and every retry happens. In a total outage, retries without a budget triple the load, while with a 10% budget the load stays near 1.1 times normal. The budget adapts on its own: it permits retries exactly when they are rare enough to be likely transient.</p>
+
+<h2 id="a-retry-policy-in-the-transport">A retry policy in the transport</h2>
+
+<p>The pieces combine into one function: classify the outcome, check idempotency, wait with jitter or <code class="language-plaintext highlighter-rouge">Retry-After</code>, respect the overall deadline from <a href="/swift-network-timeouts-cancellation/">Timeouts, Cancellation, and Request Lifetimes</a>, and spend budget. Waiting is injected as a closure, so tests can record delays instead of sleeping:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RetryPolicy</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">maxAttempts</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="k">var</span> <span class="nv">backoff</span> <span class="o">=</span> <span class="kt">Backoff</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">budget</span> <span class="o">=</span> <span class="kt">RetryBudget</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">retryableStatuses</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="mi">408</span><span class="p">,</span> <span class="mi">429</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">retryableErrors</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">,</span> <span class="o">.</span><span class="n">timedOut</span><span class="p">,</span> <span class="o">.</span><span class="n">cannotConnectToHost</span><span class="p">,</span> <span class="o">.</span><span class="n">cannotFindHost</span><span class="p">]</span>
+
+    <span class="kd">func</span> <span class="nf">isIdempotent</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="p">??</span> <span class="s">"GET"</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">"GET"</span><span class="p">,</span> <span class="s">"HEAD"</span><span class="p">,</span> <span class="s">"PUT"</span><span class="p">,</span> <span class="s">"DELETE"</span><span class="p">,</span> <span class="s">"OPTIONS"</span><span class="p">]</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+            <span class="o">||</span> <span class="n">request</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Idempotency-Key"</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">,</span> <span class="nv">policy</span><span class="p">:</span> <span class="kt">RetryPolicy</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="o">.</span><span class="n">shared</span><span class="p">,</span>
+          <span class="nv">sleep</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Duration</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="o">=</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">})</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SystemRandomNumberGenerator</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+        <span class="n">policy</span><span class="o">.</span><span class="n">budget</span><span class="o">.</span><span class="nf">recordRequest</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Duration</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span>
+            <span class="k">guard</span> <span class="n">policy</span><span class="o">.</span><span class="n">retryableStatuses</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">statusCode</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">http</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">guard</span> <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">maxAttempts</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="nf">isIdempotent</span><span class="p">(</span><span class="n">request</span><span class="p">),</span> <span class="n">policy</span><span class="o">.</span><span class="n">budget</span><span class="o">.</span><span class="nf">tryRetry</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">http</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="nf">retryAfter</span><span class="p">(</span><span class="n">http</span><span class="p">)</span> <span class="p">??</span> <span class="n">policy</span><span class="o">.</span><span class="n">backoff</span><span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">forAttempt</span><span class="p">:</span> <span class="n">attempt</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="k">where</span> <span class="n">policy</span><span class="o">.</span><span class="n">retryableErrors</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">maxAttempts</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="nf">isIdempotent</span><span class="p">(</span><span class="n">request</span><span class="p">),</span> <span class="n">policy</span><span class="o">.</span><span class="n">budget</span><span class="o">.</span><span class="nf">tryRetry</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">throw</span> <span class="n">error</span>
+            <span class="p">}</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">backoff</span><span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">forAttempt</span><span class="p">:</span> <span class="n">attempt</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A server that fails twice and then succeeds, once with a <code class="language-plaintext highlighter-rouge">Retry-After</code>, exercises every branch. The recorded delays show which rule chose each wait:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">flakyCount</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">flaky</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">count</span> <span class="o">=</span> <span class="n">flakyCount</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">count</span> <span class="k">in</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="n">count</span> <span class="p">}</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"/books"</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">503</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Retry-After"</span><span class="p">,</span> <span class="s">"1"</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"/books"</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span> <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">502</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"/books"</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span> <span class="k">return</span> <span class="o">.</span><span class="n">drop</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"/books"</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span> <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"["</span><span class="kt">Dune</span><span class="s">"]"</span><span class="err">#</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"/broken"</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span> <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"bad request"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span>
+    <span class="k">default</span><span class="p">:</span> <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"x"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Delays</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">recorded</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Duration</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">delays</span> <span class="o">=</span> <span class="kt">Delays</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">recordOnly</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Duration</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="o">=</span> <span class="p">{</span> <span class="n">delay</span> <span class="k">in</span> <span class="n">delays</span><span class="o">.</span><span class="n">recorded</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">books</span><span class="p">,</span> <span class="nv">booksResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">flaky</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books"</span><span class="p">)),</span>
+                                            <span class="nv">policy</span><span class="p">:</span> <span class="kt">RetryPolicy</span><span class="p">(),</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">),</span>
+                                            <span class="nv">sleep</span><span class="p">:</span> <span class="n">recordOnly</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">booksResponse</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="n">books</span> <span class="o">==</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"["</span><span class="kt">Dune</span><span class="s">"]"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">waits</span> <span class="o">=</span> <span class="n">delays</span><span class="o">.</span><span class="n">recorded</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">waits</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">waits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>                       <span class="c1">// Retry-After overrode the backoff</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">waits</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>                <span class="c1">// full jitter, second attempt: U(0, 200 ms)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">flaky</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/books"</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>  <span class="c1">// three app attempts, four server hits</span>
+
+<span class="k">let</span> <span class="nv">before400</span> <span class="o">=</span> <span class="n">flaky</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">badResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">flaky</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"broken"</span><span class="p">)),</span> <span class="nv">policy</span><span class="p">:</span> <span class="kt">RetryPolicy</span><span class="p">(),</span>
+                                      <span class="nv">sleep</span><span class="p">:</span> <span class="n">recordOnly</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">badResponse</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">400</span> <span class="o">&amp;&amp;</span> <span class="n">flaky</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">before400</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1">// never retried</span>
+
+<span class="k">var</span> <span class="nv">postRequest</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">flaky</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books"</span><span class="p">))</span>
+<span class="n">postRequest</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">RetryPolicy</span><span class="p">()</span><span class="o">.</span><span class="nf">isIdempotent</span><span class="p">(</span><span class="n">postRequest</span><span class="p">))</span>
+<span class="n">postRequest</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Idempotency-Key"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">RetryPolicy</span><span class="p">()</span><span class="o">.</span><span class="nf">isIdempotent</span><span class="p">(</span><span class="n">postRequest</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The app made three attempts and waited twice: one second because the <code class="language-plaintext highlighter-rouge">503</code> said so, then a jittered delay of at most 200 ms after the <code class="language-plaintext highlighter-rouge">502</code>. The server, however, counted four requests. The third attempt’s connection was dropped before any response, and <code class="language-plaintext highlighter-rouge">URLSession</code> replayed the <code class="language-plaintext highlighter-rouge">GET</code> on a new connection by itself, as measured in the first article, so the app saw a <code class="language-plaintext highlighter-rouge">200</code> and never knew. That is a small, live example of the amplification above: two retry layers, each behaving correctly, and a server that receives more requests than either layer intended. It is a reason to keep the app’s own <code class="language-plaintext highlighter-rouge">maxAttempts</code> low for <code class="language-plaintext highlighter-rouge">GET</code>, and to count attempts at the server, as <code class="language-plaintext highlighter-rouge">flaky.requests</code> does here, when tuning a policy.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Retry only failures that can change: transient transport errors and <code class="language-plaintext highlighter-rouge">408</code>, <code class="language-plaintext highlighter-rouge">429</code>, <code class="language-plaintext highlighter-rouge">502</code>, <code class="language-plaintext highlighter-rouge">503</code>, <code class="language-plaintext highlighter-rouge">504</code>. Never retry cancellation, trust failures, other <code class="language-plaintext highlighter-rouge">4xx</code>, or decoding errors, and wait for connectivity rather than retrying offline.</li>
+  <li>Honor <code class="language-plaintext highlighter-rouge">Retry-After</code>, in seconds or as an HTTP date.</li>
+  <li>Retry non-idempotent requests only with an idempotency key, created once per user action. Measured: without one, a lost response led to two payments; with one, to one payment and a correct receipt.</li>
+  <li>Use exponential backoff with full jitter, \(\mathcal{U}(0, \min(c, b\,2^n))\). In the simulation, jitter cut the peak retry load per 10 ms from 1,000 to about 150.</li>
+  <li>Layered retries multiply, \((r+1)^k\). Retry at one layer and cap retries with a budget; the 10% budget kept a total outage at about 1.1× normal load instead of 3×.</li>
+  <li>Inject the sleep so policies can be tested without waiting.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add decorrelated jitter, \(d_{n+1} = \min(c, \mathcal{U}(b, 3 d_n))\), to <code class="language-plaintext highlighter-rouge">Backoff</code>, and extend the simulation to report, for each strategy, the peak bucket, the mean time until a client’s fifth retry, and the total time until 99% of clients have succeeded when the server recovers 1.5 seconds after the failure and can serve 60 requests per 10 ms. Which strategy recovers the fleet fastest, and which is kindest to the server during the outage?</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Marc Brooker, <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/"><em>Exponential Backoff And Jitter</em></a>, AWS Architecture Blog.</li>
+  <li>Google SRE book, <a href="https://sre.google/sre-book/addressing-cascading-failures/"><em>Addressing Cascading Failures</em></a>, on retry amplification and budgets.</li>
+  <li>The IETF draft <a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/"><em>The Idempotency-Key HTTP Header Field</em></a>.</li>
+  <li>gRPC’s <a href="https://github.com/grpc/proposal/blob/master/A6-client-retries.md">retry design (A6)</a>, including retry throttling.</li>
+</ul>
+
+<p>Previous: <a href="/swift-network-timeouts-cancellation/">Timeouts, Cancellation, and Request Lifetimes</a>. Next: <a href="/swift-http-caching-etag/">HTTP Caching with <code class="language-plaintext highlighter-rouge">Cache-Control</code> and <code class="language-plaintext highlighter-rouge">ETag</code></a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-retry-backoff-idempotency/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Retry+Policies%2C+Backoff%2C+and+Idempotency%20http%3A%2F%2Flocalhost%3A4000%2Fswift-retry-backoff-idempotency%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-retry-backoff-idempotency/&title=Retry+Policies%2C+Backoff%2C+and+Idempotency%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-retry-backoff-idempotency/&title=Retry+Policies%2C+Backoff%2C+and+Idempotency%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-retry-backoff-idempotency/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Retry Policies, Backoff, and Idempotency%20%7C%20Swift By Deya&body=http://localhost:4000/swift-retry-backoff-idempotency/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Reliability">Reliability</a></li>
+    
+    <li><a href="/tag/#Resilience">Resilience</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="HTTP Caching with Cache-Control and ETag" href="/swift-http-caching-etag/"> <p>Previous post</p> HTTP Caching with Cache-Control and ETag </a> </div> <div id="next-post"> <a alt="Timeouts, Cancellation, and Request Lifetimes" href="/swift-network-timeouts-cancellation/"> <p>Next post</p> Timeouts, Cancellation, and Request Lifetimes </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

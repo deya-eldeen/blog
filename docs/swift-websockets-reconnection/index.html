@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>WebSockets: Connection State and Reconnection | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="WebSockets: Connection State and Reconnection" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An HTTP request has a beginning and an end, and the client always knows which of the two it is waiting for. A WebSocket has neither. It is a long-lived, two-way channel that is open until something closes it: the server deliberately, the network accidentally, or nothing at all, when the other end has silently disappeared and the socket looks healthy forever. A live feature built on a WebSocket, such as chat, a shared reading list, or a “books available now” ticker, is only as good as the client’s answer to one question: what state is the connection in right now, and what does it do about it? This article starts from the protocol: the upgrade handshake that turns an HTTP request into a WebSocket, and the frames that follow. It then measures the three ways a URLSessionWebSocketTask connection ends, against a WebSocket server built with Network framework, including the one that produces no error at all. Finally it builds a connection manager with an explicit state machine, heartbeats that detect dead peers within a bounded time, jittered reconnection, and resubscription after every reconnect." /> <meta property="og:description" content="An HTTP request has a beginning and an end, and the client always knows which of the two it is waiting for. A WebSocket has neither. It is a long-lived, two-way channel that is open until something closes it: the server deliberately, the network accidentally, or nothing at all, when the other end has silently disappeared and the socket looks healthy forever. A live feature built on a WebSocket, such as chat, a shared reading list, or a “books available now” ticker, is only as good as the client’s answer to one question: what state is the connection in right now, and what does it do about it? This article starts from the protocol: the upgrade handshake that turns an HTTP request into a WebSocket, and the frames that follow. It then measures the three ways a URLSessionWebSocketTask connection ends, against a WebSocket server built with Network framework, including the one that produces no error at all. Finally it builds a connection manager with an explicit state machine, heartbeats that detect dead peers within a bounded time, jittered reconnection, and resubscription after every reconnect." /> <link rel="canonical" href="http://localhost:4000/swift-websockets-reconnection/" /> <meta property="og:url" content="http://localhost:4000/swift-websockets-reconnection/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-09T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="WebSockets: Connection State and Reconnection" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-09T00:00:00+03:00","datePublished":"2026-10-09T00:00:00+03:00","description":"An HTTP request has a beginning and an end, and the client always knows which of the two it is waiting for. A WebSocket has neither. It is a long-lived, two-way channel that is open until something closes it: the server deliberately, the network accidentally, or nothing at all, when the other end has silently disappeared and the socket looks healthy forever. A live feature built on a WebSocket, such as chat, a shared reading list, or a “books available now” ticker, is only as good as the client’s answer to one question: what state is the connection in right now, and what does it do about it? This article starts from the protocol: the upgrade handshake that turns an HTTP request into a WebSocket, and the frames that follow. It then measures the three ways a URLSessionWebSocketTask connection ends, against a WebSocket server built with Network framework, including the one that produces no error at all. Finally it builds a connection manager with an explicit state machine, heartbeats that detect dead peers within a bounded time, jittered reconnection, and resubscription after every reconnect.","headline":"WebSockets: Connection State and Reconnection","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/swift-websockets-reconnection/"},"url":"http://localhost:4000/swift-websockets-reconnection/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="WebSockets: Connection State and Reconnection"> <meta name="twitter:description" content="An HTTP request has a beginning and an end, and the client always knows which of the two it is waiting for. A WebSocket has neither. It is a long-lived, two-..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="WebSockets: Connection State and Reconnection"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> <div class="mobile-resources"> <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Toggle appearance</button> </div> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>WebSockets: Connection State and Reconnection</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-09T00:00:00+03:00">October 9, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An HTTP request has a beginning and an end, and the client always knows which of the two it is waiting for. A WebSocket has neither. It is a long-lived, two-way channel that is open until something closes it: the server deliberately, the network accidentally, or nothing at all, when the other end has silently disappeared and the socket looks healthy forever. A live feature built on a WebSocket, such as chat, a shared reading list, or a “books available now” ticker, is only as good as the client’s answer to one question: what state is the connection in right now, and what does it do about it?</p>
+
+<p>This article starts from the protocol: the upgrade handshake that turns an HTTP request into a WebSocket, and the frames that follow. It then measures the three ways a <code class="language-plaintext highlighter-rouge">URLSessionWebSocketTask</code> connection ends, against a WebSocket server built with Network framework, including the one that produces no error at all. Finally it builds a connection manager with an explicit state machine, heartbeats that detect dead peers within a bounded time, jittered reconnection, and resubscription after every reconnect.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. One section sends a request to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; the WebSocket server is built in this article. Paste <code class="language-plaintext highlighter-rouge">LocalServer</code> first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="from-http-to-websocket">From HTTP to WebSocket</h2>
+
+<p>A WebSocket connection starts as an HTTP/1.1 <code class="language-plaintext highlighter-rouge">GET</code> with an <code class="language-plaintext highlighter-rouge">Upgrade: websocket</code> header, defined in <a href="https://www.rfc-editor.org/rfc/rfc6455">RFC 6455</a>. If the server agrees, it answers <code class="language-plaintext highlighter-rouge">101 Switching Protocols</code>, and from then on the TCP connection carries WebSocket frames instead of HTTP messages. Pointing a <code class="language-plaintext highlighter-rouge">URLSessionWebSocketTask</code> at <code class="language-plaintext highlighter-rouge">LocalServer</code>, which speaks only HTTP, shows the request it sends:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Network</span>
+<span class="kd">import</span> <span class="kt">CryptoKit</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not a WebSocket server"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">probe</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">webSocketTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"ws://127.0.0.1:</span><span class="se">\(</span><span class="n">http</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/live"</span><span class="p">)</span><span class="o">!</span><span class="p">,</span> <span class="nv">protocols</span><span class="p">:</span> <span class="p">[</span><span class="s">"library.v1"</span><span class="p">])</span>
+<span class="n">probe</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">probe</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the handshake cannot succeed against an HTTP-only server"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">badServerResponse</span><span class="p">)</span>  <span class="c1">// -1011: the server did not answer 101</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">handshake</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">requests</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">handshake</span><span class="o">.</span><span class="n">head</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">handshake</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Upgrade"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"websocket"</span> <span class="o">&amp;&amp;</span> <span class="n">handshake</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Connection"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Upgrade"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">handshake</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Sec-WebSocket-Version"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"13"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">handshake</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Sec-WebSocket-Protocol"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"library.v1"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">maximumMessageSize</span> <span class="o">==</span> <span class="mi">1_048_576</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /live HTTP/1.1
+Host: 127.0.0.1:50174
+Sec-WebSocket-Protocol: library.v1
+Sec-WebSocket-Key: g1x9S8H+Burq1v3oY/F9gg==
+Sec-WebSocket-Version: 13
+Upgrade: websocket
+Sec-WebSocket-Extensions: permessage-deflate
+Connection: Upgrade
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">Sec-WebSocket-Key</code> is 16 random bytes in base64. The server proves it understood the WebSocket handshake, rather than being an HTTP server that happened to echo headers, by returning <code class="language-plaintext highlighter-rouge">Sec-WebSocket-Accept</code>: the SHA-1 of the key concatenated with a fixed GUID from the RFC, in base64.</p>
+
+\[\text{Accept} = \operatorname{base64}\big(\operatorname{SHA1}(\text{Key} \,\|\, \texttt{258EAFA5-E914-47DA-95CA-C5AB0DC85B11})\big)\]
+
+<p>The RFC’s own example checks the formula:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">websocketAccept</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">digest</span> <span class="o">=</span> <span class="kt">Insecure</span><span class="o">.</span><span class="kt">SHA1</span><span class="o">.</span><span class="nf">hash</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">((</span><span class="n">key</span> <span class="o">+</span> <span class="s">"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+    <span class="k">return</span> <span class="kt">Data</span><span class="p">(</span><span class="n">digest</span><span class="p">)</span><span class="o">.</span><span class="nf">base64EncodedString</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">websocketAccept</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"dGhlIHNhbXBsZSBub25jZQ=="</span><span class="p">)</span> <span class="o">==</span> <span class="s">"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="</span><span class="p">)</span>  <span class="c1">// RFC 6455 §1.3</span>
+</code></pre></div></div>
+
+<p>SHA-1 is not used for security here; it only makes the response specific to this request. The security of a WebSocket comes from TLS, so production URLs use <code class="language-plaintext highlighter-rouge">wss://</code>, which App Transport Security requires anyway. The client also offered <code class="language-plaintext highlighter-rouge">permessage-deflate</code> (<a href="https://www.rfc-editor.org/rfc/rfc7692">RFC 7692</a>) compression, and the 1 MiB <code class="language-plaintext highlighter-rouge">maximumMessageSize</code> is the largest message <code class="language-plaintext highlighter-rouge">receive()</code> accepts before failing.</p>
+
+<p>After the handshake, data flows as <strong>frames</strong>: text and binary frames carry messages, ping and pong frames check liveness, and a close frame ends the connection with a <strong>close code</strong>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Close code</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1000</td>
+      <td>Normal closure</td>
+    </tr>
+    <tr>
+      <td>1001</td>
+      <td>Going away (server shutting down, page navigating)</td>
+    </tr>
+    <tr>
+      <td>1008</td>
+      <td>Policy violation</td>
+    </tr>
+    <tr>
+      <td>1011</td>
+      <td>Server error</td>
+    </tr>
+    <tr>
+      <td>1006</td>
+      <td><em>Never sent</em>: reported locally when the connection dropped without a close frame</td>
+    </tr>
+    <tr>
+      <td>4000–4999</td>
+      <td>Reserved for applications, e.g. 4001 “token expired”, 4003 “forbidden”</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: The life of a WebSocket connection
+    participant C as Client
+    participant S as Server
+    C-&gt;&gt;S: GET /live, Upgrade: websocket, Sec-WebSocket-Key
+    S--&gt;&gt;C: 101 Switching Protocols, Sec-WebSocket-Accept
+    C-&gt;&gt;S: text: subscribe:availability
+    S--&gt;&gt;C: text: event 1
+    C-&gt;&gt;S: ping
+    S--&gt;&gt;C: pong
+    S--&gt;&gt;C: text: event 2
+    S--&gt;&gt;C: close 4001 "token expired"
+    C-&gt;&gt;S: close 4001
+</code></pre>
+
+<h2 id="a-websocket-server-for-tests">A WebSocket server for tests</h2>
+
+<p>Network framework can terminate WebSockets itself: adding <code class="language-plaintext highlighter-rouge">NWProtocolWebSocket.Options</code> to a listener’s protocol stack makes it perform the handshake and deliver whole messages. The server below echoes text messages, records subscriptions per connection, and lets a test close or drop every connection. With <code class="language-plaintext highlighter-rouge">autoReplyPing</code> turned off, it simulates a peer that has vanished: the socket stays open, but nothing answers.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">WebSocketServer</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">listener</span><span class="p">:</span> <span class="kt">NWListener</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">connections</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">NWConnection</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">subscriptions</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>   <span class="c1">// "connection#:topic", in arrival order</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">accepted</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">answersPings</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">true</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">websocket</span> <span class="o">=</span> <span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="kt">Options</span><span class="p">()</span>
+        <span class="n">websocket</span><span class="o">.</span><span class="n">autoReplyPing</span> <span class="o">=</span> <span class="n">answersPings</span>
+        <span class="k">let</span> <span class="nv">parameters</span> <span class="o">=</span> <span class="kt">NWParameters</span><span class="o">.</span><span class="n">tcp</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">defaultProtocolStack</span><span class="o">.</span><span class="n">applicationProtocols</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">websocket</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">requiredLocalEndpoint</span> <span class="o">=</span> <span class="o">.</span><span class="nf">hostPort</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="o">.</span><span class="nf">ipv4</span><span class="p">(</span><span class="o">.</span><span class="n">loopback</span><span class="p">),</span> <span class="nv">port</span><span class="p">:</span> <span class="o">.</span><span class="kd">any</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">listener</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">NWListener</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="n">parameters</span><span class="p">)</span>
+        <span class="n">listener</span><span class="o">.</span><span class="n">newConnectionHandler</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">resumed</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+            <span class="n">listener</span><span class="o">.</span><span class="n">stateUpdateHandler</span> <span class="o">=</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+                <span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="n">state</span><span class="p">,</span> <span class="n">resumed</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="n">done</span> <span class="k">in</span> <span class="k">defer</span> <span class="p">{</span> <span class="n">done</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">};</span> <span class="k">return</span> <span class="o">!</span><span class="n">done</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">listener</span><span class="o">.</span><span class="n">port</span><span class="o">!.</span><span class="n">rawValue</span><span class="p">))</span>
+            <span class="p">}</span>
+            <span class="n">listener</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span>
+        <span class="p">}</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">listener</span> <span class="o">=</span> <span class="n">listener</span>
+        <span class="n">listener</span><span class="o">.</span><span class="n">newConnectionHandler</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="n">connection</span> <span class="k">in</span> <span class="nf">accept</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">connectionCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">accepted</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">accept</span><span class="p">(</span><span class="n">_</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">NWConnection</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">number</span> <span class="o">=</span> <span class="n">accepted</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">count</span> <span class="k">in</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="n">count</span> <span class="p">}</span>
+        <span class="n">connections</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">connection</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span>
+        <span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">connection</span><span class="p">,</span> <span class="nv">number</span><span class="p">:</span> <span class="n">number</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">NWConnection</span><span class="p">,</span> <span class="nv">number</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">receiveMessage</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="n">data</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="n">error</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="k">let</span> <span class="nv">data</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">metadata</span> <span class="o">=</span> <span class="n">context</span><span class="p">?</span><span class="o">.</span><span class="nf">protocolMetadata</span><span class="p">(</span><span class="nv">definition</span><span class="p">:</span> <span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="n">definition</span><span class="p">)</span> <span class="k">as?</span> <span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="kt">Metadata</span>
+            <span class="k">if</span> <span class="n">metadata</span><span class="p">?</span><span class="o">.</span><span class="n">opcode</span> <span class="o">==</span> <span class="o">.</span><span class="n">text</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"subscribe:"</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">subscriptions</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">number</span><span class="se">)</span><span class="s">:</span><span class="se">\(</span><span class="n">text</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="nf">send</span><span class="p">(</span><span class="s">"echo: </span><span class="se">\(</span><span class="n">text</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">connection</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">connection</span><span class="p">,</span> <span class="nv">number</span><span class="p">:</span> <span class="n">number</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">NWConnection</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">context</span> <span class="o">=</span> <span class="kt">NWConnection</span><span class="o">.</span><span class="kt">ContentContext</span><span class="p">(</span><span class="nv">identifier</span><span class="p">:</span> <span class="s">"text"</span><span class="p">,</span> <span class="nv">metadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="kt">Metadata</span><span class="p">(</span><span class="nv">opcode</span><span class="p">:</span> <span class="o">.</span><span class="n">text</span><span class="p">)])</span>
+        <span class="n">connection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">content</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">contentContext</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span> <span class="nv">isComplete</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">contentProcessed</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">broadcast</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="k">in</span> <span class="n">connections</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="nf">send</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">connection</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Sends a close frame with the given code, then closes the socket.</span>
+    <span class="kd">func</span> <span class="nf">closeAll</span><span class="p">(</span><span class="nv">code</span><span class="p">:</span> <span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="kt">CloseCode</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="k">in</span> <span class="n">connections</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">metadata</span> <span class="o">=</span> <span class="kt">NWProtocolWebSocket</span><span class="o">.</span><span class="kt">Metadata</span><span class="p">(</span><span class="nv">opcode</span><span class="p">:</span> <span class="o">.</span><span class="n">close</span><span class="p">)</span>
+            <span class="n">metadata</span><span class="o">.</span><span class="n">closeCode</span> <span class="o">=</span> <span class="n">code</span>
+            <span class="k">let</span> <span class="nv">context</span> <span class="o">=</span> <span class="kt">NWConnection</span><span class="o">.</span><span class="kt">ContentContext</span><span class="p">(</span><span class="nv">identifier</span><span class="p">:</span> <span class="s">"close"</span><span class="p">,</span> <span class="nv">metadata</span><span class="p">:</span> <span class="p">[</span><span class="n">metadata</span><span class="p">])</span>
+            <span class="n">connection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">content</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">contentContext</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span> <span class="nv">isComplete</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                            <span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">contentProcessed</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">connection</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">})</span>
+        <span class="p">}</span>
+        <span class="n">connections</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Resets every connection without a close frame, like a network failure.</span>
+    <span class="kd">func</span> <span class="nf">dropAll</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="k">in</span> <span class="n">connections</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="n">connection</span><span class="o">.</span><span class="nf">forceCancel</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">connections</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="three-ways-a-connection-ends">Three ways a connection ends</h2>
+
+<p>With the server in place, each ending can be produced and observed:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">WebSocketServer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">liveURL</span> <span class="o">=</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"ws://127.0.0.1:</span><span class="se">\(</span><span class="n">server</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/live"</span><span class="p">)</span><span class="o">!</span>
+
+<span class="c1">// 1. A deliberate close frame with an application code.</span>
+<span class="k">let</span> <span class="nv">closing</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">webSocketTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">liveURL</span><span class="p">)</span>
+<span class="n">closing</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">closing</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="s">"hello"</span><span class="p">))</span>
+<span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="k">let</span> <span class="nv">echo</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">closing</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="nf">fatalError</span><span class="p">()</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">echo</span> <span class="o">==</span> <span class="s">"echo: hello"</span><span class="p">)</span>
+<span class="n">server</span><span class="o">.</span><span class="nf">closeAll</span><span class="p">(</span><span class="nv">code</span><span class="p">:</span> <span class="o">.</span><span class="nf">applicationCode</span><span class="p">(</span><span class="mi">4001</span><span class="p">))</span>
+<span class="k">var</span> <span class="nv">closeError</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?</span>
+<span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">closing</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="n">closeError</span> <span class="o">=</span> <span class="n">error</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">closeError</span> <span class="k">as</span> <span class="kt">NSError</span><span class="p">?)?</span><span class="o">.</span><span class="n">domain</span> <span class="o">==</span> <span class="kt">NSPOSIXErrorDomain</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">closeError</span> <span class="k">as</span> <span class="kt">NSError</span><span class="p">?)?</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="mi">57</span><span class="p">)</span>  <span class="c1">// ENOTCONN</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">closing</span><span class="o">.</span><span class="n">closeCode</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">==</span> <span class="mi">4001</span><span class="p">)</span>
+
+<span class="c1">// 2. An abrupt reset, as when a network path disappears.</span>
+<span class="k">let</span> <span class="nv">resetting</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">webSocketTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">liveURL</span><span class="p">)</span>
+<span class="n">resetting</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">resetting</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="s">"x"</span><span class="p">))</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">resetting</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span>
+<span class="n">server</span><span class="o">.</span><span class="nf">dropAll</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">resetError</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?</span>
+<span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">resetting</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="n">resetError</span> <span class="o">=</span> <span class="n">error</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">resetError</span> <span class="k">as</span> <span class="kt">NSError</span><span class="p">?)?</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="mi">54</span><span class="p">)</span>            <span class="c1">// ECONNRESET</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resetting</span><span class="o">.</span><span class="n">closeCode</span> <span class="o">==</span> <span class="o">.</span><span class="n">invalid</span><span class="p">)</span>                  <span class="c1">// no close frame was received</span>
+
+<span class="c1">// 3. A peer that is gone but whose socket is still open.</span>
+<span class="k">let</span> <span class="nv">silentServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">WebSocketServer</span><span class="p">(</span><span class="nv">answersPings</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">silent</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">webSocketTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"ws://127.0.0.1:</span><span class="se">\(</span><span class="n">silentServer</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/live"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span>
+<span class="n">silent</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">silent</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="s">"y"</span><span class="p">))</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">silent</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">pongArrived</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="n">silent</span><span class="o">.</span><span class="n">sendPing</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">pongArrived</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">pongArrived</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span>   <span class="c1">// nothing happened, and nothing will</span>
+<span class="n">silent</span><span class="o">.</span><span class="nf">cancel</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="n">goingAway</span><span class="p">,</span> <span class="nv">reason</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>How the connection ended</th>
+      <th>What the client observed (macOS 26)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Server sent close frame 4001</td>
+      <td><code class="language-plaintext highlighter-rouge">receive()</code> threw POSIX 57, “Socket is not connected”; <code class="language-plaintext highlighter-rouge">closeCode</code> was 4001</td>
+    </tr>
+    <tr>
+      <td>Connection reset, no close frame</td>
+      <td><code class="language-plaintext highlighter-rouge">receive()</code> threw POSIX 54, “Connection reset by peer”; <code class="language-plaintext highlighter-rouge">closeCode</code> was <code class="language-plaintext highlighter-rouge">.invalid</code></td>
+    </tr>
+    <tr>
+      <td>Peer silent, socket open</td>
+      <td>No error, no event; the ping’s pong handler was never called</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two details matter for code that handles these. The errors are <code class="language-plaintext highlighter-rouge">NSError</code>s in the POSIX domain, not <code class="language-plaintext highlighter-rouge">URLError</code>s, so an error handler written for HTTP requests, which matches on <code class="language-plaintext highlighter-rouge">URLError.Code</code>, does not recognize them. The reliable signal for a deliberate close is <code class="language-plaintext highlighter-rouge">closeCode</code> and <code class="language-plaintext highlighter-rouge">closeReason</code> on the task, read after <code class="language-plaintext highlighter-rouge">receive()</code> throws.</p>
+
+<p>The third row is the dangerous one. A phone that walks out of Wi-Fi range, a NAT gateway that silently forgets an idle mapping, or a server process that froze all produce a socket that neither delivers data nor reports an error. Without a heartbeat, the app shows “Live” over a connection that died minutes ago.</p>
+
+<h2 id="detecting-a-dead-peer-heartbeats">Detecting a dead peer: heartbeats</h2>
+
+<p>A heartbeat sends a ping every \(P\) seconds and treats a missing pong after \(T\) seconds as a dead connection. If the peer dies at a random moment, the next ping goes out within \(P\) seconds and its timeout fires \(T\) seconds later, so the time to detection \(D\) is bounded and, on average, about half an interval plus the timeout:</p>
+
+\[D \le P + T,
+\qquad
+\mathbb{E}[D] \approx \tfrac{P}{2} + T\]
+
+<p>The interval is a trade between detection time and cost. Each ping wakes the radio, and on cellular networks a radio that wakes every few seconds drains the battery noticeably. NAT and carrier-grade NAT gateways commonly drop idle mappings after somewhere between 30 seconds and a few minutes, so an interval under that limit also keeps the connection alive. For an app in the foreground, \(P = 25\) s and \(T = 10\) s gives detection within 35 seconds at about 144 pings per hour. The tests below use \(P = 0.5\) s and \(T = 0.5\) s so they run quickly.</p>
+
+<p><code class="language-plaintext highlighter-rouge">sendPing</code> takes a completion handler, which is never called if no pong arrives. The heartbeat wraps it in a continuation and races it against a timeout. When the timeout wins, it cancels the WebSocket task, which is what makes the pending pong handler finally run, with an error, so the continuation is resumed exactly once. Cancelling the task also makes any pending <code class="language-plaintext highlighter-rouge">receive()</code> fail, and that error can reach the caller before <code class="language-plaintext highlighter-rouge">HeartbeatMissed</code> does, so the heartbeat sets a flag first; the flag, not the error type, says why the connection ended:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">HeartbeatMissed</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="c1">/// Records that a heartbeat failed, so the reason survives whichever child task reports its error first.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">HeartbeatFlag</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">missed</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">set</span><span class="p">()</span> <span class="p">{</span> <span class="n">missed</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">isSet</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">missed</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">ping</span><span class="p">(</span><span class="n">_</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionWebSocketTask</span><span class="p">,</span> <span class="nv">timeout</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">flag</span><span class="p">:</span> <span class="kt">HeartbeatFlag</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">sendPing</span> <span class="p">{</span> <span class="n">error</span> <span class="k">in</span>
+                    <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">timeout</span><span class="p">)</span>
+            <span class="n">flag</span><span class="o">.</span><span class="nf">set</span><span class="p">()</span>
+            <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="n">goingAway</span><span class="p">,</span> <span class="nv">reason</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>  <span class="c1">// unblocks the pending pong handler</span>
+            <span class="k">throw</span> <span class="kt">HeartbeatMissed</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="a-connection-manager-with-explicit-states">A connection manager with explicit states</h2>
+
+<p>Everything a live feature needs fits in one actor with a small state machine. The states are what the UI shows; the transitions are what the network does:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: The states of a reconnecting WebSocket connection
+    [*] --&gt; Connecting
+    Connecting --&gt; Open: handshake done, subscriptions sent
+    Open --&gt; Waiting: error, close, or missed heartbeat
+    Connecting --&gt; Waiting: handshake failed
+    Waiting --&gt; Connecting: backoff elapsed
+    Open --&gt; Stopped: stop(), or close code that forbids reconnecting
+    Waiting --&gt; Stopped: stop()
+    Stopped --&gt; [*]
+</code></pre>
+
+<p>The manager publishes events through an <code class="language-plaintext highlighter-rouge">AsyncStream</code>. Each connection runs two child tasks, a receive loop and a heartbeat loop, in a task group: whichever fails first ends the connection, and the group cancels the other. Between connections it waits with the full-jitter backoff from <a href="/swift-retry-backoff-idempotency/">Retry Policies, Backoff, and Idempotency</a>, and the attempt counter resets after a connection succeeds, so a connection that worked for an hour reconnects quickly after a blip:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">LiveConnection</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Event</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nf">open</span><span class="p">(</span><span class="nv">attempt</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">message</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">waiting</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">retryIn</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">stopped</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">let</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span>
+    <span class="k">let</span> <span class="nv">topics</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">pingInterval</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="k">let</span> <span class="nv">pingTimeout</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="k">let</span> <span class="nv">backoffBase</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">backoffCap</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1">/// Close codes after which reconnecting cannot help without user action.</span>
+    <span class="k">let</span> <span class="nv">terminalCloseCodes</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1008</span><span class="p">,</span> <span class="mi">4003</span><span class="p">]</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">runner</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">URLSessionWebSocketTask</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">topics</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">],</span> <span class="nv">pingInterval</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">pingTimeout</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">topics</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">pingInterval</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">pingTimeout</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">topics</span><span class="p">,</span> <span class="n">pingInterval</span><span class="p">,</span> <span class="n">pingTimeout</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Event</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Event</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="n">runner</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stop</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">runner</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="n">normalClosure</span><span class="p">,</span> <span class="nv">reason</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">current</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">current</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">events</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Event</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">failures</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">webSocketTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">heartbeat</span> <span class="o">=</span> <span class="kt">HeartbeatFlag</span><span class="p">()</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="n">task</span>
+            <span class="n">task</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+            <span class="k">var</span> <span class="nv">reason</span> <span class="o">=</span> <span class="s">"cancelled"</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="n">topic</span> <span class="k">in</span> <span class="n">topics</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="s">"subscribe:</span><span class="se">\(</span><span class="n">topic</span><span class="se">)</span><span class="s">"</span><span class="p">))</span> <span class="p">}</span>  <span class="c1">// resubscribe every time</span>
+                <span class="n">events</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">open</span><span class="p">(</span><span class="nv">attempt</span><span class="p">:</span> <span class="n">failures</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">failures</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="n">pingInterval</span><span class="p">,</span> <span class="n">pingTimeout</span><span class="p">]</span> <span class="n">group</span> <span class="k">in</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                        <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+                            <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">string</span><span class="p">(</span><span class="k">let</span> <span class="nv">text</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span> <span class="p">{</span> <span class="n">events</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">message</span><span class="p">(</span><span class="n">text</span><span class="p">))</span> <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                        <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+                            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">pingInterval</span><span class="p">)</span>
+                            <span class="k">try</span> <span class="k">await</span> <span class="nf">ping</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="nv">timeout</span><span class="p">:</span> <span class="n">pingTimeout</span><span class="p">,</span> <span class="nv">flag</span><span class="p">:</span> <span class="n">heartbeat</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="k">defer</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span> <span class="p">}</span>
+                    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">code</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">closeCode</span><span class="o">.</span><span class="n">rawValue</span>
+                <span class="k">if</span> <span class="n">heartbeat</span><span class="o">.</span><span class="n">isSet</span> <span class="p">{</span>
+                    <span class="n">reason</span> <span class="o">=</span> <span class="s">"heartbeat missed"</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="n">reason</span> <span class="o">=</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">?</span> <span class="s">"closed </span><span class="se">\(</span><span class="n">code</span><span class="se">)</span><span class="s">"</span> <span class="p">:</span> <span class="s">"error </span><span class="se">\(</span><span class="p">(</span><span class="n">error</span> <span class="k">as</span> <span class="kt">NSError</span><span class="p">)</span><span class="o">.</span><span class="n">domain</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="p">(</span><span class="n">error</span> <span class="k">as</span> <span class="kt">NSError</span><span class="p">)</span><span class="o">.</span><span class="n">code</span><span class="se">)</span><span class="s">"</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="n">goingAway</span><span class="p">,</span> <span class="nv">reason</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="k">if</span> <span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+            <span class="k">if</span> <span class="n">terminalCloseCodes</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">closeCode</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">events</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">stopped</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="n">reason</span><span class="p">))</span>
+                <span class="n">events</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+                <span class="k">return</span>
+            <span class="p">}</span>
+            <span class="n">failures</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">let</span> <span class="nv">ceiling</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">backoffCap</span><span class="p">,</span> <span class="n">backoffBase</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nf">min</span><span class="p">(</span><span class="n">failures</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">16</span><span class="p">)))</span>
+            <span class="k">let</span> <span class="nv">milliseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">ceiling</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> <span class="n">ceiling</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span> <span class="o">/</span> <span class="mi">1_000_000_000_000_000</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">delay</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">...</span><span class="n">milliseconds</span><span class="p">))</span>
+            <span class="n">events</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="n">reason</span><span class="p">,</span> <span class="nv">retryIn</span><span class="p">:</span> <span class="n">delay</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">delay</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">stopped</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="s">"stopped"</span><span class="p">))</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The decisions in that code, each of which is a common bug when missing:</p>
+
+<ul>
+  <li><strong>Resubscribe on every connection.</strong> Subscriptions are server-side state attached to a connection, and a new connection starts with none. A client that subscribes once at startup receives nothing after its first reconnect.</li>
+  <li><strong>Distinguish terminal closes.</strong> A close code that means “forbidden” or “policy violation” will be repeated on every attempt; reconnecting in a loop only hammers the server. Code 4001, “token expired” in this example’s protocol, is not terminal: the right response is to refresh the token, as in <a href="/swift-token-refresh/">Refreshing Credentials Without Duplicate Requests</a>, and reconnect.</li>
+  <li><strong>Report the reason.</strong> The <code class="language-plaintext highlighter-rouge">waiting</code> event carries why the connection ended, which is what makes “Reconnecting… (connection reset)” possible in the UI and in logs.</li>
+</ul>
+
+<h2 id="reconnection-measured">Reconnection, measured</h2>
+
+<p>The first test resets the server’s connections twice while a client is subscribed to two topics. The client must reconnect each time and resubscribe on each new connection:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Collects a connection's events and waits for particular ones.</span>
+<span class="kd">actor</span> <span class="kt">EventRecorder</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">iterator</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span><span class="o">&gt;.</span><span class="kt">Iterator</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">log</span><span class="p">:</span> <span class="p">[</span><span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">stream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span> <span class="n">iterator</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="nf">makeAsyncIterator</span><span class="p">()</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">next</span><span class="p">(</span><span class="k">where</span> <span class="nv">matches</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">events</span> <span class="o">=</span> <span class="n">iterator</span>  <span class="c1">// a mutating async call cannot be made on actor-isolated storage directly</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">iterator</span> <span class="o">=</span> <span class="n">events</span> <span class="p">}</span>
+        <span class="k">while</span> <span class="k">let</span> <span class="nv">event</span> <span class="o">=</span> <span class="k">await</span> <span class="n">events</span><span class="o">.</span><span class="nf">next</span><span class="p">(</span><span class="nv">isolation</span><span class="p">:</span> <span class="k">self</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nf">matches</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">event</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="nf">fatalError</span><span class="p">(</span><span class="s">"stream ended"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@Sendable</span> <span class="kd">func</span> <span class="nf">isOpen</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">LiveConnection</span><span class="o">.</span><span class="kt">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="kd">open</span> <span class="o">=</span> <span class="n">event</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">feed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">WebSocketServer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">connection</span> <span class="o">=</span> <span class="kt">LiveConnection</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"ws://127.0.0.1:</span><span class="se">\(</span><span class="n">feed</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/live"</span><span class="p">)</span><span class="o">!</span><span class="p">,</span>
+                                <span class="nv">topics</span><span class="p">:</span> <span class="p">[</span><span class="s">"availability"</span><span class="p">,</span> <span class="s">"loans"</span><span class="p">],</span>
+                                <span class="nv">pingInterval</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">),</span> <span class="nv">pingTimeout</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">recorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="p">(</span><span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="nf">start</span><span class="p">())</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="nf">next</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="n">isOpen</span><span class="p">)</span>
+<span class="n">feed</span><span class="o">.</span><span class="nf">broadcast</span><span class="p">(</span><span class="s">"event:1"</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="n">next</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="o">.</span><span class="nf">message</span><span class="p">(</span><span class="s">"event:1"</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2</span> <span class="p">{</span>
+    <span class="n">feed</span><span class="o">.</span><span class="nf">dropAll</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="nf">next</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="n">isOpen</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">feed</span><span class="o">.</span><span class="nf">broadcast</span><span class="p">(</span><span class="s">"event:2"</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="n">next</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="o">.</span><span class="nf">message</span><span class="p">(</span><span class="s">"event:2"</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">feed</span><span class="o">.</span><span class="n">connectionCount</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">feed</span><span class="o">.</span><span class="n">subscriptions</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1:availability"</span><span class="p">,</span> <span class="s">"1:loans"</span><span class="p">,</span> <span class="s">"2:availability"</span><span class="p">,</span> <span class="s">"2:loans"</span><span class="p">,</span> <span class="s">"3:availability"</span><span class="p">,</span> <span class="s">"3:loans"</span><span class="p">])</span>
+<span class="k">let</span> <span class="nv">waits</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="n">event</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="k">in</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="k">let</span> <span class="nv">reason</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">event</span> <span class="p">{</span> <span class="n">reason</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">nil</span> <span class="p">}</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">waits</span> <span class="o">==</span> <span class="p">[</span><span class="s">"error NSPOSIXErrorDomain 54"</span><span class="p">,</span> <span class="s">"error NSPOSIXErrorDomain 54"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Three connections, each with both subscriptions, and the second broadcast arrived after two resets. The two <code class="language-plaintext highlighter-rouge">waiting</code> events name the reset that caused them, POSIX error 54, as in the table above.</p>
+
+<p>The second test points a client at a server that stops answering pings after the handshake. The heartbeat must detect it within \(P + T\), one second here:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">frozen</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">WebSocketServer</span><span class="p">(</span><span class="nv">answersPings</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">frozenConnection</span> <span class="o">=</span> <span class="kt">LiveConnection</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"ws://127.0.0.1:</span><span class="se">\(</span><span class="n">frozen</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/live"</span><span class="p">)</span><span class="o">!</span><span class="p">,</span> <span class="nv">topics</span><span class="p">:</span> <span class="p">[</span><span class="s">"availability"</span><span class="p">],</span>
+                                      <span class="nv">pingInterval</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">),</span> <span class="nv">pingTimeout</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">frozenRecorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="p">(</span><span class="k">await</span> <span class="n">frozenConnection</span><span class="o">.</span><span class="nf">start</span><span class="p">())</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">frozenRecorder</span><span class="o">.</span><span class="nf">next</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="n">isOpen</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">openedAt</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="k">let</span> <span class="nv">reason</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="n">frozenRecorder</span><span class="o">.</span><span class="nf">next</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">waiting</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">fatalError</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">detection</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">openedAt</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"dead peer detected after </span><span class="se">\(</span><span class="n">detection</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">reason</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">reason</span> <span class="o">==</span> <span class="s">"heartbeat missed"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">detection</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1_300</span><span class="p">))</span>   <span class="c1">// within P + T, plus scheduling</span>
+<span class="k">await</span> <span class="n">frozenConnection</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>The dead peer was detected about one second after the connection opened: a 500 ms interval to the first ping, then 500 ms without a pong. Without the heartbeat the client would have stayed “open” indefinitely.</p>
+
+<p>The last test closes the connection with code 4003, which the manager treats as terminal:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">feed</span><span class="o">.</span><span class="nf">closeAll</span><span class="p">(</span><span class="nv">code</span><span class="p">:</span> <span class="o">.</span><span class="nf">applicationCode</span><span class="p">(</span><span class="mi">4003</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">final</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="n">next</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">stopped</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kd">final</span> <span class="o">==</span> <span class="o">.</span><span class="nf">stopped</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="s">"closed 4003"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">feed</span><span class="o">.</span><span class="n">connectionCount</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>   <span class="c1">// no reconnection attempt</span>
+</code></pre></div></div>
+
+<h2 id="what-reconnection-does-not-fix">What reconnection does not fix</h2>
+
+<p>A reconnected socket is a new conversation. Messages the server sent while the client was disconnected are gone, unless the protocol says otherwise. Two designs handle the gap:</p>
+
+<ul>
+  <li><strong>Resume from a position.</strong> Every server message carries a sequence number or event ID, the client sends the last one it processed when it resubscribes, and the server replays what it missed. <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">Server-Sent Events</a> build this in with <code class="language-plaintext highlighter-rouge">Last-Event-ID</code>; WebSocket protocols have to add it themselves.</li>
+  <li><strong>Refetch the state.</strong> After reconnecting, the client fetches the current state of what it displays over plain HTTP, and applies live messages on top. Combined with the version-based merge from <a href="/swift-request-coalescing/">Coalescing Duplicate Requests and Rejecting Stale Results</a>, late or duplicate messages cannot move the state backwards.</li>
+</ul>
+
+<p>Outgoing messages need the same thought. <code class="language-plaintext highlighter-rouge">send(_:)</code> above throws when there is no connection, which is honest. Queueing them for later is right only for messages that are still meaningful later, and then they need the idempotency and outbox treatment of <a href="/swift-offline-reachability/">Offline Behavior and Reachability Assumptions</a>.</p>
+
+<p>Finally, on iOS a WebSocket does not survive the app being suspended. Close it when the app moves to the background, and reconnect, then refetch, when it returns. For updates while the app is not running, push notifications are the mechanism, not a socket.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>A WebSocket begins as an HTTP <code class="language-plaintext highlighter-rouge">GET</code> with <code class="language-plaintext highlighter-rouge">Upgrade: websocket</code>; the server answers <code class="language-plaintext highlighter-rouge">101</code> with <code class="language-plaintext highlighter-rouge">Sec-WebSocket-Accept</code>, \(\operatorname{base64}(\operatorname{SHA1}(\text{key} \| \text{GUID}))\). A non-<code class="language-plaintext highlighter-rouge">101</code> answer fails with <code class="language-plaintext highlighter-rouge">badServerResponse</code>.</li>
+  <li>Measured endings: a close frame gives POSIX 57 from <code class="language-plaintext highlighter-rouge">receive()</code> and the code in <code class="language-plaintext highlighter-rouge">closeCode</code>; a reset gives POSIX 54 and <code class="language-plaintext highlighter-rouge">closeCode == .invalid</code>; a silent peer gives nothing at all. These are not <code class="language-plaintext highlighter-rouge">URLError</code>s.</li>
+  <li>Heartbeats bound detection of dead peers: \(D \le P + T\). Cancel the task on timeout, so the pending pong handler runs and the continuation resumes once. Measured: detection in about one second with \(P = T = 0.5\) s.</li>
+  <li>Model the connection as explicit states, reconnect with full-jitter backoff that resets after success, resubscribe on every connection, and stop on terminal close codes.</li>
+  <li>Reconnection loses messages: resume from a sequence number or refetch state over HTTP, and merge by version.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add sequence numbers to <code class="language-plaintext highlighter-rouge">WebSocketServer.broadcast</code> and a <code class="language-plaintext highlighter-rouge">resume:&lt;n&gt;</code> message that makes the server replay every broadcast after <code class="language-plaintext highlighter-rouge">n</code> from an in-memory log. Extend <code class="language-plaintext highlighter-rouge">LiveConnection</code> to remember the last sequence number it delivered and send <code class="language-plaintext highlighter-rouge">resume:</code> after resubscribing. Test it by broadcasting ten events, dropping the connection after the fourth, broadcasting the rest while the client waits to reconnect, and asserting that the client delivers all ten exactly once and in order.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc6455">RFC 6455: The WebSocket Protocol</a> and <a href="https://www.rfc-editor.org/rfc/rfc8441">RFC 8441</a>, which carries WebSockets over HTTP/2.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/urlsessionwebsockettask"><code class="language-plaintext highlighter-rouge">URLSessionWebSocketTask</code></a> and <a href="https://developer.apple.com/documentation/network/nwprotocolwebsocket"><code class="language-plaintext highlighter-rouge">NWProtocolWebSocket</code></a> documentation.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/712/">Advances in Networking, Part 1</a>, WWDC19, which introduced <code class="language-plaintext highlighter-rouge">URLSessionWebSocketTask</code>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-background-transfers/">Background Transfers and App Relaunch</a>. Next: <a href="/swift-streaming-responses/">Streaming Responses and Incremental Parsing</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/swift-websockets-reconnection/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=WebSockets%3A+Connection+State+and+Reconnection%20http%3A%2F%2Flocalhost%3A4000%2Fswift-websockets-reconnection%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/swift-websockets-reconnection/&title=WebSockets%3A+Connection+State+and+Reconnection%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/swift-websockets-reconnection/&title=WebSockets%3A+Connection+State+and+Reconnection%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/swift-websockets-reconnection/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=WebSockets: Connection State and Reconnection%20%7C%20Swift By Deya&body=http://localhost:4000/swift-websockets-reconnection/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#WebSockets">WebSockets</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Streaming Responses and Incremental Parsing" href="/swift-streaming-responses/"> <p>Previous post</p> Streaming Responses and Incremental Parsing </a> </div> <div id="next-post"> <a alt="Background Transfers and App Relaunch" href="/swift-background-transfers/"> <p>Next post</p> Background Transfers and App Relaunch </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
