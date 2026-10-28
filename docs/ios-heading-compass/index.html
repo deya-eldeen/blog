@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Heading, Compass Calibration, and Magnetic Interference | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Heading, Compass Calibration, and Magnetic Interference" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A phone’s compass measures the Earth’s magnetic field, a few tens of microtesla, from inside a case full of steel screws, speaker magnets, and current-carrying traces. It works because Core Location does a great deal of correction before it reports a heading: it compensates for tilt, subtracts the phone’s own magnetism, and converts to true north. When any of that goes wrong, the heading is wrong by tens of degrees, and nothing in the number says so except headingAccuracy. This article builds the corrections from scratch, so their failure modes are visible. It covers the three-dimensional geometry of a tilt-compensated compass, and why the shortcut that ignores tilt is off by 4.7° at a 5° tilt. It covers hard-iron calibration by fitting a sphere, which turned a median error of 56° into 1°, and the checks that detect a nearby magnet, along with the disturbance that slipped past them and shifted the heading by 24°. It ends with the practical parts: displaying a heading without spinning the needle the long way round, and choosing between the compass and GPS course." /> <meta property="og:description" content="A phone’s compass measures the Earth’s magnetic field, a few tens of microtesla, from inside a case full of steel screws, speaker magnets, and current-carrying traces. It works because Core Location does a great deal of correction before it reports a heading: it compensates for tilt, subtracts the phone’s own magnetism, and converts to true north. When any of that goes wrong, the heading is wrong by tens of degrees, and nothing in the number says so except headingAccuracy. This article builds the corrections from scratch, so their failure modes are visible. It covers the three-dimensional geometry of a tilt-compensated compass, and why the shortcut that ignores tilt is off by 4.7° at a 5° tilt. It covers hard-iron calibration by fitting a sphere, which turned a median error of 56° into 1°, and the checks that detect a nearby magnet, along with the disturbance that slipped past them and shifted the heading by 24°. It ends with the practical parts: displaying a heading without spinning the needle the long way round, and choosing between the compass and GPS course." /> <link rel="canonical" href="https://swiftbydeya.com/ios-heading-compass/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-heading-compass/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-02T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Heading, Compass Calibration, and Magnetic Interference" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-02T00:00:00+03:00","datePublished":"2026-03-02T00:00:00+03:00","description":"A phone’s compass measures the Earth’s magnetic field, a few tens of microtesla, from inside a case full of steel screws, speaker magnets, and current-carrying traces. It works because Core Location does a great deal of correction before it reports a heading: it compensates for tilt, subtracts the phone’s own magnetism, and converts to true north. When any of that goes wrong, the heading is wrong by tens of degrees, and nothing in the number says so except headingAccuracy. This article builds the corrections from scratch, so their failure modes are visible. It covers the three-dimensional geometry of a tilt-compensated compass, and why the shortcut that ignores tilt is off by 4.7° at a 5° tilt. It covers hard-iron calibration by fitting a sphere, which turned a median error of 56° into 1°, and the checks that detect a nearby magnet, along with the disturbance that slipped past them and shifted the heading by 24°. It ends with the practical parts: displaying a heading without spinning the needle the long way round, and choosing between the compass and GPS course.","headline":"Heading, Compass Calibration, and Magnetic Interference","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-heading-compass/"},"url":"https://swiftbydeya.com/ios-heading-compass/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Heading, Compass Calibration, and Magnetic Interference"> <meta name="twitter:description" content="A phone’s compass measures the Earth’s magnetic field, a few tens of microtesla, from inside a case full of steel screws, speaker magnets, and current-carryi..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Heading, Compass Calibration, and Magnetic Interference"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Heading, Compass Calibration, and Magnetic Interference</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-02T00:00:00+03:00">March 2, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A phone’s compass measures the Earth’s magnetic field, a few tens of microtesla, from inside a case full of steel screws, speaker magnets, and current-carrying traces. It works because Core Location does a great deal of correction before it reports a heading: it compensates for tilt, subtracts the phone’s own magnetism, and converts to true north. When any of that goes wrong, the heading is wrong by tens of degrees, and nothing in the number says so except <code class="language-plaintext highlighter-rouge">headingAccuracy</code>.</p>
+
+<p>This article builds the corrections from scratch, so their failure modes are visible. It covers the three-dimensional geometry of a tilt-compensated compass, and why the shortcut that ignores tilt is off by 4.7° at a 5° tilt. It covers hard-iron calibration by fitting a sphere, which turned a median error of 56° into 1°, and the checks that detect a nearby magnet, along with the disturbance that slipped past them and shifted the heading by 24°. It ends with the practical parts: displaying a heading without spinning the needle the long way round, and choosing between the compass and GPS course.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS block ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, which has no magnetometer. The field values are illustrative and stated in the code, and the simulations use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+</code></pre></div></div>
+
+<h2 id="what-core-location-reports">What Core Location reports</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationManager</code> delivers headings as <code class="language-plaintext highlighter-rouge">CLHeading</code> objects after <code class="language-plaintext highlighter-rouge">startUpdatingHeading()</code>. Apple’s documentation defines the fields:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Meaning</th>
+      <th>Invalid when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">magneticHeading</code></td>
+      <td>Degrees clockwise from magnetic north</td>
+      <td>“Should always be valid”, but unreliable when <code class="language-plaintext highlighter-rouge">headingAccuracy</code> is negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">trueHeading</code></td>
+      <td>Degrees clockwise from true north</td>
+      <td>negative, and valid “only if location updates are also enabled”</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">headingAccuracy</code></td>
+      <td>“The maximum deviation … between the reported heading and the true geomagnetic heading”</td>
+      <td>negative: “uncalibrated or there is strong interference”</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">x</code>, <code class="language-plaintext highlighter-rouge">y</code>, <code class="language-plaintext highlighter-rouge">z</code></td>
+      <td>The raw geomagnetic vector, µT, device frame</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">timestamp</code></td>
+      <td>When the heading was determined</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two settings shape the stream. <code class="language-plaintext highlighter-rouge">headingFilter</code> is “the minimum angular change in degrees required to generate new heading events”, measured “relative to the last delivered heading event”, and it read back as 1.0 in the simulator, the documented default. <code class="language-plaintext highlighter-rouge">headingOrientation</code>, which says which edge of the device counts as forward, is deprecated in iOS 27 in favor of <code class="language-plaintext highlighter-rouge">headingBody</code>, which takes a view, as the <a href="/ios-attitude-reference-frames/#into-the-screens-coordinates">attitude article</a> showed.</p>
+
+<p>True north needs a location because the angle between true and magnetic north, the <em>declination</em>, depends on where you are and drifts from year to year. Apple’s note says it directly: “Core Location needs the current location of the device to compute the value of this property.” A compass app that never starts location updates will see <code class="language-plaintext highlighter-rouge">trueHeading</code> stuck at −1.</p>
+
+<h2 id="tilt-compensation">Tilt compensation</h2>
+
+<p>The Earth’s field isn’t horizontal. It dips into the ground at an angle, the <em>inclination</em>, which is small near the magnetic equator and approaches 90° near the magnetic poles. The examples use an illustrative field of 48 µT dipping 66°. NOAA’s World Magnetic Model gives the real values for any place and date. With that dip, the horizontal part, the only part that points north, is 48 × cos 66° ≈ 19.5 µT. The vertical part is more than twice as strong.</p>
+
+<p>A magnetometer reports the whole vector in the device frame. Finding north means removing the vertical part, and that requires knowing which way is down, from gravity. With $\hat{\mathbf d}$ the downward unit vector and $\mathbf m$ the field, both in the device frame:</p>
+
+\[\hat{\mathbf e} = \frac{\hat{\mathbf d} \times \mathbf m}{\lVert \hat{\mathbf d} \times \mathbf m \rVert}, \qquad
+\hat{\mathbf n} = \hat{\mathbf e} \times \hat{\mathbf d}, \qquad
+\psi = \operatorname{atan2}(\hat{\mathbf y} \cdot \hat{\mathbf e},\ \hat{\mathbf y} \cdot \hat{\mathbf n}) .\]
+
+<p>The cross product with “down” removes the vertical part and gives east, and a second cross product gives north. The heading $\psi$ of the device’s top edge, $\hat{\mathbf y}$, is then a two-argument arctangent. The shortcut found in many tutorials, $\operatorname{atan2}(-m_x, m_y)$, assumes the phone lies flat, so the vertical field never leaks into x and y:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// The Earth's field in a north-east-down frame: an illustrative 48 µT dipping 66° below the horizontal.</span>
+<span class="c1">/// Real values depend on where you are; NOAA's World Magnetic Model gives them for any place and date.</span>
+<span class="kd">enum</span> <span class="kt">EarthField</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">strength</span> <span class="o">=</span> <span class="mf">48.0</span>                    <span class="c1">// µT</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">inclination</span> <span class="o">=</span> <span class="mf">66.0</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>     <span class="c1">// dip below horizontal</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">vector</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">strength</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">inclination</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">strength</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">inclination</span><span class="p">))</span>   <span class="c1">// north, east, down</span>
+<span class="p">}</span>
+
+<span class="c1">/// A device attitude as yaw (heading of the top edge, clockwise from north), then pitch (top edge up), then roll.</span>
+<span class="c1">/// Returns the matrix whose columns are the device's x (right), y (top), z (out of the screen) axes in north-east-down.</span>
+<span class="kd">func</span> <span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_double3x3</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">h</span><span class="p">,</span> <span class="nv">p</span><span class="p">,</span> <span class="nv">r</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">heading</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="n">pitch</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="n">roll</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+    <span class="c1">// Flat and face up with the top edge north: x points east, y north, z up (which is -down).</span>
+    <span class="k">let</span> <span class="nv">flat</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">columns</span><span class="p">:</span> <span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="k">let</span> <span class="nv">yaw</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="n">h</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>            <span class="c1">// turn clockwise about down</span>
+    <span class="k">let</span> <span class="nv">tiltUp</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="n">flat</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="mi">0</span><span class="p">))</span>       <span class="c1">// raise the top edge</span>
+    <span class="k">let</span> <span class="nv">tiltSide</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="n">flat</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="mi">1</span><span class="p">))</span>      <span class="c1">// roll about the top edge</span>
+    <span class="k">return</span> <span class="n">yaw</span> <span class="o">*</span> <span class="n">tiltUp</span> <span class="o">*</span> <span class="n">tiltSide</span> <span class="o">*</span> <span class="n">flat</span>
+<span class="p">}</span>
+
+<span class="c1">/// What the magnetometer and accelerometer report in the device frame for a given attitude (gravity pointing down).</span>
+<span class="kd">func</span> <span class="nf">readings</span><span class="p">(</span><span class="n">_</span> <span class="nv">axes</span><span class="p">:</span> <span class="n">simd_double3x3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">transpose</span> <span class="o">*</span> <span class="kt">EarthField</span><span class="o">.</span><span class="n">vector</span><span class="p">,</span> <span class="n">axes</span><span class="o">.</span><span class="n">transpose</span> <span class="o">*</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">/// Tilt-compensated heading of the device's top edge, from the field and gravity in the device frame.</span>
+<span class="kd">func</span> <span class="nf">compassHeading</span><span class="p">(</span><span class="n">field</span> <span class="nv">m</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">gravity</span> <span class="nv">g</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">down</span> <span class="o">=</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">east</span> <span class="o">=</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="nf">simd_cross</span><span class="p">(</span><span class="n">down</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">north</span> <span class="o">=</span> <span class="nf">simd_cross</span><span class="p">(</span><span class="n">east</span><span class="p">,</span> <span class="n">down</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">top</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">degrees</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="nf">simd_dot</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">east</span><span class="p">),</span> <span class="nf">simd_dot</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">north</span><span class="p">))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="k">return</span> <span class="n">degrees</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">degrees</span> <span class="o">+</span> <span class="mi">360</span> <span class="p">:</span> <span class="n">degrees</span>
+<span class="p">}</span>
+
+<span class="c1">/// The textbook shortcut that assumes the phone lies flat: heading from the field's x and y components alone.</span>
+<span class="kd">func</span> <span class="nf">flatHeading</span><span class="p">(</span><span class="n">field</span> <span class="nv">m</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">degrees</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="k">return</span> <span class="n">degrees</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">degrees</span> <span class="o">+</span> <span class="mi">360</span> <span class="p">:</span> <span class="n">degrees</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">angularDifference</span><span class="p">(</span><span class="n">_</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">d</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="nf">truncatingRemainder</span><span class="p">(</span><span class="nv">dividingBy</span><span class="p">:</span> <span class="mi">360</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="mi">180</span> <span class="p">?</span> <span class="n">d</span> <span class="o">-</span> <span class="mi">360</span> <span class="p">:</span> <span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">180</span> <span class="p">?</span> <span class="n">d</span> <span class="o">+</span> <span class="mi">360</span> <span class="p">:</span> <span class="n">d</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="s">"pitch   flat-formula error   tilt-compensated error   (true heading 30°)"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">pitch</span> <span class="k">in</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">field</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">)</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="n">pitch</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%4.0f°   %8.2f°              %8.6f°"</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span>
+                 <span class="nf">angularDifference</span><span class="p">(</span><span class="nf">flatHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">field</span><span class="p">),</span> <span class="mi">30</span><span class="p">),</span> <span class="nf">angularDifference</span><span class="p">(</span><span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">field</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="mi">30</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">heading</span><span class="p">,</span> <span class="n">pitch</span><span class="p">,</span> <span class="n">roll</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="o">-</span><span class="mi">45</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">315</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="o">-</span><span class="mi">35</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">field</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">)</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="n">heading</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="n">pitch</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="n">roll</span><span class="p">))</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">angularDifference</span><span class="p">(</span><span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">field</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="n">heading</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Pitch</th>
+      <th>Flat formula error</th>
+      <th>Tilt-compensated error</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0°</td>
+      <td>0.00°</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>5°</td>
+      <td>−4.72°</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>10°</td>
+      <td>−8.09°</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>20°</td>
+      <td>−12.46°</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>40°</td>
+      <td>−16.65°</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>60°</td>
+      <td>−18.13°</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The flat formula is exact only when the phone is exactly flat. Tilt it by 5°, about the difference between a phone on a desk and one held casually in a hand, and the heading is off by 4.7°. The dip makes the error large: $\sin 5°$ of a vertical component more than twice the horizontal one is a big fraction of the horizontal field. The tilt-compensated heading was exact, to rounding, at every attitude tested, including one pitched 70° and rolled 35°. This is what Core Location’s heading and Core Motion’s <code class="language-plaintext highlighter-rouge">xMagneticNorthZVertical</code> frame do for you, and the reason to use them instead of raw <code class="language-plaintext highlighter-rouge">magnetometerData</code>.</p>
+
+<h2 id="hard-iron-calibration">Hard-iron calibration</h2>
+
+<p>The phone itself is magnetic. Permanent magnets in speakers and magnetized steel parts add a field that’s fixed <em>in the device’s frame</em>, so it rotates with the phone. It’s called <em>hard iron</em>. Materials that bend the external field, rather than adding one of their own, are <em>soft iron</em>, and they distort it into an ellipsoid. Hard iron is usually the larger effect, and it’s easy to see: as the phone rotates through every orientation, the Earth’s field traces a sphere of radius $\lVert\mathbf B\rVert$ in the device frame, and the hard-iron offset $\mathbf c$ moves the sphere’s center away from the origin.</p>
+
+<p>Fitting a sphere to readings taken during a figure-eight motion recovers the offset. The sphere equation $\lVert\mathbf m - \mathbf c\rVert^2 = r^2$ rearranges to</p>
+
+\[2\,\mathbf m \cdot \mathbf c + \big(r^2 - \lVert \mathbf c \rVert^2\big) = \lVert \mathbf m \rVert^2 ,\]
+
+<p>which is <em>linear</em> in the four unknowns $c_x, c_y, c_z$ and $k = r^2 - \lVert\mathbf c\rVert^2$. So a least-squares fit is one 4×4 linear solve, with no iteration:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Solves a small linear system A x = b by Gaussian elimination with partial pivoting.</span>
+<span class="kd">func</span> <span class="nf">solve</span><span class="p">(</span><span class="n">_</span> <span class="nv">a</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Double</span><span class="p">]],</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">element</span> <span class="o">+</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="nv">$0</span><span class="o">.</span><span class="n">offset</span><span class="p">]]</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">n</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">count</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">n</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">pivot</span> <span class="o">=</span> <span class="p">(</span><span class="n">col</span><span class="o">..&lt;</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">max</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="nv">$0</span><span class="p">][</span><span class="n">col</span><span class="p">])</span> <span class="o">&lt;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="nv">$1</span><span class="p">][</span><span class="n">col</span><span class="p">])</span> <span class="p">}</span><span class="o">!</span>
+        <span class="n">m</span><span class="o">.</span><span class="nf">swapAt</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">pivot</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">n</span> <span class="k">where</span> <span class="n">row</span> <span class="o">!=</span> <span class="n">col</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">/</span> <span class="n">m</span><span class="p">[</span><span class="n">col</span><span class="p">][</span><span class="n">col</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="k">in</span> <span class="n">col</span><span class="o">...</span><span class="n">n</span> <span class="p">{</span> <span class="n">m</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">-=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">col</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">m</span><span class="p">[</span><span class="nv">$0</span><span class="p">][</span><span class="n">n</span><span class="p">]</span> <span class="o">/</span> <span class="n">m</span><span class="p">[</span><span class="nv">$0</span><span class="p">][</span><span class="nv">$0</span><span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Hard-iron calibration: readings from many orientations lie on a sphere centered on the offset.</span>
+<span class="c1">/// |m - c|² = r² rearranges to 2 m·c + (r² - |c|²) = |m|², which is linear in c and one more unknown.</span>
+<span class="kd">func</span> <span class="nf">fitSphere</span><span class="p">(</span><span class="n">_</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">center</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">ata</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">4</span><span class="p">),</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">4</span><span class="p">),</span> <span class="n">atb</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="k">in</span> <span class="n">samples</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">row</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">let</span> <span class="nv">rhs</span> <span class="o">=</span> <span class="nf">simd_length_squared</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span>
+            <span class="n">atb</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">rhs</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span> <span class="n">ata</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">row</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="nf">solve</span><span class="p">(</span><span class="n">ata</span><span class="p">,</span> <span class="n">atb</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">center</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">center</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="nf">simd_length_squared</span><span class="p">(</span><span class="n">center</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="c1">// A phone whose own magnetized parts add a constant offset of about 37.5 µT in its frame (illustrative), plus 0.5 µT of noise.</span>
+<span class="k">let</span> <span class="nv">hardIron</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="o">-</span><span class="mi">27</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">magRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">17</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">measuredField</span><span class="p">(</span><span class="n">_</span> <span class="nv">axes</span><span class="p">:</span> <span class="n">simd_double3x3</span><span class="p">,</span> <span class="nv">offset</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">using</span> <span class="nv">random</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">SeededGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nf">readings</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span><span class="o">.</span><span class="n">field</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">+</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="o">*</span> <span class="mf">0.5</span>
+<span class="p">}</span>
+<span class="c1">// The calibration motion: the user waves the phone through many orientations (a figure eight).</span>
+<span class="k">let</span> <span class="nv">calibrationSamples</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">i</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="mi">300</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="k">return</span> <span class="nf">measuredField</span><span class="p">(</span><span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="mi">360</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="mi">300</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mi">70</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">t</span><span class="p">),</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">80</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">t</span><span class="p">)),</span> <span class="nv">offset</span><span class="p">:</span> <span class="n">hardIron</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">magRandom</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">fit</span> <span class="o">=</span> <span class="nf">fitSphere</span><span class="p">(</span><span class="n">calibrationSamples</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"estimated offset"</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="s">"true"</span><span class="p">,</span> <span class="n">hardIron</span><span class="p">,</span> <span class="s">"radius"</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span> <span class="s">"true field"</span><span class="p">,</span> <span class="kt">EarthField</span><span class="o">.</span><span class="n">strength</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">simd_distance</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">hardIron</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1">// Heading errors over random attitudes, before and after subtracting the offset.</span>
+<span class="k">var</span> <span class="nv">before</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="nv">after</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">heading</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">360</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">magRandom</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">axes</span> <span class="o">=</span> <span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="n">heading</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">-</span><span class="mi">40</span><span class="o">...</span><span class="mi">40</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">magRandom</span><span class="p">),</span>
+                          <span class="nv">roll</span><span class="p">:</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">-</span><span class="mi">40</span><span class="o">...</span><span class="mi">40</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">magRandom</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">raw</span> <span class="o">=</span> <span class="nf">measuredField</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="nv">offset</span><span class="p">:</span> <span class="n">hardIron</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">magRandom</span><span class="p">),</span> <span class="n">gravity</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span><span class="o">.</span><span class="n">gravity</span>
+    <span class="n">before</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">angularDifference</span><span class="p">(</span><span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="n">heading</span><span class="p">)))</span>
+    <span class="n">after</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">angularDifference</span><span class="p">(</span><span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">raw</span> <span class="o">-</span> <span class="n">fit</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="n">heading</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">percentile</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="n">_</span> <span class="nv">p</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">values</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()[</span><span class="kt">Int</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))]</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"heading error, median / 95th percentile: before %.1f° / %.1f°, after %.2f° / %.2f°"</span><span class="p">,</span>
+             <span class="nf">percentile</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="nf">percentile</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">),</span> <span class="nf">percentile</span><span class="p">(</span><span class="n">after</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="nf">percentile</span><span class="p">(</span><span class="n">after</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<p>From 300 readings with 0.5 µT of noise, the fit recovered the illustrative offset of about 37.5 µT to within 0.04 µT on each axis, and the sphere’s radius as 47.99 µT, the field strength. Across 1,000 random attitudes tilted up to 40°, the uncalibrated heading had a median error of 56° and a 95th percentile of 156°: the offset is twice the horizontal field, so the compass points mostly at the phone’s own magnet. After subtracting the fitted center, the median was 1.00° and the 95th percentile 2.96°, which is just the noise of 0.5 µT on a 19.5 µT horizontal field.</p>
+
+<p>This is what the figure-eight calibration screen asks for, and why it needs varied orientations: a sphere can’t be fitted to points from one side of it. Apple’s delegate method <code class="language-plaintext highlighter-rouge">locationManagerShouldDisplayHeadingCalibration(_:)</code> lets an app allow or suppress the system’s calibration display. Return <code class="language-plaintext highlighter-rouge">true</code> when the compass matters to the current screen, and <code class="language-plaintext highlighter-rouge">false</code> during moments when an interruption would be worse than an inaccurate heading.</p>
+
+<h2 id="detecting-interference">Detecting interference</h2>
+
+<p>A magnet <em>outside</em> the phone, a steel desk, a car’s frame, or a laptop speaker, adds a field fixed in the world, which calibration can’t remove, because it doesn’t rotate with the phone. Two checks catch the large cases. The total field strength should match the expected strength, from the calibration fit or the geomagnetic model. And the angle between the field and gravity should match the local dip.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Flags readings that can't be the Earth's field alone: the wrong strength, or the wrong angle to gravity (the dip).</span>
+<span class="kd">struct</span> <span class="kt">InterferenceCheck</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">expectedStrength</span><span class="p">:</span> <span class="kt">Double</span>        <span class="c1">// µT, from the calibration fit or a geomagnetic model</span>
+    <span class="k">var</span> <span class="nv">expectedDip</span><span class="p">:</span> <span class="kt">Double</span>             <span class="c1">// degrees below horizontal</span>
+    <span class="k">var</span> <span class="nv">strengthTolerance</span> <span class="o">=</span> <span class="mf">0.15</span>        <span class="c1">// fraction</span>
+    <span class="k">var</span> <span class="nv">dipTolerance</span> <span class="o">=</span> <span class="mf">5.0</span>              <span class="c1">// degrees</span>
+
+    <span class="kd">func</span> <span class="nf">isDisturbed</span><span class="p">(</span><span class="n">field</span> <span class="nv">m</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">gravity</span> <span class="nv">g</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">strength</span> <span class="o">=</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">dip</span> <span class="o">=</span> <span class="mi">90</span> <span class="o">-</span> <span class="nf">acos</span><span class="p">(</span><span class="nf">simd_dot</span><span class="p">(</span><span class="nf">simd_normalize</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">g</span><span class="p">)))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+        <span class="k">return</span> <span class="nf">abs</span><span class="p">(</span><span class="n">strength</span> <span class="o">/</span> <span class="n">expectedStrength</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">strengthTolerance</span> <span class="o">||</span> <span class="nf">abs</span><span class="p">(</span><span class="n">dip</span> <span class="o">-</span> <span class="n">expectedDip</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">dipTolerance</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// A steel filing cabinet near the phone adds a field of 30 µT pointing east, in the world frame, for a while.</span>
+<span class="k">let</span> <span class="nv">check</span> <span class="o">=</span> <span class="kt">InterferenceCheck</span><span class="p">(</span><span class="nv">expectedStrength</span><span class="p">:</span> <span class="n">fit</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span> <span class="nv">expectedDip</span><span class="p">:</span> <span class="mi">66</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">still</span> <span class="o">=</span> <span class="nf">deviceAxes</span><span class="p">(</span><span class="nv">heading</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">gravity</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="n">still</span><span class="p">)</span><span class="o">.</span><span class="n">gravity</span>
+<span class="k">let</span> <span class="nv">disturbance</span> <span class="o">=</span> <span class="n">still</span><span class="o">.</span><span class="n">transpose</span> <span class="o">*</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">clean</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="n">still</span><span class="p">)</span><span class="o">.</span><span class="n">field</span><span class="p">,</span> <span class="n">disturbed</span> <span class="o">=</span> <span class="nf">readings</span><span class="p">(</span><span class="n">still</span><span class="p">)</span><span class="o">.</span><span class="n">field</span> <span class="o">+</span> <span class="n">disturbance</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"clean: heading %.1f°, flagged %@; near the cabinet: heading %.1f°, flagged %@"</span><span class="p">,</span>
+             <span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">clean</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="n">check</span><span class="o">.</span><span class="nf">isDisturbed</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">clean</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">)</span> <span class="p">?</span> <span class="s">"yes"</span> <span class="p">:</span> <span class="s">"no"</span><span class="p">,</span>
+             <span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">disturbed</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span> <span class="n">check</span><span class="o">.</span><span class="nf">isDisturbed</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">disturbed</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">)</span> <span class="p">?</span> <span class="s">"yes"</span> <span class="p">:</span> <span class="s">"no"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">check</span><span class="o">.</span><span class="nf">isDisturbed</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">clean</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">check</span><span class="o">.</span><span class="nf">isDisturbed</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">disturbed</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">))</span>
+
+<span class="c1">// A weaker disturbance that happens to keep the strength and dip nearly unchanged slips through.</span>
+<span class="k">let</span> <span class="nv">sneaky</span> <span class="o">=</span> <span class="n">still</span><span class="o">.</span><span class="n">transpose</span> <span class="o">*</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"sneaky disturbance flagged:"</span><span class="p">,</span> <span class="n">check</span><span class="o">.</span><span class="nf">isDisturbed</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">clean</span> <span class="o">+</span> <span class="n">sneaky</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">),</span>
+      <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"heading %.1f°"</span><span class="p">,</span> <span class="nf">compassHeading</span><span class="p">(</span><span class="nv">field</span><span class="p">:</span> <span class="n">clean</span> <span class="o">+</span> <span class="n">sneaky</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">gravity</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<p>A steel cabinet adding 30 µT, about one and a half times the horizontal field, swung the heading from 30.0° to 333.1° and was flagged by both checks. A smaller disturbance of about 8 µT, pointed so that it happened to leave the strength within 15% and the dip within 5°, moved the heading from 30.0° to 6.1° and wasn’t flagged. A 24° error passed the checks. This is the honest limit of interference detection: it catches fields that are obviously wrong, and misses fields that are wrong in a plausible way. Core Location’s <code class="language-plaintext highlighter-rouge">headingAccuracy</code> has the same limit. Treat it as an upper bound only when it’s large, and never as a guarantee when it’s small.</p>
+
+<h2 id="displaying-a-heading">Displaying a heading</h2>
+
+<p>A compass rose that rotates to the new heading on each update has one classic bug: going from 359° to 1°, the animation spins the rose 358° the wrong way. Track the displayed angle continuously, and apply each new heading as the shortest signed turn from the current one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Keeps a displayed angle continuous: each new heading is applied as the shortest turn from the last one,</span>
+<span class="c1">/// so a compass rose animates from 359° to 1° by +2°, not by -358°.</span>
+<span class="kd">struct</span> <span class="kt">UnwrappedAngle</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">initial</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="n">initial</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">to</span> <span class="nv">heading</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="n">value</span> <span class="o">+=</span> <span class="nf">angularDifference</span><span class="p">(</span><span class="n">heading</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="nf">truncatingRemainder</span><span class="p">(</span><span class="nv">dividingBy</span><span class="p">:</span> <span class="mi">360</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">rose</span> <span class="o">=</span> <span class="kt">UnwrappedAngle</span><span class="p">(</span><span class="mi">358</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">shown</span> <span class="o">=</span> <span class="p">[</span><span class="mf">359.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">359</span><span class="p">,</span> <span class="mi">357</span><span class="p">]</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">rose</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"unwrapped"</span><span class="p">,</span> <span class="n">shown</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">shown</span> <span class="o">==</span> <span class="p">[</span><span class="mi">359</span><span class="p">,</span> <span class="mi">361</span><span class="p">,</span> <span class="mi">363</span><span class="p">,</span> <span class="mi">362</span><span class="p">,</span> <span class="mi">359</span><span class="p">,</span> <span class="mi">357</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The sequence 359°, 1°, 3°, 2°, 359°, 357° became 359, 361, 363, 362, 359, 357. Each step is the turn the user actually made. The displayed value can grow without bound, but the rose’s rotation only cares about the angle modulo 360. Smoothing must use the same circular arithmetic, as the <a href="/ios-attitude-reference-frames/#averaging-angles">attitude article</a> showed with headings near north averaging to due south.</p>
+
+<h2 id="compass-or-course">Compass or course?</h2>
+
+<p>When the user is moving, there’s a second source of direction: the GPS course, the direction of travel derived from successive fixes. It’s immune to magnets and needs no calibration. But it’s undefined when standing still and meaningless when the phone points one way while the user walks another. A simple rule picks the source:</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    A[New direction needed] --&gt; B{Speed at least 2 m/s and course accuracy 15° or better?}
+    B -- yes --&gt; C[Use the GPS course]
+    B -- no --&gt; D{Heading accuracy valid and 30° or better?}
+    D -- yes --&gt; E[Use the compass heading]
+    D -- no --&gt; F[Show no direction]
+</code></pre>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Moving fast and straight, the GPS course is a better direction than the compass, and immune to magnets.</span>
+<span class="c1">/// Standing still, only the compass knows. These thresholds are illustrative.</span>
+<span class="kd">enum</span> <span class="kt">DirectionSource</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">case</span> <span class="nf">course</span><span class="p">(</span><span class="kt">Double</span><span class="p">),</span> <span class="nf">heading</span><span class="p">(</span><span class="kt">Double</span><span class="p">),</span> <span class="n">unknown</span> <span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">bestDirection</span><span class="p">(</span><span class="nv">speed</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">course</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">courseAccuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span>
+                   <span class="nv">heading</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?,</span> <span class="nv">headingAccuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">DirectionSource</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">speed</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">course</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">courseAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">courseAccuracy</span> <span class="o">&lt;=</span> <span class="mi">15</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">course</span><span class="p">(</span><span class="n">course</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">heading</span><span class="p">,</span> <span class="k">let</span> <span class="nv">accuracy</span> <span class="o">=</span> <span class="n">headingAccuracy</span><span class="p">,</span> <span class="n">accuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">accuracy</span> <span class="o">&lt;=</span> <span class="mi">30</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">heading</span><span class="p">(</span><span class="n">heading</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="o">.</span><span class="n">unknown</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">bestDirection</span><span class="p">(</span><span class="nv">speed</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="nv">course</span><span class="p">:</span> <span class="mi">92</span><span class="p">,</span> <span class="nv">courseAccuracy</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nv">heading</span><span class="p">:</span> <span class="mi">140</span><span class="p">,</span> <span class="nv">headingAccuracy</span><span class="p">:</span> <span class="mi">40</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">course</span><span class="p">(</span><span class="mi">92</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">bestDirection</span><span class="p">(</span><span class="nv">speed</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="nv">course</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">courseAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">heading</span><span class="p">:</span> <span class="mi">88</span><span class="p">,</span> <span class="nv">headingAccuracy</span><span class="p">:</span> <span class="mi">12</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">heading</span><span class="p">(</span><span class="mi">88</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">bestDirection</span><span class="p">(</span><span class="nv">speed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">course</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">courseAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">heading</span><span class="p">:</span> <span class="mi">88</span><span class="p">,</span> <span class="nv">headingAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">unknown</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The thresholds are illustrative and belong to the feature. Note what each source answers. The course says where the user is <em>going</em>. The heading says where the phone is <em>pointing</em>. A map that rotates with the user on a bicycle wants the course. An augmented-reality label that overlays a building wants the heading, even at speed.</p>
+
+<h2 id="receiving-headings">Receiving headings</h2>
+
+<p>The heading service delivers <code class="language-plaintext highlighter-rouge">CLHeading</code> updates as a <code class="language-plaintext highlighter-rouge">Sendable</code> value. Following the <a href="/ios-sensor-missing-data/">missing data</a> rule, it turns negative <code class="language-plaintext highlighter-rouge">trueHeading</code> and <code class="language-plaintext highlighter-rouge">headingAccuracy</code> values into optionals at the boundary:</p>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">CoreLocation</span>
+<span class="kd">import</span> <span class="kt">UIKit</span>
+
+<span class="kd">struct</span> <span class="kt">HeadingSample</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">Date</span>
+    <span class="k">var</span> <span class="nv">magnetic</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">trueNorth</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>     <span class="c1">// nil while the device can't convert, for example without a location</span>
+    <span class="k">var</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>      <span class="c1">// degrees; nil when the heading is invalid</span>
+    <span class="k">var</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>   <span class="c1">// raw geomagnetic vector, µT</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">heading</span><span class="p">:</span> <span class="kt">CLHeading</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">heading</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="n">magnetic</span> <span class="o">=</span> <span class="n">heading</span><span class="o">.</span><span class="n">magneticHeading</span>
+        <span class="n">trueNorth</span> <span class="o">=</span> <span class="n">heading</span><span class="o">.</span><span class="n">trueHeading</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">heading</span><span class="o">.</span><span class="nv">trueHeading</span> <span class="p">:</span> <span class="kc">nil</span>
+        <span class="n">accuracy</span> <span class="o">=</span> <span class="n">heading</span><span class="o">.</span><span class="n">headingAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">heading</span><span class="o">.</span><span class="nv">headingAccuracy</span> <span class="p">:</span> <span class="kc">nil</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">heading</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">heading</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">heading</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">HeadingService</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">manager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">HeadingSample</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">allowsCalibrationPrompt</span> <span class="o">=</span> <span class="kc">true</span>
+
+    <span class="kd">func</span> <span class="nf">headings</span><span class="p">(</span><span class="n">filter</span> <span class="nv">degrees</span><span class="p">:</span> <span class="kt">CLLocationDegrees</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">UIView</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">HeadingSample</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">HeadingSample</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">guard</span> <span class="kt">CLLocationManager</span><span class="o">.</span><span class="nf">headingAvailable</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">stream</span>
+        <span class="p">}</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">continuation</span> <span class="o">=</span> <span class="n">continuation</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="k">self</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">headingFilter</span> <span class="o">=</span> <span class="n">degrees</span>
+        <span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">),</span> <span class="k">let</span> <span class="nv">body</span> <span class="p">{</span> <span class="n">manager</span><span class="o">.</span><span class="n">headingBody</span> <span class="o">=</span> <span class="n">body</span> <span class="p">}</span>
+        <span class="n">manager</span><span class="o">.</span><span class="nf">startUpdatingHeading</span><span class="p">()</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopUpdatingHeading</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateHeading</span> <span class="nv">newHeading</span><span class="p">:</span> <span class="kt">CLHeading</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="kt">HeadingSample</span><span class="p">(</span><span class="n">newHeading</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManagerShouldDisplayHeadingCalibration</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">allowsCalibrationPrompt</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">headingService</span> <span class="o">=</span> <span class="kt">HeadingService</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"default heading filter:"</span><span class="p">,</span> <span class="kt">CLLocationManager</span><span class="p">()</span><span class="o">.</span><span class="n">headingFilter</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">headingSamples</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">headingService</span><span class="o">.</span><span class="nf">headings</span><span class="p">(</span><span class="nv">filter</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">{</span> <span class="n">headingSamples</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">CLLocationManager</span><span class="o">.</span><span class="nf">headingAvailable</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">headingSamples</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The simulator has no magnetometer, so <code class="language-plaintext highlighter-rouge">headingAvailable()</code> is <code class="language-plaintext highlighter-rouge">false</code> and the stream finishes immediately. On a device, start location updates too if the app needs <code class="language-plaintext highlighter-rouge">trueHeading</code>, and pass the view showing the compass as <code class="language-plaintext highlighter-rouge">headingBody</code> on iOS 27.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CLHeading</code> gives magnetic and true headings, an accuracy that’s negative when uncalibrated or disturbed, and the raw field. <code class="language-plaintext highlighter-rouge">trueHeading</code> needs location updates running. <code class="language-plaintext highlighter-rouge">headingFilter</code> defaults to 1°.</li>
+  <li>The Earth’s field dips steeply in most of the world, so a tilt-compensated heading needs gravity: east is down × field, and north is east × down. The flat-phone formula was off by 4.7° at a 5° tilt and 12.5° at 20°.</li>
+  <li>The phone’s own magnetism shifts the measured field by a constant offset in the device frame. A linear least-squares sphere fit over a figure-eight motion recovered a 37.5 µT offset to 0.04 µT, cutting the median heading error from 56° to 1°.</li>
+  <li>External magnets can’t be calibrated away. Checking field strength and dip caught a 30 µT disturbance, and missed an 8 µT one that still moved the heading by 24°. <code class="language-plaintext highlighter-rouge">headingAccuracy</code> shares that limit.</li>
+  <li>Animate headings by the shortest signed turn, and average them as vectors.</li>
+  <li>Prefer GPS course when moving fast and straight, and the compass when still. They answer different questions: where the user goes, and where the phone points.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Extend <code class="language-plaintext highlighter-rouge">fitSphere</code> to an ellipsoid fit for soft iron. Fit the general quadric $\mathbf m^\top A \mathbf m + \mathbf b^\top \mathbf m + c = 0$ by least squares, with nine unknowns once the scale is fixed. Recover the center and a matrix that maps the ellipsoid back to a sphere, and test it on simulated readings with a soft-iron matrix that scales one axis by 1.15 and couples x and y by 0.08. Compare the heading errors of the sphere fit and the ellipsoid fit on that data.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/clheading"><code class="language-plaintext highlighter-rouge">CLHeading</code></a>, <a href="https://developer.apple.com/documentation/corelocation/clheading/headingaccuracy"><code class="language-plaintext highlighter-rouge">headingAccuracy</code></a>, and <a href="https://developer.apple.com/documentation/corelocation/clheading/trueheading"><code class="language-plaintext highlighter-rouge">trueHeading</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/headingfilter"><code class="language-plaintext highlighter-rouge">headingFilter</code></a> and <a href="https://developer.apple.com/documentation/corelocation/cllocationmanagerdelegate/locationmanagershoulddisplayheadingcalibration(_:)"><code class="language-plaintext highlighter-rouge">locationManagerShouldDisplayHeadingCalibration(_:)</code></a></li>
+  <li>NOAA’s <a href="https://www.ncei.noaa.gov/products/world-magnetic-model">World Magnetic Model</a>, with calculators for declination, inclination, and field strength anywhere on Earth</li>
+</ul>
+
+<p>Previous: <a href="/ios-location-distance-filter-energy/">Distance Filters and Energy-Aware Tracking</a></p>
+
+<p>Next: <a href="/ios-region-monitoring-geofencing/">Region Monitoring and Geofencing</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-heading-compass/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Heading%2C+Compass+Calibration%2C+and+Magnetic+Interference%20https%3A%2F%2Fswiftbydeya.com%2Fios-heading-compass%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-heading-compass/&title=Heading%2C+Compass+Calibration%2C+and+Magnetic+Interference%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-heading-compass/&title=Heading%2C+Compass+Calibration%2C+and+Magnetic+Interference%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-heading-compass/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Heading, Compass Calibration, and Magnetic Interference%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-heading-compass/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Math">Math</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Region Monitoring and Geofencing" href="/ios-region-monitoring-geofencing/"> <p>Previous post</p> Region Monitoring and Geofencing </a> </div> <div id="next-post"> <a alt="Distance Filters and Energy-Aware Tracking" href="/ios-location-distance-filter-energy/"> <p>Next post</p> Distance Filters and Energy-Aware Tracking </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

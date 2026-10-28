@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Device Motion, Gravity, and User Acceleration | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Device Motion, Gravity, and User Acceleration" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An accelerometer can’t tell gravity from motion. A phone tilted 17 degrees and a phone braking at 0.3 g in a car produce the same reading, and no amount of cleverness applied to that one reading tells them apart. Core Motion’s device-motion service splits the reading anyway, into gravity and userAcceleration, and it does so by bringing in a second sensor. The gyroscope knows how the phone turned, so a change in the reading’s direction that the gyroscope didn’t see must be motion. This article builds that split from scratch, to show what the device-motion values mean and where they can still be wrong. Two estimators run on simulated motion with known truth. The first is the low-pass filter that many tutorials use. The second is a gyro-aided complementary filter, the simplest form of the fusion Core Motion performs. During a 60° tilt, the low-pass estimate of “down” lagged by up to 28.7°, while the fused one stayed within 1°. Under a sustained push, both drifted toward the wrong answer, at a rate set by a single time constant. That trade-off is predicted exactly by two short formulas, and every fused motion estimate lives with it." /> <meta property="og:description" content="An accelerometer can’t tell gravity from motion. A phone tilted 17 degrees and a phone braking at 0.3 g in a car produce the same reading, and no amount of cleverness applied to that one reading tells them apart. Core Motion’s device-motion service splits the reading anyway, into gravity and userAcceleration, and it does so by bringing in a second sensor. The gyroscope knows how the phone turned, so a change in the reading’s direction that the gyroscope didn’t see must be motion. This article builds that split from scratch, to show what the device-motion values mean and where they can still be wrong. Two estimators run on simulated motion with known truth. The first is the low-pass filter that many tutorials use. The second is a gyro-aided complementary filter, the simplest form of the fusion Core Motion performs. During a 60° tilt, the low-pass estimate of “down” lagged by up to 28.7°, while the fused one stayed within 1°. Under a sustained push, both drifted toward the wrong answer, at a rate set by a single time constant. That trade-off is predicted exactly by two short formulas, and every fused motion estimate lives with it." /> <link rel="canonical" href="https://swiftbydeya.com/ios-device-motion/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-device-motion/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Device Motion, Gravity, and User Acceleration" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-13T00:00:00+03:00","datePublished":"2026-02-13T00:00:00+03:00","description":"An accelerometer can’t tell gravity from motion. A phone tilted 17 degrees and a phone braking at 0.3 g in a car produce the same reading, and no amount of cleverness applied to that one reading tells them apart. Core Motion’s device-motion service splits the reading anyway, into gravity and userAcceleration, and it does so by bringing in a second sensor. The gyroscope knows how the phone turned, so a change in the reading’s direction that the gyroscope didn’t see must be motion. This article builds that split from scratch, to show what the device-motion values mean and where they can still be wrong. Two estimators run on simulated motion with known truth. The first is the low-pass filter that many tutorials use. The second is a gyro-aided complementary filter, the simplest form of the fusion Core Motion performs. During a 60° tilt, the low-pass estimate of “down” lagged by up to 28.7°, while the fused one stayed within 1°. Under a sustained push, both drifted toward the wrong answer, at a rate set by a single time constant. That trade-off is predicted exactly by two short formulas, and every fused motion estimate lives with it.","headline":"Device Motion, Gravity, and User Acceleration","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-device-motion/"},"url":"https://swiftbydeya.com/ios-device-motion/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Device Motion, Gravity, and User Acceleration"> <meta name="twitter:description" content="An accelerometer can’t tell gravity from motion. A phone tilted 17 degrees and a phone braking at 0.3 g in a car produce the same reading, and no amount of c..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Device Motion, Gravity, and User Acceleration"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Device Motion, Gravity, and User Acceleration</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-13T00:00:00+03:00">February 13, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An accelerometer can’t tell gravity from motion. A phone tilted 17 degrees and a phone braking at 0.3 g in a car produce the same reading, and no amount of cleverness applied to that one reading tells them apart. Core Motion’s device-motion service splits the reading anyway, into <code class="language-plaintext highlighter-rouge">gravity</code> and <code class="language-plaintext highlighter-rouge">userAcceleration</code>, and it does so by bringing in a second sensor. The gyroscope knows how the phone turned, so a change in the reading’s direction that the gyroscope didn’t see must be motion.</p>
+
+<p>This article builds that split from scratch, to show what the device-motion values mean and where they can still be wrong. Two estimators run on simulated motion with known truth. The first is the low-pass filter that many tutorials use. The second is a gyro-aided complementary filter, the simplest form of the fusion Core Motion performs. During a 60° tilt, the low-pass estimate of “down” lagged by up to 28.7°, while the fused one stayed within 1°. Under a sustained push, both drifted toward the wrong answer, at a rate set by a single time constant. That trade-off is predicted exactly by two short formulas, and every fused motion estimate lives with it.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS block ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0. The simulations reuse <code class="language-plaintext highlighter-rouge">SensorModel</code> and its illustrative parameters from the <a href="/ios-accelerometer-gyroscope/#a-model-of-a-real-sensor">accelerometer article</a>, and the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: imu-model -->
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+</code></pre></div></div>
+
+<h2 id="what-device-motion-reports">What device motion reports</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CMDeviceMotion</code> is Core Motion’s fused output. Apple’s guide to <a href="https://developer.apple.com/documentation/coremotion/getting-processed-device-motion-data">processed device-motion data</a> lists what it adds over the raw sensors: “the device’s attitude”, “the unbiased rotation rate”, “the current gravity vector”, “the device-specific acceleration (without gravity)”, and “the current magnetic field vector”. The relation that ties the accelerometer to two of them is the one from the <a href="/ios-accelerometer-gyroscope/#what-the-sensors-measure">previous article</a>:</p>
+
+\[\mathbf{a}_{\text{raw}} = \mathbf{g} + \mathbf{u} ,\]
+
+<p>where $\mathbf{g}$ is gravity and $\mathbf{u}$ is user acceleration, both in g and in the device’s frame. Apple’s <code class="language-plaintext highlighter-rouge">CMDeviceMotion</code> documentation states the reason fusion is needed: “because Core Motion is able to track a device’s attitude using both the gyroscope and the accelerometer, it can differentiate between gravity and user acceleration.”</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Meaning</th>
+      <th>Units</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">attitude</code></td>
+      <td>Orientation relative to a reference frame chosen at start</td>
+      <td>quaternion, matrix, or Euler angles</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">rotationRate</code></td>
+      <td>Gyroscope rates with bias removed</td>
+      <td>rad/s, device frame</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">gravity</code></td>
+      <td>Direction and size of gravity</td>
+      <td>g, device frame, length about 1</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">userAcceleration</code></td>
+      <td>Raw acceleration minus gravity</td>
+      <td>g, device frame</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">magneticField</code></td>
+      <td>Calibrated field, with an accuracy level</td>
+      <td>microtesla, device frame</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">heading</code></td>
+      <td>Degrees from north, only in north-referenced frames</td>
+      <td>0 to 360, negative when invalid</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">headingAccuracy</code> (iOS 27)</td>
+      <td>Maximum heading error</td>
+      <td>degrees, negative when invalid</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The next article covers <code class="language-plaintext highlighter-rouge">attitude</code> and its reference frames. This one is about <code class="language-plaintext highlighter-rouge">gravity</code> and <code class="language-plaintext highlighter-rouge">userAcceleration</code>, the two halves of the raw reading.</p>
+
+<h2 id="a-testbed-with-known-truth">A testbed with known truth</h2>
+
+<p>Judging an estimator needs ground truth, so the examples generate it. A scenario specifies the device’s attitude and its acceleration in the world over time. From those, everything a perfect sensor would report follows: gravity is the world’s $(0, 0, -1)$ g rotated into the device frame, user acceleration is the world acceleration rotated the same way, and the rotation rate comes from differencing consecutive attitudes.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// The truth at one instant: how the device is oriented, and how it's accelerating in the world.</span>
+<span class="kd">struct</span> <span class="kt">MotionTruth</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span>          <span class="c1">// rotates device-frame vectors into the world frame (z up)</span>
+    <span class="k">var</span> <span class="nv">rotationRate</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>   <span class="c1">// rad/s, device frame</span>
+    <span class="k">var</span> <span class="nv">worldAcceleration</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>  <span class="c1">// g, world frame, gravity excluded</span>
+
+    <span class="c1">/// Gravity as the device sees it: the world's (0, 0, -1) g, expressed in the device frame.</span>
+    <span class="k">var</span> <span class="nv">gravity</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">attitude</span><span class="o">.</span><span class="n">inverse</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">userAcceleration</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">attitude</span><span class="o">.</span><span class="n">inverse</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">worldAcceleration</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">gravity</span> <span class="o">+</span> <span class="n">userAcceleration</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Samples a motion at `rate` Hz, given the attitude and world acceleration as functions of time.</span>
+<span class="c1">/// Rotation rates come from differencing consecutive attitudes, so they're exactly consistent with them.</span>
+<span class="kd">func</span> <span class="nf">scenario</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+              <span class="nv">attitude</span><span class="p">:</span> <span class="p">(</span><span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="nv">acceleration</span><span class="p">:</span> <span class="p">(</span><span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">MotionTruth</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">dt</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">rate</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="kt">Int</span><span class="p">(</span><span class="n">seconds</span> <span class="o">*</span> <span class="n">rate</span><span class="p">))</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">let</span> <span class="nv">q0</span> <span class="o">=</span> <span class="nf">attitude</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">q1</span> <span class="o">=</span> <span class="nf">attitude</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">step</span> <span class="o">=</span> <span class="n">q0</span><span class="o">.</span><span class="n">inverse</span> <span class="o">*</span> <span class="n">q1</span>
+        <span class="k">let</span> <span class="nv">omega</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">angle</span> <span class="o">&lt;</span> <span class="mf">1e-12</span> <span class="p">?</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">axis</span> <span class="o">*</span> <span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">angle</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">MotionTruth</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">q0</span><span class="p">,</span> <span class="nv">rotationRate</span><span class="p">:</span> <span class="n">omega</span><span class="p">,</span> <span class="nv">worldAcceleration</span><span class="p">:</span> <span class="nf">acceleration</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">level</span> <span class="o">=</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">ix</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">iy</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">iz</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">r</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="c1">/// Smoothly tilts the device by `degrees` about its x axis between `start` and `start + duration`.</span>
+<span class="kd">func</span> <span class="nf">tilt</span><span class="p">(</span><span class="n">_</span> <span class="nv">degrees</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span>
+    <span class="p">{</span> <span class="n">t</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="nf">max</span><span class="p">((</span><span class="n">t</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">duration</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">eased</span> <span class="o">=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="n">eased</span> <span class="o">*</span> <span class="n">degrees</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">still</span><span class="p">:</span> <span class="p">(</span><span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="n">zero</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">tilting</span> <span class="o">=</span> <span class="nf">scenario</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="nf">tilt</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="nv">start</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="mi">1</span><span class="p">),</span> <span class="nv">acceleration</span><span class="p">:</span> <span class="n">still</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">braking</span> <span class="o">=</span> <span class="nf">scenario</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">level</span> <span class="p">},</span> <span class="nv">acceleration</span><span class="p">:</span> <span class="p">{</span> <span class="n">t</span> <span class="k">in</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">7</span> <span class="p">?</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="n">zero</span> <span class="p">})</span>
+<span class="k">let</span> <span class="nv">walking</span> <span class="o">=</span> <span class="nf">scenario</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="p">},</span>
+                       <span class="nv">acceleration</span><span class="p">:</span> <span class="p">{</span> <span class="n">t</span> <span class="k">in</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">t</span><span class="p">))</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">simd_length</span><span class="p">(</span><span class="n">tilting</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">accelerometer</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Three scenarios cover the cases that break naive estimators:</p>
+
+<ul>
+  <li><strong>Tilting</strong>: the phone tips 60° about its x axis over one second, then holds.</li>
+  <li><strong>Pushing</strong>: a level phone accelerates forward at 0.3 g for five seconds, like a car pulling away briskly. The phone doesn’t rotate at all.</li>
+  <li><strong>Walking</strong>: a phone held at 30° bounces vertically at 2 Hz with an amplitude of 0.3 g.</li>
+</ul>
+
+<h2 id="two-ways-to-find-down">Two ways to find “down”</h2>
+
+<p>The <strong>low-pass</strong> estimator treats gravity as the slow part of the accelerometer signal:</p>
+
+\[\hat{\mathbf g}_k = \hat{\mathbf g}_{k-1} + \alpha\,(\mathbf a_k - \hat{\mathbf g}_{k-1}) .\]
+
+<p>This is a first-order filter with time constant $\tau \approx \Delta t / \alpha$. With $\alpha = 0.02$ at 100 Hz, $\tau$ is 0.5 s. It needs nothing but the accelerometer, which is why tutorials reach for it.</p>
+
+<p>The <strong>complementary</strong> estimator uses the gyroscope to carry the previous estimate forward. Between samples the device turns by $\boldsymbol\omega\,\Delta t$, so gravity, which is fixed in the world, turns by the opposite rotation in the device frame. Only then does the estimator nudge the result toward the accelerometer:</p>
+
+\[\hat{\mathbf g}_k = R(-\boldsymbol\omega_k \Delta t)\,\hat{\mathbf g}_{k-1} + \beta\,\big(\mathbf a_k - R(-\boldsymbol\omega_k \Delta t)\,\hat{\mathbf g}_{k-1}\big) .\]
+
+<p>The name comes from the frequency domain. The gyroscope path passes fast changes and the accelerometer path passes slow ones, with complementary weights, so together they pass everything once. The gyroscope is trusted over short times, where its bias hasn’t had time to add up, and the accelerometer over long times, where its disturbances average out.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Estimates gravity by low-pass filtering the accelerometer: g ← g + α (a − g).</span>
+<span class="kd">struct</span> <span class="kt">LowPassGravity</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">alpha</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">estimate</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">accelerometer</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">estimate</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span> <span class="p">??</span> <span class="n">a</span>
+        <span class="n">estimate</span> <span class="o">=</span> <span class="n">next</span>
+        <span class="k">return</span> <span class="n">next</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Estimates gravity by rotating the previous estimate with the gyroscope, then pulling it gently toward the accelerometer.</span>
+<span class="kd">struct</span> <span class="kt">ComplementaryGravity</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">beta</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">estimate</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">accelerometer</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">rotationRate</span> <span class="nv">omega</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">estimate</span> <span class="k">else</span> <span class="p">{</span> <span class="n">estimate</span> <span class="o">=</span> <span class="n">a</span><span class="p">;</span> <span class="k">return</span> <span class="n">a</span> <span class="p">}</span>
+        <span class="c1">// The world stands still while the device turns by omega·dt, so in the device frame gravity turns the other way.</span>
+        <span class="k">let</span> <span class="nv">angle</span> <span class="o">=</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">let</span> <span class="nv">rotated</span> <span class="o">=</span> <span class="n">angle</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="o">-</span><span class="n">angle</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">previous</span><span class="p">)</span> <span class="p">:</span> <span class="n">previous</span>
+        <span class="k">let</span> <span class="nv">blended</span> <span class="o">=</span> <span class="n">rotated</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">rotated</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">blended</span><span class="p">)</span> <span class="o">*</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">rotated</span><span class="p">)</span>
+        <span class="n">estimate</span> <span class="o">=</span> <span class="n">next</span>
+        <span class="k">return</span> <span class="n">next</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// The angle between two directions, in degrees.</span>
+<span class="kd">func</span> <span class="nf">degrees</span><span class="p">(</span><span class="n">between</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="nf">acos</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nf">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nf">simd_dot</span><span class="p">(</span><span class="nf">simd_normalize</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">b</span><span class="p">)))))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="p">}</span>
+
+<span class="c1">/// Runs both estimators over a scenario with the given sensors, returning the gravity-direction errors over time.</span>
+<span class="kd">func</span> <span class="nf">compare</span><span class="p">(</span><span class="n">_</span> <span class="nv">truth</span><span class="p">:</span> <span class="p">[</span><span class="kt">MotionTruth</span><span class="p">],</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="kt">SensorModel</span><span class="p">,</span> <span class="nv">gyroscope</span><span class="p">:</span> <span class="kt">SensorModel</span><span class="p">,</span>
+             <span class="nv">alpha</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">beta</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">lowPass</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="nv">complementary</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">lowPass</span> <span class="o">=</span> <span class="kt">LowPassGravity</span><span class="p">(</span><span class="nv">alpha</span><span class="p">:</span> <span class="n">alpha</span><span class="p">),</span> <span class="n">complementary</span> <span class="o">=</span> <span class="kt">ComplementaryGravity</span><span class="p">(</span><span class="nv">beta</span><span class="p">:</span> <span class="n">beta</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">lowErrors</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="nv">compErrors</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">state</span> <span class="k">in</span> <span class="n">truth</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="n">accelerometer</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">accelerometer</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">random</span><span class="p">)</span><span class="o">.</span><span class="n">vector</span>
+        <span class="k">let</span> <span class="nv">w</span> <span class="o">=</span> <span class="n">gyroscope</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rotationRate</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">random</span><span class="p">)</span><span class="o">.</span><span class="n">vector</span>
+        <span class="n">lowErrors</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">degrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">lowPass</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">accelerometer</span><span class="p">:</span> <span class="n">a</span><span class="p">),</span> <span class="n">state</span><span class="o">.</span><span class="n">gravity</span><span class="p">))</span>
+        <span class="n">compErrors</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">degrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">complementary</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">accelerometer</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="nv">rotationRate</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">),</span> <span class="n">state</span><span class="o">.</span><span class="n">gravity</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">lowErrors</span><span class="p">,</span> <span class="n">compErrors</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="how-they-compare">How they compare</h2>
+
+<p>Both estimators use the same constant, $\alpha = \beta = 0.02$, so they have the same 0.5 s time constant. First with perfect sensors, to isolate the algorithms, then with the noisy, biased sensor models:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">rms</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kt">ArraySlice</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span> <span class="o">*</span> <span class="nv">$1</span> <span class="p">}</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">count</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">perfect</span> <span class="o">=</span> <span class="kt">SensorModel</span><span class="p">(</span><span class="nv">bias</span><span class="p">:</span> <span class="o">.</span><span class="n">zero</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">truth</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"tilt 60° in 1 s"</span><span class="p">,</span> <span class="n">tilting</span><span class="p">),</span> <span class="p">(</span><span class="s">"0.3 g for 5 s"</span><span class="p">,</span> <span class="n">braking</span><span class="p">),</span> <span class="p">(</span><span class="s">"walking, 2 Hz"</span><span class="p">,</span> <span class="n">walking</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">ideal</span> <span class="o">=</span> <span class="nf">compare</span><span class="p">(</span><span class="n">truth</span><span class="p">,</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="n">perfect</span><span class="p">,</span> <span class="nv">gyroscope</span><span class="p">:</span> <span class="n">perfect</span><span class="p">,</span> <span class="nv">alpha</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="nv">beta</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">real</span> <span class="o">=</span> <span class="nf">compare</span><span class="p">(</span><span class="n">truth</span><span class="p">,</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="n">accelerometer</span><span class="p">,</span> <span class="nv">gyroscope</span><span class="p">:</span> <span class="n">gyroscope</span><span class="p">,</span> <span class="nv">alpha</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="nv">beta</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"ideal sensors: low-pass max %.2f°, complementary max %.2f° | model sensors: low-pass max %.2f° rms %.2f°, complementary max %.2f° rms %.2f°"</span><span class="p">,</span>
+                       <span class="n">ideal</span><span class="o">.</span><span class="n">lowPass</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">,</span> <span class="n">ideal</span><span class="o">.</span><span class="n">complementary</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">,</span> <span class="n">real</span><span class="o">.</span><span class="n">lowPass</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">,</span> <span class="nf">rms</span><span class="p">(</span><span class="n">real</span><span class="o">.</span><span class="n">lowPass</span><span class="p">[</span><span class="mi">100</span><span class="o">...</span><span class="p">]),</span>
+                       <span class="n">real</span><span class="o">.</span><span class="n">complementary</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">,</span> <span class="nf">rms</span><span class="p">(</span><span class="n">real</span><span class="o">.</span><span class="n">complementary</span><span class="p">[</span><span class="mi">100</span><span class="o">...</span><span class="p">])))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Low-pass, max error</th>
+      <th>Complementary, max error</th>
+      <th>Low-pass, RMS (noisy)</th>
+      <th>Complementary, RMS (noisy)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Tilt 60° in 1 s</td>
+      <td>28.7°</td>
+      <td>0.5°</td>
+      <td>10.1°</td>
+      <td>0.65°</td>
+    </tr>
+    <tr>
+      <td>Push 0.3 g for 5 s</td>
+      <td>16.7°</td>
+      <td>16.7°</td>
+      <td>11.7°</td>
+      <td>11.7°</td>
+    </tr>
+    <tr>
+      <td>Walk, 2 Hz vertical</td>
+      <td>0.00°</td>
+      <td>0.00°</td>
+      <td>0.63°</td>
+      <td>0.66°</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Tilting</strong> is where the gyroscope earns its place. The low-pass estimate trails the real gravity direction by up to 28.7°, because it can only follow the accelerometer at the speed its time constant allows. The complementary estimate rotates with the phone and stays within half a degree with perfect sensors, and about 1° with noisy ones. For anything that reacts to orientation, such as a level, a tilt control, or a camera horizon, the low-pass filter is visibly slow.</p>
+
+<p><strong>Pushing</strong> defeats both. A sustained 0.3 g push is physically indistinguishable from a tilt of $\arctan 0.3 = 16.7°$, and the gyroscope sees no rotation to contradict it. With a 0.5 s time constant, both estimators have fully converged to the wrong answer long before the 5 s push ends. The only defense is a longer time constant, which trusts the gyroscope for longer.</p>
+
+<p><strong>Walking</strong> surprised me until I worked through the geometry. The bounce in this scenario is purely vertical, along gravity, so it changes the size of the reading but not its direction, and neither estimator is fooled. The small errors with real sensors come from bias and noise, not from the bounce. Swaying from side to side would have been a different story.</p>
+
+<h2 id="the-one-knob-the-time-constant">The one knob: the time constant</h2>
+
+<p>The push results suggest making $\tau$ longer. The cost is the gyroscope’s bias, which the estimator now trusts for longer. Both effects can be predicted. Under a sustained horizontal acceleration $a_\perp$, the estimate relaxes toward the false tilt $\theta_\infty = \arctan(a_\perp / g)$ exponentially:</p>
+
+\[\theta(t) = \theta_\infty \left(1 - e^{-t/\tau}\right).\]
+
+<p>A gyro bias perpendicular to gravity, $b_\perp$, makes the gyroscope path rotate the estimate at a steady rate, and the accelerometer path pulls it back with rate $1/\tau$. They balance at a constant error</p>
+
+\[\theta_{\text{bias}} \approx b_\perp\, \tau .\]
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Sweep the complementary filter's time constant τ = dt / β, on the push and on a still phone with gyro bias.</span>
+<span class="k">let</span> <span class="nv">stillLevel</span> <span class="o">=</span> <span class="nf">scenario</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">level</span> <span class="p">},</span> <span class="nv">acceleration</span><span class="p">:</span> <span class="n">still</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">perpendicularBias</span> <span class="o">=</span> <span class="nf">simd_length</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="n">gyroscope</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">gyroscope</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"tau     push max   push theory   still-bias error   bias theory"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">beta</span> <span class="k">in</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">tau</span> <span class="o">=</span> <span class="mf">0.01</span> <span class="o">/</span> <span class="n">beta</span>
+    <span class="k">let</span> <span class="nv">push</span> <span class="o">=</span> <span class="nf">compare</span><span class="p">(</span><span class="n">braking</span><span class="p">,</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="n">perfect</span><span class="p">,</span> <span class="nv">gyroscope</span><span class="p">:</span> <span class="n">perfect</span><span class="p">,</span> <span class="nv">alpha</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span> <span class="nv">beta</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">complementary</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span>
+    <span class="k">let</span> <span class="nv">pushTheory</span> <span class="o">=</span> <span class="nf">atan</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span> <span class="o">/</span> <span class="n">tau</span><span class="p">))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="k">let</span> <span class="nv">biased</span> <span class="o">=</span> <span class="nf">compare</span><span class="p">(</span><span class="n">stillLevel</span><span class="p">,</span> <span class="nv">accelerometer</span><span class="p">:</span> <span class="n">perfect</span><span class="p">,</span> <span class="nv">gyroscope</span><span class="p">:</span> <span class="kt">SensorModel</span><span class="p">(</span><span class="nv">bias</span><span class="p">:</span> <span class="n">gyroscope</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span>
+                         <span class="nv">alpha</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span> <span class="nv">beta</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">complementary</span><span class="o">.</span><span class="nf">suffix</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span>
+    <span class="k">let</span> <span class="nv">biasTheory</span> <span class="o">=</span> <span class="n">perpendicularBias</span> <span class="o">*</span> <span class="n">tau</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5.1f s  %6.2f°     %6.2f°        %6.3f°            %6.3f°"</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">push</span><span class="p">,</span> <span class="n">pushTheory</span><span class="p">,</span> <span class="n">biased</span><span class="p">,</span> <span class="n">biasTheory</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>$\tau$</th>
+      <th>Push error after 5 s</th>
+      <th>Predicted</th>
+      <th>Error from gyro bias</th>
+      <th>Predicted</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0.5 s</td>
+      <td>16.70°</td>
+      <td>16.70°</td>
+      <td>0.063°</td>
+      <td>0.064°</td>
+    </tr>
+    <tr>
+      <td>2 s</td>
+      <td>15.47°</td>
+      <td>15.33°</td>
+      <td>0.255°</td>
+      <td>0.256°</td>
+    </tr>
+    <tr>
+      <td>5 s</td>
+      <td>10.79°</td>
+      <td>10.56°</td>
+      <td>0.639°</td>
+      <td>0.641°</td>
+    </tr>
+    <tr>
+      <td>20 s</td>
+      <td>3.80°</td>
+      <td>3.69°</td>
+      <td>2.551°</td>
+      <td>2.562°</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The simulations follow the formulas closely. The small excess in the push column has a simple cause. The filter blends vectors, not angles, and during the push the accelerometer vector has length $\sqrt{1 + 0.3^2} = 1.044$ g, so each step pulls the direction about 4% harder than the formula assumes. With $\tau$ shortened by that factor, the formula gives 15.47°, 10.82°, and 3.84°, within 0.04° of the simulation. The table is the whole trade-off. A longer time constant resists sustained accelerations but lets gyro bias tilt the estimate, and no single value of $\tau$ is good at both. Real fusion algorithms, Core Motion’s included, escape the dilemma in two ways. They estimate the gyroscope’s bias and subtract it, which shrinks $b_\perp$; that’s the “unbiased rotation rate” in the documentation. And they adapt: when the accelerometer’s magnitude is far from 1 g, the phone is clearly accelerating, and the filter can trust it less for a while.</p>
+
+<p>That still leaves the fundamental limit. Any acceleration that lasts longer than the filter is willing to trust the gyroscope looks like gravity. A phone in a car accelerating steadily for 30 seconds will eventually report a tilted gravity, whatever the algorithm. Apps that care, such as dashcams or driving analytics, know from GPS when the car is accelerating, and can treat device-motion gravity with suspicion while it does.</p>
+
+<h2 id="using-gravity-and-user-acceleration">Using gravity and user acceleration</h2>
+
+<p>Once gravity is known, several useful quantities are a dot product away.</p>
+
+<p><strong>Tilt.</strong> The angle between the screen and the horizontal is the angle between gravity and the device’s −z axis. Pitch and roll for a level indicator follow from the components, for example $\text{roll} = \operatorname{atan2}(g_x, -g_z)$ for a phone held flat.</p>
+
+<p><strong>Vertical acceleration.</strong> The component of user acceleration along gravity is the vertical acceleration in the world, whatever the phone’s orientation in the pocket. This signal drives step detection and elevator detection:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Vertical user acceleration in g, positive up: the part of the user acceleration along the gravity estimate.</span>
+<span class="kd">func</span> <span class="nf">verticalAcceleration</span><span class="p">(</span><span class="n">accelerometer</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">gravity</span> <span class="nv">g</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">down</span> <span class="o">=</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="nf">simd_dot</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">g</span><span class="p">,</span> <span class="n">down</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">walkRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">walkFilter</span> <span class="o">=</span> <span class="kt">ComplementaryGravity</span><span class="p">(</span><span class="nv">beta</span><span class="p">:</span> <span class="mf">0.002</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">vertical</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">state</span> <span class="k">in</span> <span class="n">walking</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="n">accelerometer</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">accelerometer</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">walkRandom</span><span class="p">)</span><span class="o">.</span><span class="n">vector</span>
+    <span class="k">let</span> <span class="nv">w</span> <span class="o">=</span> <span class="n">gyroscope</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rotationRate</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">walkRandom</span><span class="p">)</span><span class="o">.</span><span class="n">vector</span>
+    <span class="k">let</span> <span class="nv">g</span> <span class="o">=</span> <span class="n">walkFilter</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">accelerometer</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="nv">rotationRate</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">)</span>
+    <span class="n">vertical</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">verticalAcceleration</span><span class="p">(</span><span class="nv">accelerometer</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="n">g</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="c1">// Correlate the last 8 seconds with sine and cosine at 2 Hz to measure the recovered amplitude.</span>
+<span class="k">let</span> <span class="nv">window</span> <span class="o">=</span> <span class="n">vertical</span><span class="o">.</span><span class="nf">suffix</span><span class="p">(</span><span class="mi">800</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">times</span> <span class="o">=</span> <span class="n">walking</span><span class="o">.</span><span class="nf">suffix</span><span class="p">(</span><span class="mi">800</span><span class="p">)</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">inPhase</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">0</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">800</span>
+<span class="k">let</span> <span class="nv">quadrature</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">0</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">800</span>
+<span class="k">let</span> <span class="nv">amplitude</span> <span class="o">=</span> <span class="p">(</span><span class="n">inPhase</span> <span class="o">*</span> <span class="n">inPhase</span> <span class="o">+</span> <span class="n">quadrature</span> <span class="o">*</span> <span class="n">quadrature</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">offset</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="mi">800</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"recovered vertical amplitude"</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="s">"g, or"</span><span class="p">,</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">standardGravity</span><span class="p">,</span> <span class="s">"m/s² (truth 0.3 g), mean"</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">amplitude</span> <span class="o">-</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>From noisy, biased samples of a phone tilted 30°, the projection recovered the walking bounce’s amplitude as 0.2998 g (2.94 m/s²), against 0.3 g of truth. The mean of 0.0036 g is the accelerometer’s bias leaking into the projection. A detector that thresholds this signal should subtract a running mean rather than assume zero.</p>
+
+<p><strong>Orientation classes.</strong> Face up, face down, and upright are thresholds on gravity’s components. A phone face down on a table has $g_z \approx +1$, which is a cheap way to silence notifications without asking for any permission.</p>
+
+<h2 id="receiving-device-motion">Receiving device motion</h2>
+
+<p>The device-motion stream follows the pattern from the <a href="/ios-accelerometer-gyroscope/#the-isolation-trap">accelerometer article</a>: a <code class="language-plaintext highlighter-rouge">nonisolated</code> handler factory, a <code class="language-plaintext highlighter-rouge">Sendable</code> sample type, and an availability check before starting. Two values need care at the boundary. <code class="language-plaintext highlighter-rouge">magneticField</code> comes with an accuracy that can be <code class="language-plaintext highlighter-rouge">.uncalibrated</code>. And <code class="language-plaintext highlighter-rouge">heading</code> is negative in arbitrary reference frames, which Apple’s documentation uses “to indicate the heading is invalid”. The sample turns both into optionals, so invalid values can’t be read as data. iOS 27 adds <code class="language-plaintext highlighter-rouge">headingAccuracy</code>, with the same convention:</p>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">CoreMotion</span>
+
+<span class="kd">struct</span> <span class="kt">DeviceMotionSample</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">TimeInterval</span>
+    <span class="k">var</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span>
+    <span class="k">var</span> <span class="nv">rotationRate</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">gravity</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">userAcceleration</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">magneticField</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">?</span>   <span class="c1">// nil while the magnetometer is uncalibrated</span>
+    <span class="k">var</span> <span class="nv">heading</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>               <span class="c1">// degrees from north; nil in arbitrary frames</span>
+    <span class="k">var</span> <span class="nv">headingAccuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>       <span class="c1">// degrees; iOS 27 and later</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">motion</span><span class="p">:</span> <span class="kt">CMDeviceMotion</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="k">let</span> <span class="nv">q</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">attitude</span><span class="o">.</span><span class="n">quaternion</span>
+        <span class="n">attitude</span> <span class="o">=</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">ix</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="nv">iy</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="nv">iz</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="nv">r</span><span class="p">:</span> <span class="n">q</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+        <span class="n">rotationRate</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">rotationRate</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">rotationRate</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">rotationRate</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+        <span class="n">gravity</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">gravity</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">gravity</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">gravity</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+        <span class="n">userAcceleration</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">userAcceleration</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">userAcceleration</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">userAcceleration</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">field</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">magneticField</span>
+        <span class="n">magneticField</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">==</span> <span class="o">.</span><span class="n">uncalibrated</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+        <span class="n">heading</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">heading</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">motion</span><span class="o">.</span><span class="nv">heading</span> <span class="p">:</span> <span class="kc">nil</span>
+        <span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">headingAccuracy</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">headingAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">motion</span><span class="o">.</span><span class="nv">headingAccuracy</span> <span class="p">:</span> <span class="kc">nil</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">headingAccuracy</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">DeviceMotionService</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CMMotionManager</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span><span class="p">:</span> <span class="kt">OperationQueue</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">OperationQueue</span><span class="p">()</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">"device-motion"</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">maxConcurrentOperationCount</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">queue</span>
+    <span class="p">}()</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">manager</span><span class="p">:</span> <span class="kt">CMMotionManager</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span> <span class="p">}</span>
+
+    <span class="c1">/// The best reference frame this device supports, preferring true north, then magnetic north.</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">bestFrame</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">CMAttitudeReferenceFrame</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">available</span> <span class="o">=</span> <span class="kt">CMMotionManager</span><span class="o">.</span><span class="nf">availableAttitudeReferenceFrames</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="o">.</span><span class="n">xTrueNorthZVertical</span><span class="p">,</span> <span class="o">.</span><span class="n">xMagneticNorthZVertical</span><span class="p">,</span> <span class="o">.</span><span class="n">xArbitraryCorrectedZVertical</span><span class="p">,</span> <span class="o">.</span><span class="n">xArbitraryZVertical</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">first</span> <span class="p">{</span> <span class="n">available</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">samples</span><span class="p">(</span><span class="nv">hz</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">DeviceMotionSample</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">DeviceMotionSample</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">guard</span> <span class="n">manager</span><span class="o">.</span><span class="n">isDeviceMotionAvailable</span><span class="p">,</span> <span class="k">let</span> <span class="nv">frame</span> <span class="o">=</span> <span class="k">Self</span><span class="o">.</span><span class="nf">bestFrame</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">stream</span>
+        <span class="p">}</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">deviceMotionUpdateInterval</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">hz</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">showsDeviceMovementDisplay</span> <span class="o">=</span> <span class="n">frame</span> <span class="o">==</span> <span class="o">.</span><span class="n">xTrueNorthZVertical</span> <span class="o">||</span> <span class="n">frame</span> <span class="o">==</span> <span class="o">.</span><span class="n">xMagneticNorthZVertical</span>
+        <span class="n">manager</span><span class="o">.</span><span class="nf">startDeviceMotionUpdates</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="n">frame</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">queue</span><span class="p">,</span> <span class="nv">withHandler</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="nf">handler</span><span class="p">(</span><span class="n">continuation</span><span class="p">))</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopDeviceMotionUpdates</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">nonisolated</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">handler</span><span class="p">(</span><span class="n">_</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">DeviceMotionSample</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CMDeviceMotionHandler</span> <span class="p">{</span>
+        <span class="p">{</span> <span class="n">motion</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">motion</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="kt">DeviceMotionSample</span><span class="p">(</span><span class="n">motion</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">motionService</span> <span class="o">=</span> <span class="kt">DeviceMotionService</span><span class="p">(</span><span class="nv">manager</span><span class="p">:</span> <span class="kt">CMMotionManager</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">DeviceMotionService</span><span class="o">.</span><span class="nf">bestFrame</span><span class="p">()</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">"the simulator supports no reference frame"</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">delivered</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">motionService</span><span class="o">.</span><span class="nf">samples</span><span class="p">(</span><span class="nv">hz</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span> <span class="p">{</span> <span class="n">delivered</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">delivered</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the simulator there’s no frame to choose, so the stream finishes at once. On a device, <code class="language-plaintext highlighter-rouge">showsDeviceMovementDisplay</code> matters for the north-referenced frames. Apple’s documentation says that when the device needs movement to calibrate the compass, the handler “reports the <code class="language-plaintext highlighter-rouge">CMErrorDeviceRequiresMovement</code> error once”, and with this property set, the system shows its calibration display. The <a href="/ios-heading-compass/">heading article</a> explains what that calibration fixes.</p>
+
+<p>The handler ignores errors here for brevity. A production version should forward <code class="language-plaintext highlighter-rouge">CMErrorDeviceRequiresMovement</code> to the interface, since it means north-referenced values are unreliable until the user moves the phone.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>The accelerometer reports gravity plus user acceleration and can’t tell them apart on its own. A sustained 0.3 g push looks exactly like a 16.7° tilt.</li>
+  <li>A low-pass filter on the accelerometer estimates gravity slowly. During a 60° tilt it lagged by up to 28.7°.</li>
+  <li>A complementary filter rotates its estimate with the gyroscope, then corrects it gently toward the accelerometer. It tracked the same tilt within 1°.</li>
+  <li>Its time constant $\tau$ is a trade-off with exact predictions. A push of $a_\perp$ tilts the estimate by $\arctan(a_\perp/g)(1-e^{-t/\tau})$, and gyro bias leaves a steady error of $b_\perp\tau$. Simulations matched both within 0.25°.</li>
+  <li>Core Motion improves on this by estimating gyro bias and adapting, but any long enough acceleration still leaks into <code class="language-plaintext highlighter-rouge">gravity</code>.</li>
+  <li>Projecting user acceleration onto gravity gives vertical acceleration in any orientation. It recovered a 0.3 g walking bounce to 0.2998 g, with a 0.004 g bias offset to subtract.</li>
+  <li>Convert <code class="language-plaintext highlighter-rouge">CMDeviceMotion</code> to a <code class="language-plaintext highlighter-rouge">Sendable</code> value at the handler, and turn negative headings and uncalibrated fields into optionals there.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Make the complementary filter adaptive. When $\lvert\lvert\mathbf a\rvert - 1\rvert$ exceeds 0.05 g, multiply $\beta$ by a factor that shrinks toward zero as the excess grows, so the filter stops listening to the accelerometer while the phone is clearly accelerating. Run the push scenario again. Then add a version of the push that also tilts the phone by 10° halfway through, and measure what the adaptation costs when real rotation and acceleration happen together.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/coremotion/getting-processed-device-motion-data">Getting processed device-motion data</a>, Apple’s guide to the fused values</li>
+  <li><a href="https://developer.apple.com/documentation/coremotion/cmdevicemotion"><code class="language-plaintext highlighter-rouge">CMDeviceMotion</code></a> and <a href="https://developer.apple.com/documentation/coremotion/cmmotionmanager/showsdevicemovementdisplay"><code class="language-plaintext highlighter-rouge">showsDeviceMovementDisplay</code></a></li>
+  <li>Robert Mahony, Tarek Hamel, and Jean-Michel Pflimlin, “Nonlinear Complementary Filters on the Special Orthogonal Group”, <em>IEEE Transactions on Automatic Control</em> 53(5), 2008, <a href="https://doi.org/10.1109/TAC.2008.923738">doi:10.1109/TAC.2008.923738</a>, the standard reference for complementary attitude filters with bias estimation</li>
+</ul>
+
+<p>Previous: <a href="/ios-accelerometer-gyroscope/">Accelerometer and Gyroscope Measurements</a></p>
+
+<p>Next: <a href="/ios-attitude-reference-frames/">Attitude, Reference Frames, and Coordinate Conversion</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-device-motion/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Device+Motion%2C+Gravity%2C+and+User+Acceleration%20https%3A%2F%2Fswiftbydeya.com%2Fios-device-motion%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-device-motion/&title=Device+Motion%2C+Gravity%2C+and+User+Acceleration%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-device-motion/&title=Device+Motion%2C+Gravity%2C+and+User+Acceleration%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-device-motion/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Device Motion, Gravity, and User Acceleration%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-device-motion/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Signal+Processing">Signal Processing</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Attitude, Reference Frames, and Coordinate Conversion" href="/ios-attitude-reference-frames/"> <p>Previous post</p> Attitude, Reference Frames, and Coordinate Conversion </a> </div> <div id="next-post"> <a alt="Accelerometer and Gyroscope Measurements" href="/ios-accelerometer-gyroscope/"> <p>Next post</p> Accelerometer and Gyroscope Measurements </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

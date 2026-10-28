@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Visits and Significant Location Changes | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Visits and Significant Location Changes" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Most apps that care where their users go don’t need to know where they are every second. A journal wants the places of the day, a reminder wants “when you get to the office”, and a commute tracker wants departure and arrival times. Core Location has two services built for that coarser question: significant location changes, a fix whenever the device has moved roughly half a kilometer, and visits, the system’s own judgment that the user arrived somewhere and later left. Both run with the screen off, both relaunch a terminated app, and both cost a fraction of continuous tracking. This article covers what the two services deliver and how to read it safely. A visit’s unknown arrival is Date.distantPast, so naive arithmetic gives an ongoing visit a duration of 1,974 years. A default CLVisit crashes on first access. And the first significant change is often a cached fix from somewhere else. It then builds the core of a visit detector from raw fixes, stay-point detection, measured on a synthetic day: it found all six stays with fixes every minute, needed a small change to survive three wild fixes, and degraded predictably as samples thinned out to the rates the low-power services provide." /> <meta property="og:description" content="Most apps that care where their users go don’t need to know where they are every second. A journal wants the places of the day, a reminder wants “when you get to the office”, and a commute tracker wants departure and arrival times. Core Location has two services built for that coarser question: significant location changes, a fix whenever the device has moved roughly half a kilometer, and visits, the system’s own judgment that the user arrived somewhere and later left. Both run with the screen off, both relaunch a terminated app, and both cost a fraction of continuous tracking. This article covers what the two services deliver and how to read it safely. A visit’s unknown arrival is Date.distantPast, so naive arithmetic gives an ongoing visit a duration of 1,974 years. A default CLVisit crashes on first access. And the first significant change is often a cached fix from somewhere else. It then builds the core of a visit detector from raw fixes, stay-point detection, measured on a synthetic day: it found all six stays with fixes every minute, needed a small change to survive three wild fixes, and degraded predictably as samples thinned out to the rates the low-power services provide." /> <link rel="canonical" href="https://swiftbydeya.com/ios-visits-significant-location-changes/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-visits-significant-location-changes/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-06T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Visits and Significant Location Changes" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-06T00:00:00+03:00","datePublished":"2026-03-06T00:00:00+03:00","description":"Most apps that care where their users go don’t need to know where they are every second. A journal wants the places of the day, a reminder wants “when you get to the office”, and a commute tracker wants departure and arrival times. Core Location has two services built for that coarser question: significant location changes, a fix whenever the device has moved roughly half a kilometer, and visits, the system’s own judgment that the user arrived somewhere and later left. Both run with the screen off, both relaunch a terminated app, and both cost a fraction of continuous tracking. This article covers what the two services deliver and how to read it safely. A visit’s unknown arrival is Date.distantPast, so naive arithmetic gives an ongoing visit a duration of 1,974 years. A default CLVisit crashes on first access. And the first significant change is often a cached fix from somewhere else. It then builds the core of a visit detector from raw fixes, stay-point detection, measured on a synthetic day: it found all six stays with fixes every minute, needed a small change to survive three wild fixes, and degraded predictably as samples thinned out to the rates the low-power services provide.","headline":"Visits and Significant Location Changes","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-visits-significant-location-changes/"},"url":"https://swiftbydeya.com/ios-visits-significant-location-changes/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Visits and Significant Location Changes"> <meta name="twitter:description" content="Most apps that care where their users go don’t need to know where they are every second. A journal wants the places of the day, a reminder wants “when you ge..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Visits and Significant Location Changes"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Visits and Significant Location Changes</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-06T00:00:00+03:00">March 6, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Most apps that care where their users go don’t need to know where they are every second. A journal wants the places of the day, a reminder wants “when you get to the office”, and a commute tracker wants departure and arrival times. Core Location has two services built for that coarser question: <strong>significant location changes</strong>, a fix whenever the device has moved roughly half a kilometer, and <strong>visits</strong>, the system’s own judgment that the user arrived somewhere and later left. Both run with the screen off, both relaunch a terminated app, and both cost a fraction of continuous tracking.</p>
+
+<p>This article covers what the two services deliver and how to read it safely. A visit’s unknown arrival is <code class="language-plaintext highlighter-rouge">Date.distantPast</code>, so naive arithmetic gives an ongoing visit a duration of 1,974 years. A default <code class="language-plaintext highlighter-rouge">CLVisit</code> crashes on first access. And the first significant change is often a cached fix from somewhere else. It then builds the core of a visit detector from raw fixes, stay-point detection, measured on a synthetic day: it found all six stays with fixes every minute, needed a small change to survive three wild fixes, and degraded predictably as samples thinned out to the rates the low-power services provide.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS blocks ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, with a route scripted by <code class="language-plaintext highlighter-rouge">simctl</code>. The synthetic day uses the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+</code></pre></div></div>
+
+<h2 id="the-location-services-by-cost-and-detail">The location services, by cost and detail</h2>
+
+<p>Core Location offers a ladder of services. Each step down costs less power and tells less:</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    A["Standard updates&lt;br/&gt;every fix, as accurate as requested"] --&gt; B["Significant changes&lt;br/&gt;about every 500 m, at most every 5 min"]
+    B --&gt; C["Visits&lt;br/&gt;arrival and departure at places"]
+    B --&gt; D["Region monitoring&lt;br/&gt;entry and exit of up to 20 conditions"]
+</code></pre>
+
+<p>Apple’s documentation describes significant changes this way: apps “can expect a notification as soon as the device moves 500 meters or more from its previous notification”, “should not expect notifications more frequently than once every five minutes,” and “if the device is able to retrieve data from the network, the location manager is much more likely to deliver notifications in a timely manner.” Visits are reported when “the system” decides the user arrived at or left a place. Both services survive termination: for significant changes, the system “automatically relaunches the app into the background if a new event arrives”, and for visits it “relaunches your app when new visit events are ready to be delivered.”</p>
+
+<p>Visits have one more property worth knowing. The documentation for <code class="language-plaintext highlighter-rouge">startMonitoringVisits()</code> says an app “can monitor for visit events without” full accuracy, in which case “the visit events use reduced accuracy”. This is the one location service that works meaningfully with approximate location, and the <a href="/ios-location-permission-changes/#what-reduced-accuracy-means">permission changes article</a> quotes Apple’s example of a visit at “coordinates somewhere within Cupertino but still at 10:08”.</p>
+
+<h2 id="reading-a-visit">Reading a visit</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">CLVisit</code> has a coordinate, a horizontal accuracy, an arrival date, and a departure date. The dates are the trap. Apple’s documentation: “When the visit object does not include arrival information, this property is set to the date returned by the <code class="language-plaintext highlighter-rouge">distantPast</code> method,” and missing departure information is <code class="language-plaintext highlighter-rouge">distantFuture</code>. A visit delivered on arrival has no departure, and a visit that began before monitoring started has no arrival. The documentation spells out both cases: “When the user arrives at a location, the system may send an event with only an arrival time.”</p>
+
+<p>So convert at the boundary, the same way the earlier articles turned invalid <code class="language-plaintext highlighter-rouge">CLLocation</code> fields into optionals:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A visit with Core Location's sentinel dates turned into honest optionals.</span>
+<span class="kd">struct</span> <span class="kt">Visit</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span>
+    <span class="k">var</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="kt">CLLocationAccuracy</span>
+    <span class="k">var</span> <span class="nv">arrival</span><span class="p">:</span> <span class="kt">Date</span><span class="p">?</span>        <span class="c1">// nil when the system didn't see the arrival</span>
+    <span class="k">var</span> <span class="nv">departure</span><span class="p">:</span> <span class="kt">Date</span><span class="p">?</span>      <span class="c1">// nil while the user is still there</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="kt">CLLocationAccuracy</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="kt">Date</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">coordinate</span> <span class="o">=</span> <span class="n">coordinate</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">=</span> <span class="n">horizontalAccuracy</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">arrival</span> <span class="o">=</span> <span class="n">arrival</span> <span class="o">==</span> <span class="o">.</span><span class="n">distantPast</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="n">arrival</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">departure</span> <span class="o">=</span> <span class="n">departure</span> <span class="o">==</span> <span class="o">.</span><span class="n">distantFuture</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="n">departure</span>
+    <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">visit</span><span class="p">:</span> <span class="kt">CLVisit</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="n">visit</span><span class="o">.</span><span class="n">coordinate</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="n">visit</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">,</span>
+                  <span class="nv">arrival</span><span class="p">:</span> <span class="n">visit</span><span class="o">.</span><span class="n">arrivalDate</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="n">visit</span><span class="o">.</span><span class="n">departureDate</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// How long the visit lasted, if both ends are known.</span>
+    <span class="k">var</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">arrival</span><span class="p">,</span> <span class="k">let</span> <span class="nv">departure</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">departure</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">arrival</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="o">==</span> <span class="p">(</span><span class="nv">a</span><span class="p">:</span> <span class="kt">Visit</span><span class="p">,</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">Visit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span> <span class="o">&amp;&amp;</span> <span class="n">a</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span> <span class="o">&amp;&amp;</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&amp;&amp;</span> <span class="n">a</span><span class="o">.</span><span class="n">arrival</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">arrival</span> <span class="o">&amp;&amp;</span> <span class="n">a</span><span class="o">.</span><span class="n">departure</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">departure</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">office</span> <span class="o">=</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5155</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.0922</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">nine</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceReferenceDate</span><span class="p">:</span> <span class="mi">805_000_000</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">arrived</span> <span class="o">=</span> <span class="kt">Visit</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="n">office</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="n">nine</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="o">.</span><span class="n">distantFuture</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">left</span> <span class="o">=</span> <span class="kt">Visit</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="n">office</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="n">nine</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="n">nine</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">joinedLate</span> <span class="o">=</span> <span class="kt">Visit</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="n">office</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="o">.</span><span class="n">distantPast</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="n">nine</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">arrived</span><span class="o">.</span><span class="n">departure</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="n">arrived</span><span class="o">.</span><span class="n">duration</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="k">left</span><span class="o">.</span><span class="n">duration</span> <span class="o">==</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">joinedLate</span><span class="o">.</span><span class="n">arrival</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="n">joinedLate</span><span class="o">.</span><span class="n">duration</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="c1">// What the sentinels do to naive arithmetic:</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"naive duration of an ongoing visit:"</span><span class="p">,</span> <span class="kt">Date</span><span class="o">.</span><span class="n">distantFuture</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">nine</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86_400</span><span class="p">),</span> <span class="s">"years"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"naive duration of a visit with no arrival:"</span><span class="p">,</span> <span class="n">nine</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="o">.</span><span class="n">distantPast</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86_400</span><span class="p">),</span> <span class="s">"years"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The printed numbers show why. Subtracting the arrival from an ongoing visit’s <code class="language-plaintext highlighter-rouge">distantFuture</code> departure gives 1,974 years, and a visit with a <code class="language-plaintext highlighter-rouge">distantPast</code> arrival “lasted” 2,025 years. Sorted by duration, those visits go to the top of a “longest stays” list. Charted, they flatten every real bar to nothing.</p>
+
+<p>The struct also makes tests possible. Apple says of <code class="language-plaintext highlighter-rouge">CLVisit</code>, “you do not create visit objects directly, nor should you subclass” them. The class does have the inherited initializer, and calling it compiles:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Crashes: a default CLVisit has a nil arrival date, which a non-optional Date can't hold</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+<span class="k">let</span> <span class="nv">fake</span> <span class="o">=</span> <span class="kt">CLVisit</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">fake</span><span class="o">.</span><span class="n">arrivalDate</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On macOS 26, this stopped the process with a trap on the <code class="language-plaintext highlighter-rouge">print</code> line. Reading the default object’s date through key-value coding returned <code class="language-plaintext highlighter-rouge">nil</code>: the object has no date, and Swift’s bridged, non-optional <code class="language-plaintext highlighter-rouge">Date</code> can’t represent that. Build tests on <code class="language-plaintext highlighter-rouge">Visit</code>, which takes the raw values, so they can include the sentinel cases.</p>
+
+<h2 id="detecting-stays-yourself">Detecting stays yourself</h2>
+
+<p>When an app records its own fixes, for a run, a delivery shift, or a field survey, it can detect stays itself, with thresholds it chooses. The classic algorithm is <em>stay-point detection</em>. From each fix, extend a window while every later fix stays within a distance $D$ of the first. If the window lasts at least a time $T$, it’s a stay, with the window’s centroid as the place.</p>
+
+<p>The test data is a synthetic day: home until 8:00, a 25-minute commute to work 5 km east, lunch 300 m north of the office for 40 minutes, work until 17:30, a gym, and home. Fixes have 20 m of noise per axis.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A position in meters on a local flat map, with a time in seconds since midnight.</span>
+<span class="kd">struct</span> <span class="kt">Sample</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">;</span> <span class="k">var</span> <span class="nv">position</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">}</span>
+
+<span class="c1">/// One stretch of the true day: standing still somewhere, or moving between two places.</span>
+<span class="kd">enum</span> <span class="kt">Leg</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Samples a day every `interval` seconds with Gaussian position noise, from 7:00.</span>
+<span class="kd">func</span> <span class="nf">day</span><span class="p">(</span><span class="n">_</span> <span class="nv">legs</span><span class="p">:</span> <span class="p">[</span><span class="kt">Leg</span><span class="p">],</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Sample</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">Sample</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">t</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mf">3600.0</span><span class="p">,</span> <span class="n">from</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">legStart</span> <span class="o">=</span> <span class="n">t</span>
+    <span class="k">for</span> <span class="n">leg</span> <span class="k">in</span> <span class="n">legs</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">leg</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="k">let</span> <span class="nv">place</span><span class="p">,</span> <span class="k">let</span> <span class="nv">end</span><span class="p">):</span>
+            <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="p">{</span>
+                <span class="n">samples</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Sample</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="n">place</span> <span class="o">+</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="o">*</span> <span class="n">noise</span><span class="p">))</span>
+                <span class="n">t</span> <span class="o">+=</span> <span class="n">interval</span>
+            <span class="p">}</span>
+            <span class="n">from</span> <span class="o">=</span> <span class="n">place</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="k">let</span> <span class="nv">to</span><span class="p">,</span> <span class="k">let</span> <span class="nv">end</span><span class="p">):</span>
+            <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">legStart</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">legStart</span><span class="p">)</span>
+                <span class="n">samples</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Sample</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="n">from</span> <span class="o">+</span> <span class="p">(</span><span class="n">to</span> <span class="o">-</span> <span class="n">from</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span> <span class="o">+</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="o">*</span> <span class="n">noise</span><span class="p">))</span>
+                <span class="n">t</span> <span class="o">+=</span> <span class="n">interval</span>
+            <span class="p">}</span>
+            <span class="n">from</span> <span class="o">=</span> <span class="n">to</span>
+        <span class="p">}</span>
+        <span class="n">legStart</span> <span class="o">=</span> <span class="n">t</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">samples</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">home</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">work</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">lunch</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span> <span class="n">gym</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">3_000</span><span class="p">,</span> <span class="mi">1_500</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">h</span><span class="p">(</span><span class="n">_</span> <span class="nv">hours</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">_</span> <span class="nv">minutes</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">hours</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">+</span> <span class="n">minutes</span> <span class="o">*</span> <span class="mi">60</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">legs</span><span class="p">:</span> <span class="p">[</span><span class="kt">Leg</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">home</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">8</span><span class="p">)),</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">work</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">25</span><span class="p">)),</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">work</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">lunch</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">35</span><span class="p">)),</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">lunch</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">)),</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">work</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">20</span><span class="p">)),</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">work</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">gym</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">45</span><span class="p">)),</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">gym</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">45</span><span class="p">)),</span> <span class="o">.</span><span class="nf">travel</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">home</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">19</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
+    <span class="o">.</span><span class="nf">stay</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">home</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="nf">h</span><span class="p">(</span><span class="mi">22</span><span class="p">)),</span>
+<span class="p">]</span>
+<span class="k">let</span> <span class="nv">trueStays</span> <span class="o">=</span> <span class="p">[(</span><span class="s">"home"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">7</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">8</span><span class="p">)),</span> <span class="p">(</span><span class="s">"work"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span> <span class="p">(</span><span class="s">"lunch"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">35</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">)),</span>
+                 <span class="p">(</span><span class="s">"work"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span> <span class="p">(</span><span class="s">"gym"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">45</span><span class="p">)),</span> <span class="p">(</span><span class="s">"home"</span><span class="p">,</span> <span class="nf">h</span><span class="p">(</span><span class="mi">19</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="nf">h</span><span class="p">(</span><span class="mi">22</span><span class="p">))]</span>
+</code></pre></div></div>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Stay</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">center</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">;</span> <span class="k">var</span> <span class="nv">arrival</span><span class="p">:</span> <span class="kt">Double</span><span class="p">;</span> <span class="k">var</span> <span class="nv">departure</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">}</span>
+
+<span class="c1">/// Stay-point detection: starting from each sample, extend the window while every later sample stays within</span>
+<span class="c1">/// `radius` of its first sample. A window that lasts at least `minimum` seconds is a stay.</span>
+<span class="kd">func</span> <span class="nf">stays</span><span class="p">(</span><span class="k">in</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">Sample</span><span class="p">],</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Stay</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">result</span><span class="p">:</span> <span class="p">[</span><span class="kt">Stay</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="o">.</span><span class="n">count</span> <span class="o">&amp;&amp;</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">radius</span> <span class="p">{</span> <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="n">minimum</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">window</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="o">..&lt;</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">let</span> <span class="nv">center</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">())</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="n">position</span> <span class="p">}</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Stay</span><span class="p">(</span><span class="nv">center</span><span class="p">:</span> <span class="n">center</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">result</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">clock</span><span class="p">(</span><span class="n">_</span> <span class="nv">t</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%02d:%02d"</span><span class="p">,</span> <span class="kt">Int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">,</span> <span class="kt">Int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">%</span> <span class="mi">3600</span> <span class="o">/</span> <span class="mi">60</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">everyMinute</span> <span class="o">=</span> <span class="nf">day</span><span class="p">(</span><span class="n">legs</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">20</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="nf">stays</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="n">everyMinute</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"found"</span><span class="p">,</span> <span class="n">found</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">arrival</span><span class="p">)</span><span class="se">)</span><span class="s">–</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">departure</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"truth"</span><span class="p">,</span> <span class="n">trueStays</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="mi">0</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span><span class="se">)</span><span class="s">–</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="mi">2</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">found</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">trueStays</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">timingErrors</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">trueStays</span><span class="p">)</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="p">[</span><span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">arrival</span> <span class="o">-</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="p">),</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">departure</span> <span class="o">-</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">2</span><span class="p">)]</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"largest timing error:"</span><span class="p">,</span> <span class="n">timingErrors</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="s">"minutes"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>With a fix every minute, $D$ = 200 m, and $T$ = 20 minutes, the detector found exactly the six stays, including lunch, only 300 m from the office:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Truth</th>
+      <th>Detected</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>home 07:00–08:00</td>
+      <td>07:00–08:00</td>
+    </tr>
+    <tr>
+      <td>work 08:25–12:30</td>
+      <td>08:25–12:33</td>
+    </tr>
+    <tr>
+      <td>lunch 12:35–13:15</td>
+      <td>12:34–13:19</td>
+    </tr>
+    <tr>
+      <td>work 13:20–17:30</td>
+      <td>13:20–17:31</td>
+    </tr>
+    <tr>
+      <td>gym 17:45–18:45</td>
+      <td>17:44–18:45</td>
+    </tr>
+    <tr>
+      <td>home 19:10–22:00</td>
+      <td>19:10–21:59</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The largest boundary error was 4 minutes, at the end of lunch: the first few minutes of walking back stayed within 200 m of the lunch spot. The two thresholds set the resolution. $D$ must exceed the noise by a margin, or a stay fragments, and it must be smaller than the distance between places that should stay separate, or lunch merges into work. $T$ decides the shortest stay worth reporting.</p>
+
+<h3 id="outliers-split-stays">Outliers split stays</h3>
+
+<p>Real fixes include the occasional wild one, a reflection or a mismatched Wi-Fi network. Three fixes 1 km off during the morning at work did this:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Three wild fixes during the morning at work, each 1 km off: a reflection, a bad Wi-Fi match.</span>
+<span class="k">var</span> <span class="nv">glitchy</span> <span class="o">=</span> <span class="n">everyMinute</span>
+<span class="k">for</span> <span class="n">minute</span> <span class="k">in</span> <span class="p">[</span><span class="mi">9</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">11</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="n">glitchy</span><span class="o">.</span><span class="n">firstIndex</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">minute</span><span class="p">)</span> <span class="o">*</span> <span class="mi">60</span> <span class="p">}</span><span class="o">!</span>
+    <span class="n">glitchy</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">position</span> <span class="o">+=</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1_000</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"with outliers:"</span><span class="p">,</span> <span class="nf">stays</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="n">glitchy</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">arrival</span><span class="p">)</span><span class="se">)</span><span class="s">–</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">departure</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+
+<span class="c1">/// The same detection, but a window may skip up to `tolerance` consecutive samples that stray outside the radius,</span>
+<span class="c1">/// as long as the next sample comes back.</span>
+<span class="kd">func</span> <span class="nf">robustStays</span><span class="p">(</span><span class="k">in</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">Sample</span><span class="p">],</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Stay</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">result</span><span class="p">:</span> <span class="p">[</span><span class="kt">Stay</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">inside</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">strays</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">radius</span> <span class="p">{</span>
+                <span class="n">inside</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">j</span><span class="p">);</span> <span class="n">strays</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">strays</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">strays</span> <span class="o">&gt;</span> <span class="n">tolerance</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">last</span> <span class="o">=</span> <span class="n">inside</span><span class="o">.</span><span class="n">last</span><span class="o">!</span>
+        <span class="k">if</span> <span class="n">samples</span><span class="p">[</span><span class="n">last</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="n">minimum</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">center</span> <span class="o">=</span> <span class="n">inside</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">())</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="n">samples</span><span class="p">[</span><span class="nv">$1</span><span class="p">]</span><span class="o">.</span><span class="n">position</span> <span class="p">}</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">inside</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Stay</span><span class="p">(</span><span class="nv">center</span><span class="p">:</span> <span class="n">center</span><span class="p">,</span> <span class="nv">arrival</span><span class="p">:</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">departure</span><span class="p">:</span> <span class="n">samples</span><span class="p">[</span><span class="n">last</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">last</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">result</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">robust</span> <span class="o">=</span> <span class="nf">robustStays</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="n">glitchy</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"robust:"</span><span class="p">,</span> <span class="n">robust</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">arrival</span><span class="p">)</span><span class="se">)</span><span class="s">–</span><span class="se">\(</span><span class="nf">clock</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">departure</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">robust</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">trueStays</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The basic detector split the morning into four stays, 08:25–09:39, 09:41–10:14, 10:16–11:04, and 11:06–12:32, because each wild fix ended a window. The robust version tolerates up to two consecutive fixes outside the radius, as long as the next one returns, and found the original six stays. The tolerance is another resolution trade-off: two minutes of tolerance can’t separate a stay from a two-minute errand next door.</p>
+
+<h3 id="how-sparse-can-the-fixes-be">How sparse can the fixes be?</h3>
+
+<p>Fewer fixes mean less power. The question is what the detector loses:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// How sparse can the samples be? Fewer samples cost less power, and blur the boundaries.</span>
+<span class="k">for</span> <span class="n">interval</span> <span class="k">in</span> <span class="p">[</span><span class="mf">60.0</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">600</span><span class="p">,</span> <span class="mi">1_200</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">sparse</span> <span class="o">=</span> <span class="nf">day</span><span class="p">(</span><span class="n">legs</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">21</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">detected</span> <span class="o">=</span> <span class="nf">robustStays</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="n">sparse</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">minimum</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">worst</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">stay</span> <span class="k">in</span> <span class="n">detected</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">match</span> <span class="o">=</span> <span class="n">trueStays</span><span class="o">.</span><span class="n">min</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="mi">1</span> <span class="o">-</span> <span class="n">stay</span><span class="o">.</span><span class="n">arrival</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$1</span><span class="o">.</span><span class="mi">1</span> <span class="o">-</span> <span class="n">stay</span><span class="o">.</span><span class="n">arrival</span><span class="p">)</span> <span class="p">}</span><span class="o">!</span>
+        <span class="n">worst</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">worst</span><span class="p">,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">stay</span><span class="o">.</span><span class="n">arrival</span> <span class="o">-</span> <span class="n">match</span><span class="o">.</span><span class="mi">1</span><span class="p">),</span> <span class="nf">abs</span><span class="p">(</span><span class="n">stay</span><span class="o">.</span><span class="n">departure</span> <span class="o">-</span> <span class="n">match</span><span class="o">.</span><span class="mi">2</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"every %4.0f s: %3d samples, %d stays found, worst boundary error %3.0f min"</span><span class="p">,</span>
+                 <span class="n">interval</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">detected</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">worst</span> <span class="o">/</span> <span class="mi">60</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fix interval</th>
+      <th>Fixes per day</th>
+      <th>Stays found</th>
+      <th>Worst boundary error</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 minute</td>
+      <td>900</td>
+      <td>6 of 6</td>
+      <td>4 min</td>
+    </tr>
+    <tr>
+      <td>5 minutes</td>
+      <td>180</td>
+      <td>6 of 6</td>
+      <td>5 min</td>
+    </tr>
+    <tr>
+      <td>10 minutes</td>
+      <td>90</td>
+      <td>6 of 6</td>
+      <td>10 min</td>
+    </tr>
+    <tr>
+      <td>20 minutes</td>
+      <td>45</td>
+      <td>4 of 6</td>
+      <td>(stays confused)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Down to one fix every 10 minutes, every stay was found, with boundaries blurred by up to the interval. At 20 minutes, with $T$ = 20 minutes, a stay needs at least two consecutive fixes inside it. The 40-minute lunch and the commute boundaries fell apart, and the matching of detected stays to true ones broke down, which is where the 310-minute error in the raw output comes from. The rule of thumb: the fix interval should be well under half the shortest stay worth detecting. Significant changes, at best one fix every five minutes and only after half a kilometer of movement, can locate the places of a day, but not lunch next door. That’s the job visits were made for.</p>
+
+<h2 id="in-the-simulator">In the simulator</h2>
+
+<p>The service below wraps both low-power services into one stream of <code class="language-plaintext highlighter-rouge">Sendable</code> events. The test starts it with Always authorization and drives 4.9 km east at 40 m/s:</p>
+
+<!-- sim-setup -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl privacy booted grant location-always dev.swiftbydeya.Host
+xcrun simctl location booted <span class="nb">set </span>51.5007,-0.1246
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Everything the low-power services report, as Sendable values.</span>
+<span class="kd">enum</span> <span class="kt">PlaceEvent</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">visit</span><span class="p">(</span><span class="kt">Visit</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">significantChange</span><span class="p">(</span><span class="kt">CLLocation</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">LowPowerPlaces</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">manager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">PlaceEvent</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">events</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">PlaceEvent</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">PlaceEvent</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">continuation</span> <span class="o">=</span> <span class="n">continuation</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="k">self</span>
+        <span class="k">if</span> <span class="kt">CLLocationManager</span><span class="o">.</span><span class="nf">significantLocationChangeMonitoringAvailable</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">manager</span><span class="o">.</span><span class="nf">startMonitoringSignificantLocationChanges</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">manager</span><span class="o">.</span><span class="nf">startMonitoringVisits</span><span class="p">()</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopMonitoringSignificantLocationChanges</span><span class="p">()</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopMonitoringVisits</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didVisit</span> <span class="nv">visit</span><span class="p">:</span> <span class="kt">CLVisit</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">visit</span><span class="p">(</span><span class="kt">Visit</span><span class="p">(</span><span class="n">visit</span><span class="p">)))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span> <span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">significantChange</span><span class="p">(</span><span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">places</span> <span class="o">=</span> <span class="kt">LowPowerPlaces</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">startedAt</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[(</span><span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">PlaceEvent</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">listener</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">event</span> <span class="k">in</span> <span class="n">places</span><span class="o">.</span><span class="nf">events</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">age</span><span class="p">:</span> <span class="kt">Double</span>
+        <span class="k">switch</span> <span class="n">event</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">significantChange</span><span class="p">(</span><span class="k">let</span> <span class="nv">location</span><span class="p">):</span> <span class="n">age</span> <span class="o">=</span> <span class="o">-</span><span class="n">location</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">timeIntervalSinceNow</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">visit</span><span class="p">:</span> <span class="n">age</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="kt">Date</span><span class="p">()</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">startedAt</span><span class="p">),</span> <span class="n">age</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>40 <span class="nt">--interval</span><span class="o">=</span>1 51.5007,-0.1246 51.5007,-0.0546
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">listener</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span> <span class="k">in</span> <span class="n">received</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">event</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">visit</span><span class="p">(</span><span class="k">let</span> <span class="nv">visit</span><span class="p">):</span> <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5.1f s visit"</span><span class="p">,</span> <span class="n">seconds</span><span class="p">),</span> <span class="n">visit</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">significantChange</span><span class="p">(</span><span class="k">let</span> <span class="nv">location</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5.1f s significant change, %.0f m east of the start, %.1f s old on arrival"</span><span class="p">,</span> <span class="n">seconds</span><span class="p">,</span>
+                     <span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">)),</span> <span class="n">age</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">changes</span> <span class="o">=</span> <span class="n">received</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">significantChange</span> <span class="o">=</span> <span class="nv">$0</span><span class="o">.</span><span class="n">event</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">()</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">age</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="p">},</span> <span class="s">"after the first, every change is fresh"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">received</span><span class="o">.</span><span class="n">contains</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">visit</span> <span class="o">=</span> <span class="nv">$0</span><span class="o">.</span><span class="n">event</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="kc">false</span> <span class="p">}</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<p>Two runs, back to back:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>First run: position, age on arrival</th>
+      <th>Second run: position, age on arrival</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>At 0.0 s</td>
+      <td>4,514 m east, 7.7 s old</td>
+      <td>0 m east, 5.4 s old</td>
+    </tr>
+    <tr>
+      <td>At 22 to 26 s</td>
+      <td>766 m east, fresh</td>
+      <td>886 m east, fresh</td>
+    </tr>
+    <tr>
+      <td>At 53 to 56 s</td>
+      <td>1,975 m east, fresh</td>
+      <td>2,095 m east, fresh</td>
+    </tr>
+    <tr>
+      <td>At 83 to 86 s</td>
+      <td>3,183 m east, fresh</td>
+      <td>3,304 m east, fresh</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The first event of each run was a cached fix. In the first run it came from the end of the <em>previous</em> test’s route, 4.5 km from where <code class="language-plaintext highlighter-rouge">simctl</code> had just placed the device, and 7.7 seconds old. In the second it happened to be the right place, 5.4 seconds old. That’s documented behavior: “The first event to be delivered is usually the most recently cached location event (if any) … so be sure to check the timestamps.” An app that treats the first significant change as “the user is here now” puts them wherever the device last had a fix, which could be another city. After that, events came every 30 seconds, about 1.2 km apart, all fresh. That’s far more often than the five-minute minimum on a device, as the <a href="/ios-sensors-simulator-vs-device/#other-services">simulator article</a> found. No visit was reported. The simulator doesn’t produce them, so visit handling has to be tested with <code class="language-plaintext highlighter-rouge">Visit</code> values, as above.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Significant changes deliver a fix roughly every 500 m, no more often than every five minutes on a device, and relaunch a terminated app. Visits report arrivals and departures at places, work with reduced accuracy, and also relaunch the app.</li>
+  <li>A visit’s unknown arrival is <code class="language-plaintext highlighter-rouge">distantPast</code> and an ongoing visit’s departure is <code class="language-plaintext highlighter-rouge">distantFuture</code>. Naive subtraction gave durations of 1,974 and 2,025 years. Convert both to <code class="language-plaintext highlighter-rouge">nil</code> at the boundary.</li>
+  <li>Don’t construct <code class="language-plaintext highlighter-rouge">CLVisit</code> in tests. The default object’s dates are <code class="language-plaintext highlighter-rouge">nil</code>, and reading one trapped on macOS. Test a value type built from raw values.</li>
+  <li>Stay-point detection with 200 m and 20 minutes found all six stays of a synthetic day from fixes every minute, with boundaries within 4 minutes.</li>
+  <li>Three wild fixes split one stay into four. Tolerating up to two consecutive strays fixed it.</li>
+  <li>Detection held up to a fix every 10 minutes and fell apart at 20. The fix interval must be well under half the shortest stay.</li>
+  <li>The first significant change is often a cached fix. In one simulator run it was 4.5 km and 7.7 s stale, in the next merely 5.4 s stale. Check timestamps.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Turn <code class="language-plaintext highlighter-rouge">robustStays</code> into a streaming detector that consumes fixes one at a time and emits a <code class="language-plaintext highlighter-rouge">Visit</code> when a stay starts (arrival only) and again when it ends (with departure), the way the system reports visits. Use your <code class="language-plaintext highlighter-rouge">Visit</code> type for its output, with <code class="language-plaintext highlighter-rouge">departure</code> set to <code class="language-plaintext highlighter-rouge">nil</code> for the first event. Feed it the synthetic day at a 5-minute interval, and check that every stay produces exactly one open and one closed visit, and that no visit is reported for the commute.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/clvisit"><code class="language-plaintext highlighter-rouge">CLVisit</code></a>, <a href="https://developer.apple.com/documentation/corelocation/clvisit/arrivaldate"><code class="language-plaintext highlighter-rouge">arrivalDate</code></a>, and <a href="https://developer.apple.com/documentation/corelocation/clvisit/departuredate"><code class="language-plaintext highlighter-rouge">departureDate</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringvisits()"><code class="language-plaintext highlighter-rouge">startMonitoringVisits()</code></a> and <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()"><code class="language-plaintext highlighter-rouge">startMonitoringSignificantLocationChanges()</code></a></li>
+  <li>Quannan Li, Yu Zheng, Xing Xie, Yukun Chen, Wenyu Liu, and Wei-Ying Ma, “Mining User Similarity Based on Location History”, <em>Proceedings of the 16th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems</em>, 2008, <a href="https://doi.org/10.1145/1463434.1463477">doi:10.1145/1463434.1463477</a>, where stay-point detection was introduced</li>
+</ul>
+
+<p>Previous: <a href="/ios-region-monitoring-geofencing/">Region Monitoring and Geofencing</a></p>
+
+<p>Next: <a href="/ios-geocoding/">Geocoding, Reverse Geocoding, and Request Limits</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-visits-significant-location-changes/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Visits+and+Significant+Location+Changes%20https%3A%2F%2Fswiftbydeya.com%2Fios-visits-significant-location-changes%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-visits-significant-location-changes/&title=Visits+and+Significant+Location+Changes%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-visits-significant-location-changes/&title=Visits+and+Significant+Location+Changes%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-visits-significant-location-changes/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Visits and Significant Location Changes%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-visits-significant-location-changes/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Energy">Energy</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Geocoding, Reverse Geocoding, and Request Limits" href="/ios-geocoding/"> <p>Previous post</p> Geocoding, Reverse Geocoding, and Request Limits </a> </div> <div id="next-post"> <a alt="Region Monitoring and Geofencing" href="/ios-region-monitoring-geofencing/"> <p>Next post</p> Region Monitoring and Geofencing </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

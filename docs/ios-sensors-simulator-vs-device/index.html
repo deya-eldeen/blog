@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Device Testing vs. Simulator Capabilities | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Device Testing vs. Simulator Capabilities" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="The iOS simulator is the fastest place to run sensor code and the least faithful one. It has no accelerometer, no gyroscope, no magnetometer, and no barometer, so Core Motion has nothing to report. Its location comes from a script, not from satellites. The question for a sensor app isn’t whether to test on devices, because it has to. The question is which tests the simulator can carry, so devices are spent on what only devices can show. This article maps that boundary with measurements on an iPhone 17 simulator running iOS 27.0. It covers what each built-in location scenario actually delivers, how simctl location start moves between waypoints, which Core Location services run, and where the simulator departs from a phone. The most surprising result concerns long routes: between distant waypoints, the simulated path is neither a great circle nor a straight line on the map, so geodesy code tested against it is tested against the wrong curve. The article ends with a way to feed the simulator a route it follows exactly, and a checklist for the device." /> <meta property="og:description" content="The iOS simulator is the fastest place to run sensor code and the least faithful one. It has no accelerometer, no gyroscope, no magnetometer, and no barometer, so Core Motion has nothing to report. Its location comes from a script, not from satellites. The question for a sensor app isn’t whether to test on devices, because it has to. The question is which tests the simulator can carry, so devices are spent on what only devices can show. This article maps that boundary with measurements on an iPhone 17 simulator running iOS 27.0. It covers what each built-in location scenario actually delivers, how simctl location start moves between waypoints, which Core Location services run, and where the simulator departs from a phone. The most surprising result concerns long routes: between distant waypoints, the simulated path is neither a great circle nor a straight line on the map, so geodesy code tested against it is tested against the wrong curve. The article ends with a way to feed the simulator a route it follows exactly, and a checklist for the device." /> <link rel="canonical" href="https://swiftbydeya.com/ios-sensors-simulator-vs-device/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-sensors-simulator-vs-device/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-09T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Device Testing vs. Simulator Capabilities" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-09T00:00:00+03:00","datePublished":"2026-02-09T00:00:00+03:00","description":"The iOS simulator is the fastest place to run sensor code and the least faithful one. It has no accelerometer, no gyroscope, no magnetometer, and no barometer, so Core Motion has nothing to report. Its location comes from a script, not from satellites. The question for a sensor app isn’t whether to test on devices, because it has to. The question is which tests the simulator can carry, so devices are spent on what only devices can show. This article maps that boundary with measurements on an iPhone 17 simulator running iOS 27.0. It covers what each built-in location scenario actually delivers, how simctl location start moves between waypoints, which Core Location services run, and where the simulator departs from a phone. The most surprising result concerns long routes: between distant waypoints, the simulated path is neither a great circle nor a straight line on the map, so geodesy code tested against it is tested against the wrong curve. The article ends with a way to feed the simulator a route it follows exactly, and a checklist for the device.","headline":"Device Testing vs. Simulator Capabilities","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-sensors-simulator-vs-device/"},"url":"https://swiftbydeya.com/ios-sensors-simulator-vs-device/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Device Testing vs. Simulator Capabilities"> <meta name="twitter:description" content="The iOS simulator is the fastest place to run sensor code and the least faithful one. It has no accelerometer, no gyroscope, no magnetometer, and no baromete..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Device Testing vs. Simulator Capabilities"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Device Testing vs. Simulator Capabilities</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-09T00:00:00+03:00">February 9, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>The iOS simulator is the fastest place to run sensor code and the least faithful one. It has no accelerometer, no gyroscope, no magnetometer, and no barometer, so Core Motion has nothing to report. Its location comes from a script, not from satellites. The question for a sensor app isn’t whether to test on devices, because it has to. The question is which tests the simulator can carry, so devices are spent on what only devices can show.</p>
+
+<p>This article maps that boundary with measurements on an iPhone 17 simulator running iOS 27.0. It covers what each built-in location scenario actually delivers, how <code class="language-plaintext highlighter-rouge">simctl location start</code> moves between waypoints, which Core Location services run, and where the simulator departs from a phone. The most surprising result concerns long routes: between distant waypoints, the simulated path is neither a great circle nor a straight line on the map, so geodesy code tested against it is tested against the wrong curve. The article ends with a way to feed the simulator a route it follows exactly, and a checklist for the device.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. iOS code ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, and the shell commands ran on the Mac while the test waited. The plain Swift blocks also ran as a macOS command-line program on macOS 26.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+</code></pre></div></div>
+
+<h2 id="what-the-simulator-has">What the simulator has</h2>
+
+<p>The <a href="/ios-sensor-availability/">availability article</a> measured the simulator’s hardware flags. Together with the measurements below and in the other articles of this series, here is what an iOS 27.0 simulator provides:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Capability</th>
+      <th>Simulator</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Accelerometer, gyroscope, magnetometer, device motion</td>
+      <td>No</td>
+      <td>Start calls succeed and never deliver</td>
+    </tr>
+    <tr>
+      <td>Pedometer, activity, altimeter, headphone motion</td>
+      <td>No</td>
+      <td>Permission alert still appears; queries then fail with error 104</td>
+    </tr>
+    <tr>
+      <td>Heading</td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">headingAvailable()</code> is <code class="language-plaintext highlighter-rouge">false</code></td>
+    </tr>
+    <tr>
+      <td>Location updates</td>
+      <td>Yes, scripted</td>
+      <td><code class="language-plaintext highlighter-rouge">simctl location</code>, Xcode, or the Simulator’s Features menu</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates()</code></td>
+      <td>Yes</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Precise Location switch in Settings</td>
+      <td>Yes</td>
+      <td>But the permission alert has no precision control</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">NSLocationDefaultAccuracyReduced</code></td>
+      <td>Ignored</td>
+      <td><a href="/ios-location-permission-changes/#the-app-can-choose-to-blur">Measured</a></td>
+    </tr>
+    <tr>
+      <td>Significant location changes</td>
+      <td>Yes, but too often</td>
+      <td>Measured below</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CLMonitor</code> circular conditions</td>
+      <td>No</td>
+      <td>Event reports <code class="language-plaintext highlighter-rouge">conditionUnsupported</code></td>
+    </tr>
+    <tr>
+      <td>Legacy region monitoring</td>
+      <td>No</td>
+      <td>Fails with <code class="language-plaintext highlighter-rouge">regionMonitoringFailure</code></td>
+    </tr>
+    <tr>
+      <td>Visits</td>
+      <td>Nothing delivered</td>
+      <td>Measured below</td>
+    </tr>
+    <tr>
+      <td>Geocoding</td>
+      <td>Yes</td>
+      <td>Uses the network</td>
+    </tr>
+    <tr>
+      <td>Permission alerts and Settings</td>
+      <td>Yes</td>
+      <td>Real system UI, scriptable from a UI test</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The simulator is good at three things: running the permission and lifecycle code, playing scripted location tracks, and running everything that doesn’t touch hardware. That last group is bigger than it looks. Filters, fusion math, step detection, and geofence logic are all pure functions of samples, and they run anywhere once the samples are injected. The <a href="/ios-sensor-recorded-data-tests/">testing article</a> is built on that idea.</p>
+
+<h2 id="the-built-in-location-scenarios">The built-in location scenarios</h2>
+
+<p><code class="language-plaintext highlighter-rouge">xcrun simctl location booted list</code> names four built-in scenarios: City Run, City Bicycle Ride, Freeway Drive, and Apple. The same four appear in the Simulator app’s Features &gt; Location menu. The test grants location access and records about 12 seconds of each scenario:</p>
+
+<!-- sim-setup -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl privacy booted grant location-always dev.swiftbydeya.Host
+xcrun simctl location booted <span class="nb">set </span>51.5007,-0.1246
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">FixLog</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">manager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">fixes</span><span class="p">:</span> <span class="p">[(</span><span class="nv">received</span><span class="p">:</span> <span class="kt">Date</span><span class="p">,</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">override</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">()</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="k">self</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span> <span class="n">fixes</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="kt">Date</span><span class="p">(),</span> <span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Fixes received more than half a second after `start`, which skips any still in flight from before.</span>
+    <span class="kd">func</span> <span class="nf">locations</span><span class="p">(</span><span class="n">since</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">fixes</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">received</span> <span class="o">&gt;</span> <span class="n">start</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">location</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ScenarioSummary</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">fixes</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">meanInterval</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">accuracies</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">speeds</span><span class="p">:</span> <span class="kt">ClosedRange</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">invalidCourses</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">speedAccuracies</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">simulated</span><span class="p">:</span> <span class="kt">Bool</span>
+    <span class="k">let</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+        <span class="n">fixes</span> <span class="o">=</span> <span class="n">locations</span><span class="o">.</span><span class="n">count</span>
+        <span class="k">let</span> <span class="nv">times</span> <span class="o">=</span> <span class="n">locations</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">timeIntervalSinceReferenceDate</span><span class="p">)</span>
+        <span class="n">meanInterval</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">last</span><span class="o">!</span> <span class="o">-</span> <span class="n">times</span><span class="o">.</span><span class="n">first</span><span class="o">!</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="nf">max</span><span class="p">(</span><span class="n">times</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">accuracies</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">locations</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)))</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">validSpeeds</span> <span class="o">=</span> <span class="n">locations</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">}</span>
+        <span class="n">speeds</span> <span class="o">=</span> <span class="p">(</span><span class="n">validSpeeds</span><span class="o">.</span><span class="nf">min</span><span class="p">()</span> <span class="p">??</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">...</span><span class="p">(</span><span class="n">validSpeeds</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span> <span class="p">??</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">invalidCourses</span> <span class="o">=</span> <span class="n">locations</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">course</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span>
+        <span class="n">speedAccuracies</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">locations</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">speedAccuracy</span><span class="p">)))</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
+        <span class="n">simulated</span> <span class="o">=</span> <span class="n">locations</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">sourceInformation</span><span class="p">?</span><span class="o">.</span><span class="n">isSimulatedBySoftware</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">locations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coordinate</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%d fixes, every %.2f s, accuracy %@ m, speed %.1f–%.1f m/s, %d invalid courses, speed accuracy %@, simulated %@, from %.4f, %.4f"</span><span class="p">,</span>
+               <span class="n">fixes</span><span class="p">,</span> <span class="n">meanInterval</span><span class="p">,</span> <span class="n">accuracies</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.0f"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"/"</span><span class="p">),</span>
+               <span class="n">speeds</span><span class="o">.</span><span class="n">lowerBound</span><span class="p">,</span> <span class="n">speeds</span><span class="o">.</span><span class="n">upperBound</span><span class="p">,</span> <span class="n">invalidCourses</span><span class="p">,</span>
+               <span class="n">speedAccuracies</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.0f"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"/"</span><span class="p">),</span> <span class="n">simulated</span> <span class="p">?</span> <span class="s">"yes"</span> <span class="p">:</span> <span class="s">"no"</span><span class="p">,</span>
+               <span class="n">start</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="n">start</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">FixLog</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">startUpdatingLocation</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted run <span class="s2">"City Run"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">cityRun</span> <span class="o">=</span> <span class="kt">ScenarioSummary</span><span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"City Run:"</span><span class="p">,</span> <span class="n">cityRun</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted run <span class="s2">"City Bicycle Ride"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">bicycle</span> <span class="o">=</span> <span class="kt">ScenarioSummary</span><span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"City Bicycle Ride:"</span><span class="p">,</span> <span class="n">bicycle</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted run <span class="s2">"Freeway Drive"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">freeway</span> <span class="o">=</span> <span class="kt">ScenarioSummary</span><span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Freeway Drive:"</span><span class="p">,</span> <span class="n">freeway</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted run <span class="s2">"Apple"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">applePark</span> <span class="o">=</span> <span class="kt">ScenarioSummary</span><span class="p">(</span><span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Apple:"</span><span class="p">,</span> <span class="n">applePark</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">appleAccuracies</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">)</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Apple accuracies in order:"</span><span class="p">,</span> <span class="n">appleAccuracies</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">summary</span> <span class="k">in</span> <span class="p">[</span><span class="n">cityRun</span><span class="p">,</span> <span class="n">bicycle</span><span class="p">,</span> <span class="n">freeway</span><span class="p">,</span> <span class="n">applePark</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">simulated</span> <span class="o">&amp;&amp;</span> <span class="n">summary</span><span class="o">.</span><span class="n">fixes</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">latitude</span> <span class="o">-</span> <span class="mf">37.33</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">longitude</span> <span class="o">+</span> <span class="mf">122.03</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s">"all four start in Cupertino"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">applePark</span><span class="o">.</span><span class="n">speeds</span><span class="o">.</span><span class="n">upperBound</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"the Apple scenario stands still"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">appleAccuracies</span> <span class="o">==</span> <span class="n">appleAccuracies</span><span class="o">.</span><span class="nf">sorted</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">&gt;</span><span class="p">),</span> <span class="s">"and its accuracy only improves"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Each scenario starts in Cupertino, near Apple Park, wherever the device was before:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Fixes per second</th>
+      <th><code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> (m)</th>
+      <th>Speed (m/s)</th>
+      <th>Course</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>City Run</td>
+      <td>1</td>
+      <td>10 or 30</td>
+      <td>3.5 to 4.2</td>
+      <td>Valid except the first fix</td>
+    </tr>
+    <tr>
+      <td>City Bicycle Ride</td>
+      <td>1</td>
+      <td>30 or 50</td>
+      <td>1.0 to 4.1</td>
+      <td>Often −1</td>
+    </tr>
+    <tr>
+      <td>Freeway Drive</td>
+      <td>1</td>
+      <td>5</td>
+      <td>1.9 to 10.8 (accelerating)</td>
+      <td>Always valid</td>
+    </tr>
+    <tr>
+      <td>Apple</td>
+      <td>about 0.5</td>
+      <td>65, then 50, then 30</td>
+      <td>−1, then 0</td>
+      <td>Always −1</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The scenarios differ in the ways that matter to filtering code. City Run and the bicycle ride switch between two accuracy values, which is enough to exercise an accuracy filter, but not the gradual swings of a real GPS receiver. Freeway Drive, despite its name, spent the first 12 seconds accelerating from 1.9 to 10.8 m/s, so a short test sees a car pulling out of a parking lot, not highway speed. The Apple scenario stands still at Apple Park, and its accuracy only improves: 65 m, then 50 m, then 30 m. That’s a useful stand-in for a cold start, the moment a feature has to decide whether a fix is good enough yet. In one exploratory run it also began with a 500 m fix.</p>
+
+<p>Two details don’t match a real device. Every fix had <code class="language-plaintext highlighter-rouge">verticalAccuracy</code> −1 and <code class="language-plaintext highlighter-rouge">altitude</code> 0, so altitude code gets nothing to test. And the scenarios reported <code class="language-plaintext highlighter-rouge">speedAccuracy</code> as 0, claiming a perfectly known speed, while the custom routes below report −1, “unknown”. A filter that weights speed by its accuracy divides by zero on scenario data. The <a href="/ios-sensor-missing-data/">missing data article</a> is about telling these values apart.</p>
+
+<h2 id="custom-routes-with-simctl-location-start">Custom routes with <code class="language-plaintext highlighter-rouge">simctl location start</code></h2>
+
+<p>For a route of your own, <code class="language-plaintext highlighter-rouge">simctl location start</code> takes waypoints and interpolates between them. Its help text describes two ways to pace the updates: <code class="language-plaintext highlighter-rouge">--interval</code> issues “updates at fixed times without regard for how much the location moves between updates”, and <code class="language-plaintext highlighter-rouge">--distance</code> issues “an update every <meters> travelled without regard for the time between updates." The default is 20 m/s with an update every second. The test runs one route each way, both heading due east from Westminster Bridge:</meters></p>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>10 <span class="nt">--interval</span><span class="o">=</span>1 51.5007,-0.1246 51.5007,-0.1100
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Distances and times between consecutive fixes.</span>
+<span class="kd">func</span> <span class="nf">steps</span><span class="p">(</span><span class="n">_</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">meters</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="nv">seconds</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">pairs</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">locations</span><span class="p">,</span> <span class="n">locations</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$1</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">},</span> <span class="n">pairs</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$1</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span> <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">15</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">timed</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">timedSteps</span> <span class="o">=</span> <span class="nf">steps</span><span class="p">(</span><span class="n">timed</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"interval route:"</span><span class="p">,</span> <span class="n">timed</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"fixes, steps"</span><span class="p">,</span> <span class="n">timedSteps</span><span class="o">.</span><span class="n">meters</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">" "</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">timed</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speed</span> <span class="o">==</span> <span class="mi">10</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">course</span> <span class="o">==</span> <span class="mi">90</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">==</span> <span class="mi">5</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">timed</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speedAccuracy</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">courseAccuracy</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">timedSteps</span><span class="o">.</span><span class="n">meters</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">timedSteps</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.1</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>25 <span class="nt">--distance</span><span class="o">=</span>50 51.5007,-0.1246 51.5007,-0.1100
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">15</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">spaced</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">spacedSteps</span> <span class="o">=</span> <span class="nf">steps</span><span class="p">(</span><span class="n">spaced</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"distance route:"</span><span class="p">,</span> <span class="n">spaced</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"fixes, steps"</span><span class="p">,</span> <span class="n">spacedSteps</span><span class="o">.</span><span class="n">meters</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">" "</span><span class="p">),</span>
+      <span class="s">"times"</span><span class="p">,</span> <span class="n">spacedSteps</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.2f"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">" "</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">spacedSteps</span><span class="o">.</span><span class="n">meters</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="mi">50</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">spacedSteps</span><span class="o">.</span><span class="n">seconds</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.2</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<p>Both modes do what the help text says. With <code class="language-plaintext highlighter-rouge">--interval=1</code>, fixes came every 1.00 s, 10.0 to 10.1 m apart, measured with <code class="language-plaintext highlighter-rouge">CLLocation.distance(from:)</code>, at exactly the requested 10 m/s, with a course of exactly 90°, due east. With <code class="language-plaintext highlighter-rouge">--distance=50</code> at 25 m/s, the fixes were 50.0 to 50.3 m apart and 2.0 s apart, which is the same arithmetic the other way round. Every fix had a <code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> of 5 m and <code class="language-plaintext highlighter-rouge">speedAccuracy</code> and <code class="language-plaintext highlighter-rouge">courseAccuracy</code> of −1. The interpolation isn’t perfectly even: the extra 0 to 1% per step is consistent across runs, small enough to ignore for most tests, and too large for a test that asserts exact distances.</p>
+
+<p>The arithmetic makes routes predictable. A route of length $D$ at speed $v$ with interval $\Delta t$ produces about</p>
+
+\[N \approx \frac{D}{v\,\Delta t} + 1\]
+
+<p>fixes, and with <code class="language-plaintext highlighter-rouge">--distance=d</code> it produces about $D/d + 1$ fixes, $d/v$ seconds apart. A test can choose $v$ and $\Delta t$ to compress a 10 km run into 20 seconds, by setting $v = 500$ m/s, and still check that the app’s distance comes out at 10 km.</p>
+
+<h3 id="long-routes-dont-follow-a-great-circle">Long routes don’t follow a great circle</h3>
+
+<p>The help text’s own example is a “direct line between San Francisco and New York City.” On a sphere there are at least three candidates for what that means:</p>
+
+<ul>
+  <li><strong>The great circle</strong>, the shortest path, which curves north across the continent.</li>
+  <li><strong>The rhumb line</strong>, which keeps one compass bearing and is straight on a Mercator map.</li>
+  <li><strong>The straight line on a latitude-longitude chart</strong>, where latitude changes in proportion to longitude.</li>
+</ul>
+
+<p>Geodesy code that computes distances or headings along a route assumes one of these. So the test runs the help text’s route quickly, with a fix every 200 km at 100 km/s:</p>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>100000 <span class="nt">--distance</span><span class="o">=</span>200000 37.629538,-122.395733 40.628083,-73.768254
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">crossing</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"long route:"</span><span class="p">,</span> <span class="n">crossing</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.4f,%.4f"</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">" "</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>To compare that path with the alternatives, the next block computes the latitude each candidate curve has at a given longitude. These are plain Swift functions on a sphere:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Latitude of the great circle through `a` and `b` where it crosses `longitude`. Degrees in and out.</span>
+<span class="kd">func</span> <span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="n">at</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">from</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">to</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">degree</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">p1</span><span class="p">,</span> <span class="nv">l1</span><span class="p">,</span> <span class="nv">p2</span><span class="p">,</span> <span class="nv">l2</span><span class="p">,</span> <span class="nv">l</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">longitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nf">atan</span><span class="p">((</span><span class="nf">tan</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">l2</span> <span class="o">-</span> <span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nf">tan</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">l</span> <span class="o">-</span> <span class="n">l1</span><span class="p">))</span> <span class="o">/</span> <span class="nf">sin</span><span class="p">(</span><span class="n">l2</span> <span class="o">-</span> <span class="n">l1</span><span class="p">))</span> <span class="o">/</span> <span class="n">degree</span>
+<span class="p">}</span>
+
+<span class="c1">/// Latitude of the straight line between `a` and `b` on a latitude-longitude chart.</span>
+<span class="kd">func</span> <span class="nf">chartLineLatitude</span><span class="p">(</span><span class="n">at</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">from</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">to</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">latitude</span> <span class="o">+</span> <span class="p">(</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">latitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Latitude of the rhumb line (constant compass bearing), which is straight on a Mercator chart.</span>
+<span class="kd">func</span> <span class="nf">rhumbLatitude</span><span class="p">(</span><span class="n">at</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">from</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">to</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">degree</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="kd">func</span> <span class="nf">mercator</span><span class="p">(</span><span class="n">_</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="nf">log</span><span class="p">(</span><span class="nf">tan</span><span class="p">(</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">+</span> <span class="n">latitude</span> <span class="o">*</span> <span class="n">degree</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">fraction</span> <span class="o">=</span> <span class="p">(</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="nf">mercator</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span> <span class="o">+</span> <span class="n">fraction</span> <span class="o">*</span> <span class="p">(</span><span class="nf">mercator</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">latitude</span><span class="p">)</span> <span class="o">-</span> <span class="nf">mercator</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">latitude</span><span class="p">))</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nf">atan</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="o">-</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">degree</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sanFrancisco</span> <span class="o">=</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">37.629538</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.395733</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">newYork</span> <span class="o">=</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">40.628083</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">73.768254</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">middle</span> <span class="o">=</span> <span class="o">-</span><span class="mf">98.0</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"at 98°W: great circle"</span><span class="p">,</span> <span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">middle</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">),</span>
+      <span class="s">"chart line"</span><span class="p">,</span> <span class="nf">chartLineLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">middle</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">),</span>
+      <span class="s">"rhumb"</span><span class="p">,</span> <span class="nf">rhumbLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">middle</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">middle</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">41.5</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">worst</span> <span class="o">=</span> <span class="p">(</span><span class="nv">greatCircle</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">chartLine</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">rhumb</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">crossing</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">lat</span><span class="p">,</span> <span class="nv">lon</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">location</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+    <span class="n">worst</span><span class="o">.</span><span class="n">greatCircle</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">worst</span><span class="o">.</span><span class="n">greatCircle</span><span class="p">,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">lat</span> <span class="o">-</span> <span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">lon</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">)))</span>
+    <span class="n">worst</span><span class="o">.</span><span class="n">chartLine</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">worst</span><span class="o">.</span><span class="n">chartLine</span><span class="p">,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">lat</span> <span class="o">-</span> <span class="nf">chartLineLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">lon</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">)))</span>
+    <span class="n">worst</span><span class="o">.</span><span class="n">rhumb</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">worst</span><span class="o">.</span><span class="n">rhumb</span><span class="p">,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">lat</span> <span class="o">-</span> <span class="nf">rhumbLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">lon</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"largest latitude gaps:"</span><span class="p">,</span> <span class="n">worst</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">worst</span><span class="o">.</span><span class="n">greatCircle</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">worst</span><span class="o">.</span><span class="n">chartLine</span> <span class="o">&gt;</span> <span class="mf">0.2</span> <span class="o">&amp;&amp;</span> <span class="n">worst</span><span class="o">.</span><span class="n">rhumb</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The simulator’s path matched none of them. At 98°W, the great circle is at 41.79°N, the chart line at 39.13°N, and the rhumb line at 39.15°N, and the simulator’s path, interpolating between its fixes, was at about 38.9°N. It bowed <em>south</em> of both the chart line and the rhumb line, by up to 0.28° and 0.29° of latitude, about 31 km, and it was 2.9° away from the great circle, about 320 km. The reported course started at 86.5° and turned slowly north toward the end, so the path isn’t a constant-bearing curve either. I tested two guesses at the rule, stepping along a bearing recomputed toward the destination with and without the cos(latitude) correction. Neither reproduced the points to better than 0.2°, so the algorithm remains undocumented.</p>
+
+<p>For the short routes most tests use, none of this matters. The gap between a great circle and a straight east-west line along a parallel at latitude $\varphi$ peaks in the middle of the route. For a route of length $d$ on a sphere of radius $R$, it is about</p>
+
+\[s \approx \frac{d^2 \tan\varphi}{8R} .\]
+
+<p>At London’s latitude that’s 2.5 m for a 10 km route, comparable to the simulator’s own interpolation error. It’s 250 m for a 100 km route, and kilometers across a continent. So any test that crosses more than a city, and any test of the great-circle math itself, needs a route the simulator follows exactly.</p>
+
+<h3 id="feeding-the-simulator-a-route-it-can-follow">Feeding the simulator a route it can follow</h3>
+
+<p>The fix is to compute the curve yourself and give the simulator waypoints close enough together that its interpolation between them can’t wander. Spherical linear interpolation, <em>slerp</em>, gives evenly spaced points along a great circle. Treat the two endpoints as unit vectors $\mathbf{u}$ and $\mathbf{v}$ separated by the angle $\Omega$, and the point a fraction $t$ of the way along is</p>
+
+\[\mathbf{w}(t) = \frac{\sin\big((1-t)\,\Omega\big)}{\sin\Omega}\,\mathbf{u} + \frac{\sin(t\,\Omega)}{\sin\Omega}\,\mathbf{v} .\]
+
+<p><code class="language-plaintext highlighter-rouge">simctl location start</code> reads waypoints from standard input when the waypoint argument is <code class="language-plaintext highlighter-rouge">-</code>, one <code class="language-plaintext highlighter-rouge">lat,lon</code> pair per line:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Points spaced evenly along the great circle from `a` to `b`, by spherical linear interpolation.</span>
+<span class="kd">func</span> <span class="nf">greatCircleWaypoints</span><span class="p">(</span><span class="n">from</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">to</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CLLocationCoordinate2D</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">degree</span> <span class="o">=</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="kd">func</span> <span class="nf">vector</span><span class="p">(</span><span class="n">_</span> <span class="nv">c</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">p</span><span class="p">,</span> <span class="nv">l</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">longitude</span> <span class="o">*</span> <span class="n">degree</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="nf">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nf">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nf">sin</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">u</span><span class="p">,</span> <span class="nv">v</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nf">vector</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nf">vector</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">angle</span> <span class="o">=</span> <span class="nf">acos</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nf">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">u</span> <span class="o">*</span> <span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="nf">sum</span><span class="p">())))</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">w</span> <span class="o">=</span> <span class="p">(</span><span class="nf">sin</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="n">angle</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="nf">sin</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">angle</span><span class="p">)</span> <span class="o">*</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="nf">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="nf">asin</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">z</span><span class="p">)</span> <span class="o">/</span> <span class="n">degree</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="nf">atan2</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">degree</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// The text `simctl location start -` reads from standard input: one "lat,lon" per line.</span>
+<span class="kd">func</span> <span class="nf">simctlWaypoints</span><span class="p">(</span><span class="n">_</span> <span class="nv">points</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocationCoordinate2D</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="n">points</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.6f,%.6f"</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span> <span class="o">+</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">dense</span> <span class="o">=</span> <span class="nf">greatCircleWaypoints</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">201</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">spacing</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">dense</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span>
+    <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="nv">$1</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="nv">$1</span><span class="o">.</span><span class="n">longitude</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"dense waypoints:"</span><span class="p">,</span> <span class="n">dense</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"spacing"</span><span class="p">,</span> <span class="n">spacing</span><span class="o">.</span><span class="nf">min</span><span class="p">()</span><span class="o">!</span><span class="p">,</span> <span class="s">"to"</span><span class="p">,</span> <span class="n">spacing</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">dense</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">latitude</span> <span class="o">-</span> <span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-9</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">routeFile</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"route.txt"</span><span class="p">)</span>
+<span class="k">try</span> <span class="nf">simctlWaypoints</span><span class="p">(</span><span class="n">dense</span><span class="p">)</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">routeFile</span><span class="p">,</span> <span class="nv">atomically</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nv">encoding</span><span class="p">:</span> <span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>100000 <span class="nt">--distance</span><span class="o">=</span>200000 - <span class="se">\</span>
+  &lt; <span class="s2">"</span><span class="si">$(</span>xcrun simctl get_app_container booted dev.swiftbydeya.Host data<span class="si">)</span><span class="s2">/tmp/route.txt"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scenarioStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">followed</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="nf">locations</span><span class="p">(</span><span class="nv">since</span><span class="p">:</span> <span class="n">scenarioStart</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">densified</span> <span class="o">=</span> <span class="n">followed</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span> <span class="o">-</span> <span class="nf">greatCircleLatitude</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">sanFrancisco</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">newYork</span><span class="p">))</span> <span class="p">}</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"densified route:"</span><span class="p">,</span> <span class="n">followed</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"fixes, largest gap from the great circle"</span><span class="p">,</span> <span class="n">densified</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">densified</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The 201 waypoints were 20.81 to 20.83 km apart. They’re equal on the sphere, and the small spread is the WGS 84 ellipsoid that <code class="language-plaintext highlighter-rouge">CLLocation.distance(from:)</code> measures on. The simulator followed them closely: its largest gap from the true great circle was 0.00000056° of latitude, about 6 cm. The same technique gives a rhumb line, a road, or a recorded track: compute the curve in Swift, write it out, and let the simulator interpolate only between points a few hundred meters apart.</p>
+
+<h2 id="other-services">Other services</h2>
+
+<p>Beyond plain updates, the simulator runs some location services and quietly drops others. The test starts significant-change monitoring, visit monitoring, and a <code class="language-plaintext highlighter-rouge">CLMonitor</code> with a 200 m circle on the route, then drives through the circle at 50 m/s:</p>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted <span class="nb">set </span>51.5007,-0.1246
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ServiceLog</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">manager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">changes</span><span class="p">:</span> <span class="p">[(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">visits</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLVisit</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">override</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">()</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="k">self</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span> <span class="n">changes</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="kt">Date</span><span class="p">()</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didVisit</span> <span class="nv">visit</span><span class="p">:</span> <span class="kt">CLVisit</span><span class="p">)</span> <span class="p">{</span> <span class="n">visits</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">visit</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopUpdatingLocation</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">significant</span> <span class="o">=</span> <span class="kt">ServiceLog</span><span class="p">()</span>
+<span class="n">significant</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">startMonitoringSignificantLocationChanges</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">visitLog</span> <span class="o">=</span> <span class="kt">ServiceLog</span><span class="p">()</span>
+<span class="n">visitLog</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">startMonitoringVisits</span><span class="p">()</span>
+
+<span class="k">let</span> <span class="nv">monitor</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">CLMonitor</span><span class="p">(</span><span class="s">"SimulatorProbe"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="kt">CLMonitor</span><span class="o">.</span><span class="kt">CircularGeographicCondition</span><span class="p">(</span>
+    <span class="nv">center</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1046</span><span class="p">),</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">200</span><span class="p">),</span> <span class="nv">identifier</span><span class="p">:</span> <span class="s">"fence"</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">monitorEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLMonitor</span><span class="o">.</span><span class="kt">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">watchMonitor</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">event</span> <span class="k">in</span> <span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="n">events</span> <span class="p">{</span> <span class="n">monitorEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">significantBefore</span> <span class="o">=</span> <span class="n">significant</span><span class="o">.</span><span class="n">changes</span><span class="o">.</span><span class="n">count</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>50 <span class="nt">--interval</span><span class="o">=</span>1 51.5007,-0.1246 51.5007,-0.0646
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">moved</span> <span class="o">=</span> <span class="n">significant</span><span class="o">.</span><span class="n">changes</span><span class="p">[</span><span class="n">significantBefore</span><span class="o">...</span><span class="p">]</span>
+<span class="k">let</span> <span class="nv">gaps</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">moved</span><span class="p">,</span> <span class="n">moved</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="nv">$1</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">meters</span><span class="p">:</span> <span class="nv">$1</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"significant changes:"</span><span class="p">,</span> <span class="n">moved</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">gaps</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"visits:"</span><span class="p">,</span> <span class="n">visitLog</span><span class="o">.</span><span class="n">visits</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"monitor:"</span><span class="p">,</span> <span class="n">monitorEvents</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">identifier</span><span class="se">)</span><span class="s"> state </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s"> unsupported </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">conditionUnsupported</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">moved</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">gaps</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&lt;</span> <span class="mi">300</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">visitLog</span><span class="o">.</span><span class="n">visits</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">monitorEvents</span><span class="o">.</span><span class="n">first</span><span class="p">?</span><span class="o">.</span><span class="n">conditionUnsupported</span> <span class="o">==</span> <span class="kc">true</span> <span class="o">&amp;&amp;</span> <span class="n">monitorEvents</span><span class="o">.</span><span class="n">first</span><span class="p">?</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="o">.</span><span class="n">unmonitored</span><span class="p">)</span>
+<span class="n">watchMonitor</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="s">"fence"</span><span class="p">)</span>
+<span class="n">significant</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopMonitoringSignificantLocationChanges</span><span class="p">()</span>
+<span class="n">visitLog</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopMonitoringVisits</span><span class="p">()</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>What happened in 80 s at 50 m/s</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Significant location changes</td>
+      <td>An initial fix, then one every 30.1 s and about 1,505 m</td>
+    </tr>
+    <tr>
+      <td>Visits</td>
+      <td>Nothing</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CLMonitor</code> circular condition</td>
+      <td>One event: state <code class="language-plaintext highlighter-rouge">.unmonitored</code>, <code class="language-plaintext highlighter-rouge">conditionUnsupported == true</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Significant changes worked, but not the way they work on a phone. Apple’s documentation says apps “can expect a notification as soon as the device moves 500 meters or more from its previous notification” and “should not expect notifications more frequently than once every five minutes.” The simulator delivered one every 30 seconds. A test that passes in the simulator because a significant change arrived quickly says nothing about the five-minute reality, and code that assumes frequent significant changes will work in the simulator and fail outdoors.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLMonitor</code> reported its circular condition as unsupported instead of failing silently, which matches <code class="language-plaintext highlighter-rouge">isMonitoringAvailable(for:)</code> returning <code class="language-plaintext highlighter-rouge">false</code> in the <a href="/ios-sensor-availability/">availability article</a>. No geofence entry or exit can be tested end to end in the simulator. The geofence <em>logic</em>, deciding entry from a stream of fixes, can be, and the <a href="/ios-region-monitoring-geofencing/">geofencing article</a> tests it that way. Visits need minutes of dwell and the system’s own classification, and none arrived.</p>
+
+<h2 id="knowing-where-you-run">Knowing where you run</h2>
+
+<p>Code sometimes needs to know whether it’s running in the simulator. Most of the time the answer belongs in the build, not at runtime:</p>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#if targetEnvironment(simulator)</span>
+<span class="k">let</span> <span class="nv">motionStrategy</span> <span class="o">=</span> <span class="s">"replay recorded samples"</span>
+<span class="cp">#else</span>
+<span class="k">let</span> <span class="nv">motionStrategy</span> <span class="o">=</span> <span class="s">"live Core Motion"</span>
+<span class="cp">#endif</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">motionStrategy</span> <span class="o">==</span> <span class="s">"replay recorded samples"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A compile-time switch is the right tool for wiring a replay source into debug builds that run in the simulator. It’s the wrong tool for deciding whether a location can be trusted. For that, each fix carries <code class="language-plaintext highlighter-rouge">sourceInformation</code>. <code class="language-plaintext highlighter-rouge">isSimulatedBySoftware</code> was <code class="language-plaintext highlighter-rouge">true</code> for every simulated fix above, and Apple’s documentation adds that it’s also <code class="language-plaintext highlighter-rouge">true</code> on a device when the location comes from a GPX file loaded in the Xcode debugger. Its sibling, <code class="language-plaintext highlighter-rouge">isProducedByAccessory</code>, marks fixes that came from an external accessory rather than the device’s own receivers. A fitness app that awards badges for distance can use these flags to refuse simulated runs. A navigation app should usually just accept them, since a developer testing a route on a device is a legitimate user too.</p>
+
+<p>Xcode offers two more ways to simulate location, both documented in <a href="https://developer.apple.com/documentation/xcode/simulating-location-in-tests">Simulating location in tests</a>. A test plan’s configuration can set a simulated location or a GPX file for a test run. Apple’s documentation notes a limit: the setting applies “only for code running in the test bundle”, so a UI test’s app process doesn’t see it. And a GPX file attached to a scheme replays a recorded journey, “updating the simulated location, elevation, and velocity”, which is the one route source that supplies altitude.</p>
+
+<h2 id="what-needs-a-device">What needs a device</h2>
+
+<p>Everything the simulator can’t show has to be tested on hardware, and it helps to list it explicitly so a release isn’t signed off on simulator runs:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Why the simulator can’t show it</th>
+      <th>What to check on a device</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Core Motion</td>
+      <td>No sensors</td>
+      <td>Sample rates, noise, the <a href="/ios-sensor-availability/#a-deadline-for-the-first-sample">first-sample deadline</a>, handler threads</td>
+    </tr>
+    <tr>
+      <td>Heading</td>
+      <td>No magnetometer</td>
+      <td>Calibration prompts, interference near metal and magnets</td>
+    </tr>
+    <tr>
+      <td>GPS behavior</td>
+      <td>Fixes are scripted and arrive on time</td>
+      <td>Cold start, accuracy that improves slowly, urban canyons, tunnels, indoors</td>
+    </tr>
+    <tr>
+      <td>Reduced accuracy</td>
+      <td>Alert has no precision control, Info.plist default ignored</td>
+      <td>The alert with its map, <code class="language-plaintext highlighter-rouge">NSLocationDefaultAccuracyReduced</code></td>
+    </tr>
+    <tr>
+      <td>Significant changes</td>
+      <td>Delivered every 30 s</td>
+      <td>Real cadence, and relaunch after termination</td>
+    </tr>
+    <tr>
+      <td>Region monitoring and <code class="language-plaintext highlighter-rouge">CLMonitor</code></td>
+      <td>Unsupported</td>
+      <td>Entry and exit latency, the limit on monitored regions</td>
+    </tr>
+    <tr>
+      <td>Visits</td>
+      <td>Never delivered</td>
+      <td>Arrival and departure times</td>
+    </tr>
+    <tr>
+      <td>Background behavior</td>
+      <td>Simulated route freezes in the background</td>
+      <td>Updates with the screen off, the location indicator</td>
+    </tr>
+    <tr>
+      <td>Energy</td>
+      <td>No battery</td>
+      <td>Instruments and MetricKit on hardware</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Hardware variety matters too. An iPhone, a Wi-Fi-only iPad without GPS, and a Mac running the iPad app give three different location stories, and the <a href="/ios-sensor-availability/#the-availability-apis">availability flags</a> differ across them.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>The iOS 27.0 simulator has no motion sensors, no compass, no barometer, no region monitoring, and no visits. It does have scripted location, <code class="language-plaintext highlighter-rouge">liveUpdates()</code>, significant changes, permission UI, and Settings.</li>
+  <li>The four built-in scenarios all start in Cupertino. City Run and the bicycle ride alternate between two accuracy values. Freeway Drive accelerates for its first seconds. Apple stands still while its accuracy improves from 65 m to 30 m. All of them report altitude 0 and <code class="language-plaintext highlighter-rouge">speedAccuracy</code> 0.</li>
+  <li><code class="language-plaintext highlighter-rouge">simctl location start</code> paces fixes by time (<code class="language-plaintext highlighter-rouge">--interval</code>) or distance (<code class="language-plaintext highlighter-rouge">--distance</code>), with steps 0 to 1% longer than requested, so a route’s fix count is predictable.</li>
+  <li>Between distant waypoints, the simulated path follows neither the great circle, the rhumb line, nor the straight chart line. It was 2.9° from the great circle across the US. Densify long routes yourself with slerp and pass them on standard input, which cut the error to 6 cm.</li>
+  <li>Significant changes arrived every 30 s in the simulator, against a documented minimum of five minutes on devices. <code class="language-plaintext highlighter-rouge">CLMonitor</code> reported its condition as unsupported.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">#if targetEnvironment(simulator)</code> to wire in replay sources, and <code class="language-plaintext highlighter-rouge">sourceInformation</code> to judge individual fixes.</li>
+  <li>Keep a written list of what needs a device: motion, heading, real GPS behavior, reduced-accuracy UI, region monitoring, visits, background behavior, and energy.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a function that turns a recorded track, an array of <code class="language-plaintext highlighter-rouge">CLLocation</code> with timestamps, into the simplest <code class="language-plaintext highlighter-rouge">simctl location start</code> command that replays it faithfully. Choose <code class="language-plaintext highlighter-rouge">--speed</code> from the median speed, and drop waypoints with a Douglas-Peucker simplification so that no dropped point is more than 5 m from the simplified path. Measure how many waypoints a 30-minute run needs at 5 m tolerance, then replay it in the simulator and check the largest gap between the replayed fixes and the original track.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/xcode/simulating-location-in-tests">Simulating location in tests</a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationsourceinformation"><code class="language-plaintext highlighter-rouge">CLLocationSourceInformation</code></a>, with <code class="language-plaintext highlighter-rouge">isSimulatedBySoftware</code> and <code class="language-plaintext highlighter-rouge">isProducedByAccessory</code></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()"><code class="language-plaintext highlighter-rouge">startMonitoringSignificantLocationChanges()</code></a></li>
+</ul>
+
+<p>Previous: <a href="/ios-location-permission-changes/">Handling Permission Changes and Reduced Accuracy</a></p>
+
+<p>Next: <a href="/ios-accelerometer-gyroscope/">Accelerometer and Gyroscope Measurements</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-sensors-simulator-vs-device/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Device+Testing+vs.+Simulator+Capabilities%20https%3A%2F%2Fswiftbydeya.com%2Fios-sensors-simulator-vs-device%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-sensors-simulator-vs-device/&title=Device+Testing+vs.+Simulator+Capabilities%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-sensors-simulator-vs-device/&title=Device+Testing+vs.+Simulator+Capabilities%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-sensors-simulator-vs-device/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Device Testing vs. Simulator Capabilities%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-sensors-simulator-vs-device/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+    <li><a href="/tag/#Xcode">Xcode</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Accelerometer and Gyroscope Measurements" href="/ios-accelerometer-gyroscope/"> <p>Previous post</p> Accelerometer and Gyroscope Measurements </a> </div> <div id="next-post"> <a alt="Handling Permission Changes and Reduced Accuracy" href="/ios-location-permission-changes/"> <p>Next post</p> Handling Permission Changes and Reduced Accuracy </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Location Updates and Accuracy Requirements | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Location Updates and Accuracy Requirements" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A CLLocation looks like an answer and is really a claim: “the device is probably within this many meters of this point, as of this moment.” Every field of it has conditions. The accuracy can be negative, which means the coordinate is invalid. The timestamp can be minutes old. The speed can be −1, meaning unknown. And horizontalAccuracy is a radius whose confidence level Apple doesn’t state. An app that wants a location for a purpose, such as “where to start the run” or “which store is nearest”, has to turn that claim into a decision. This article covers the pieces of that decision. It explains what each property of a fix means, according to Apple’s documentation, and what an accuracy radius means statistically. It measures distances, and finds that CLLocation.distance(from:) agrees with Vincenty’s ellipsoidal formula to within 2 mm across 10,000 km, while the popular haversine formula is off by up to 0.56%. It builds a selector that waits for a good enough fix within a time budget, and on a simulated cold start the first fix it saw was a cached one from the previous location. And it builds a filter that rejects impossible jumps, cutting a 4.2 km track with one outlier back to its true 177 m." /> <meta property="og:description" content="A CLLocation looks like an answer and is really a claim: “the device is probably within this many meters of this point, as of this moment.” Every field of it has conditions. The accuracy can be negative, which means the coordinate is invalid. The timestamp can be minutes old. The speed can be −1, meaning unknown. And horizontalAccuracy is a radius whose confidence level Apple doesn’t state. An app that wants a location for a purpose, such as “where to start the run” or “which store is nearest”, has to turn that claim into a decision. This article covers the pieces of that decision. It explains what each property of a fix means, according to Apple’s documentation, and what an accuracy radius means statistically. It measures distances, and finds that CLLocation.distance(from:) agrees with Vincenty’s ellipsoidal formula to within 2 mm across 10,000 km, while the popular haversine formula is off by up to 0.56%. It builds a selector that waits for a good enough fix within a time budget, and on a simulated cold start the first fix it saw was a cached one from the previous location. And it builds a filter that rejects impossible jumps, cutting a 4.2 km track with one outlier back to its true 177 m." /> <link rel="canonical" href="https://swiftbydeya.com/ios-location-updates-accuracy/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-location-updates-accuracy/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-25T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Location Updates and Accuracy Requirements" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-25T00:00:00+03:00","datePublished":"2026-02-25T00:00:00+03:00","description":"A CLLocation looks like an answer and is really a claim: “the device is probably within this many meters of this point, as of this moment.” Every field of it has conditions. The accuracy can be negative, which means the coordinate is invalid. The timestamp can be minutes old. The speed can be −1, meaning unknown. And horizontalAccuracy is a radius whose confidence level Apple doesn’t state. An app that wants a location for a purpose, such as “where to start the run” or “which store is nearest”, has to turn that claim into a decision. This article covers the pieces of that decision. It explains what each property of a fix means, according to Apple’s documentation, and what an accuracy radius means statistically. It measures distances, and finds that CLLocation.distance(from:) agrees with Vincenty’s ellipsoidal formula to within 2 mm across 10,000 km, while the popular haversine formula is off by up to 0.56%. It builds a selector that waits for a good enough fix within a time budget, and on a simulated cold start the first fix it saw was a cached one from the previous location. And it builds a filter that rejects impossible jumps, cutting a 4.2 km track with one outlier back to its true 177 m.","headline":"Location Updates and Accuracy Requirements","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-location-updates-accuracy/"},"url":"https://swiftbydeya.com/ios-location-updates-accuracy/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Location Updates and Accuracy Requirements"> <meta name="twitter:description" content="A CLLocation looks like an answer and is really a claim: “the device is probably within this many meters of this point, as of this moment.” Every field of it..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Location Updates and Accuracy Requirements"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Location Updates and Accuracy Requirements</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-25T00:00:00+03:00">February 25, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A <code class="language-plaintext highlighter-rouge">CLLocation</code> looks like an answer and is really a claim: “the device is probably within this many meters of this point, as of this moment.” Every field of it has conditions. The accuracy can be negative, which means the coordinate is invalid. The timestamp can be minutes old. The speed can be −1, meaning unknown. And <code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> is a radius whose confidence level Apple doesn’t state. An app that wants a location for a purpose, such as “where to start the run” or “which store is nearest”, has to turn that claim into a decision.</p>
+
+<p>This article covers the pieces of that decision. It explains what each property of a fix means, according to Apple’s documentation, and what an accuracy radius means statistically. It measures distances, and finds that <code class="language-plaintext highlighter-rouge">CLLocation.distance(from:)</code> agrees with Vincenty’s ellipsoidal formula to within 2 mm across 10,000 km, while the popular haversine formula is off by up to 0.56%. It builds a selector that waits for a good enough fix within a time budget, and on a simulated cold start the first fix it saw was a cached one from the previous location. And it builds a filter that rejects impossible jumps, cutting a 4.2 km track with one outlier back to its true 177 m.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, where <code class="language-plaintext highlighter-rouge">CLLocation</code> math works without any permission, and the iOS blocks ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, with locations scripted by <code class="language-plaintext highlighter-rouge">simctl</code>. One simulation uses the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+</code></pre></div></div>
+
+<h2 id="what-a-fix-contains">What a fix contains</h2>
+
+<p>Apple’s documentation gives each property of <code class="language-plaintext highlighter-rouge">CLLocation</code> a meaning and an invalid value:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Meaning</th>
+      <th>Invalid when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">coordinate</code></td>
+      <td>Latitude and longitude, WGS 84</td>
+      <td><code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> is negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">horizontalAccuracy</code></td>
+      <td>“The radius of uncertainty for the location, measured in meters”</td>
+      <td>negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">altitude</code></td>
+      <td>Height above mean sea level, approximated by the EGM2008 geoid</td>
+      <td><code class="language-plaintext highlighter-rouge">verticalAccuracy</code> is 0 or negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ellipsoidalAltitude</code></td>
+      <td>Height above the WGS 84 ellipsoid</td>
+      <td><code class="language-plaintext highlighter-rouge">verticalAccuracy</code> is 0 or negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">verticalAccuracy</code></td>
+      <td>“Approximately 68 percent, or one standard deviation”</td>
+      <td>0 or negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">speed</code></td>
+      <td>Instantaneous speed, m/s, “for informational purposes only”</td>
+      <td>negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">speedAccuracy</code></td>
+      <td>± m/s</td>
+      <td>negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">course</code></td>
+      <td>Degrees clockwise from true north</td>
+      <td>negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">courseAccuracy</code></td>
+      <td>± degrees</td>
+      <td>negative</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">timestamp</code></td>
+      <td>When the fix was determined, not when it was delivered</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sourceInformation</code></td>
+      <td>Simulated by software, or produced by an accessory</td>
+      <td><code class="language-plaintext highlighter-rouge">nil</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The vertical accuracy has a stated confidence level. The horizontal accuracy doesn’t. That gap matters for any feature that tests whether the user is inside something, and the next section returns to it.</p>
+
+<p>Two more facts from the documentation set expectations for <code class="language-plaintext highlighter-rouge">desiredAccuracy</code>, the classic way to ask for precision. First, “the location service does its best to achieve the requested accuracy; however, apps must be prepared to use less accurate data”, and “more accurate location data also takes more time to become available”. Second, on iOS the default is <code class="language-plaintext highlighter-rouge">kCLLocationAccuracyBest</code>. The constants are ordinary numbers, and printing them in the simulator gave:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Constant</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyBestForNavigation</code></td>
+      <td>−2</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyBest</code></td>
+      <td>−1</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyNearestTenMeters</code></td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyHundredMeters</code></td>
+      <td>100</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyKilometer</code></td>
+      <td>1,000</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyThreeKilometers</code></td>
+      <td>3,000</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">kCLLocationAccuracyReduced</code></td>
+      <td>6,380,000</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The negative values are markers, not distances. <code class="language-plaintext highlighter-rouge">kCLLocationAccuracyReduced</code> is roughly the Earth’s radius, a number that can only mean “as coarse as you like”, and the <a href="/ios-location-permission-changes/#the-app-can-choose-to-blur">permission changes article</a> measured what it does.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates(_:)</code> replaces <code class="language-plaintext highlighter-rouge">desiredAccuracy</code> with a <code class="language-plaintext highlighter-rouge">LiveConfiguration</code> that describes the activity rather than a number: <code class="language-plaintext highlighter-rouge">.default</code>, <code class="language-plaintext highlighter-rouge">.automotiveNavigation</code>, <code class="language-plaintext highlighter-rouge">.otherNavigation</code> (“transportation that doesn’t, or may not, adhere to roads”), <code class="language-plaintext highlighter-rouge">.fitness</code> (“dedicated fitness sessions”), <code class="language-plaintext highlighter-rouge">.airborne</code>, and new in iOS 27, <code class="language-plaintext highlighter-rouge">.maritime</code>. The configuration tells Core Location which assumptions it can make, for example that a car stays on roads, which lets it trade power for accuracy in ways a number can’t express.</p>
+
+<h2 id="what-the-accuracy-radius-means">What the accuracy radius means</h2>
+
+<p>Suppose position errors are Gaussian, independent along east and north, with standard deviation $\sigma$ on each axis. The distance $d$ between the fix and the truth then follows a Rayleigh distribution, and the probability that the truth lies within a radius $r$ is</p>
+
+\[P(d \le r) = 1 - e^{-r^2 / 2\sigma^2} .\]
+
+<p>So a “radius of uncertainty” means very different things depending on what it was computed as:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// If position errors are Gaussian with standard deviation σ along each axis, the distance from the truth follows a</span>
+<span class="c1">// Rayleigh distribution, and the chance of being inside a circle of radius r is 1 - exp(-r²/2σ²).</span>
+<span class="kd">func</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="n">radius</span> <span class="nv">r</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="mi">1</span> <span class="o">-</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">r</span> <span class="o">*</span> <span class="n">r</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">))</span> <span class="p">}</span>
+<span class="kd">func</span> <span class="nf">radius</span><span class="p">(</span><span class="n">containing</span> <span class="nv">p</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">sigma</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">errorRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">15</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">draws</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="nf">in</span> <span class="p">(</span><span class="nv">east</span><span class="p">:</span> <span class="n">errorRandom</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="nv">north</span><span class="p">:</span> <span class="n">errorRandom</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="p">}</span>
+<span class="k">for</span> <span class="n">k</span> <span class="k">in</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nf">radius</span><span class="p">(</span><span class="nv">containing</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="nf">radius</span><span class="p">(</span><span class="nv">containing</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="mi">1</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">inside</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">draws</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">east</span> <span class="o">*</span> <span class="nv">$0</span><span class="o">.</span><span class="n">east</span> <span class="o">+</span> <span class="nv">$0</span><span class="o">.</span><span class="n">north</span> <span class="o">*</span> <span class="nv">$0</span><span class="o">.</span><span class="n">north</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">k</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">draws</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"r = %.4f σ: %.1f%% predicted, %.1f%% simulated"</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="n">inside</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Radius</th>
+      <th>Contains the truth</th>
+      <th>Simulated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$\sigma$</td>
+      <td>39.3%</td>
+      <td>39.4%</td>
+    </tr>
+    <tr>
+      <td>$1.1774\,\sigma$ (circular error probable)</td>
+      <td>50.0%</td>
+      <td>50.1%</td>
+    </tr>
+    <tr>
+      <td>$2\,\sigma$</td>
+      <td>86.5%</td>
+      <td>86.6%</td>
+    </tr>
+    <tr>
+      <td>$2.4477\,\sigma$</td>
+      <td>95.0%</td>
+      <td>95.1%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If <code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> were one standard deviation per axis, as <code class="language-plaintext highlighter-rouge">verticalAccuracy</code> is documented to be, the truth would be outside the circle 61% of the time. If it’s a 95% radius, only 5%. Apple doesn’t say which, and the real error distribution of a phone in a city isn’t Gaussian anyway, because of multipath, reflections, and Wi-Fi positioning. The responsible design is to treat the radius as a scale and calibrate the threshold on real data: record fixes on a path whose truth you know, such as a surveyed track or a walk along a straight street, and count how often the truth falls inside $k$ times the reported radius, for a few values of $k$. The <a href="/ios-sensor-uncertainty/">uncertainty article</a> builds geofence decisions on that idea.</p>
+
+<h2 id="measuring-distance">Measuring distance</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocation.distance(from:)</code> is documented only as returning “the distance (measured in meters)”. Measuring it against two textbook formulas shows which model of the Earth it uses. The <strong>haversine</strong> formula assumes a sphere of radius $R$:</p>
+
+\[d = 2R \arcsin \sqrt{\sin^2\frac{\Delta\varphi}{2} + \cos\varphi_1 \cos\varphi_2 \sin^2\frac{\Delta\lambda}{2}} .\]
+
+<p><strong>Vincenty’s inverse formula</strong> solves the geodesic on the WGS 84 ellipsoid by iteration, and it’s accurate to fractions of a millimeter. Both are below, followed by a comparison with <code class="language-plaintext highlighter-rouge">CLLocation</code> over distances from 100 m to a quarter of the globe:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Great-circle distance on a sphere of the mean Earth radius (haversine formula).</span>
+<span class="kd">func</span> <span class="nf">haversine</span><span class="p">(</span><span class="n">_</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">6_371_008.8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">p1</span><span class="p">,</span> <span class="nv">p2</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">dp</span> <span class="o">=</span> <span class="n">p2</span> <span class="o">-</span> <span class="n">p1</span><span class="p">,</span> <span class="n">dl</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="k">let</span> <span class="nv">h</span> <span class="o">=</span> <span class="nf">sin</span><span class="p">(</span><span class="n">dp</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">dp</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nf">cos</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">dl</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">dl</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">*</span> <span class="nf">asin</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()))</span>
+<span class="p">}</span>
+
+<span class="c1">/// Geodesic distance on the WGS 84 ellipsoid by Vincenty's inverse formula. Returns nil if it fails to converge,</span>
+<span class="c1">/// which happens only for nearly antipodal points.</span>
+<span class="kd">func</span> <span class="nf">vincenty</span><span class="p">(</span><span class="n">_</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">major</span> <span class="o">=</span> <span class="mf">6_378_137.0</span><span class="p">,</span> <span class="n">flattening</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">298.257_2</span><span class="mi">23_563</span>
+    <span class="k">let</span> <span class="nv">minor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">flattening</span><span class="p">)</span> <span class="o">*</span> <span class="n">major</span>
+    <span class="k">let</span> <span class="nv">L</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">longitude</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="k">let</span> <span class="nv">U1</span> <span class="o">=</span> <span class="nf">atan</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">flattening</span><span class="p">)</span> <span class="o">*</span> <span class="nf">tan</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">U2</span> <span class="o">=</span> <span class="nf">atan</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">flattening</span><span class="p">)</span> <span class="o">*</span> <span class="nf">tan</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">))</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">sinU1</span><span class="p">,</span> <span class="nv">cosU1</span><span class="p">,</span> <span class="nv">sinU2</span><span class="p">,</span> <span class="nv">cosU2</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nf">sin</span><span class="p">(</span><span class="kt">U1</span><span class="p">),</span> <span class="nf">cos</span><span class="p">(</span><span class="kt">U1</span><span class="p">),</span> <span class="nf">sin</span><span class="p">(</span><span class="kt">U2</span><span class="p">),</span> <span class="nf">cos</span><span class="p">(</span><span class="kt">U2</span><span class="p">))</span>
+    <span class="k">var</span> <span class="nv">lambda</span> <span class="o">=</span> <span class="kt">L</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">sinLambda</span> <span class="o">=</span> <span class="nf">sin</span><span class="p">(</span><span class="n">lambda</span><span class="p">),</span> <span class="n">cosLambda</span> <span class="o">=</span> <span class="nf">cos</span><span class="p">(</span><span class="n">lambda</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">sinSigma</span> <span class="o">=</span> <span class="p">((</span><span class="n">cosU2</span> <span class="o">*</span> <span class="n">sinLambda</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">cosU2</span> <span class="o">*</span> <span class="n">sinLambda</span><span class="p">)</span> <span class="o">+</span>
+                        <span class="p">(</span><span class="n">cosU1</span> <span class="o">*</span> <span class="n">sinU2</span> <span class="o">-</span> <span class="n">sinU1</span> <span class="o">*</span> <span class="n">cosU2</span> <span class="o">*</span> <span class="n">cosLambda</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">cosU1</span> <span class="o">*</span> <span class="n">sinU2</span> <span class="o">-</span> <span class="n">sinU1</span> <span class="o">*</span> <span class="n">cosU2</span> <span class="o">*</span> <span class="n">cosLambda</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sinSigma</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">cosSigma</span> <span class="o">=</span> <span class="n">sinU1</span> <span class="o">*</span> <span class="n">sinU2</span> <span class="o">+</span> <span class="n">cosU1</span> <span class="o">*</span> <span class="n">cosU2</span> <span class="o">*</span> <span class="n">cosLambda</span>
+        <span class="k">let</span> <span class="nv">sigma</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="n">sinSigma</span><span class="p">,</span> <span class="n">cosSigma</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">sinAlpha</span> <span class="o">=</span> <span class="n">cosU1</span> <span class="o">*</span> <span class="n">cosU2</span> <span class="o">*</span> <span class="n">sinLambda</span> <span class="o">/</span> <span class="n">sinSigma</span>
+        <span class="k">let</span> <span class="nv">cos2Alpha</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">sinAlpha</span> <span class="o">*</span> <span class="n">sinAlpha</span>
+        <span class="k">let</span> <span class="nv">cos2SigmaM</span> <span class="o">=</span> <span class="n">cos2Alpha</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="n">cosSigma</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sinU1</span> <span class="o">*</span> <span class="n">sinU2</span> <span class="o">/</span> <span class="n">cos2Alpha</span>
+        <span class="k">let</span> <span class="nv">C</span> <span class="o">=</span> <span class="n">flattening</span> <span class="o">/</span> <span class="mi">16</span> <span class="o">*</span> <span class="n">cos2Alpha</span> <span class="o">*</span> <span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="n">flattening</span> <span class="o">*</span> <span class="p">(</span><span class="mi">4</span> <span class="o">-</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">cos2Alpha</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">lambda</span>
+        <span class="n">lambda</span> <span class="o">=</span> <span class="kt">L</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="kt">C</span><span class="p">)</span> <span class="o">*</span> <span class="n">flattening</span> <span class="o">*</span> <span class="n">sinAlpha</span> <span class="o">*</span>
+            <span class="p">(</span><span class="n">sigma</span> <span class="o">+</span> <span class="kt">C</span> <span class="o">*</span> <span class="n">sinSigma</span> <span class="o">*</span> <span class="p">(</span><span class="n">cos2SigmaM</span> <span class="o">+</span> <span class="kt">C</span> <span class="o">*</span> <span class="n">cosSigma</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cos2SigmaM</span> <span class="o">*</span> <span class="n">cos2SigmaM</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="nf">abs</span><span class="p">(</span><span class="n">lambda</span> <span class="o">-</span> <span class="n">previous</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">u2</span> <span class="o">=</span> <span class="n">cos2Alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">major</span> <span class="o">*</span> <span class="n">major</span> <span class="o">-</span> <span class="n">minor</span> <span class="o">*</span> <span class="n">minor</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">minor</span> <span class="o">*</span> <span class="n">minor</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">A</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">u2</span> <span class="o">/</span> <span class="mi">16384</span> <span class="o">*</span> <span class="p">(</span><span class="mi">4096</span> <span class="o">+</span> <span class="n">u2</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">768</span> <span class="o">+</span> <span class="n">u2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">320</span> <span class="o">-</span> <span class="mi">175</span> <span class="o">*</span> <span class="n">u2</span><span class="p">)))</span>
+            <span class="k">let</span> <span class="nv">B</span> <span class="o">=</span> <span class="n">u2</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">*</span> <span class="p">(</span><span class="mi">256</span> <span class="o">+</span> <span class="n">u2</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">128</span> <span class="o">+</span> <span class="n">u2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">74</span> <span class="o">-</span> <span class="mi">47</span> <span class="o">*</span> <span class="n">u2</span><span class="p">)))</span>
+            <span class="k">let</span> <span class="nv">deltaSigma</span> <span class="o">=</span> <span class="kt">B</span> <span class="o">*</span> <span class="n">sinSigma</span> <span class="o">*</span> <span class="p">(</span><span class="n">cos2SigmaM</span> <span class="o">+</span> <span class="kt">B</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">cosSigma</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cos2SigmaM</span> <span class="o">*</span> <span class="n">cos2SigmaM</span><span class="p">)</span> <span class="o">-</span>
+                <span class="kt">B</span> <span class="o">/</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">cos2SigmaM</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">sinSigma</span> <span class="o">*</span> <span class="n">sinSigma</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">cos2SigmaM</span> <span class="o">*</span> <span class="n">cos2SigmaM</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="n">minor</span> <span class="o">*</span> <span class="kt">A</span> <span class="o">*</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">-</span> <span class="n">deltaSigma</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">coordinate</span><span class="p">(</span><span class="n">_</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">_</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CLLocationCoordinate2D</span> <span class="p">{</span>
+    <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">longitude</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">pairs</span><span class="p">:</span> <span class="p">[(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">,</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s">"100 m east, London"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">51.5007</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">51.5007</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.12316</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"1 km north, Quito"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1807</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.4678</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1717</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.4678</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"1 km north, Oslo"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">59.9139</span><span class="p">,</span> <span class="mf">10.7522</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">59.9229</span><span class="p">,</span> <span class="mf">10.7522</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"London to Paris"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">51.5007</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">48.8584</span><span class="p">,</span> <span class="mf">2.2945</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"San Francisco to New York"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">37.629538</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.395733</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mf">40.628083</span><span class="p">,</span> <span class="o">-</span><span class="mf">73.768254</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"Equator, 90° of longitude"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">90</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s">"Pole to equator"</span><span class="p">,</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nf">coordinate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+<span class="p">]</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"pair                          CLLocation        Vincenty      CL - Vincenty   haversine error"</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">in</span> <span class="n">pairs</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">cl</span> <span class="o">=</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">longitude</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">v</span> <span class="o">=</span> <span class="nf">vincenty</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">!</span>
+    <span class="k">let</span> <span class="nv">h</span> <span class="o">=</span> <span class="nf">haversine</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">cl</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s">"CLLocation measures on the ellipsoid"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="nv">toLength</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="nv">withPad</span><span class="p">:</span> <span class="s">" "</span><span class="p">,</span> <span class="nv">startingAt</span><span class="p">:</span> <span class="mi">0</span><span class="p">),</span>
+          <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%14.3f  %14.3f  %12.6f   %+.3f%%"</span><span class="p">,</span> <span class="n">cl</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">cl</span> <span class="o">-</span> <span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="n">v</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Pair</th>
+      <th><code class="language-plaintext highlighter-rouge">CLLocation</code></th>
+      <th>Vincenty</th>
+      <th>Difference</th>
+      <th>Haversine error</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>100 m east, London</td>
+      <td>99.993 m</td>
+      <td>99.993 m</td>
+      <td>0</td>
+      <td>−0.317%</td>
+    </tr>
+    <tr>
+      <td>1 km north, Quito</td>
+      <td>995.169 m</td>
+      <td>995.169 m</td>
+      <td>0</td>
+      <td>+0.561%</td>
+    </tr>
+    <tr>
+      <td>1 km north, Oslo</td>
+      <td>1,002.698 m</td>
+      <td>1,002.698 m</td>
+      <td>0</td>
+      <td>−0.194%</td>
+    </tr>
+    <tr>
+      <td>London to Paris</td>
+      <td>340,894.816 m</td>
+      <td>340,894.816 m</td>
+      <td>−0.2 mm</td>
+      <td>−0.104%</td>
+    </tr>
+    <tr>
+      <td>San Francisco to New York</td>
+      <td>4,164,327.256 m</td>
+      <td>4,164,327.256 m</td>
+      <td>0.05 mm</td>
+      <td>−0.242%</td>
+    </tr>
+    <tr>
+      <td>Equator, 90° of longitude</td>
+      <td>10,018,754.170 m</td>
+      <td>10,018,754.171 m</td>
+      <td>−1.3 mm</td>
+      <td>−0.112%</td>
+    </tr>
+    <tr>
+      <td>Pole to equator</td>
+      <td>10,001,965.729 m</td>
+      <td>10,001,965.729 m</td>
+      <td>0</td>
+      <td>+0.056%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocation</code> agrees with Vincenty to within 1.3 mm everywhere, on macOS and on the iOS simulator alike, so it measures on the ellipsoid. The haversine formula’s error depends on direction and latitude, because the ellipsoid’s radius of curvature does. A north-south kilometer at the equator is 995.17 m of ellipsoid but 1,000.76 m of sphere, an error of +0.56%. That’s 5.6 m per kilometer. It’s harmless for “3.2 km away” and not harmless for a running app that totals a marathon, where it amounts to 236 m.</p>
+
+<p>So use <code class="language-plaintext highlighter-rouge">distance(from:)</code> and don’t reimplement it. When code must run without Core Location, for example in a server or a shared package, use Vincenty or a geodesic library, not the haversine formula. Note the half-meter error in the “100 m” row too: the test points were placed 0.00144° apart using a spherical rule of thumb, and they came out 99.993 m apart. Converting meters to degrees deserves the same care as converting back.</p>
+
+<h2 id="waiting-for-a-good-enough-fix">Waiting for a good enough fix</h2>
+
+<p>A feature rarely needs “the location”. It needs a location good enough for its purpose, within a time it can afford to wait. That’s three parameters:</p>
+
+<ul>
+  <li><strong>Accuracy</strong>: the largest <code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> that’s acceptable.</li>
+  <li><strong>Maximum age</strong>: how long before the request a fix may have been taken. Core Location often delivers a cached fix first.</li>
+  <li><strong>Time budget</strong>: how long to wait before settling for the best fix seen so far, or for none.</li>
+</ul>
+
+<p>The selector below applies them to each arriving fix. It skips invalid and stale fixes, remembers the best usable one, accepts the first that meets the accuracy, and settles when the budget runs out:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// What a feature needs from a fix, and how long it will wait for one.</span>
+<span class="kd">struct</span> <span class="kt">LocationRequirement</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">CLLocationAccuracy</span>     <span class="c1">// meters; accept a fix whose horizontalAccuracy is at most this</span>
+    <span class="k">var</span> <span class="nv">maximumAge</span><span class="p">:</span> <span class="kt">TimeInterval</span>         <span class="c1">// how long before the request started a fix may have been taken</span>
+    <span class="k">var</span> <span class="nv">timeBudget</span><span class="p">:</span> <span class="kt">TimeInterval</span>         <span class="c1">// after this long, settle for the best fix seen</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">FixDecision</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">accept</span><span class="p">(</span><span class="kt">CLLocation</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">wait</span>
+    <span class="k">case</span> <span class="nf">settle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">?)</span>       <span class="c1">// the budget ran out; the best fix so far, if any</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">FixSelector</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">requirement</span><span class="p">:</span> <span class="kt">LocationRequirement</span>
+    <span class="k">let</span> <span class="nv">started</span><span class="p">:</span> <span class="kt">Date</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">best</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">requirement</span><span class="p">:</span> <span class="kt">LocationRequirement</span><span class="p">,</span> <span class="nv">started</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">requirement</span> <span class="o">=</span> <span class="n">requirement</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="n">started</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">consider</span><span class="p">(</span><span class="n">_</span> <span class="nv">fix</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">FixDecision</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">usable</span> <span class="o">=</span> <span class="n">fix</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">started</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">fix</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">requirement</span><span class="o">.</span><span class="n">maximumAge</span>
+        <span class="k">if</span> <span class="n">usable</span><span class="p">,</span> <span class="n">best</span><span class="o">.</span><span class="nf">map</span><span class="p">({</span> <span class="n">fix</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&lt;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="p">})</span> <span class="p">??</span> <span class="kc">true</span> <span class="p">{</span> <span class="n">best</span> <span class="o">=</span> <span class="n">fix</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">usable</span><span class="p">,</span> <span class="n">fix</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&lt;=</span> <span class="n">requirement</span><span class="o">.</span><span class="n">accuracy</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">accept</span><span class="p">(</span><span class="n">fix</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">now</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">started</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">requirement</span><span class="o">.</span><span class="n">timeBudget</span> <span class="p">?</span> <span class="o">.</span><span class="nf">settle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">best</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="n">wait</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">fix</span><span class="p">(</span><span class="n">_</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="n">at</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CLLocation</span> <span class="p">{</span>
+    <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">),</span> <span class="nv">altitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="n">accuracy</span><span class="p">,</span> <span class="nv">verticalAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="n">now</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="o">-</span><span class="n">age</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">t0</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceReferenceDate</span><span class="p">:</span> <span class="mi">800_000_000</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">selector</span> <span class="o">=</span> <span class="kt">FixSelector</span><span class="p">(</span><span class="kt">LocationRequirement</span><span class="p">(</span><span class="nv">accuracy</span><span class="p">:</span> <span class="mi">35</span><span class="p">,</span> <span class="nv">maximumAge</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">timeBudget</span><span class="p">:</span> <span class="mi">20</span><span class="p">),</span> <span class="nv">started</span><span class="p">:</span> <span class="n">t0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">arrivals</span><span class="p">:</span> <span class="p">[(</span><span class="kt">Double</span><span class="p">,</span> <span class="kt">CLLocation</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">900</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mf">0.1</span><span class="p">))),</span>     <span class="c1">// a cached fix from 15 minutes ago</span>
+    <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">1</span><span class="p">))),</span>        <span class="c1">// invalid</span>
+    <span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="mi">1_500</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">2</span><span class="p">))),</span>
+    <span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="mi">65</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">4</span><span class="p">))),</span>
+    <span class="p">(</span><span class="mf">6.0</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">6</span><span class="p">))),</span>
+    <span class="p">(</span><span class="mf">8.0</span><span class="p">,</span> <span class="nf">fix</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">8</span><span class="p">))),</span>
+<span class="p">]</span>
+<span class="k">var</span> <span class="nv">decisions</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span> <span class="k">in</span> <span class="n">arrivals</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">selector</span><span class="o">.</span><span class="nf">consider</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">accept</span><span class="p">(</span><span class="k">let</span> <span class="nv">chosen</span><span class="p">):</span> <span class="n">decisions</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"accept </span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="n">chosen</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)</span><span class="se">)</span><span class="s"> m at </span><span class="se">\(</span><span class="n">time</span><span class="se">)</span><span class="s"> s"</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">wait</span><span class="p">:</span> <span class="n">decisions</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"wait"</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">settle</span><span class="p">(</span><span class="k">let</span> <span class="nv">chosen</span><span class="p">):</span> <span class="n">decisions</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"settle </span><span class="se">\(</span><span class="n">chosen</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">decisions</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">decisions</span> <span class="o">==</span> <span class="p">[</span><span class="s">"wait"</span><span class="p">,</span> <span class="s">"wait"</span><span class="p">,</span> <span class="s">"wait"</span><span class="p">,</span> <span class="s">"wait"</span><span class="p">,</span> <span class="s">"wait"</span><span class="p">,</span> <span class="s">"accept 30 m at 8.0 s"</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">impatient</span> <span class="o">=</span> <span class="kt">FixSelector</span><span class="p">(</span><span class="kt">LocationRequirement</span><span class="p">(</span><span class="nv">accuracy</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">maximumAge</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">timeBudget</span><span class="p">:</span> <span class="mi">5</span><span class="p">),</span> <span class="nv">started</span><span class="p">:</span> <span class="n">t0</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">impatient</span><span class="o">.</span><span class="nf">consider</span><span class="p">(</span><span class="nf">fix</span><span class="p">(</span><span class="mi">65</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">4</span><span class="p">)),</span> <span class="nv">now</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">impatient</span><span class="o">.</span><span class="nf">consider</span><span class="p">(</span><span class="nf">fix</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="nv">age</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">6</span><span class="p">)),</span> <span class="nv">now</span><span class="p">:</span> <span class="n">t0</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+       <span class="o">==</span> <span class="o">.</span><span class="nf">settle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">impatient</span><span class="o">.</span><span class="n">best</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">impatient</span><span class="o">.</span><span class="n">best</span><span class="p">?</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">==</span> <span class="mi">65</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The synthetic arrivals show each rule. A cached fix from 15 minutes earlier is rejected despite its tempting 10 m accuracy. An invalid fix and a 1,500 m fix are passed over. The first fix within 35 m is accepted at 8 seconds. A second selector, with a strict 10 m requirement and a 5-second budget, settles for the best fix it saw, the 65 m one, when time runs out. The caller can then decide whether “65 m after 5 seconds” is still worth showing.</p>
+
+<p>Then on the simulator. The test grants access, places the device at Westminster Bridge, and checks first whether <code class="language-plaintext highlighter-rouge">desiredAccuracy</code> changes anything there:</p>
+
+<!-- sim-setup -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl privacy booted grant location dev.swiftbydeya.Host
+xcrun simctl location booted <span class="nb">set </span>51.5007,-0.1246
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="s">"accuracy constants:"</span><span class="p">,</span> <span class="n">kCLLocationAccuracyBestForNavigation</span><span class="p">,</span> <span class="n">kCLLocationAccuracyBest</span><span class="p">,</span> <span class="n">kCLLocationAccuracyNearestTenMeters</span><span class="p">,</span>
+      <span class="n">kCLLocationAccuracyHundredMeters</span><span class="p">,</span> <span class="n">kCLLocationAccuracyKilometer</span><span class="p">,</span> <span class="n">kCLLocationAccuracyThreeKilometers</span><span class="p">,</span> <span class="n">kCLLocationAccuracyReduced</span><span class="p">)</span>
+
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Fixes</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">manager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">Date</span><span class="p">,</span> <span class="nv">fix</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">override</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span> <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">();</span> <span class="n">manager</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="k">self</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span> <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="kt">Date</span><span class="p">(),</span> <span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">since</span><span class="p">(</span><span class="n">_</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">]</span> <span class="p">{</span> <span class="n">received</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">at</span> <span class="o">&gt;</span> <span class="n">date</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">fix</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Ask for kilometer accuracy, then drive a route: does the simulator deliver anything different?</span>
+<span class="k">let</span> <span class="nv">coarse</span> <span class="o">=</span> <span class="kt">Fixes</span><span class="p">()</span>
+<span class="n">coarse</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">desiredAccuracy</span> <span class="o">=</span> <span class="n">kCLLocationAccuracyKilometer</span>
+<span class="n">coarse</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">startUpdatingLocation</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">routeStart</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>10 <span class="nt">--interval</span><span class="o">=</span>1 51.5007,-0.1246 51.5007,-0.1100
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">8</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">coarseFixes</span> <span class="o">=</span> <span class="n">coarse</span><span class="o">.</span><span class="nf">since</span><span class="p">(</span><span class="n">routeStart</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"kilometer accuracy requested:"</span><span class="p">,</span> <span class="n">coarseFixes</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"fixes in 8 s, accuracies"</span><span class="p">,</span> <span class="kt">Set</span><span class="p">(</span><span class="n">coarseFixes</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">coarseFixes</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="o">&amp;&amp;</span> <span class="n">coarseFixes</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">==</span> <span class="mi">5</span> <span class="p">})</span>
+<span class="n">coarse</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="nf">stopUpdatingLocation</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>With <code class="language-plaintext highlighter-rouge">kCLLocationAccuracyKilometer</code> requested, the simulator still delivered a 5 m fix every second along the route, 7 or 8 in 8 seconds across runs. Simulated location ignores the request, so tests of accuracy-dependent logic must script the accuracies themselves, as the Apple scenario does. That scenario is the cold start to test against: it reports 500 m, then 65 m, then 50 m, then 30 m, while the device stands still. The selector requires 40 m, measuring freshness from the moment of the request:</p>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted clear
+xcrun simctl location booted run <span class="s2">"Apple"</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The Apple scenario starts with poor accuracy and improves: a good stand-in for a cold start.</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">started</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">chooser</span> <span class="o">=</span> <span class="kt">FixSelector</span><span class="p">(</span><span class="kt">LocationRequirement</span><span class="p">(</span><span class="nv">accuracy</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">maximumAge</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">timeBudget</span><span class="p">:</span> <span class="mi">20</span><span class="p">),</span> <span class="nv">started</span><span class="p">:</span> <span class="n">started</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">outcome</span><span class="p">:</span> <span class="kt">FixDecision</span> <span class="o">=</span> <span class="o">.</span><span class="n">wait</span>
+<span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="nv">search</span><span class="p">:</span> <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">update</span> <span class="k">in</span> <span class="kt">CLLocationUpdate</span><span class="o">.</span><span class="nf">liveUpdates</span><span class="p">(</span><span class="o">.</span><span class="n">fitness</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">location</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">location</span> <span class="k">else</span> <span class="p">{</span> <span class="k">continue</span> <span class="p">}</span>
+    <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.0f m, %.1f s old"</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">,</span> <span class="n">started</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">location</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)))</span>
+    <span class="n">outcome</span> <span class="o">=</span> <span class="n">chooser</span><span class="o">.</span><span class="nf">consider</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Date</span><span class="p">())</span>
+    <span class="k">switch</span> <span class="n">outcome</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">wait</span><span class="p">:</span> <span class="k">continue</span>
+    <span class="k">case</span> <span class="o">.</span><span class="n">accept</span><span class="p">,</span> <span class="o">.</span><span class="nv">settle</span><span class="p">:</span> <span class="k">break</span> <span class="n">search</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">started</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"accuracies seen"</span><span class="p">,</span> <span class="n">seen</span><span class="p">,</span> <span class="s">"outcome"</span><span class="p">,</span> <span class="n">outcome</span><span class="p">,</span> <span class="s">"after"</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">,</span> <span class="s">"s"</span><span class="p">)</span>
+<span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="nf">accept</span><span class="p">(</span><span class="k">let</span> <span class="nv">chosen</span><span class="p">)</span> <span class="o">=</span> <span class="n">outcome</span> <span class="k">else</span> <span class="p">{</span> <span class="nf">fatalError</span><span class="p">(</span><span class="s">"expected an accepted fix"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">chosen</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&lt;=</span> <span class="mi">40</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">chosen</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span> <span class="o">-</span> <span class="mf">37.33</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The first update from <code class="language-plaintext highlighter-rouge">liveUpdates(.fitness)</code> was a 5 m fix from London, taken 1.5 seconds before the request. It was the last position of the previous route, delivered again even after <code class="language-plaintext highlighter-rouge">simctl location clear</code>. With a maximum age of zero, the selector rejected it. Then came 500 m, three fixes at 65 m, two at 50 m, and a fix at 30 m, accepted 10.1 seconds after the request, in Cupertino. With the original rule, age measured at arrival with a 10-second limit, the first run of this test accepted the London fix immediately. On a phone, that’s the user’s position from wherever the last app saw it, presented as current. Measure freshness from the request, not from arrival.</p>
+
+<h2 id="rejecting-impossible-jumps">Rejecting impossible jumps</h2>
+
+<p>Even good fixes occasionally jump: a reflection off a building, a Wi-Fi access point that moved, a moment of bad geometry. A jump that implies an impossible speed is easy to catch, as long as the test allows for the fixes’ own uncertainty. Two fixes with accuracies $h_1$ and $h_2$ can legitimately be up to $h_1 + h_2$ apart while the device stands still, so only the distance beyond that counts:</p>
+
+\[v_{\text{implied}} = \frac{d - h_1 - h_2}{\Delta t} &gt; v_{\max} \implies \text{reject} .\]
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Rejects fixes that imply impossible speed. Two fixes can be up to the sum of their accuracies apart without moving,</span>
+<span class="c1">/// so only the distance beyond that counts against the speed limit.</span>
+<span class="kd">struct</span> <span class="kt">PlausibilityFilter</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">maximumSpeed</span><span class="p">:</span> <span class="kt">CLLocationSpeed</span>            <span class="c1">// m/s, chosen for the activity</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">rejected</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">maximumSpeed</span><span class="p">:</span> <span class="kt">CLLocationSpeed</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">maximumSpeed</span> <span class="o">=</span> <span class="n">maximumSpeed</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">accept</span><span class="p">(</span><span class="n">_</span> <span class="nv">fix</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">fix</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span> <span class="n">rejected</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">last</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">fix</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">timestamp</span><span class="p">),</span> <span class="mf">0.001</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">unexplained</span> <span class="o">=</span> <span class="n">fix</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">last</span><span class="p">)</span> <span class="o">-</span> <span class="n">fix</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">-</span> <span class="n">last</span><span class="o">.</span><span class="n">horizontalAccuracy</span>
+            <span class="k">if</span> <span class="n">unexplained</span> <span class="o">/</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="n">maximumSpeed</span> <span class="p">{</span> <span class="n">rejected</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">fix</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// A run at 3 m/s along a parallel, one fix per second, with one wild fix 2 km off at second 30.</span>
+<span class="kd">func</span> <span class="nf">runFix</span><span class="p">(</span><span class="n">_</span> <span class="nv">second</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">offsetNorth</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+            <span class="n">from</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Date</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceReferenceDate</span><span class="p">:</span> <span class="mi">800_000_000</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="kt">CLLocation</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">east</span> <span class="o">=</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">second</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span> <span class="o">+</span> <span class="n">offsetNorth</span> <span class="o">/</span> <span class="mi">111_250</span><span class="p">,</span>
+                                                         <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span> <span class="o">+</span> <span class="n">east</span> <span class="o">/</span> <span class="mi">69_440</span><span class="p">),</span>
+                      <span class="nv">altitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="n">accuracy</span><span class="p">,</span> <span class="nv">verticalAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                      <span class="nv">timestamp</span><span class="p">:</span> <span class="n">start</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">second</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">length</span><span class="p">(</span><span class="n">_</span> <span class="nv">track</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">CLLocationDistance</span> <span class="p">{</span>
+    <span class="nf">zip</span><span class="p">(</span><span class="n">track</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(),</span> <span class="n">track</span><span class="p">)</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">raw</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">?</span> <span class="nf">runFix</span><span class="p">(</span><span class="nv">$0</span><span class="p">,</span> <span class="nv">offsetNorth</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span> <span class="p">:</span> <span class="nf">runFix</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="kt">PlausibilityFilter</span><span class="p">(</span><span class="nv">maximumSpeed</span><span class="p">:</span> <span class="mi">8</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">kept</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">filter</span><span class="o">.</span><span class="nf">accept</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"rejected"</span><span class="p">,</span> <span class="n">filter</span><span class="o">.</span><span class="n">rejected</span><span class="p">,</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"track %.0f m raw, %.0f m filtered, %.0f m true"</span><span class="p">,</span>
+                                          <span class="nf">length</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="nf">length</span><span class="p">(</span><span class="n">kept</span><span class="p">),</span> <span class="nf">runFix</span><span class="p">(</span><span class="mi">59</span><span class="p">)</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nf">runFix</span><span class="p">(</span><span class="mi">0</span><span class="p">))))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">filter</span><span class="o">.</span><span class="n">rejected</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On a simulated one-minute run at 3 m/s, with one fix 2 km off at second 30, the filter rejected exactly that fix. Summing the raw track gave 4,171 m, two 2 km legs out to the outlier and back. The filtered track gave 177 m, the true distance. The speed limit is the activity’s: 8 m/s rejects nothing a runner can do, while a driving app needs 60 m/s or more. The filter compares each fix with the last <em>accepted</em> one, so a single outlier can’t drag the reference away. A long run of rejections is itself a signal: either the device really moved fast, perhaps onto a train, or the reference fix was the bad one. A production version should reset after a few consecutive rejections.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Every <code class="language-plaintext highlighter-rouge">CLLocation</code> field has an invalid marker, usually a negative number, and <code class="language-plaintext highlighter-rouge">verticalAccuracy</code> of 0 is invalid too. Check before you use the value.</li>
+  <li><code class="language-plaintext highlighter-rouge">verticalAccuracy</code> is documented as one standard deviation. <code class="language-plaintext highlighter-rouge">horizontalAccuracy</code> is “the radius of uncertainty”, with no stated confidence. Under a Gaussian model, a 1σ circle contains the truth only 39% of the time, so calibrate thresholds on known paths.</li>
+  <li><code class="language-plaintext highlighter-rouge">CLLocation.distance(from:)</code> matched Vincenty’s ellipsoidal formula to within 1.3 mm over 10,000 km. The haversine formula was off by up to 0.56%, 5.6 m per kilometer.</li>
+  <li>The simulator ignores <code class="language-plaintext highlighter-rouge">desiredAccuracy</code>. A kilometer request still got 5 m fixes at 1 Hz. Script accuracies instead, for example with the Apple scenario, which improves from 500 m to 30 m.</li>
+  <li>Select fixes by accuracy, freshness measured from the request, and a time budget. On the simulator, the first live update was a stale fix from the previous location. The selector rejected it and accepted a 30 m fix after 10.1 s.</li>
+  <li>Reject fixes whose implied speed beyond their combined accuracies exceeds the activity’s limit. One outlier inflated a 177 m track to 4,171 m, and the filter removed it.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Combine <code class="language-plaintext highlighter-rouge">FixSelector</code> and <code class="language-plaintext highlighter-rouge">PlausibilityFilter</code> into a <code class="language-plaintext highlighter-rouge">LocationRequest</code> that wraps <code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates()</code> and returns a single fix with an <code class="language-plaintext highlighter-rouge">async</code> method: <code class="language-plaintext highlighter-rouge">func fix(for requirement: LocationRequirement) async throws -&gt; CLLocation?</code>. It should return the accepted fix, the best fix when the budget runs out, or <code class="language-plaintext highlighter-rouge">nil</code> if nothing usable arrived, and it should stop iterating, which ends the live updates, as soon as it has an answer. Test it in the simulator with the Apple scenario and with a route that starts after a 3-second delay.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocation"><code class="language-plaintext highlighter-rouge">CLLocation</code></a>, especially <a href="https://developer.apple.com/documentation/corelocation/cllocation/horizontalaccuracy"><code class="language-plaintext highlighter-rouge">horizontalAccuracy</code></a> and <a href="https://developer.apple.com/documentation/corelocation/cllocation/verticalaccuracy"><code class="language-plaintext highlighter-rouge">verticalAccuracy</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/desiredaccuracy"><code class="language-plaintext highlighter-rouge">desiredAccuracy</code></a> and <a href="https://developer.apple.com/documentation/corelocation/cllocationupdate/liveconfiguration"><code class="language-plaintext highlighter-rouge">CLLocationUpdate.LiveConfiguration</code></a></li>
+  <li>Thaddeus Vincenty, “Direct and Inverse Solutions of Geodesics on the Ellipsoid with Application of Nested Equations”, <em>Survey Review</em> 23(176), 1975, <a href="https://doi.org/10.1179/sre.1975.23.176.88">doi:10.1179/sre.1975.23.176.88</a></li>
+  <li>Charles F. F. Karney, “Algorithms for geodesics”, <em>Journal of Geodesy</em> 87, 2013, <a href="https://doi.org/10.1007/s00190-012-0578-z">doi:10.1007/s00190-012-0578-z</a>, which fixes Vincenty’s convergence failures for nearly antipodal points</li>
+</ul>
+
+<p>Previous: <a href="/ios-sensor-sampling-filtering/">Sampling Rates, Noise, Filtering, and Drift</a></p>
+
+<p>Next: <a href="/ios-location-distance-filter-energy/">Distance Filters and Energy-Aware Tracking</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-location-updates-accuracy/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Location+Updates+and+Accuracy+Requirements%20https%3A%2F%2Fswiftbydeya.com%2Fios-location-updates-accuracy%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-location-updates-accuracy/&title=Location+Updates+and+Accuracy+Requirements%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-location-updates-accuracy/&title=Location+Updates+and+Accuracy+Requirements%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-location-updates-accuracy/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Location Updates and Accuracy Requirements%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-location-updates-accuracy/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Geodesy">Geodesy</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Distance Filters and Energy-Aware Tracking" href="/ios-location-distance-filter-energy/"> <p>Previous post</p> Distance Filters and Energy-Aware Tracking </a> </div> <div id="next-post"> <a alt="Sampling Rates, Noise, Filtering, and Drift" href="/ios-sensor-sampling-filtering/"> <p>Next post</p> Sampling Rates, Noise, Filtering, and Drift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

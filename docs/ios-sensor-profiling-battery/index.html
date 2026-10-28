@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Profiling Sensor Work and Battery Usage | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Profiling Sensor Work and Battery Usage" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="When a sensor app drains batteries, the instinct is to optimize the math: a faster filter, a leaner Kalman update. The measurements in this article say that’s almost never where the energy goes. The series’ per-sample algorithms cost 3 to 45 nanoseconds each in an optimized build, so at 100 Hz the most expensive one uses under a thousandth of a percent of a core. Handing each sample to the code that processes it cost a thousand times more: 89 to 110 µs of CPU per sample when every sample woke the consumer, and 36 to 42 µs when samples arrived in batches of ten. Beyond the CPU are costs no simulator can show: GPS radios, sensor hubs, and the price of waking a sleeping device. This article measures what can be measured off-device, explains what can’t, and shows the tools that measure the rest where it actually happens. Instruments’ signposts recorded the series’ processing as intervals, with a median of 99.6 µs per 10,000 updates. The Power Profiler refused to record on macOS, as Apple documents. And MetricKit’s new iOS 27 Swift API reports, from users’ devices, how long an app spent at each location accuracy." /> <meta property="og:description" content="When a sensor app drains batteries, the instinct is to optimize the math: a faster filter, a leaner Kalman update. The measurements in this article say that’s almost never where the energy goes. The series’ per-sample algorithms cost 3 to 45 nanoseconds each in an optimized build, so at 100 Hz the most expensive one uses under a thousandth of a percent of a core. Handing each sample to the code that processes it cost a thousand times more: 89 to 110 µs of CPU per sample when every sample woke the consumer, and 36 to 42 µs when samples arrived in batches of ten. Beyond the CPU are costs no simulator can show: GPS radios, sensor hubs, and the price of waking a sleeping device. This article measures what can be measured off-device, explains what can’t, and shows the tools that measure the rest where it actually happens. Instruments’ signposts recorded the series’ processing as intervals, with a median of 99.6 µs per 10,000 updates. The Power Profiler refused to record on macOS, as Apple documents. And MetricKit’s new iOS 27 Swift API reports, from users’ devices, how long an app spent at each location accuracy." /> <link rel="canonical" href="https://swiftbydeya.com/ios-sensor-profiling-battery/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-sensor-profiling-battery/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-30T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Profiling Sensor Work and Battery Usage" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-30T00:00:00+03:00","datePublished":"2026-03-30T00:00:00+03:00","description":"When a sensor app drains batteries, the instinct is to optimize the math: a faster filter, a leaner Kalman update. The measurements in this article say that’s almost never where the energy goes. The series’ per-sample algorithms cost 3 to 45 nanoseconds each in an optimized build, so at 100 Hz the most expensive one uses under a thousandth of a percent of a core. Handing each sample to the code that processes it cost a thousand times more: 89 to 110 µs of CPU per sample when every sample woke the consumer, and 36 to 42 µs when samples arrived in batches of ten. Beyond the CPU are costs no simulator can show: GPS radios, sensor hubs, and the price of waking a sleeping device. This article measures what can be measured off-device, explains what can’t, and shows the tools that measure the rest where it actually happens. Instruments’ signposts recorded the series’ processing as intervals, with a median of 99.6 µs per 10,000 updates. The Power Profiler refused to record on macOS, as Apple documents. And MetricKit’s new iOS 27 Swift API reports, from users’ devices, how long an app spent at each location accuracy.","headline":"Profiling Sensor Work and Battery Usage","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-sensor-profiling-battery/"},"url":"https://swiftbydeya.com/ios-sensor-profiling-battery/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Profiling Sensor Work and Battery Usage"> <meta name="twitter:description" content="When a sensor app drains batteries, the instinct is to optimize the math: a faster filter, a leaner Kalman update. The measurements in this article say that’..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Profiling Sensor Work and Battery Usage"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Profiling Sensor Work and Battery Usage</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-30T00:00:00+03:00">March 30, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>When a sensor app drains batteries, the instinct is to optimize the math: a faster filter, a leaner Kalman update. The measurements in this article say that’s almost never where the energy goes. The series’ per-sample algorithms cost 3 to 45 nanoseconds each in an optimized build, so at 100 Hz the most expensive one uses under a thousandth of a percent of a core. Handing each sample to the code that processes it cost a thousand times more: 89 to 110 µs of CPU per sample when every sample woke the consumer, and 36 to 42 µs when samples arrived in batches of ten. Beyond the CPU are costs no simulator can show: GPS radios, sensor hubs, and the price of waking a sleeping device.</p>
+
+<p>This article measures what can be measured off-device, explains what can’t, and shows the tools that measure the rest where it actually happens. Instruments’ signposts recorded the series’ processing as intervals, with a median of 99.6 µs per 10,000 updates. The Power Profiler refused to record on macOS, as Apple documents. And MetricKit’s new iOS 27 Swift API reports, from users’ devices, how long an app spent at each location accuracy.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, with timings from an optimized build as noted, and the iOS block ran in a unit-test bundle on an iPhone 17 simulator running iOS 27.0. Benchmarks use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+<span class="kd">import</span> <span class="n">os</span>
+</code></pre></div></div>
+
+<h2 id="where-the-energy-goes">Where the energy goes</h2>
+
+<p>Apple’s <a href="https://developer.apple.com/library/archive/documentation/Performance/Conceptual/EnergyGuide-iOS/FundamentalConcepts.html">Energy Efficiency Guide</a> separates two kinds of cost. Tasks have “a <em>dynamic cost</em>—how much energy your app uses by doing actual work”, and “a <em>fixed cost</em>—how much energy is used by bringing the system and various resources up in order for your app to do work, and back down after that work is complete.” The guide warns that with sporadic work, “resources may never get the chance to reach true idle between the sporadic tasks.”</p>
+
+<p>A simple model makes the consequence concrete. If an app wakes $n$ times and does work $w_i$ each time, with a fixed cost $F$ per wake and a dynamic cost proportional to work,</p>
+
+\[E = n F + c \sum_{i=1}^{n} w_i .\]
+
+<p>The work is fixed by the feature. The number of wakes isn’t. Batching $k$ samples per wake divides the first term by $k$ and leaves the second unchanged. For sensor apps, where each sample’s work is tiny, the first term is almost everything. The measurements below put numbers on that, for the CPU at least.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Cost</th>
+      <th>Who controls it</th>
+      <th>Where to measure it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Sensor hardware: GPS, accelerometer, barometer</td>
+      <td>Accuracy, rate, and stopping (<a href="/ios-location-distance-filter-energy/">distance filters</a>, <a href="/ios-sensor-stopping-updates/">stopping</a>)</td>
+      <td>Power Profiler, MetricKit, on device</td>
+    </tr>
+    <tr>
+      <td>Waking the app</td>
+      <td>Delivery: batching, filters, pull instead of push</td>
+      <td>CPU time, wakeups, Instruments</td>
+    </tr>
+    <tr>
+      <td>Processing each sample</td>
+      <td>The algorithm</td>
+      <td>Benchmarks, signposts</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="processing-nanoseconds">Processing: nanoseconds</h2>
+
+<p>The per-sample work of the earlier articles, timed over a million samples each:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Measures the time per call of `body`, over `count` calls, after a warm-up.</span>
+<span class="kd">func</span> <span class="nf">nanosecondsPerCall</span><span class="p">(</span><span class="n">_</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="mi">1_000</span><span class="p">)</span> <span class="p">{</span> <span class="nf">body</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span> <span class="nf">body</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// The per-sample work of earlier articles, on a million synthetic samples each.</span>
+<span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">28</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">samples</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="o">-</span> <span class="mf">9.8</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">sink</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+<span class="c1">// A second-order low-pass on one axis (the sampling article's biquad).</span>
+<span class="k">var</span> <span class="nv">y1</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">let</span> <span class="nv">biquad</span> <span class="o">=</span> <span class="nf">nanosecondsPerCall</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+    <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="mf">0.0675</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.1349</span> <span class="o">*</span> <span class="n">x1</span> <span class="o">+</span> <span class="mf">0.0675</span> <span class="o">*</span> <span class="n">x2</span> <span class="o">+</span> <span class="mf">1.1430</span> <span class="o">*</span> <span class="n">y1</span> <span class="o">-</span> <span class="mf">0.4128</span> <span class="o">*</span> <span class="nf">y2</span>
+    <span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">sink</span> <span class="o">+=</span> <span class="n">y</span>
+<span class="p">}</span>
+
+<span class="c1">// One complementary-filter step for gravity (the device motion article): a small rotation, a blend, a normalize.</span>
+<span class="k">var</span> <span class="nv">gravity</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">complementary</span> <span class="o">=</span> <span class="nf">nanosecondsPerCall</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">omega</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.001</span>
+    <span class="k">let</span> <span class="nv">rotated</span> <span class="o">=</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="o">-</span><span class="nf">simd_length</span><span class="p">(</span><span class="n">omega</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)))</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">gravity</span><span class="p">)</span>
+    <span class="n">gravity</span> <span class="o">=</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">rotated</span> <span class="o">+</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="nf">simd_normalize</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">rotated</span><span class="p">))</span>
+    <span class="n">sink</span> <span class="o">+=</span> <span class="n">gravity</span><span class="o">.</span><span class="n">z</span>
+<span class="p">}</span>
+
+<span class="c1">// One Kalman predict on a 3-state filter (the motion and location article).</span>
+<span class="k">var</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">covariance</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">diagonal</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">kalman</span> <span class="o">=</span> <span class="nf">nanosecondsPerCall</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">dt</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">rows</span><span class="p">:</span> <span class="p">[</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">dt</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">state</span> <span class="o">+</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">y</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">covariance</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">transpose</span> <span class="o">+</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">diagonal</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="mf">4e-8</span><span class="p">))</span>
+    <span class="n">sink</span> <span class="o">+=</span> <span class="n">state</span><span class="o">.</span><span class="n">x</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"biquad low-pass"</span><span class="p">,</span> <span class="n">biquad</span><span class="p">),</span> <span class="p">(</span><span class="s">"complementary gravity step"</span><span class="p">,</span> <span class="n">complementary</span><span class="p">),</span> <span class="p">(</span><span class="s">"Kalman predict"</span><span class="p">,</span> <span class="n">kalman</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">share</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">*</span> <span class="mi">100</span> <span class="o">/</span> <span class="mf">1e9</span> <span class="o">*</span> <span class="mi">100</span>      <span class="c1">// percent of one core at 100 samples per second</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="nv">toLength</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="nv">withPad</span><span class="p">:</span> <span class="s">" "</span><span class="p">,</span> <span class="nv">startingAt</span><span class="p">:</span> <span class="mi">0</span><span class="p">),</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%7.1f ns per sample → %.5f%% of a core at 100 Hz"</span><span class="p">,</span> <span class="n">ns</span><span class="p">,</span> <span class="n">share</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"(sink </span><span class="se">\(</span><span class="n">sink</span><span class="o">.</span><span class="n">isFinite</span><span class="se">)</span><span class="s">)"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Work per sample</th>
+      <th>Optimized build</th>
+      <th>Debug build</th>
+      <th>Share of a core at 100 Hz (optimized)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Biquad low-pass, one axis</td>
+      <td>3.4 ns</td>
+      <td>203 ns</td>
+      <td>0.00003%</td>
+    </tr>
+    <tr>
+      <td>Complementary gravity step</td>
+      <td>24.8 ns</td>
+      <td>819 ns</td>
+      <td>0.00025%</td>
+    </tr>
+    <tr>
+      <td>Kalman predict, 3 states</td>
+      <td>45.2 ns</td>
+      <td>1,018 ns</td>
+      <td>0.00045%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Even the debug build, 20 to 60 times slower, stays far below anything that matters at sensor rates. Optimizing these routines won’t change an app’s battery use. What’s worth checking instead is that nothing expensive hides in the per-sample path: an allocation, a lock, a log statement with string formatting, or a <code class="language-plaintext highlighter-rouge">DateFormatter</code>.</p>
+
+<h2 id="delivery-microseconds">Delivery: microseconds</h2>
+
+<p>Handing a sample from the sensor’s thread to the code that processes it means waking a thread, scheduling a task, and hopping onto an actor. The experiment below produces samples at 100 Hz for 3 seconds and measures the process’s CPU time, first delivering every sample as it arrives, then in batches of ten:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Delivery: what it costs to hand samples from a sensor's thread to a consumer through an AsyncStream and an actor.</span>
+<span class="kd">actor</span> <span class="kt">Consumer</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">func</span> <span class="nf">take</span><span class="p">(</span><span class="n">_</span> <span class="nv">batch</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">])</span> <span class="p">{</span> <span class="n">count</span> <span class="o">+=</span> <span class="n">batch</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Process CPU time, in seconds: user and system time of every thread together.</span>
+<span class="kd">func</span> <span class="nf">processCPUSeconds</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">time</span> <span class="o">=</span> <span class="nf">timespec</span><span class="p">()</span>
+    <span class="nf">clock_gettime</span><span class="p">(</span><span class="kt">CLOCK_PROCESS_CPUTIME_ID</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">time</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">Double</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">tv_sec</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">tv_nsec</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+<span class="p">}</span>
+
+<span class="c1">/// Runs a 100 Hz producer for `seconds`, delivering every sample alone or in batches, and returns the CPU time used.</span>
+<span class="kd">func</span> <span class="nf">deliveryCPU</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">cpu</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">delivered</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">consumer</span> <span class="o">=</span> <span class="kt">Consumer</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">cpuBefore</span> <span class="o">=</span> <span class="nf">processCPUSeconds</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">for</span> <span class="k">await</span> <span class="n">batch</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span> <span class="k">await</span> <span class="n">consumer</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">producer</span> <span class="o">=</span> <span class="kt">Thread</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">pending</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="kt">Int</span><span class="p">(</span><span class="n">seconds</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">start</span><span class="o">.</span><span class="nf">addingTimeInterval</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">))</span>     <span class="c1">// the sensor's 100 Hz clock</span>
+            <span class="n">pending</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">pending</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">batchSize</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">pending</span><span class="p">);</span> <span class="n">pending</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">(</span><span class="nv">keepingCapacity</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="o">!</span><span class="n">pending</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">pending</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">producer</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="nf">processCPUSeconds</span><span class="p">()</span> <span class="o">-</span> <span class="n">cpuBefore</span><span class="p">,</span> <span class="k">await</span> <span class="n">consumer</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">single</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">deliveryCPU</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">batched</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">deliveryCPU</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"100 Hz for 3 s, one sample per delivery: %.1f ms of CPU for %d samples (%.1f µs each)"</span><span class="p">,</span>
+             <span class="n">single</span><span class="o">.</span><span class="n">cpu</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">single</span><span class="o">.</span><span class="n">delivered</span><span class="p">,</span> <span class="n">single</span><span class="o">.</span><span class="n">cpu</span> <span class="o">*</span> <span class="mf">1e6</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">single</span><span class="o">.</span><span class="n">delivered</span><span class="p">)))</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"100 Hz for 3 s, ten samples per delivery: %.1f ms of CPU for %d samples (%.1f µs each)"</span><span class="p">,</span>
+             <span class="n">batched</span><span class="o">.</span><span class="n">cpu</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">batched</span><span class="o">.</span><span class="n">delivered</span><span class="p">,</span> <span class="n">batched</span><span class="o">.</span><span class="n">cpu</span> <span class="o">*</span> <span class="mf">1e6</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">batched</span><span class="o">.</span><span class="n">delivered</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Delivery</th>
+      <th>CPU per sample, three runs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Every sample wakes the consumer</td>
+      <td>88.9, 105.2, 110.4 µs</td>
+    </tr>
+    <tr>
+      <td>Ten samples per wake</td>
+      <td>37.5, 42.1, 35.8 µs</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Delivery cost a thousand times more than processing, and batching cut it by more than half, even though the producer thread still woke 100 times a second in both cases. The difference, about 60 to 70 µs per avoided consumer wake, is the CPU side of the fixed cost. On a device, each avoided wake also saves the energy of bringing a core out of idle, which this measurement can’t see.</p>
+
+<p>The lessons translate directly into API choices:</p>
+
+<ul>
+  <li><strong>Pull instead of push when there’s a frame loop.</strong> Apple’s <code class="language-plaintext highlighter-rouge">CMMotionManager</code> documentation recommends polling <code class="language-plaintext highlighter-rouge">accelerometerData</code> for games, because handlers add overhead. A game already wakes for every frame, so the sensor rides along at no extra cost.</li>
+  <li><strong>Ask for the rate the feature needs.</strong> A 100 Hz request for a 10 Hz feature multiplies wakes by ten.</li>
+  <li><strong>Batch where latency allows.</strong> A recorder doesn’t need each sample within 10 ms. Collect them on the sensor’s queue and hand them over in groups, as the <a href="/ios-accelerometer-gyroscope/#when-the-consumer-falls-behind">buffering policy</a> discussion recommends for recording.</li>
+  <li><strong>Filter at the source.</strong> A <a href="/ios-location-distance-filter-energy/#measuring-the-trade-off">distance filter</a> cut location deliveries tenfold while improving the measured distance.</li>
+</ul>
+
+<h2 id="signposts-seeing-the-work-in-instruments">Signposts: seeing the work in Instruments</h2>
+
+<p>Benchmarks answer “how fast is this function”. Signposts answer “what did the app actually do, when”, in a recording that also shows CPU, wakes, and, on a device, power. <code class="language-plaintext highlighter-rouge">OSSignposter</code> marks intervals with almost no overhead when no tool is recording. This standalone program processes 50 batches inside signpost intervals:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="n">os</span>
+
+<span class="k">let</span> <span class="nv">signposter</span> <span class="o">=</span> <span class="kt">OSSignposter</span><span class="p">(</span><span class="nv">subsystem</span><span class="p">:</span> <span class="s">"dev.swiftbydeya.sensors"</span><span class="p">,</span> <span class="nv">category</span><span class="p">:</span> <span class="o">.</span><span class="n">pointsOfInterest</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">gravity</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">batch</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">50</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="n">signposter</span><span class="o">.</span><span class="nf">beginInterval</span><span class="p">(</span><span class="s">"Process batch"</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="n">signposter</span><span class="o">.</span><span class="nf">makeSignpostID</span><span class="p">(),</span> <span class="s">"batch </span><span class="se">\(</span><span class="n">batch</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">7</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span><span class="p">,</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">5</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">gravity</span> <span class="o">=</span> <span class="p">(</span><span class="n">gravity</span> <span class="o">+</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">gravity</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="n">signposter</span><span class="o">.</span><span class="nf">endInterval</span><span class="p">(</span><span class="s">"Process batch"</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    <span class="n">signposter</span><span class="o">.</span><span class="nf">emitEvent</span><span class="p">(</span><span class="s">"Batch done"</span><span class="p">)</span>
+    <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">forTimeInterval</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">gravity</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Recorded with the Logging template and exported from the command line:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun xctrace record <span class="nt">--template</span> <span class="s2">"Logging"</span> <span class="nt">--output</span> run.trace <span class="nt">--launch</span> <span class="nt">--</span> ./sp
+xcrun xctrace <span class="nb">export</span> <span class="nt">--input</span> run.trace <span class="nt">--xpath</span> <span class="s1">'/trace-toc/run[@number="1"]/data/table[@schema="os-signpost"]'</span>
+</code></pre></div></div>
+
+<p>The export contained 150 signpost rows: 50 interval begins, 50 ends, and 50 “Batch done” events. Pairing each Begin with its End by signpost identifier gave 50 intervals, with a median of 99.6 µs (46.5 µs to 351.6 µs) per batch of 10,000 updates, about 10 ns per update, consistent with the benchmark above. In the Instruments app, the same intervals appear as a lane under Points of Interest, aligned with CPU usage,, which is where a question like “why did one batch take 350 µs” can be answered from the CPU and thread lanes around it.</p>
+
+<p>The Power Profiler template, which shows the energy side, has a hard limit. Asked to record the same program, <code class="language-plaintext highlighter-rouge">xctrace</code> reported: “The Power Profiler instrument is not supported on macOS. Record on iOS or iPadOS instead.” Apple’s WWDC25 session <a href="https://developer.apple.com/videos/play/wwdc2025/226/">Profile and optimize power usage in your app</a> shows its lanes on a device, “the CPU, GPU, display, and networking power impact”, and notes that it “is also available on-device and it can be used to find issues that can’t be reproduced during development.” For sensors, that on-device recording is the measurement that matters: run the feature for twenty minutes outdoors, with the screen off, and compare.</p>
+
+<h2 id="metrickit-power-in-the-field">MetricKit: power in the field</h2>
+
+<p>What users’ devices actually experience arrives through MetricKit, roughly once a day, aggregated by the system. iOS 27 adds a Swift-native API: <code class="language-plaintext highlighter-rouge">MetricManager</code> exposes <code class="language-plaintext highlighter-rouge">metricReports</code> as an <code class="language-plaintext highlighter-rouge">AsyncSequence</code>, and each report’s interval entries carry typed <code class="language-plaintext highlighter-rouge">MetricResult</code> values. Among them, <code class="language-plaintext highlighter-rouge">.locationActivityTime</code> reports how long the app used location at each accuracy level, from <code class="language-plaintext highlighter-rouge">bestAccuracyForNavigation</code> down to <code class="language-plaintext highlighter-rouge">reducedAccuracy</code>, and <code class="language-plaintext highlighter-rouge">.totalBackgroundLocationTime</code> reports background location time. Converting them into the app’s own type keeps the analysis testable without a device:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Time a location feature spent at each accuracy, as plain numbers the app owns and can test.</span>
+<span class="kd">struct</span> <span class="kt">LocationTime</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">bestForNavigation</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">best</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">tenMeters</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">hundredMeters</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">var</span> <span class="nv">kilometer</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">threeKilometers</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">reduced</span> <span class="o">=</span> <span class="mf">0.0</span>          <span class="c1">// seconds</span>
+
+    <span class="k">var</span> <span class="nv">total</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">bestForNavigation</span> <span class="o">+</span> <span class="n">best</span> <span class="o">+</span> <span class="n">tenMeters</span> <span class="o">+</span> <span class="n">hundredMeters</span> <span class="o">+</span> <span class="n">kilometer</span> <span class="o">+</span> <span class="n">threeKilometers</span> <span class="o">+</span> <span class="n">reduced</span> <span class="p">}</span>
+    <span class="c1">/// The share of location time spent at the two most expensive settings.</span>
+    <span class="k">var</span> <span class="nv">highAccuracyShare</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="p">(</span><span class="n">bestForNavigation</span> <span class="o">+</span> <span class="n">best</span><span class="p">)</span> <span class="o">/</span> <span class="n">total</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">commuter</span> <span class="o">=</span> <span class="kt">LocationTime</span><span class="p">(</span><span class="nv">best</span><span class="p">:</span> <span class="mi">1_800</span><span class="p">,</span> <span class="nv">hundredMeters</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="nv">threeKilometers</span><span class="p">:</span> <span class="mi">7_200</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">commuter</span><span class="o">.</span><span class="n">highAccuracyShare</span> <span class="o">-</span> <span class="mf">0.1875</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">MetricKit</span>
+
+<span class="kd">extension</span> <span class="kt">LocationTime</span> <span class="p">{</span>
+    <span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">metric</span><span class="p">:</span> <span class="kt">LocationActivityTimeMetric</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">bestForNavigation</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">bestAccuracyForNavigation</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">best</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">bestAccuracy</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">tenMeters</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">tenMeters</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">hundredMeters</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">oneHundredMeter</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">kilometer</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">oneKilometer</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">threeKilometers</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">threeKilometers</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">reduced</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">reducedAccuracy</span><span class="o">.</span><span class="nf">converted</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">seconds</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Field metrics arrive about once a day on real devices; collect the location ones as they come.</span>
+    <span class="k">let</span> <span class="nv">metrics</span> <span class="o">=</span> <span class="kt">MetricManager</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">locationTimes</span><span class="p">:</span> <span class="p">[</span><span class="kt">LocationTime</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">collector</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">report</span> <span class="k">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">metricReports</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="k">in</span> <span class="n">report</span><span class="o">.</span><span class="n">intervalEntries</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="k">case</span> <span class="o">.</span><span class="nf">locationActivityTime</span><span class="p">(</span><span class="k">let</span> <span class="nv">metric</span><span class="p">)</span> <span class="k">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">values</span> <span class="p">{</span> <span class="n">locationTimes</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">LocationTime</span><span class="p">(</span><span class="n">metric</span><span class="p">))</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Signposts on MetricKit's log handle are aggregated into those reports, so field data shows the same intervals.</span>
+    <span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">MetricManager</span><span class="o">.</span><span class="nf">logHandle</span><span class="p">(</span><span class="nv">category</span><span class="p">:</span> <span class="s">"Sensors"</span><span class="p">)</span>
+    <span class="nf">mxSignpost</span><span class="p">(</span><span class="o">.</span><span class="n">begin</span><span class="p">,</span> <span class="nv">log</span><span class="p">:</span> <span class="n">log</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Process batch"</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">smoothed</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span> <span class="p">{</span> <span class="n">smoothed</span> <span class="o">+=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">7</span><span class="p">)</span> <span class="o">-</span> <span class="n">smoothed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="nf">mxSignpost</span><span class="p">(</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="nv">log</span><span class="p">:</span> <span class="n">log</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Process batch"</span><span class="p">)</span>
+
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+    <span class="n">collector</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"metric reports with location time in the simulator after 3 s:"</span><span class="p">,</span> <span class="n">locationTimes</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"(smoothed </span><span class="se">\(</span><span class="n">smoothed</span><span class="se">)</span><span class="s">)"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">locationTimes</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The simulator delivered no reports in 3 seconds, and it isn’t expected to. MetricKit aggregates real usage over a day. The code compiles against the iOS 27 SDK and runs. The signpost half matters as much as the metric half. Intervals emitted with <code class="language-plaintext highlighter-rouge">mxSignpost</code> on the log handle from <code class="language-plaintext highlighter-rouge">MetricManager.logHandle(category:)</code> are aggregated into the same reports, so the “Process batch” interval measured in Instruments during development shows up again, with real users’ durations, in the field.</p>
+
+<p>The location metric answers the question this whole series keeps returning to: is the app using more accuracy than its features need? A commute tracker that spent 1,800 s at best accuracy, 600 s at 100 m, and 7,200 s at 3 km spent 18.75% of its location time at the expensive settings. If a release moves that share up without a feature that needs it, something started asking for more precision than it should.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Sensor energy goes to hardware and to waking the app, not to math. The series’ algorithms cost 3.4 to 45 ns per sample when optimized, a negligible share of a core even at 100 Hz.</li>
+  <li>Delivery cost a thousand times more than processing: 89 to 110 µs of CPU per sample with one wake per sample, and 36 to 42 µs in batches of ten. That’s the CPU side of what Apple calls fixed cost. Batching, pulling in an existing frame loop, lower rates, and source-side filters all reduce wakes.</li>
+  <li>Mark work with <code class="language-plaintext highlighter-rouge">OSSignposter</code> and record with Instruments or <code class="language-plaintext highlighter-rouge">xctrace</code>. The recorded intervals, a median of 99.6 µs per 10,000 updates, agreed with the benchmark.</li>
+  <li>The Power Profiler doesn’t run on macOS. Record on an iPhone or iPad, including on-device without Xcode, and watch the CPU, GPU, display, and networking lanes.</li>
+  <li>iOS 27’s <code class="language-plaintext highlighter-rouge">MetricManager.metricReports</code> delivers field metrics as typed values, including time at each location accuracy and background location time. <code class="language-plaintext highlighter-rouge">mxSignpost</code> intervals on its log handle come back aggregated from real devices.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Build a “location budget” check for a test run. Record the location accuracy the app requested over time, using the <code class="language-plaintext highlighter-rouge">desiredAccuracy</code> or <code class="language-plaintext highlighter-rouge">LiveConfiguration</code> changes your code makes, and compute a <code class="language-plaintext highlighter-rouge">LocationTime</code> from it, the same shape MetricKit reports. Assert that a 30-minute simulated session with the run screen open for 10 minutes spends at most 35% of its location time at best accuracy, and make the test fail when someone leaves best accuracy on after the run screen closes. On a device, compare your computed <code class="language-plaintext highlighter-rouge">LocationTime</code> with what MetricKit reports the next day.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/library/archive/documentation/Performance/Conceptual/EnergyGuide-iOS/FundamentalConcepts.html">Energy Efficiency Guide for iOS Apps: Fundamental Concepts</a>, on dynamic and fixed costs</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2025/226/">Profile and optimize power usage in your app</a>, WWDC25, introducing the Power Profiler</li>
+  <li><a href="https://developer.apple.com/documentation/os/ossignposter"><code class="language-plaintext highlighter-rouge">OSSignposter</code></a>, for intervals visible in Instruments</li>
+  <li><a href="https://developer.apple.com/documentation/metrickit">MetricKit</a>, including <code class="language-plaintext highlighter-rouge">MXLocationActivityMetric</code> and the newer Swift <code class="language-plaintext highlighter-rouge">MetricManager</code></li>
+</ul>
+
+<p>Previous: <a href="/ios-sensor-stopping-updates/">Stopping Updates When a Feature Ends</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-sensor-profiling-battery/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Profiling+Sensor+Work+and+Battery+Usage%20https%3A%2F%2Fswiftbydeya.com%2Fios-sensor-profiling-battery%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-sensor-profiling-battery/&title=Profiling+Sensor+Work+and+Battery+Usage%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-sensor-profiling-battery/&title=Profiling+Sensor+Work+and+Battery+Usage%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-sensor-profiling-battery/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Profiling Sensor Work and Battery Usage%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-sensor-profiling-battery/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Energy">Energy</a></li>
+    
+    <li><a href="/tag/#Instruments">Instruments</a></li>
+    
+    <li><a href="/tag/#MetricKit">MetricKit</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="LLDB Survival Guide: Theory, Tricks, and Python Hooks" href="/lldb-survival-guide/"> <p>Previous post</p> LLDB Survival Guide: Theory, Tricks, and Python Hooks </a> </div> <div id="next-post"> <a alt="Stopping Updates When a Feature Ends" href="/ios-sensor-stopping-updates/"> <p>Next post</p> Stopping Updates When a Feature Ends </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

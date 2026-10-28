@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Injecting Recorded Sensor Data for Deterministic Tests | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Injecting Recorded Sensor Data for Deterministic Tests" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Sensor code is hard to test for two reasons that look unrelated. Its input comes from hardware: a test can’t walk around a park, and the simulator, as this series has measured, has no motion sensors and scripted location. And its behavior depends on time: deadlines, debouncing, rate limits, and the spacing of samples. A test that sleeps for real is slow, and one that doesn’t is usually testing something else. Recorded data solves the first problem and a controllable clock solves the second. Together they make sensor features as testable as any other code. This article builds both as a Swift package with Swift Testing tests. Features depend on a LocationSource protocol. A recording is a JSON Lines file, and the one in the tests is real: 30 fixes recorded from the simulator’s City Run scenario. A replay source plays it on any Swift Clock. A ManualClock moves only when a test tells it to. The eight tests (ten cases) ran in 0.026 seconds, including one that waits 30 seconds for a silent sensor and one that replays the whole recording, about half a minute of real time. Building it surfaced a bug worth knowing about, a test that hung because a start time was computed at the wrong moment, and the same mistake is waiting in naive deadline code." /> <meta property="og:description" content="Sensor code is hard to test for two reasons that look unrelated. Its input comes from hardware: a test can’t walk around a park, and the simulator, as this series has measured, has no motion sensors and scripted location. And its behavior depends on time: deadlines, debouncing, rate limits, and the spacing of samples. A test that sleeps for real is slow, and one that doesn’t is usually testing something else. Recorded data solves the first problem and a controllable clock solves the second. Together they make sensor features as testable as any other code. This article builds both as a Swift package with Swift Testing tests. Features depend on a LocationSource protocol. A recording is a JSON Lines file, and the one in the tests is real: 30 fixes recorded from the simulator’s City Run scenario. A replay source plays it on any Swift Clock. A ManualClock moves only when a test tells it to. The eight tests (ten cases) ran in 0.026 seconds, including one that waits 30 seconds for a silent sensor and one that replays the whole recording, about half a minute of real time. Building it surfaced a bug worth knowing about, a test that hung because a start time was computed at the wrong moment, and the same mistake is waiting in naive deadline code." /> <link rel="canonical" href="https://swiftbydeya.com/ios-sensor-recorded-data-tests/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-sensor-recorded-data-tests/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-23T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Injecting Recorded Sensor Data for Deterministic Tests" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-23T00:00:00+03:00","datePublished":"2026-03-23T00:00:00+03:00","description":"Sensor code is hard to test for two reasons that look unrelated. Its input comes from hardware: a test can’t walk around a park, and the simulator, as this series has measured, has no motion sensors and scripted location. And its behavior depends on time: deadlines, debouncing, rate limits, and the spacing of samples. A test that sleeps for real is slow, and one that doesn’t is usually testing something else. Recorded data solves the first problem and a controllable clock solves the second. Together they make sensor features as testable as any other code. This article builds both as a Swift package with Swift Testing tests. Features depend on a LocationSource protocol. A recording is a JSON Lines file, and the one in the tests is real: 30 fixes recorded from the simulator’s City Run scenario. A replay source plays it on any Swift Clock. A ManualClock moves only when a test tells it to. The eight tests (ten cases) ran in 0.026 seconds, including one that waits 30 seconds for a silent sensor and one that replays the whole recording, about half a minute of real time. Building it surfaced a bug worth knowing about, a test that hung because a start time was computed at the wrong moment, and the same mistake is waiting in naive deadline code.","headline":"Injecting Recorded Sensor Data for Deterministic Tests","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-sensor-recorded-data-tests/"},"url":"https://swiftbydeya.com/ios-sensor-recorded-data-tests/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Injecting Recorded Sensor Data for Deterministic Tests"> <meta name="twitter:description" content="Sensor code is hard to test for two reasons that look unrelated. Its input comes from hardware: a test can’t walk around a park, and the simulator, as this s..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Injecting Recorded Sensor Data for Deterministic Tests"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Injecting Recorded Sensor Data for Deterministic Tests</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-23T00:00:00+03:00">March 23, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Sensor code is hard to test for two reasons that look unrelated. Its input comes from hardware: a test can’t walk around a park, and the simulator, as this series has measured, has no motion sensors and scripted location. And its behavior depends on time: deadlines, debouncing, rate limits, and the spacing of samples. A test that sleeps for real is slow, and one that doesn’t is usually testing something else. Recorded data solves the first problem and a controllable clock solves the second. Together they make sensor features as testable as any other code.</p>
+
+<p>This article builds both as a Swift package with Swift Testing tests. Features depend on a <code class="language-plaintext highlighter-rouge">LocationSource</code> protocol. A recording is a JSON Lines file, and the one in the tests is real: 30 fixes recorded from the simulator’s City Run scenario. A replay source plays it on any Swift <code class="language-plaintext highlighter-rouge">Clock</code>. A <code class="language-plaintext highlighter-rouge">ManualClock</code> moves only when a test tells it to. The eight tests (ten cases) ran in 0.026 seconds, including one that waits 30 seconds for a silent sensor and one that replays the whole recording, about half a minute of real time. Building it surfaced a bug worth knowing about, a test that hung because a start time was computed at the wrong moment, and the same mistake is waiting in naive deadline code.</p>
+
+<!--more-->
+
+<p>The package uses Swift 6 language mode and was built and tested with <code class="language-plaintext highlighter-rouge">swift test</code> from the Swift 6.4 toolchain in Xcode 27.1 on macOS 26. Each code block below is a file of the package, named just above it. The live source compiles only for iOS, so the library was also typechecked against the iOS 27.1 simulator SDK. The recording was captured from an iPhone 17 simulator running iOS 27.0.</p>
+
+<h2 id="the-shape-of-a-testable-sensor-feature">The shape of a testable sensor feature</h2>
+
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Production
+        L[LiveLocationSource&lt;br/&gt;CLLocationUpdate.liveUpdates] --&gt; F
+    end
+    subgraph Tests
+        R[Recording&lt;br/&gt;JSON Lines] --&gt; P[ReplaySource&lt;br/&gt;on a ManualClock] --&gt; F
+    end
+    F[Feature&lt;br/&gt;RunTracker, deadlines] --&gt; O[Results]
+</code></pre>
+
+<p>The feature never sees Core Location. It sees <code class="language-plaintext highlighter-rouge">LocationSample</code> values from something that conforms to <code class="language-plaintext highlighter-rouge">LocationSource</code>. The boundary is where the earlier articles’ rules apply: <a href="/ios-accelerometer-gyroscope/#receiving-samples-in-swift-6">convert to <code class="language-plaintext highlighter-rouge">Sendable</code> values</a>, and <a href="/ios-sensor-missing-data/#optionals-at-the-boundary">turn sentinels into optionals</a>. Because the sample is the only thing that crosses the boundary, it’s also the only thing a recording has to store.</p>
+
+<h2 id="samples-and-recordings">Samples and recordings</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Sources/Library/LocationSample.swift</code>:</p>
+
+<!-- file: Sources/Library/LocationSample.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+
+<span class="c1">/// One recorded fix. Negative speeds and courses, Core Location's "unknown", become nil on the way in.</span>
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">LocationSample</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">TimeInterval</span>          <span class="c1">// seconds since 1970</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">speed</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">course</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">speed</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?,</span> <span class="nv">course</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">latitude</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">longitude</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">=</span> <span class="n">accuracy</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">course</span> <span class="o">=</span> <span class="n">course</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">timeIntervalSince1970</span><span class="p">,</span> <span class="nv">latitude</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                  <span class="nv">longitude</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">,</span>
+                  <span class="nv">speed</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">location</span><span class="o">.</span><span class="nv">speed</span> <span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">course</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">course</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">location</span><span class="o">.</span><span class="nv">course</span> <span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">enum</span> <span class="kt">CodingKeys</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">CodingKey</span> <span class="p">{</span> <span class="k">case</span> <span class="n">time</span> <span class="o">=</span> <span class="s">"t"</span><span class="p">,</span> <span class="n">latitude</span> <span class="o">=</span> <span class="s">"lat"</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="s">"lon"</span><span class="p">,</span> <span class="n">accuracy</span> <span class="o">=</span> <span class="s">"acc"</span><span class="p">,</span> <span class="n">speed</span><span class="p">,</span> <span class="n">course</span> <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="n">from</span> <span class="nv">decoder</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Decoder</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">c</span> <span class="o">=</span> <span class="k">try</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">container</span><span class="p">(</span><span class="nv">keyedBy</span><span class="p">:</span> <span class="kt">CodingKeys</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="n">latitude</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">latitude</span><span class="p">)</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+        <span class="n">accuracy</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">accuracy</span><span class="p">)</span>
+        <span class="n">speed</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decodeIfPresent</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">speed</span><span class="p">)</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="nv">$0</span> <span class="p">:</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="n">course</span> <span class="o">=</span> <span class="k">try</span> <span class="n">c</span><span class="o">.</span><span class="nf">decodeIfPresent</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">course</span><span class="p">)</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="nv">$0</span> <span class="p">:</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span> <span class="p">{</span>
+        <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">longitude</span><span class="p">),</span> <span class="nv">altitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                   <span class="nv">horizontalAccuracy</span><span class="p">:</span> <span class="n">accuracy</span><span class="p">,</span> <span class="nv">verticalAccuracy</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSince1970</span><span class="p">:</span> <span class="n">time</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The sample decodes negative speeds and courses as <code class="language-plaintext highlighter-rouge">nil</code>, so a recording made from raw <code class="language-plaintext highlighter-rouge">CLLocation</code> values, which uses −1 for unknown, can’t leak the sentinel into the feature. The coding keys are short, because a run recorded at one fix per second is 3,600 lines an hour.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Sources/Library/Recording.swift</code>:</p>
+
+<!-- file: Sources/Library/Recording.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="c1">/// A recording is JSON Lines: one sample per line, so a recorder can append as it goes and a crash loses one line.</span>
+<span class="kd">public</span> <span class="kd">enum</span> <span class="kt">Recording</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">encode</span><span class="p">(</span><span class="n">_</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">LocationSample</span><span class="p">])</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">encoder</span> <span class="o">=</span> <span class="kt">JSONEncoder</span><span class="p">()</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">outputFormatting</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="n">sortedKeys</span><span class="p">]</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="n">samples</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="k">try</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="nv">$0</span><span class="p">),</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span> <span class="o">+</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">decode</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">LocationSample</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">decoder</span> <span class="o">=</span> <span class="kt">JSONDecoder</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="n">text</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="o">!</span><span class="nv">$0</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="k">try</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">LocationSample</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>JSON Lines suits recordings: one JSON object per line, appended as samples arrive. A recorder never rewrites the file, and if the app crashes, only the last line is lost. Encoding with <code class="language-plaintext highlighter-rouge">.sortedKeys</code> makes recordings diff cleanly in code review, which matters once they’re checked into the repository as fixtures.</p>
+
+<p>The fixture in the tests is real data. A short test in the simulator started location updates, ran <code class="language-plaintext highlighter-rouge">xcrun simctl location booted run "City Run"</code>, and printed each fix in this format. The first three lines:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"t"</span><span class="p">:</span><span class="mf">1793197938.549</span><span class="p">,</span><span class="nl">"lat"</span><span class="p">:</span><span class="mf">37.331821</span><span class="p">,</span><span class="nl">"lon"</span><span class="p">:</span><span class="mf">-122.030386</span><span class="p">,</span><span class="nl">"acc"</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="nl">"speed"</span><span class="p">:</span><span class="mf">1.54</span><span class="p">,</span><span class="nl">"course"</span><span class="p">:</span><span class="mf">-1.0</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"t"</span><span class="p">:</span><span class="mf">1793197939.561</span><span class="p">,</span><span class="nl">"lat"</span><span class="p">:</span><span class="mf">37.331820</span><span class="p">,</span><span class="nl">"lon"</span><span class="p">:</span><span class="mf">-122.030433</span><span class="p">,</span><span class="nl">"acc"</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="nl">"speed"</span><span class="p">:</span><span class="mf">3.59</span><span class="p">,</span><span class="nl">"course"</span><span class="p">:</span><span class="mf">-1.0</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"t"</span><span class="p">:</span><span class="mf">1793197940.565</span><span class="p">,</span><span class="nl">"lat"</span><span class="p">:</span><span class="mf">37.331815</span><span class="p">,</span><span class="nl">"lon"</span><span class="p">:</span><span class="mf">-122.030482</span><span class="p">,</span><span class="nl">"acc"</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="nl">"speed"</span><span class="p">:</span><span class="mf">3.74</span><span class="p">,</span><span class="nl">"course"</span><span class="p">:</span><span class="mf">263.6</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Recording from devices works the same way: log <code class="language-plaintext highlighter-rouge">LocationSample(location)</code> for every fix during a real run, export the file, and keep it with the tests. A recording made on a phone in a city captures what no simulator scenario does: urban-canyon jumps, accuracy that swings between 5 and 65 m, and gaps under bridges.</p>
+
+<h2 id="sources-and-replay">Sources and replay</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Sources/Library/Sources.swift</code>:</p>
+
+<!-- file: Sources/Library/Sources.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+
+<span class="c1">/// What every feature depends on: a stream of samples. Production passes the live source; tests pass a replay.</span>
+<span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">LocationSource</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">samples</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LocationSample</span><span class="o">&gt;</span>
+<span class="p">}</span>
+
+<span class="c1">/// Replays a recording on any clock, keeping the recorded spacing (divided by `speedUp`).</span>
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">ReplaySource</span><span class="o">&lt;</span><span class="kt">C</span><span class="p">:</span> <span class="kt">Clock</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">LocationSource</span> <span class="k">where</span> <span class="kt">C</span><span class="o">.</span><span class="kt">Duration</span> <span class="o">==</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">let</span> <span class="nv">recording</span><span class="p">:</span> <span class="p">[</span><span class="kt">LocationSample</span><span class="p">]</span>
+    <span class="kd">public</span> <span class="k">let</span> <span class="nv">clock</span><span class="p">:</span> <span class="kt">C</span>
+    <span class="kd">public</span> <span class="k">let</span> <span class="nv">speedUp</span><span class="p">:</span> <span class="kt">Double</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">recording</span><span class="p">:</span> <span class="p">[</span><span class="kt">LocationSample</span><span class="p">],</span> <span class="nv">clock</span><span class="p">:</span> <span class="kt">C</span><span class="p">,</span> <span class="nv">speedUp</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">recording</span> <span class="o">=</span> <span class="n">recording</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">speedUp</span> <span class="o">=</span> <span class="n">speedUp</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="kd">func</span> <span class="nf">samples</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LocationSample</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">LocationSample</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">recording</span> <span class="o">=</span> <span class="n">recording</span><span class="p">,</span> <span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span><span class="p">,</span> <span class="n">speedUp</span> <span class="o">=</span> <span class="n">speedUp</span>
+        <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="n">recording</span><span class="o">.</span><span class="n">first</span><span class="p">?</span><span class="o">.</span><span class="n">time</span> <span class="k">else</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">();</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">for</span> <span class="n">sample</span> <span class="k">in</span> <span class="n">recording</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">offset</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="nf">seconds</span><span class="p">((</span><span class="n">sample</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">first</span><span class="p">)</span> <span class="o">/</span> <span class="n">speedUp</span><span class="p">)</span>
+                <span class="k">do</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">start</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">offset</span><span class="p">),</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#if os(iOS)</span>
+<span class="c1">/// The production source: Core Location's live updates, converted at the boundary.</span>
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">LiveLocationSource</span><span class="p">:</span> <span class="kt">LocationSource</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="kd">public</span> <span class="kd">func</span> <span class="nf">samples</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LocationSample</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">AsyncStream</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">update</span> <span class="k">in</span> <span class="kt">CLLocationUpdate</span><span class="o">.</span><span class="nf">liveUpdates</span><span class="p">(</span><span class="o">.</span><span class="n">fitness</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="k">let</span> <span class="nv">location</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">location</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="kt">LocationSample</span><span class="p">(</span><span class="n">location</span><span class="p">))</span> <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">ReplaySource</code> sleeps on its clock until each sample’s recorded offset from the first one, then yields it. On a <code class="language-plaintext highlighter-rouge">ContinuousClock</code> it reproduces the recording’s real timing, which is useful for demos and for driving the app in the simulator from a device recording. On a test clock it reproduces the timing without the waiting. The live source is the same <code class="language-plaintext highlighter-rouge">liveUpdates()</code> loop the earlier articles used, converted at the boundary. Both sit behind one protocol, so the feature can’t tell them apart.</p>
+
+<p>Note where <code class="language-plaintext highlighter-rouge">start</code> is computed: when <code class="language-plaintext highlighter-rouge">samples()</code> is called, not inside the task. That’s the first of the two timing bugs, and the test section shows what happens when the order is wrong.</p>
+
+<h2 id="the-feature-under-test">The feature under test</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Sources/Library/RunTracker.swift</code>:</p>
+
+<!-- file: Sources/Library/RunTracker.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+
+<span class="c1">/// The feature under test: total distance of a run, ignoring fixes that are too vague or imply impossible speed,</span>
+<span class="c1">/// and spacing kept fixes by a distance filter.</span>
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">RunTracker</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">maximumAccuracy</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">maximumSpeed</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="kd">public</span> <span class="k">var</span> <span class="nv">minimumSpacing</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="kd">public</span> <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">distance</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">public</span> <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">kept</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rejected</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">?</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{}</span>
+
+    <span class="kd">public</span> <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">add</span><span class="p">(</span><span class="n">_</span> <span class="nv">sample</span><span class="p">:</span> <span class="kt">LocationSample</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">location</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">location</span>
+        <span class="k">guard</span> <span class="n">sample</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sample</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">&lt;=</span> <span class="n">maximumAccuracy</span> <span class="k">else</span> <span class="p">{</span> <span class="n">rejected</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">last</span> <span class="k">else</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">last</span> <span class="o">=</span> <span class="n">location</span><span class="p">;</span> <span class="n">kept</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">step</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">last</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">location</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">timestamp</span><span class="p">),</span> <span class="mf">0.001</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">step</span> <span class="o">-</span> <span class="n">sample</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">-</span> <span class="n">last</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)</span> <span class="o">/</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="n">maximumSpeed</span> <span class="p">{</span> <span class="n">rejected</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="n">step</span> <span class="o">&gt;=</span> <span class="n">minimumSpacing</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">distance</span> <span class="o">+=</span> <span class="n">step</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">last</span> <span class="o">=</span> <span class="n">location</span>
+        <span class="n">kept</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">RunTracker</code> combines three rules from earlier articles: reject fixes whose accuracy is too vague, reject <a href="/ios-location-updates-accuracy/#rejecting-impossible-jumps">implausible jumps</a>, and add distance only between fixes at least <a href="/ios-location-distance-filter-energy/#two-errors-that-pull-in-opposite-directions">10 m apart</a>. It’s a plain struct with no sensor or clock dependency, which is what makes it the easy part to test.</p>
+
+<h2 id="a-clock-the-test-controls">A clock the test controls</h2>
+
+<p>Time-based behavior needs a clock that only moves when the test says so. Swift’s <code class="language-plaintext highlighter-rouge">Clock</code> protocol makes this possible without touching the code under test: anything written against <code class="language-plaintext highlighter-rouge">some Clock</code> accepts a test clock. The <a href="/ios-sensor-availability/#a-deadline-for-the-first-sample">first-sample deadline</a> from the first article in this series, rewritten to take a clock:</p>
+
+<p><code class="language-plaintext highlighter-rouge">Sources/Library/Deadline.swift</code>:</p>
+
+<!-- file: Sources/Library/Deadline.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">public</span> <span class="kd">struct</span> <span class="kt">SensorSilent</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{}</span>
+
+<span class="c1">/// Forwards `upstream`, but fails with SensorSilent if nothing arrives within `limit` on `clock`.</span>
+<span class="c1">/// The deadline is fixed now, when the function is called, so a test clock can't move before the watchdog sees it.</span>
+<span class="kd">public</span> <span class="kd">func</span> <span class="n">requiringFirstElement</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">C</span><span class="p">:</span> <span class="kt">Clock</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">of</span> <span class="nv">upstream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Element</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">within</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">clock</span><span class="p">:</span> <span class="kt">C</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="k">where</span> <span class="kt">C</span><span class="o">.</span><span class="kt">Duration</span> <span class="o">==</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">AsyncThrowingStream</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">forwarding</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">watchdog</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">deadline</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">SensorSilent</span><span class="p">())</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="k">await</span> <span class="n">element</span> <span class="k">in</span> <span class="n">upstream</span> <span class="p">{</span>
+                <span class="n">watchdog</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">watchdog</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">forwarding</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The comment on the deadline marks the change from the first article’s version, which computed the deadline inside the watchdog task: <code class="language-plaintext highlighter-rouge">try await Task.sleep(for: limit)</code>. With a real clock, that’s fine. With a manual clock, it races: a test that creates the guarded stream and immediately advances time by 31 seconds can advance <em>before</em> the watchdog task starts, and the watchdog would then compute “now plus 30 seconds” from the already advanced time and sleep past the point the test ever reaches. This version was written to avoid that, so the race was never observed here, but the replay test below hit exactly the same mistake in a different place. Fixing the deadline when the function is called makes the result independent of task scheduling, which is also more correct in production. The deadline should run from the moment the caller asked, not from whenever a task got scheduled.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Tests/LibraryTests/ManualClock.swift</code>:</p>
+
+<!-- file: Tests/LibraryTests/ManualClock.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// A clock that only moves when a test moves it. Sleepers wake, in deadline order, when time passes their deadline.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ManualClock</span><span class="p">:</span> <span class="kt">Clock</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">Instant</span><span class="p">:</span> <span class="kt">InstantProtocol</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">offset</span><span class="p">:</span> <span class="kt">Duration</span>
+        <span class="kd">func</span> <span class="nf">advanced</span><span class="p">(</span><span class="n">by</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Instant</span> <span class="p">{</span> <span class="kt">Instant</span><span class="p">(</span><span class="nv">offset</span><span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">duration</span><span class="p">)</span> <span class="p">}</span>
+        <span class="kd">func</span> <span class="nf">duration</span><span class="p">(</span><span class="n">to</span> <span class="nv">other</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span> <span class="n">other</span><span class="o">.</span><span class="n">offset</span> <span class="o">-</span> <span class="n">offset</span> <span class="p">}</span>
+        <span class="kd">static</span> <span class="kd">func</span> <span class="o">&lt;</span> <span class="p">(</span><span class="nv">a</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">a</span><span class="o">.</span><span class="n">offset</span> <span class="o">&lt;</span> <span class="n">b</span><span class="o">.</span><span class="n">offset</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">Sleeper</span> <span class="p">{</span> <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">;</span> <span class="k">let</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">;</span> <span class="k">let</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">}</span>
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">now</span> <span class="o">=</span> <span class="kt">Instant</span><span class="p">(</span><span class="nv">offset</span><span class="p">:</span> <span class="o">.</span><span class="n">zero</span><span class="p">);</span> <span class="k">var</span> <span class="nv">sleepers</span><span class="p">:</span> <span class="p">[</span><span class="kt">Sleeper</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="k">var</span> <span class="nv">nextID</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+
+    <span class="k">var</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Instant</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">now</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">minimumResolution</span><span class="p">:</span> <span class="kt">Duration</span> <span class="p">{</span> <span class="o">.</span><span class="n">zero</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">sleeperCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">until</span> <span class="nv">deadline</span><span class="p">:</span> <span class="kt">Instant</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span> <span class="k">defer</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">};</span> <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">nextID</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+                <span class="k">let</span> <span class="nv">resumeNow</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="k">in</span>
+                    <span class="k">if</span> <span class="n">deadline</span> <span class="o">&lt;=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Sleeper</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">,</span> <span class="nv">deadline</span><span class="p">:</span> <span class="n">deadline</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="n">continuation</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="kc">false</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="n">resumeNow</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Sleeper</span><span class="p">?</span> <span class="k">in</span>
+                <span class="k">guard</span> <span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="nf">firstIndex</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">id</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+                <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">index</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">cancelled</span><span class="p">?</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">CancellationError</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Moves time forward and wakes every sleeper whose deadline has passed.</span>
+    <span class="kd">func</span> <span class="nf">advance</span><span class="p">(</span><span class="n">by</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">due</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Sleeper</span><span class="p">]</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">now</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">duration</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">now</span>
+            <span class="k">let</span> <span class="nv">due</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">deadline</span> <span class="o">&lt;=</span> <span class="n">now</span> <span class="p">}</span><span class="o">.</span><span class="n">sorted</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">deadline</span> <span class="o">&lt;</span> <span class="nv">$1</span><span class="o">.</span><span class="n">deadline</span> <span class="p">}</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">sleepers</span><span class="o">.</span><span class="n">removeAll</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">deadline</span> <span class="o">&lt;=</span> <span class="n">now</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">due</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">sleeper</span> <span class="k">in</span> <span class="n">due</span> <span class="p">{</span> <span class="n">sleeper</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The clock keeps sleepers in a mutex-protected list. <code class="language-plaintext highlighter-rouge">sleep(until:)</code> returns immediately when the deadline has already passed. Otherwise it parks a continuation until <code class="language-plaintext highlighter-rouge">advance(by:)</code> moves time past the deadline, waking sleepers in deadline order. Cancellation removes the sleeper and resumes it with <code class="language-plaintext highlighter-rouge">CancellationError</code>, so a cancelled replay doesn’t leak a suspended task. There’s one design choice to note: <code class="language-plaintext highlighter-rouge">advance</code> resumes continuations <em>after</em> releasing the lock, because resuming while holding it would let woken code call back into the clock and deadlock.</p>
+
+<h2 id="the-tests">The tests</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Tests/LibraryTests/Fixtures.swift</code>:</p>
+
+<!-- file: Tests/LibraryTests/Fixtures.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Thirty fixes recorded from the iOS 27.0 simulator's "City Run" scenario, one per line.</span>
+<span class="k">let</span> <span class="nv">cityRun</span> <span class="o">=</span> <span class="s">"""
+{"</span><span class="n">t</span><span class="s">":1793197938.549,"</span><span class="n">lat</span><span class="s">":37.331821,"</span><span class="n">lon</span><span class="s">":-122.030386,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":1.54,"</span><span class="n">course</span><span class="s">":-1.0}
+{"</span><span class="n">t</span><span class="s">":1793197939.561,"</span><span class="n">lat</span><span class="s">":37.331820,"</span><span class="n">lon</span><span class="s">":-122.030433,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.59,"</span><span class="n">course</span><span class="s">":-1.0}
+{"</span><span class="n">t</span><span class="s">":1793197940.565,"</span><span class="n">lat</span><span class="s">":37.331815,"</span><span class="n">lon</span><span class="s">":-122.030482,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.74,"</span><span class="n">course</span><span class="s">":263.6}
+{"</span><span class="n">t</span><span class="s">":1793197941.551,"</span><span class="n">lat</span><span class="s">":37.331810,"</span><span class="n">lon</span><span class="s">":-122.030534,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":4.25,"</span><span class="n">course</span><span class="s">":262.9}
+{"</span><span class="n">t</span><span class="s">":1793197942.553,"</span><span class="n">lat</span><span class="s">":37.331800,"</span><span class="n">lon</span><span class="s">":-122.030581,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.84,"</span><span class="n">course</span><span class="s">":258.2}
+{"</span><span class="n">t</span><span class="s">":1793197943.555,"</span><span class="n">lat</span><span class="s">":37.331786,"</span><span class="n">lon</span><span class="s">":-122.030626,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.67,"</span><span class="n">course</span><span class="s">":250.5}
+{"</span><span class="n">t</span><span class="s">":1793197944.554,"</span><span class="n">lat</span><span class="s">":37.331761,"</span><span class="n">lon</span><span class="s">":-122.030664,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.68,"</span><span class="n">course</span><span class="s">":228.4}
+{"</span><span class="n">t</span><span class="s">":1793197945.589,"</span><span class="n">lat</span><span class="s">":37.331729,"</span><span class="n">lon</span><span class="s">":-122.030684,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.50,"</span><span class="n">course</span><span class="s">":199.2}
+{"</span><span class="n">t</span><span class="s">":1793197946.595,"</span><span class="n">lat</span><span class="s">":37.331694,"</span><span class="n">lon</span><span class="s">":-122.030692,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.51,"</span><span class="n">course</span><span class="s">":181.2}
+{"</span><span class="n">t</span><span class="s">":1793197947.581,"</span><span class="n">lat</span><span class="s">":37.331658,"</span><span class="n">lon</span><span class="s">":-122.030700,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.50,"</span><span class="n">course</span><span class="s">":182.1}
+{"</span><span class="n">t</span><span class="s">":1793197948.552,"</span><span class="n">lat</span><span class="s">":37.331620,"</span><span class="n">lon</span><span class="s">":-122.030706,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.66,"</span><span class="n">course</span><span class="s">":179.1}
+{"</span><span class="n">t</span><span class="s">":1793197949.602,"</span><span class="n">lat</span><span class="s">":37.331582,"</span><span class="n">lon</span><span class="s">":-122.030706,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.65,"</span><span class="n">course</span><span class="s">":171.6}
+{"</span><span class="n">t</span><span class="s">":1793197950.605,"</span><span class="n">lat</span><span class="s">":37.331542,"</span><span class="n">lon</span><span class="s">":-122.030715,"</span><span class="n">acc</span><span class="s">":30,"</span><span class="n">speed</span><span class="s">":3.91,"</span><span class="n">course</span><span class="s">":184.5}
+{"</span><span class="n">t</span><span class="s">":1793197951.604,"</span><span class="n">lat</span><span class="s">":37.331504,"</span><span class="n">lon</span><span class="s">":-122.030716,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.75,"</span><span class="n">course</span><span class="s">":174.3}
+{"</span><span class="n">t</span><span class="s">":1793197952.607,"</span><span class="n">lat</span><span class="s">":37.331464,"</span><span class="n">lon</span><span class="s">":-122.030721,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.77,"</span><span class="n">course</span><span class="s">":180.8}
+{"</span><span class="n">t</span><span class="s">":1793197953.590,"</span><span class="n">lat</span><span class="s">":37.331426,"</span><span class="n">lon</span><span class="s">":-122.030728,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.75,"</span><span class="n">course</span><span class="s">":185.0}
+{"</span><span class="n">t</span><span class="s">":1793197954.603,"</span><span class="n">lat</span><span class="s">":37.331388,"</span><span class="n">lon</span><span class="s">":-122.030728,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.66,"</span><span class="n">course</span><span class="s">":175.3}
+{"</span><span class="n">t</span><span class="s">":1793197955.612,"</span><span class="n">lat</span><span class="s">":37.331351,"</span><span class="n">lon</span><span class="s">":-122.030735,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.68,"</span><span class="n">course</span><span class="s">":185.7}
+{"</span><span class="n">t</span><span class="s">":1793197956.580,"</span><span class="n">lat</span><span class="s">":37.331315,"</span><span class="n">lon</span><span class="s">":-122.030738,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.49,"</span><span class="n">course</span><span class="s">":181.4}
+{"</span><span class="n">t</span><span class="s">":1793197957.596,"</span><span class="n">lat</span><span class="s">":37.331280,"</span><span class="n">lon</span><span class="s">":-122.030738,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.43,"</span><span class="n">course</span><span class="s">":178.4}
+{"</span><span class="n">t</span><span class="s">":1793197958.574,"</span><span class="n">lat</span><span class="s">":37.331246,"</span><span class="n">lon</span><span class="s">":-122.030737,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.45,"</span><span class="n">course</span><span class="s">":177.7}
+{"</span><span class="n">t</span><span class="s">":1793197959.560,"</span><span class="n">lat</span><span class="s">":37.331211,"</span><span class="n">lon</span><span class="s">":-122.030731,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.45,"</span><span class="n">course</span><span class="s">":172.4}
+{"</span><span class="n">t</span><span class="s">":1793197960.583,"</span><span class="n">lat</span><span class="s">":37.331178,"</span><span class="n">lon</span><span class="s">":-122.030723,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.46,"</span><span class="n">course</span><span class="s">":169.3}
+{"</span><span class="n">t</span><span class="s">":1793197961.594,"</span><span class="n">lat</span><span class="s">":37.331146,"</span><span class="n">lon</span><span class="s">":-122.030711,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.37,"</span><span class="n">course</span><span class="s">":162.0}
+{"</span><span class="n">t</span><span class="s">":1793197962.581,"</span><span class="n">lat</span><span class="s">":37.331113,"</span><span class="n">lon</span><span class="s">":-122.030699,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.53,"</span><span class="n">course</span><span class="s">":164.1}
+{"</span><span class="n">t</span><span class="s">":1793197963.596,"</span><span class="n">lat</span><span class="s">":37.331081,"</span><span class="n">lon</span><span class="s">":-122.030682,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.63,"</span><span class="n">course</span><span class="s">":159.0}
+{"</span><span class="n">t</span><span class="s">":1793197964.580,"</span><span class="n">lat</span><span class="s">":37.331046,"</span><span class="n">lon</span><span class="s">":-122.030670,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.69,"</span><span class="n">course</span><span class="s">":166.7}
+{"</span><span class="n">t</span><span class="s">":1793197965.603,"</span><span class="n">lat</span><span class="s">":37.331013,"</span><span class="n">lon</span><span class="s">":-122.030655,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.67,"</span><span class="n">course</span><span class="s">":162.5}
+{"</span><span class="n">t</span><span class="s">":1793197966.578,"</span><span class="n">lat</span><span class="s">":37.330980,"</span><span class="n">lon</span><span class="s">":-122.030639,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.73,"</span><span class="n">course</span><span class="s">":162.2}
+{"</span><span class="n">t</span><span class="s">":1793197967.599,"</span><span class="n">lat</span><span class="s">":37.330946,"</span><span class="n">lon</span><span class="s">":-122.030631,"</span><span class="n">acc</span><span class="s">":10,"</span><span class="n">speed</span><span class="s">":3.64,"</span><span class="n">course</span><span class="s">":173.5}
+"""</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Tests/LibraryTests/ReplayTests.swift</code>:</p>
+
+<!-- file: Tests/LibraryTests/ReplayTests.swift -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Testing</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">@testable</span> <span class="kd">import</span> <span class="kt">Library</span>
+
+<span class="kd">@Suite</span> <span class="kd">struct</span> <span class="kt">RecordingTests</span> <span class="p">{</span>
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">decodesTheRecordingAndTurnsUnknownCoursesIntoNil</span><span class="p">()</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">samples</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span>
+        <span class="cp">#expect(samples.count == 30)</span>
+        <span class="cp">#expect(samples[0].course == nil &amp;&amp; samples[0].speed == 1.54)</span>
+        <span class="cp">#expect(samples.allSatisfy { $0.accuracy == 10 || $0.accuracy == 30 })</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">roundTripsWithoutLosingAnything</span><span class="p">()</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">samples</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span>
+        <span class="cp">#expect(try Recording.decode(Recording.encode(samples)) == samples)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@Suite</span> <span class="kd">struct</span> <span class="kt">RunTrackerTests</span> <span class="p">{</span>
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">measuresTheRecordedRun</span><span class="p">()</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">tracker</span> <span class="o">=</span> <span class="kt">RunTracker</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="k">in</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span> <span class="p">{</span> <span class="n">tracker</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="p">}</span>
+        <span class="c1">// 30 fixes at 1.5 to 4.3 m/s: about 100 m, measured between fixes at least 10 m apart.</span>
+        <span class="cp">#expect(tracker.distance &gt; 80 &amp;&amp; tracker.distance &lt; 130)</span>
+        <span class="cp">#expect(tracker.rejected == 0)</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"City Run: </span><span class="se">\(</span><span class="n">tracker</span><span class="o">.</span><span class="n">distance</span><span class="se">)</span><span class="s"> m from </span><span class="se">\(</span><span class="n">tracker</span><span class="o">.</span><span class="n">kept</span><span class="se">)</span><span class="s"> kept fixes"</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">rejectsAnInjectedJump</span><span class="p">()</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">samples</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span>
+        <span class="n">samples</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span> <span class="o">+=</span> <span class="mf">0.02</span>               <span class="c1">// 2.2 km north, one fix</span>
+        <span class="k">var</span> <span class="nv">tracker</span> <span class="o">=</span> <span class="kt">RunTracker</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="k">in</span> <span class="n">samples</span> <span class="p">{</span> <span class="n">tracker</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="p">}</span>
+        <span class="cp">#expect(tracker.rejected == 1)</span>
+        <span class="cp">#expect(tracker.distance &lt; 130)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span><span class="p">(</span><span class="nv">arguments</span><span class="p">:</span> <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">])</span>
+    <span class="kd">func</span> <span class="nf">spacingNeverIncreasesTheDistance</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">dense</span> <span class="o">=</span> <span class="kt">RunTracker</span><span class="p">(),</span> <span class="n">sparse</span> <span class="o">=</span> <span class="kt">RunTracker</span><span class="p">()</span>
+        <span class="n">sparse</span><span class="o">.</span><span class="n">minimumSpacing</span> <span class="o">=</span> <span class="n">spacing</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">minimumSpacing</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">sample</span> <span class="k">in</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span> <span class="p">{</span> <span class="n">dense</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">sample</span><span class="p">);</span> <span class="n">sparse</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="p">}</span>
+        <span class="cp">#expect(sparse.distance &lt;= dense.distance + 0.001)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@Suite</span> <span class="kd">struct</span> <span class="kt">ReplayTests</span> <span class="p">{</span>
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">replayKeepsTheRecordedSpacingOnAManualClock</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ManualClock</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">recording</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">iterator</span> <span class="o">=</span> <span class="kt">ReplaySource</span><span class="p">(</span><span class="n">recording</span><span class="p">,</span> <span class="nv">clock</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span><span class="o">.</span><span class="nf">samples</span><span class="p">()</span><span class="o">.</span><span class="nf">makeAsyncIterator</span><span class="p">()</span>
+        <span class="cp">#expect(await iterator.next() == recording[0])          // offset zero: no waiting</span>
+        <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">))</span>
+        <span class="c1">// Half a second isn't enough for the next fix, recorded about a second later.</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+        <span class="cp">#expect(clock.sleeperCount == 1)</span>
+        <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">600</span><span class="p">))</span>
+        <span class="cp">#expect(await iterator.next() == recording[1])</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">aWholeRecordingReplaysInstantlyOnAManualClock</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ManualClock</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">recording</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Recording</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">cityRun</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">started</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">let</span> <span class="nv">replay</span> <span class="o">=</span> <span class="kt">ReplaySource</span><span class="p">(</span><span class="n">recording</span><span class="p">,</span> <span class="nv">clock</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span><span class="o">.</span><span class="nf">samples</span><span class="p">()</span>   <span class="c1">// the replay's start is fixed here</span>
+        <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3_600</span><span class="p">))</span>                             <span class="c1">// then move past the whole recording</span>
+        <span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">LocationSample</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">sample</span> <span class="k">in</span> <span class="n">replay</span> <span class="p">{</span> <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="p">}</span>
+        <span class="cp">#expect(received == recording)</span>
+        <span class="cp">#expect(ContinuousClock.now - started &lt; .milliseconds(200))</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Test</span> <span class="kd">func</span> <span class="nf">aSilentSensorFailsWithoutRealWaiting</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ManualClock</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">silent</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LocationSample</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">started</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">let</span> <span class="nv">guarded</span> <span class="o">=</span> <span class="nf">requiringFirstElement</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">silent</span><span class="p">,</span> <span class="nv">within</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="nv">clock</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+        <span class="n">clock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">31</span><span class="p">))</span>
+        <span class="k">await</span> <span class="k">#expect</span><span class="p">(</span><span class="nv">throws</span><span class="p">:</span> <span class="kt">SensorSilent</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">guarded</span> <span class="p">{}</span>
+        <span class="p">}</span>
+        <span class="cp">#expect(ContinuousClock.now - started &lt; .milliseconds(200))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>✔ Test decodesTheRecordingAndTurnsUnknownCoursesIntoNil() passed after 0.001 seconds.
+✔ Test aSilentSensorFailsWithoutRealWaiting() passed after 0.001 seconds.
+✔ Test rejectsAnInjectedJump() passed after 0.001 seconds.
+✔ Test measuresTheRecordedRun() passed after 0.001 seconds.
+✔ Test spacingNeverIncreasesTheDistance(spacing:) with 3 test cases passed after 0.001 seconds.
+✔ Test aWholeRecordingReplaysInstantlyOnAManualClock() passed after 0.001 seconds.
+✔ Test roundTripsWithoutLosingAnything() passed after 0.001 seconds.
+✔ Test replayKeepsTheRecordedSpacingOnAManualClock() passed after 0.026 seconds.
+✔ Test run with 8 tests in 3 suites passed after 0.026 seconds.
+</code></pre></div></div>
+
+<p>All eight ran in 0.026 seconds, and the slowest only because it sleeps 20 ms of real time on purpose, to give the replay task a chance to reach its next sleep before checking <code class="language-plaintext highlighter-rouge">sleeperCount</code>. A few results are worth reading closely:</p>
+
+<ul>
+  <li><strong>The recorded run measured 110.6 m from 10 kept fixes.</strong> The scenario’s 30 fixes move at 1.5 to 4.3 m/s, and the distance filter keeps one fix about every 10 m. The test asserts a range rather than an exact value, because the number is the <em>feature’s</em> output, and a refactoring that changes it by a meter shouldn’t break the build. The jump test injects a 2.2 km error into one fix, the kind a <a href="/ios-location-updates-accuracy/#rejecting-impossible-jumps">plausibility filter</a> must catch, and checks that exactly one fix was rejected.</li>
+  <li><strong>The parameterized spacing test</strong> checks a property instead of a value: a larger spacing never measures more distance than no spacing, at 10, 20, and 40 m. Property tests like this survive changes to the recording.</li>
+  <li><strong>The silent-sensor test</strong> waits for a 30-second deadline and finishes in a millisecond.</li>
+  <li><strong>The whole-recording replay</strong> finished in about a millisecond too, but its first version hung. It advanced the clock by an hour and <em>then</em> created the replay, so the replay took the advanced time as its start and waited for deadlines an hour beyond it, which the test never reached. Creating the replay first, then advancing, fixed it. The same rule as the watchdog’s applies: anything time-based must capture its reference time when it’s created.</li>
+</ul>
+
+<p>The test that steps through the replay shows what a manual clock is for. After the first sample, advancing 500 ms delivers nothing, and the replay is parked on its single sleep for a fix recorded about a second later. Advancing 600 ms more releases exactly that fix. Timing-dependent behavior, such as “nothing for half a second, then this”, becomes an ordinary assertion.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Put a protocol between features and sensors, with <code class="language-plaintext highlighter-rouge">Sendable</code> samples crossing it. Production uses the live source, and tests use replays. Convert sentinels at the boundary so recordings can’t reintroduce them.</li>
+  <li>Record as JSON Lines: append-only, crash-tolerant, diff-friendly with sorted keys. The fixture here is 30 real fixes from the simulator’s City Run, and device recordings are better still.</li>
+  <li>Replay on any <code class="language-plaintext highlighter-rouge">Clock</code>. On <code class="language-plaintext highlighter-rouge">ContinuousClock</code> it reproduces real timing. On a <code class="language-plaintext highlighter-rouge">ManualClock</code> it reproduces timing instantly.</li>
+  <li>Write time-based code against <code class="language-plaintext highlighter-rouge">some Clock</code>, and compute deadlines and start times when the operation is created, not inside a task. The replay test hung because its start time was taken late, and computing deadlines late is also subtly wrong in production.</li>
+  <li>Assert ranges and properties on feature outputs, not exact values. The run measured 110.6 m, tested against 80 to 130 m, and a spacing property was checked at three values.</li>
+  <li>Eight tests covering a 30-second deadline and a full replay ran in 0.026 seconds.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">MotionSource</code> with the same design: a <code class="language-plaintext highlighter-rouge">MotionSample</code> with uptime timestamps, a JSON Lines recording, and a replay on a manual clock. Then write a test for the <a href="/ios-pedometer-activity/#peaks-and-the-rhythm-of-peaks">step detector</a> that replays a synthetic walking recording at 50 Hz and checks the step count, and a second test that replays the same recording with every third sample removed and checks that the detector still counts within 5%. Make the replay emit both sources into one stream in timestamp order, so the <a href="/ios-combining-motion-location/#two-sources-one-stream">fusion engine</a> can be tested with recordings too.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/swift/clock"><code class="language-plaintext highlighter-rouge">Clock</code></a> and <a href="https://developer.apple.com/documentation/swift/instantprotocol"><code class="language-plaintext highlighter-rouge">InstantProtocol</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/testing">Swift Testing</a>, including parameterized tests and <code class="language-plaintext highlighter-rouge">#expect(throws:)</code></li>
+  <li><a href="https://jsonlines.org/">JSON Lines</a>, the format’s one-page specification</li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationupdate/liveupdates(_:)"><code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates(_:)</code></a>, the live source</li>
+</ul>
+
+<p>Previous: <a href="/ios-sensor-uncertainty/">Designing Features Around Uncertainty and Accuracy</a></p>
+
+<p>Next: <a href="/ios-sensor-testing-unavailable-denied/">Testing Unavailable Hardware and Denied Permissions</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-sensor-recorded-data-tests/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Injecting+Recorded+Sensor+Data+for+Deterministic+Tests%20https%3A%2F%2Fswiftbydeya.com%2Fios-sensor-recorded-data-tests%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-sensor-recorded-data-tests/&title=Injecting+Recorded+Sensor+Data+for+Deterministic+Tests%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-sensor-recorded-data-tests/&title=Injecting+Recorded+Sensor+Data+for+Deterministic+Tests%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-sensor-recorded-data-tests/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Injecting Recorded Sensor Data for Deterministic Tests%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-sensor-recorded-data-tests/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Swift+Testing">Swift Testing</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Testing Unavailable Hardware and Denied Permissions" href="/ios-sensor-testing-unavailable-denied/"> <p>Previous post</p> Testing Unavailable Hardware and Denied Permissions </a> </div> <div id="next-post"> <a alt="Designing Features Around Uncertainty and Accuracy" href="/ios-sensor-uncertainty/"> <p>Next post</p> Designing Features Around Uncertainty and Accuracy </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

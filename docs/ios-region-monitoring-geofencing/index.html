@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Region Monitoring and Geofencing | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Region Monitoring and Geofencing" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A geofence asks a yes-or-no question, “is the user inside this circle?”, of data that only ever answers “probably”. Near the edge, the probability hovers around a half, and a rule that flips on every fix produces a storm of enter and exit events. Core Location’s monitoring service hides this behind its own logic, takes minutes to decide, and allows only 20 conditions per app. An app that geofences anything at scale, such as stores, stops, or delivery addresses, has to understand both what the system does and what it would take to do it better. This article starts with the probability itself: the chance that a user is inside a fence given one noisy fix, computed exactly from the Rice distribution and checked against simulation. A fix exactly on the boundary means a 46% chance of being inside, not 50%. On a walk that skirted a fence’s edge, the obvious rule changed its mind 35 times, while a rule built on that probability, with hysteresis and a short dwell, changed it 0.46 times on average. Then it covers CLMonitor, Core Location’s monitoring API since iOS 17, including how its records persist across launches, and a scheme for watching hundreds of places within the 20-condition limit." /> <meta property="og:description" content="A geofence asks a yes-or-no question, “is the user inside this circle?”, of data that only ever answers “probably”. Near the edge, the probability hovers around a half, and a rule that flips on every fix produces a storm of enter and exit events. Core Location’s monitoring service hides this behind its own logic, takes minutes to decide, and allows only 20 conditions per app. An app that geofences anything at scale, such as stores, stops, or delivery addresses, has to understand both what the system does and what it would take to do it better. This article starts with the probability itself: the chance that a user is inside a fence given one noisy fix, computed exactly from the Rice distribution and checked against simulation. A fix exactly on the boundary means a 46% chance of being inside, not 50%. On a walk that skirted a fence’s edge, the obvious rule changed its mind 35 times, while a rule built on that probability, with hysteresis and a short dwell, changed it 0.46 times on average. Then it covers CLMonitor, Core Location’s monitoring API since iOS 17, including how its records persist across launches, and a scheme for watching hundreds of places within the 20-condition limit." /> <link rel="canonical" href="https://swiftbydeya.com/ios-region-monitoring-geofencing/" /> <meta property="og:url" content="https://swiftbydeya.com/ios-region-monitoring-geofencing/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-04T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Region Monitoring and Geofencing" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-04T00:00:00+03:00","datePublished":"2026-03-04T00:00:00+03:00","description":"A geofence asks a yes-or-no question, “is the user inside this circle?”, of data that only ever answers “probably”. Near the edge, the probability hovers around a half, and a rule that flips on every fix produces a storm of enter and exit events. Core Location’s monitoring service hides this behind its own logic, takes minutes to decide, and allows only 20 conditions per app. An app that geofences anything at scale, such as stores, stops, or delivery addresses, has to understand both what the system does and what it would take to do it better. This article starts with the probability itself: the chance that a user is inside a fence given one noisy fix, computed exactly from the Rice distribution and checked against simulation. A fix exactly on the boundary means a 46% chance of being inside, not 50%. On a walk that skirted a fence’s edge, the obvious rule changed its mind 35 times, while a rule built on that probability, with hysteresis and a short dwell, changed it 0.46 times on average. Then it covers CLMonitor, Core Location’s monitoring API since iOS 17, including how its records persist across launches, and a scheme for watching hundreds of places within the 20-condition limit.","headline":"Region Monitoring and Geofencing","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/ios-region-monitoring-geofencing/"},"url":"https://swiftbydeya.com/ios-region-monitoring-geofencing/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Region Monitoring and Geofencing"> <meta name="twitter:description" content="A geofence asks a yes-or-no question, “is the user inside this circle?”, of data that only ever answers “probably”. Near the edge, the probability hovers aro..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Region Monitoring and Geofencing"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Region Monitoring and Geofencing</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-04T00:00:00+03:00">March 4, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A geofence asks a yes-or-no question, “is the user inside this circle?”, of data that only ever answers “probably”. Near the edge, the probability hovers around a half, and a rule that flips on every fix produces a storm of enter and exit events. Core Location’s monitoring service hides this behind its own logic, takes minutes to decide, and allows only 20 conditions per app. An app that geofences anything at scale, such as stores, stops, or delivery addresses, has to understand both what the system does and what it would take to do it better.</p>
+
+<p>This article starts with the probability itself: the chance that a user is inside a fence given one noisy fix, computed exactly from the Rice distribution and checked against simulation. A fix exactly on the boundary means a 46% chance of being inside, not 50%. On a walk that skirted a fence’s edge, the obvious rule changed its mind 35 times, while a rule built on that probability, with hysteresis and a short dwell, changed it 0.46 times on average. Then it covers <code class="language-plaintext highlighter-rouge">CLMonitor</code>, Core Location’s monitoring API since iOS 17, including how its records persist across launches, and a scheme for watching hundreds of places within the 20-condition limit.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS blocks ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, with routes scripted by <code class="language-plaintext highlighter-rouge">simctl</code>. Simulations use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+</code></pre></div></div>
+
+<h2 id="what-core-location-offers">What Core Location offers</h2>
+
+<p>Since iOS 17, region monitoring goes through <code class="language-plaintext highlighter-rouge">CLMonitor</code>, an actor that monitors <em>conditions</em>. A circular geographic condition has a center and a radius. A beacon identity condition matches Bluetooth beacons. The monitor delivers an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> of events, each with a state: <code class="language-plaintext highlighter-rouge">.satisfied</code>, <code class="language-plaintext highlighter-rouge">.unsatisfied</code>, <code class="language-plaintext highlighter-rouge">.unknown</code>, or <code class="language-plaintext highlighter-rouge">.unmonitored</code>. Apple’s guide <a href="https://developer.apple.com/documentation/corelocation/monitoring-the-user-s-proximity-to-geographic-regions">Monitoring the user’s proximity to geographic regions</a> sets the ground rules:</p>
+
+<ul>
+  <li>“Core Location prevents any single app from monitoring more than 20 conditions of any type simultaneously.”</li>
+  <li>“If an iOS app isn’t running when a condition is satisfied, the system tries to launch it.” After relaunch, “recreate the monitor with the same identifier”.</li>
+  <li>“Monitoring can only occur after the user unlocks the device after a reboot.”</li>
+</ul>
+
+<p>The older API, <code class="language-plaintext highlighter-rouge">startMonitoring(for:)</code> with a <code class="language-plaintext highlighter-rouge">CLCircularRegion</code>, has the same limit of 20 regions. Its documentation adds two facts that apply to the service as a whole. It “requires network connectivity” to report changes in a timely manner. And on its era’s devices, “an app can expect to receive the appropriate region entered or region exited notification within 3 to 5 minutes on average, if not sooner.” Monitoring is built for errands, not for precision. A user walking at 1.4 m/s covers 250 to 420 m in 3 to 5 minutes.</p>
+
+<p>The <a href="/ios-location-permission-changes/#what-reduced-accuracy-means">permission changes article</a> found one more condition: region events aren’t delivered at all without full accuracy, and a <code class="language-plaintext highlighter-rouge">CLMonitor</code> event’s <code class="language-plaintext highlighter-rouge">accuracyLimited</code> flag says so.</p>
+
+<h2 id="the-probability-of-being-inside">The probability of being inside</h2>
+
+<p>Treat a fix as the true position plus Gaussian error with standard deviation $\sigma$ on each axis, and let the fix lie at distance $d$ from a fence’s center. Given the fix, the true position is a Gaussian centered on the fix, and its distance $\rho$ from the fence’s center follows the <strong>Rice distribution</strong>:</p>
+
+\[f(\rho) = \frac{\rho}{\sigma^2} \exp\!\left(-\frac{\rho^2 + d^2}{2\sigma^2}\right) I_0\!\left(\frac{\rho\, d}{\sigma^2}\right),
+\qquad
+P(\text{inside}) = \int_0^R f(\rho)\, d\rho ,\]
+
+<p>where $I_0$ is the modified Bessel function of the first kind and order zero, and $R$ is the fence radius. The integral has no closed form (it’s one minus Marcum’s Q-function), so the code integrates it numerically:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// e^-x · I0(x), the exponentially scaled modified Bessel function of order zero. Scaling keeps it finite:</span>
+<span class="c1">/// I0 itself overflows a Double above x ≈ 713, which a 5 m fix a few hundred meters from a fence easily reaches.</span>
+<span class="kd">func</span> <span class="nf">scaledBesselI0</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">30</span> <span class="p">?</span> <span class="nf">scaledBesselI0Series</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">:</span> <span class="nf">scaledBesselI0Asymptotic</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// The power series of I0, multiplied by e^-x. Accurate for small and moderate x.</span>
+<span class="kd">func</span> <span class="nf">scaledBesselI0Series</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">sum</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">term</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">while</span> <span class="n">term</span> <span class="o">&gt;</span> <span class="n">sum</span> <span class="o">*</span> <span class="mf">1e-17</span> <span class="p">{</span>
+        <span class="n">term</span> <span class="o">*=</span> <span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">))</span>
+        <span class="n">sum</span> <span class="o">+=</span> <span class="n">term</span>
+        <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">sum</span> <span class="o">*</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// The asymptotic expansion e^-x·I0(x) ≈ (1 + 1/8x + 9/2(8x)² + 75/2(8x)³) / √(2πx), accurate for large x.</span>
+<span class="kd">func</span> <span class="nf">scaledBesselI0Asymptotic</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="mf">9.0</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="mf">75.0</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">/// Probability that the true position is within `radius` of a fence's center, given a fix `distance` from that center</span>
+<span class="c1">/// and Gaussian position error with standard deviation `sigma` per axis. The true distance then follows a Rice</span>
+<span class="c1">/// distribution, integrated here with Simpson's rule. The exponent is written as -(r - d)²/2σ² so that</span>
+<span class="c1">/// it pairs with the scaled Bessel function.</span>
+<span class="kd">func</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="n">distance</span> <span class="nv">d</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">n</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">density</span><span class="p">(</span><span class="n">_</span> <span class="nv">r</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="n">r</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">*</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">))</span> <span class="o">*</span> <span class="nf">scaledBesselI0</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">d</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">sum</span> <span class="o">=</span> <span class="nf">density</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="nf">density</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">1</span><span class="o">..&lt;</span><span class="n">n</span> <span class="p">{</span> <span class="n">sum</span> <span class="o">+=</span> <span class="nf">density</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">?</span> <span class="mi">4</span> <span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sum</span> <span class="o">*</span> <span class="n">h</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">18</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">" d (m)   P(inside), R = 100 m, σ = 20 m   simulated"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">d</span> <span class="k">in</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">150</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">inside</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100_000</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+        <span class="nf">simd_length</span><span class="p">(</span><span class="kt">SIMD2</span><span class="p">(</span><span class="n">d</span> <span class="o">+</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()))</span> <span class="o">&lt;=</span> <span class="mi">100</span>
+    <span class="p">}</span><span class="o">.</span><span class="n">count</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5.0f    %.4f                             %.4f"</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="n">d</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="mi">20</span><span class="p">),</span>
+                 <span class="kt">Double</span><span class="p">(</span><span class="n">inside</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100_000</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="c1">// The case that overflowed an unscaled version: a precise fix far outside a small fence.</span>
+<span class="k">let</span> <span class="nv">far</span> <span class="o">=</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="mi">674</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">far</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">far</span><span class="o">.</span><span class="n">isNaN</span><span class="p">)</span>
+<span class="c1">// And the two branches agree where they meet.</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">scaledBesselI0Series</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="o">/</span> <span class="nf">scaledBesselI0Asymptotic</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fix distance from center</th>
+      <th>$P(\text{inside})$, $R$ = 100 m, $\sigma$ = 20 m</th>
+      <th>Simulated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0 m</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+    </tr>
+    <tr>
+      <td>50 m</td>
+      <td>0.9909</td>
+      <td>0.9908</td>
+    </tr>
+    <tr>
+      <td>80 m</td>
+      <td>0.8126</td>
+      <td>0.8117</td>
+    </tr>
+    <tr>
+      <td>100 m (on the edge)</td>
+      <td>0.4599</td>
+      <td>0.4588</td>
+    </tr>
+    <tr>
+      <td>120 m</td>
+      <td>0.1375</td>
+      <td>0.1377</td>
+    </tr>
+    <tr>
+      <td>150 m</td>
+      <td>0.0049</td>
+      <td>0.0045</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A fix on the boundary gives a 46% chance of being inside. The circle curves away from the fix, so more of the error distribution falls outside than inside. A fix 20 m inside, one standard deviation, is still only 81% likely to be inside.</p>
+
+<p>The implementation detail in the code is not decoration. The first version computed $I_0$ directly, and it passed every macOS check, where $\sigma$ was 20 m. In the simulator, fixes had a 5 m accuracy, and a fix 674 m from a small fence pushes the Bessel function’s argument past 2,600. $I_0$ overflows a <code class="language-plaintext highlighter-rouge">Double</code> above about 713, so the density became $\infty \times 0 = $ NaN. And Swift’s <code class="language-plaintext highlighter-rouge">min(1, .nan)</code> returns 1, because every comparison with NaN is false, so the fence reported “inside” from 674 m away. The fix is to compute $e^{-x} I_0(x)$ instead, with a power series for small arguments and the asymptotic expansion for large ones, and to fold the $e^{x}$ back into the exponent. The two branches agree to within $10^{-6}$ where they meet.</p>
+
+<h2 id="deciding-with-hysteresis">Deciding with hysteresis</h2>
+
+<p>The probability turns a fix into evidence. A decision rule turns evidence into states. The obvious rule, inside whenever the fix is inside, uses none of it. The confident rule below enters only when $P(\text{inside}) &gt; 0.9$, leaves only when $P &lt; 0.1$, and requires the contradicting evidence for three consecutive fixes before switching:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Decides inside or outside from a stream of distances to a fence's center.</span>
+<span class="kd">protocol</span> <span class="kt">FenceRule</span> <span class="p">{</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span>    <span class="c1">// true while inside</span>
+<span class="p">}</span>
+
+<span class="c1">/// The obvious rule: inside whenever the fix is inside.</span>
+<span class="kd">struct</span> <span class="kt">NaiveFence</span><span class="p">:</span> <span class="kt">FenceRule</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">radius</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Enter only when it's very likely the user is inside, leave only when it's very likely they're outside,</span>
+<span class="c1">/// and require the evidence to hold for `dwell` consecutive fixes.</span>
+<span class="kd">struct</span> <span class="kt">ConfidentFence</span><span class="p">:</span> <span class="kt">FenceRule</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">var</span> <span class="nv">enter</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span> <span class="n">exit</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">dwell</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">inside</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">streak</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">p</span> <span class="o">=</span> <span class="nf">probabilityInside</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="n">radius</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">contradicts</span> <span class="o">=</span> <span class="n">inside</span> <span class="p">?</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="nv">exit</span> <span class="p">:</span> <span class="n">p</span> <span class="o">&gt;</span> <span class="n">enter</span>
+        <span class="n">streak</span> <span class="o">=</span> <span class="n">contradicts</span> <span class="p">?</span> <span class="n">streak</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">streak</span> <span class="o">&gt;=</span> <span class="n">dwell</span> <span class="p">{</span> <span class="n">inside</span><span class="o">.</span><span class="nf">toggle</span><span class="p">();</span> <span class="n">streak</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">inside</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Counts how often a rule changes its mind over a walk, and where it first says "inside" and last says "inside".</span>
+<span class="kd">func</span> <span class="n">evaluate</span><span class="o">&lt;</span><span class="kt">R</span><span class="p">:</span> <span class="kt">FenceRule</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">rule</span><span class="p">:</span> <span class="kt">R</span><span class="p">,</span> <span class="n">along</span> <span class="nv">path</span><span class="p">:</span> <span class="p">[</span><span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">],</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">transitions</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">firstInside</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">lastInside</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">rule</span> <span class="o">=</span> <span class="n">rule</span>
+    <span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">state</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">transitions</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">first</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span> <span class="k">in</span> <span class="n">path</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">fix</span> <span class="o">=</span> <span class="n">point</span> <span class="o">+</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="o">*</span> <span class="n">sigma</span>
+        <span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">fix</span><span class="p">),</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">now</span> <span class="o">!=</span> <span class="n">state</span> <span class="p">{</span> <span class="n">transitions</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">state</span> <span class="o">=</span> <span class="n">now</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">now</span> <span class="p">{</span> <span class="n">first</span> <span class="o">=</span> <span class="n">first</span> <span class="p">??</span> <span class="n">i</span><span class="p">;</span> <span class="n">last</span> <span class="o">=</span> <span class="n">i</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">transitions</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">last</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// A walk at 1.4 m/s past the fence, 95 m from its center at the closest: always just inside the 100 m edge for a while.</span>
+<span class="k">let</span> <span class="nv">skirting</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="o">-</span><span class="mi">210</span> <span class="o">+</span> <span class="mf">1.4</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">),</span> <span class="mf">95.0</span><span class="p">)</span> <span class="p">}</span>
+<span class="c1">// A walk straight through the center.</span>
+<span class="k">let</span> <span class="nv">crossing</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="o">-</span><span class="mi">210</span> <span class="o">+</span> <span class="mf">1.4</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sigma</span> <span class="o">=</span> <span class="mf">8.0</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"skirting the edge"</span><span class="p">,</span> <span class="n">skirting</span><span class="p">),</span> <span class="p">(</span><span class="s">"crossing the center"</span><span class="p">,</span> <span class="n">crossing</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">naiveTotal</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">confidentTotal</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">seed</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100</span> <span class="p">{</span>
+        <span class="n">naiveTotal</span> <span class="o">+=</span> <span class="nf">evaluate</span><span class="p">(</span><span class="kt">NaiveFence</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span> <span class="nv">along</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">(</span><span class="n">seed</span><span class="p">))</span><span class="o">.</span><span class="n">transitions</span>
+        <span class="n">confidentTotal</span> <span class="o">+=</span> <span class="nf">evaluate</span><span class="p">(</span><span class="kt">ConfidentFence</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span> <span class="nv">along</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">(</span><span class="n">seed</span><span class="p">))</span><span class="o">.</span><span class="n">transitions</span>
+    <span class="p">}</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">"- mean transitions: naive"</span><span class="p">,</span> <span class="kt">Double</span><span class="p">(</span><span class="n">naiveTotal</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span> <span class="s">"confident"</span><span class="p">,</span> <span class="kt">Double</span><span class="p">(</span><span class="n">confidentTotal</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">truthFirst</span> <span class="o">=</span> <span class="n">crossing</span><span class="o">.</span><span class="n">firstIndex</span> <span class="p">{</span> <span class="nf">simd_length</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">100</span> <span class="p">}</span><span class="o">!</span><span class="p">,</span> <span class="n">truthLast</span> <span class="o">=</span> <span class="n">crossing</span><span class="o">.</span><span class="n">lastIndex</span> <span class="p">{</span> <span class="nf">simd_length</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">100</span> <span class="p">}</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">confidentCrossing</span> <span class="o">=</span> <span class="nf">evaluate</span><span class="p">(</span><span class="kt">ConfidentFence</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span> <span class="nv">along</span><span class="p">:</span> <span class="n">crossing</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"crossing: truly inside from fix"</span><span class="p">,</span> <span class="n">truthFirst</span><span class="p">,</span> <span class="s">"to"</span><span class="p">,</span> <span class="n">truthLast</span><span class="p">,</span> <span class="s">"; confident rule says inside from"</span><span class="p">,</span>
+      <span class="n">confidentCrossing</span><span class="o">.</span><span class="n">firstInside</span><span class="o">!</span><span class="p">,</span> <span class="s">"to"</span><span class="p">,</span> <span class="n">confidentCrossing</span><span class="o">.</span><span class="n">lastInside</span><span class="o">!</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Two walks at 1.4 m/s, with 8 m of noise per axis and one fix per second, 100 runs each:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Walk</th>
+      <th>Naive rule: transitions</th>
+      <th>Confident rule: transitions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Skirting the edge, 95 m from the center</td>
+      <td>35.1</td>
+      <td>0.46</td>
+    </tr>
+    <tr>
+      <td>Straight through the center</td>
+      <td>12.72</td>
+      <td>2.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Skirting the edge, the naive rule flipped 35 times per walk, each flip a notification. The confident rule mostly never entered, which is reasonable, since the walk was never clearly inside, and occasionally entered and left once. Walking straight through, which should produce exactly two events, the naive rule produced almost 13: noise near the boundary on the way in and on the way out. The confident rule produced exactly 2 in every run.</p>
+
+<p>The price is latency. On the crossing walk, the user was truly inside from fix 79 to fix 221. The confident rule said inside from 88 to 232, so it entered 9 fixes, 12.6 m, late and left 11 fixes, 15.4 m, late. That margin is the hysteresis doing its job. The thresholds and dwell are the knobs. Lower thresholds react sooner and flicker more, and a longer dwell suppresses flicker and delays everything. For “you’ve arrived” notifications, delay is cheap and flicker is expensive. For a turn-by-turn instruction, the balance flips.</p>
+
+<h2 id="watching-more-than-20-places">Watching more than 20 places</h2>
+
+<p>The 20-condition limit is per app, so a store finder with 500 locations can’t monitor them all. The standard workaround monitors the 19 nearest places, plus one <em>refresh</em> condition centered on the user, whose radius reaches just short of the next-nearest place’s fence. Leaving the refresh circle means the user could be approaching a fence that isn’t monitored yet, and that’s the signal to choose the nearest 19 again:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Core Location monitors at most 20 conditions per app. To watch more places, monitor the 19 nearest,</span>
+<span class="c1">/// plus one "refresh" circle around the user that reaches just short of the next-nearest place.</span>
+<span class="c1">/// Leaving the refresh circle is the signal to choose again.</span>
+<span class="kd">struct</span> <span class="kt">FenceSelection</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">places</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>                    <span class="c1">// indices of the places to monitor</span>
+    <span class="k">var</span> <span class="nv">refreshCenter</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">refreshRadius</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">selectFences</span><span class="p">(</span><span class="n">around</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">places</span><span class="p">:</span> <span class="p">[</span><span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">],</span> <span class="nv">fenceRadius</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">FenceSelection</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">sorted</span> <span class="o">=</span> <span class="n">places</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">sorted</span> <span class="p">{</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">places</span><span class="p">[</span><span class="nv">$0</span><span class="p">],</span> <span class="n">user</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">places</span><span class="p">[</span><span class="nv">$1</span><span class="p">],</span> <span class="n">user</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">chosen</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="n">sorted</span><span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="n">limit</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">places</span><span class="p">[</span><span class="n">sorted</span><span class="p">[</span><span class="n">limit</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="c1">// Reselect before the user could reach the edge of a fence that isn't monitored yet.</span>
+    <span class="k">let</span> <span class="nv">reach</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="nf">simd_distance</span><span class="p">(</span><span class="n">next</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span> <span class="o">-</span> <span class="n">fenceRadius</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">FenceSelection</span><span class="p">(</span><span class="nv">places</span><span class="p">:</span> <span class="n">chosen</span><span class="p">,</span> <span class="nv">refreshCenter</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">refreshRadius</span><span class="p">:</span> <span class="n">reach</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 500 shops scattered over a 10 km square, and a 6 km walk across it.</span>
+<span class="k">var</span> <span class="nv">placeRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">19</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">shops</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">500</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">placeRandom</span><span class="p">),</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">placeRandom</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">selection</span> <span class="o">=</span> <span class="nf">selectFences</span><span class="p">(</span><span class="nv">around</span><span class="p">:</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="mi">2_000</span><span class="p">,</span> <span class="mi">2_000</span><span class="p">),</span> <span class="nv">places</span><span class="p">:</span> <span class="n">shops</span><span class="p">,</span> <span class="nv">fenceRadius</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">reselections</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">missed</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">step</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">4_243</span> <span class="p">{</span>                                     <span class="c1">// 1.4 m per step, diagonally</span>
+    <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="mf">2_000.0</span><span class="p">,</span> <span class="mf">2_000.0</span><span class="p">)</span> <span class="o">+</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.4</span> <span class="o">/</span> <span class="mf">2.0</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">())</span>
+    <span class="k">if</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">selection</span><span class="o">.</span><span class="n">refreshCenter</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">selection</span><span class="o">.</span><span class="n">refreshRadius</span> <span class="p">{</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="nf">selectFences</span><span class="p">(</span><span class="nv">around</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">places</span><span class="p">:</span> <span class="n">shops</span><span class="p">,</span> <span class="nv">fenceRadius</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">reselections</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="c1">// Any shop whose fence the user is inside must be among the monitored ones.</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">shop</span><span class="p">)</span> <span class="k">in</span> <span class="n">shops</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="k">where</span> <span class="nf">simd_distance</span><span class="p">(</span><span class="n">shop</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">100</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">selection</span><span class="o">.</span><span class="n">places</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span> <span class="n">missed</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"6 km walk:"</span><span class="p">,</span> <span class="n">reselections</span><span class="p">,</span> <span class="s">"reselections, fences missed"</span><span class="p">,</span> <span class="n">missed</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">missed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On a 6 km walk across 500 shops scattered over a 10 km square, the selection was recomputed 6 times, and every shop whose 100 m fence the user entered was among the monitored ones at that moment. Reselection is cheap: it’s a sort of a few hundred distances. On a device, the refresh condition’s exit event wakes the app even when it isn’t running, which is the point. The app relaunches, reselects, and updates the monitor. The refresh radius has a floor of 50 m in the code, because Core Location monitors small circles poorly. The legacy documentation’s own guidance mentions radii “between 1 and 400 meters” working better on newer hardware, and both APIs take minutes to notice crossings.</p>
+
+<h2 id="in-the-simulator-clmonitor-and-an-in-app-fence">In the simulator: <code class="language-plaintext highlighter-rouge">CLMonitor</code> and an in-app fence</h2>
+
+<p>The simulator can’t test <code class="language-plaintext highlighter-rouge">CLMonitor</code> end to end. As the <a href="/ios-sensors-simulator-vs-device/#other-services">simulator article</a> found, it reports circular conditions as unsupported. It can test the in-app fence, which runs on ordinary location updates. The test sets up both, with Always authorization, then drives through a 100 m fence at 10 m/s:</p>
+
+<!-- sim-setup -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl privacy booted grant location-always dev.swiftbydeya.Host
+xcrun simctl location booted <span class="nb">set </span>51.5007,-0.1246
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Core Location's own monitor, set up the way a device would use it.</span>
+<span class="k">let</span> <span class="nv">monitor</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">CLMonitor</span><span class="p">(</span><span class="s">"Shops"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"IOS: conditions already in the monitor at launch:"</span><span class="p">,</span> <span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="n">identifiers</span><span class="p">,</span>
+      <span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"shop-1"</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"last state </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">lastEvent</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"no record"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">shop</span> <span class="o">=</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1146</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="kt">CLMonitor</span><span class="o">.</span><span class="kt">CircularGeographicCondition</span><span class="p">(</span><span class="nv">center</span><span class="p">:</span> <span class="n">shop</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span> <span class="nv">identifier</span><span class="p">:</span> <span class="s">"shop-1"</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">monitorEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLMonitor</span><span class="o">.</span><span class="kt">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">monitorTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">event</span> <span class="k">in</span> <span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="n">events</span> <span class="p">{</span> <span class="n">monitorEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// The in-app geofence, fed by live updates.</span>
+<span class="k">var</span> <span class="nv">fence</span> <span class="o">=</span> <span class="kt">ConfidentFence</span><span class="p">(</span><span class="nv">radius</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">center</span> <span class="o">=</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">shop</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">shop</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">transitions</span><span class="p">:</span> <span class="p">[(</span><span class="nv">inside</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">distance</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">fenceTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">update</span> <span class="k">in</span> <span class="kt">CLLocationUpdate</span><span class="o">.</span><span class="nf">liveUpdates</span><span class="p">(</span><span class="o">.</span><span class="n">fitness</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">location</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">horizontalAccuracy</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">speed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span> <span class="k">continue</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">distance</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">center</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">wasInside</span> <span class="o">=</span> <span class="n">fence</span><span class="o">.</span><span class="n">inside</span>
+        <span class="c1">// Treat the reported accuracy as one standard deviation: the cautious reading of an undocumented radius.</span>
+        <span class="k">if</span> <span class="n">fence</span><span class="o">.</span><span class="nf">update</span><span class="p">(</span><span class="nv">distance</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">horizontalAccuracy</span><span class="p">)</span> <span class="o">!=</span> <span class="n">wasInside</span> <span class="p">{</span>
+            <span class="n">transitions</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">fence</span><span class="o">.</span><span class="n">inside</span><span class="p">,</span> <span class="n">distance</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div></div>
+
+<!-- sim-run -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl location booted start <span class="nt">--speed</span><span class="o">=</span>10 <span class="nt">--interval</span><span class="o">=</span>1 51.5007,-0.1246 51.5007,-0.1046
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
+<span class="n">fenceTask</span><span class="o">.</span><span class="nf">cancel</span><span class="p">();</span> <span class="n">monitorTask</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"in-app fence:"</span><span class="p">,</span> <span class="n">transitions</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">inside</span> <span class="p">?</span> <span class="s">"enter"</span> <span class="p">:</span> <span class="s">"exit"</span><span class="se">)</span><span class="s"> at </span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span><span class="se">)</span><span class="s"> m from the center"</span> <span class="p">})</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"CLMonitor:"</span><span class="p">,</span> <span class="n">monitorEvents</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"state </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s">, unsupported </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">conditionUnsupported</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">transitions</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">inside</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="kc">true</span><span class="p">,</span> <span class="kc">false</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">transitions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="mi">100</span> <span class="o">&amp;&amp;</span> <span class="n">transitions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">distance</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">record</span> <span class="o">=</span> <span class="k">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"shop-1"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"CLMonitor record:"</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"state </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">lastEvent</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s">, unsupported </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">lastEvent</span><span class="o">.</span><span class="n">conditionUnsupported</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"none"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">record</span><span class="p">?</span><span class="o">.</span><span class="n">lastEvent</span><span class="o">.</span><span class="n">conditionUnsupported</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The in-app fence entered at 69 to 70 m from the center and exited at 131 to 132 m, across three runs. That’s one entry and one exit, each a few seconds past the true boundary at 10 m/s with 5 m fixes, treating the reported accuracy as one standard deviation. That’s the cautious reading of an undocumented radius, discussed in the <a href="/ios-location-updates-accuracy/#what-the-accuracy-radius-means">accuracy article</a>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLMonitor</code> showed its persistence. On the first run in a clean simulator, it delivered an event at once: state 3, <code class="language-plaintext highlighter-rouge">.unmonitored</code>, with <code class="language-plaintext highlighter-rouge">conditionUnsupported</code> set. On every later run, the monitor named “Shops” already contained “shop-1” when the app launched, with the same last state in its record, and adding the condition again produced no new event at all. The <code class="language-plaintext highlighter-rouge">record(for:)</code> call is how a relaunched app learns where it stands, and it’s why the test checks the record rather than the event stream. An app that only listens for events after relaunch would wait forever for a state the system already reported.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CLMonitor</code> (iOS 17) monitors at most 20 conditions per app, relaunches the app when a condition is satisfied, keeps records across launches, and starts monitoring only after the first unlock following a reboot. Crossings take minutes to report.</li>
+  <li>Given a fix at distance $d$ and per-axis error $\sigma$, the probability of being inside a fence of radius $R$ follows the Rice distribution. On the boundary it’s 46%, and one $\sigma$ inside only 81%.</li>
+  <li>Compute $e^{-x}I_0(x)$, not $I_0(x)$. The unscaled version overflowed for a precise fix far from a fence, and <code class="language-plaintext highlighter-rouge">min(1, .nan)</code> silently turned the NaN into “inside”.</li>
+  <li>Deciding with probability thresholds (0.9 to enter, 0.1 to leave) and a three-fix dwell cut flicker on an edge-skirting walk from 35 transitions to 0.46, and produced exactly two on a crossing where the naive rule produced 12.7, at a cost of 13 to 15 m of latency.</li>
+  <li>To watch more than 20 places, monitor the 19 nearest plus a refresh circle around the user. A 6 km walk past 500 shops needed 6 reselections and missed no fence.</li>
+  <li>In the simulator, circular <code class="language-plaintext highlighter-rouge">CLMonitor</code> conditions are unsupported, but records persist across launches, and an in-app fence on live updates entered and exited once, as it should.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Make the confident fence adaptive to speed. A runner crosses a 100 m fence in under a minute, so a three-fix dwell at 1 Hz is fine, but a car crosses it in seven seconds and gets delayed almost through the fence. Replace the fixed dwell with a dwell <em>distance</em>: require the contradicting evidence to persist over at least 20 m of movement, or for 3 fixes, whichever comes first. Test it on the crossing walk at 1.4 m/s and at 15 m/s, and report the entry and exit latency in meters for both.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/monitoring-the-user-s-proximity-to-geographic-regions">Monitoring the user’s proximity to geographic regions</a>, Apple’s guide to <code class="language-plaintext highlighter-rouge">CLMonitor</code></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoring(for:)"><code class="language-plaintext highlighter-rouge">startMonitoring(for:)</code></a> and <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/maximumregionmonitoringdistance"><code class="language-plaintext highlighter-rouge">maximumRegionMonitoringDistance</code></a>, the legacy API and its limits</li>
+  <li>Stephen O. Rice, “Mathematical Analysis of Random Noise”, <em>Bell System Technical Journal</em> 23(3), 1944, <a href="https://doi.org/10.1002/j.1538-7305.1944.tb00874.x">doi:10.1002/j.1538-7305.1944.tb00874.x</a>, where the distribution comes from</li>
+</ul>
+
+<p>Previous: <a href="/ios-heading-compass/">Heading, Compass Calibration, and Magnetic Interference</a></p>
+
+<p>Next: <a href="/ios-visits-significant-location-changes/">Visits and Significant Location Changes</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/ios-region-monitoring-geofencing/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Region+Monitoring+and+Geofencing%20https%3A%2F%2Fswiftbydeya.com%2Fios-region-monitoring-geofencing%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/ios-region-monitoring-geofencing/&title=Region+Monitoring+and+Geofencing%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/ios-region-monitoring-geofencing/&title=Region+Monitoring+and+Geofencing%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/ios-region-monitoring-geofencing/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Region Monitoring and Geofencing%20%7C%20Swift By Deya&body=https://swiftbydeya.com/ios-region-monitoring-geofencing/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Probability">Probability</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Visits and Significant Location Changes" href="/ios-visits-significant-location-changes/"> <p>Previous post</p> Visits and Significant Location Changes </a> </div> <div id="next-post"> <a alt="Heading, Compass Calibration, and Magnetic Interference" href="/ios-heading-compass/"> <p>Next post</p> Heading, Compass Calibration, and Magnetic Interference </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
