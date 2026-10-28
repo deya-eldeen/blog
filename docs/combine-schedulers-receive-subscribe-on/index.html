@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Schedulers: receive(on:) and subscribe(on:) | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Schedulers: receive(on:) and subscribe(on:)" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Combine does not pick threads. A value is delivered on whatever thread produced it, every operator runs on that thread, and the subscriber runs there too. A subject delivers on the thread that called send, a URLSession publisher on the session’s delegate queue, a KVO publisher on the thread that changed the property. Two operators change that. receive(on:) moves everything downstream of it, values and completion, to a scheduler. subscribe(on:) moves the upstream signals, the subscription and the requests for demand, which moves the work of cold publishers that do their work when asked. They are easy to confuse and easy to misuse: subscribe(on:) does not move a subject’s values at all and can lose the first one, receive(on:) to the main queue is asynchronous even when you are already on the main thread, a concurrent queue reorders values, and RunLoop.main pauses delivery while the user scrolls. In Swift 6 the stakes are higher, because a closure on the wrong side of a receive(on:) does not just risk a data race; it crashes. This article measures each of those behaviors, sets out the rules for main-actor code, and builds a type-erased scheduler so a view model can be tested on the virtual-time scheduler and run on the main queue." /> <meta property="og:description" content="Combine does not pick threads. A value is delivered on whatever thread produced it, every operator runs on that thread, and the subscriber runs there too. A subject delivers on the thread that called send, a URLSession publisher on the session’s delegate queue, a KVO publisher on the thread that changed the property. Two operators change that. receive(on:) moves everything downstream of it, values and completion, to a scheduler. subscribe(on:) moves the upstream signals, the subscription and the requests for demand, which moves the work of cold publishers that do their work when asked. They are easy to confuse and easy to misuse: subscribe(on:) does not move a subject’s values at all and can lose the first one, receive(on:) to the main queue is asynchronous even when you are already on the main thread, a concurrent queue reorders values, and RunLoop.main pauses delivery while the user scrolls. In Swift 6 the stakes are higher, because a closure on the wrong side of a receive(on:) does not just risk a data race; it crashes. This article measures each of those behaviors, sets out the rules for main-actor code, and builds a type-erased scheduler so a view model can be tested on the virtual-time scheduler and run on the main queue." /> <link rel="canonical" href="https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-05T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Schedulers: receive(on:) and subscribe(on:)" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-05T00:00:00+03:00","datePublished":"2026-08-05T00:00:00+03:00","description":"Combine does not pick threads. A value is delivered on whatever thread produced it, every operator runs on that thread, and the subscriber runs there too. A subject delivers on the thread that called send, a URLSession publisher on the session’s delegate queue, a KVO publisher on the thread that changed the property. Two operators change that. receive(on:) moves everything downstream of it, values and completion, to a scheduler. subscribe(on:) moves the upstream signals, the subscription and the requests for demand, which moves the work of cold publishers that do their work when asked. They are easy to confuse and easy to misuse: subscribe(on:) does not move a subject’s values at all and can lose the first one, receive(on:) to the main queue is asynchronous even when you are already on the main thread, a concurrent queue reorders values, and RunLoop.main pauses delivery while the user scrolls. In Swift 6 the stakes are higher, because a closure on the wrong side of a receive(on:) does not just risk a data race; it crashes. This article measures each of those behaviors, sets out the rules for main-actor code, and builds a type-erased scheduler so a view model can be tested on the virtual-time scheduler and run on the main queue.","headline":"Schedulers: receive(on:) and subscribe(on:)","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/"},"url":"https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Schedulers: receive(on:) and subscribe(on:)"> <meta name="twitter:description" content="Combine does not pick threads. A value is delivered on whatever thread produced it, every operator runs on that thread, and the subscriber runs there too. A ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Schedulers: receive(on:) and subscribe(on:)"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Schedulers: receive(on:) and subscribe(on:)</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-05T00:00:00+03:00">August 5, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Combine does not pick threads. A value is delivered on whatever thread produced it, every operator runs on that thread, and the subscriber runs there too. A subject delivers on the thread that called <code class="language-plaintext highlighter-rouge">send</code>, a <code class="language-plaintext highlighter-rouge">URLSession</code> publisher on the session’s delegate queue, a KVO publisher on the thread that changed the property. Two operators change that. <code class="language-plaintext highlighter-rouge">receive(on:)</code> moves everything <em>downstream</em> of it, values and completion, to a scheduler. <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> moves the <em>upstream</em> signals, the subscription and the requests for demand, which moves the work of cold publishers that do their work when asked.</p>
+
+<p>They are easy to confuse and easy to misuse: <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> does not move a subject’s values at all and can lose the first one, <code class="language-plaintext highlighter-rouge">receive(on:)</code> to the main queue is asynchronous even when you are already on the main thread, a concurrent queue reorders values, and <code class="language-plaintext highlighter-rouge">RunLoop.main</code> pauses delivery while the user scrolls. In Swift 6 the stakes are higher, because a closure on the wrong side of a <code class="language-plaintext highlighter-rouge">receive(on:)</code> does not just risk a data race; it crashes. This article measures each of those behaviors, sets out the rules for main-actor code, and builds a type-erased scheduler so a view model can be tested on the virtual-time scheduler and run on the main queue.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the <code class="language-plaintext highlighter-rouge">VirtualTimeScheduler</code> and <code class="language-plaintext highlighter-rouge">TimelineRecorder</code> from <a href="/combine-debounce-throttle-delay/#a-scheduler-whose-clock-you-control">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a> first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. A few helpers record which thread each signal arrived on and run the main run loop:</p>
+
+<!-- check-uses: virtual-scheduler -->
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SignalLog</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">entries</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">entry</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">entries</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">all</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span> <span class="n">entries</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">currentThread</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="kt">Thread</span><span class="o">.</span><span class="n">isMainThread</span> <span class="p">?</span> <span class="s">"main"</span> <span class="p">:</span> <span class="s">"background"</span> <span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">runMainLoop</span><span class="p">(</span><span class="k">for</span> <span class="nv">seconds</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">mode</span><span class="p">:</span> <span class="kt">RunLoop</span><span class="o">.</span><span class="kt">Mode</span> <span class="o">=</span> <span class="o">.</span><span class="k">default</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">end</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceNow</span><span class="p">:</span> <span class="n">seconds</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kt">Date</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="kt">RunLoop</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="nv">mode</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span> <span class="nv">before</span><span class="p">:</span> <span class="nf">min</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceNow</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">)))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">workQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"work"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="which-way-each-operator-moves-signals">Which way each operator moves signals</h2>
+
+<p>A subscription has two directions. The subscription and demand travel upstream, from subscriber to publisher; values and the completion travel downstream. Each operator moves one direction:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Sub as Subscriber
+    participant R as receive(on: main)
+    participant S as subscribe(on: work)
+    participant P as Publisher
+    Sub-&gt;&gt;R: subscribe
+    R-&gt;&gt;S: subscribe
+    S--&gt;&gt;P: subscribe, request (on work queue)
+    P-&gt;&gt;S: values (on the publisher's thread)
+    S-&gt;&gt;R: values (unchanged thread)
+    R--&gt;&gt;Sub: values (on main)
+</code></pre>
+
+<h2 id="subscribeon-moves-the-work-of-cold-publishers"><code class="language-plaintext highlighter-rouge">subscribe(on:)</code> moves the work of cold publishers</h2>
+
+<p>A cold publisher does its work when it receives a subscription or a request. A sequence publisher emits its values inside <code class="language-plaintext highlighter-rouge">request(_:)</code>; a <code class="language-plaintext highlighter-rouge">Deferred</code> runs its closure inside <code class="language-plaintext highlighter-rouge">receive(subscriber:)</code>. Moving those calls to another queue moves the work:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">sequenceLog</span> <span class="o">=</span> <span class="kt">SignalLog</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">sequenceHandle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveSubscription</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">sequenceLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"subscription on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">},</span>
+                  <span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">sequenceLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"request on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">workQueue</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">value</span> <span class="k">in</span> <span class="n">sequenceLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s"> on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequenceLog</span><span class="o">.</span><span class="n">all</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"subscription on background"</span><span class="p">,</span> <span class="s">"request on background"</span><span class="p">,</span>
+    <span class="s">"value 1 on background"</span><span class="p">,</span> <span class="s">"value 2 on background"</span><span class="p">,</span>
+<span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">expensiveLog</span> <span class="o">=</span> <span class="kt">SignalLog</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">expensiveHandle</span> <span class="o">=</span> <span class="kt">Deferred</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Just</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="k">in</span>
+    <span class="n">expensiveLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"parsing on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>    <span class="c1">// stands in for decoding a large file</span>
+    <span class="k">return</span> <span class="kt">Just</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">workQueue</span><span class="p">)</span>
+<span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">expensiveLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"delivered on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">expensiveLog</span><span class="o">.</span><span class="n">all</span> <span class="o">==</span> <span class="p">[</span><span class="s">"parsing on background"</span><span class="p">,</span> <span class="s">"delivered on background"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">@Sendable</code> on the <code class="language-plaintext highlighter-rouge">Deferred</code> closure is required, not stylistic. This article’s first version left it out, and since the closure is written in top-level code, Swift 6 inferred it to be main-actor isolated; <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> then ran it on the work queue, and the process stopped in the isolation check on the thread whose queue is named <code class="language-plaintext highlighter-rouge">work</code>. Any closure that <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> moves off the main thread needs the same treatment as one that runs before <code class="language-plaintext highlighter-rouge">receive(on:)</code>.</p>
+
+<p>That is the legitimate use of <code class="language-plaintext highlighter-rouge">subscribe(on:)</code>: start synchronous, cold work, such as reading a file or decoding a cached response wrapped in <code class="language-plaintext highlighter-rouge">Deferred</code>, somewhere other than the main thread.</p>
+
+<p>It does nothing useful for a hot publisher. A subject’s values are produced by whoever calls <code class="language-plaintext highlighter-rouge">send</code>, on their thread, regardless of where the subscription was made. And because <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> makes the subscription <em>asynchronously</em>, a value sent right after subscribing arrives before the subscription exists:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">hotLog</span> <span class="o">=</span> <span class="kt">SignalLog</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">hotSubject</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">hotHandle</span> <span class="o">=</span> <span class="n">hotSubject</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">workQueue</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">value</span> <span class="k">in</span> <span class="n">hotLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s"> on </span><span class="se">\(</span><span class="nf">currentThread</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">hotSubject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>                               <span class="c1">// the subscription has not been made yet</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">hotSubject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">hotLog</span><span class="o">.</span><span class="n">all</span> <span class="o">==</span> <span class="p">[</span><span class="s">"value 2 on main"</span><span class="p">])</span>        <span class="c1">// 1 was lost, and 2 arrived on the sender's thread</span>
+</code></pre></div></div>
+
+<p>The value 1 was dropped, and the value 2 arrived on the main thread, where it was sent. The same applies to <code class="language-plaintext highlighter-rouge">URLSession</code> publishers, whose values come from the delegate queue however they are subscribed: <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> on a data task publisher moves only the call to <code class="language-plaintext highlighter-rouge">resume()</code>. If you want values on a particular queue, the operator you want is <code class="language-plaintext highlighter-rouge">receive(on:)</code>.</p>
+
+<h2 id="receiveon-moves-everything-downstream"><code class="language-plaintext highlighter-rouge">receive(on:)</code> moves everything downstream</h2>
+
+<p><code class="language-plaintext highlighter-rouge">receive(on:)</code> schedules each value and the completion on a scheduler, so everything after it runs there. Its scheduling is always asynchronous: <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> delivers on a later turn of the main queue even when the value was sent from the main thread. <code class="language-plaintext highlighter-rouge">ImmediateScheduler</code> is the scheduler that runs synchronously:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">delivery</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">deliveredValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">queuedHandle</span> <span class="o">=</span> <span class="n">delivery</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">deliveredValues</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"main queue </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">immediateHandle</span> <span class="o">=</span> <span class="n">delivery</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">ImmediateScheduler</span><span class="o">.</span><span class="n">shared</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">deliveredValues</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"immediate </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">delivery</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">deliveredValues</span> <span class="o">==</span> <span class="p">[</span><span class="s">"immediate 1"</span><span class="p">])</span>       <span class="c1">// the main-queue delivery has not happened yet</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">deliveredValues</span> <span class="o">==</span> <span class="p">[</span><span class="s">"immediate 1"</span><span class="p">,</span> <span class="s">"main queue 1"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The asynchronous hop is usually what you want, because it decouples the producer from the consumer, but it has two consequences. A test that sends a value and immediately asserts on the result fails, as <code class="language-plaintext highlighter-rouge">deliveredValues</code> did above; the injected scheduler at the end of this article fixes that. And code that sends from the main thread and expects the UI to have updated by the next line will see the old state.</p>
+
+<h3 id="serial-queues-keep-order-concurrent-queues-do-not">Serial queues keep order; concurrent queues do not</h3>
+
+<p><code class="language-plaintext highlighter-rouge">receive(on:)</code> schedules each value as a separate block. On a serial queue the blocks run in order. On a concurrent queue they can run in any order, and they do:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">deliveryOrder</span><span class="p">(</span><span class="n">on</span> <span class="nv">queue</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">received</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Int</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">source</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">queue</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">value</span> <span class="k">in</span> <span class="n">received</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span> <span class="p">{</span> <span class="n">source</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">forTimeInterval</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">received</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">reorderedRuns</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">order</span> <span class="o">=</span> <span class="nf">deliveryOrder</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">())</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1_000</span><span class="p">)</span>                 <span class="c1">// nothing lost...</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">!=</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span><span class="p">)</span> <span class="p">{</span> <span class="n">reorderedRuns</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">reorderedRuns</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>                        <span class="c1">// ...but reordered</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">deliveryOrder</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"serial"</span><span class="p">))</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"concurrent queue reordered </span><span class="se">\(</span><span class="n">reorderedRuns</span><span class="se">)</span><span class="s"> of 20 runs"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>All 20 runs on <code class="language-plaintext highlighter-rouge">DispatchQueue.global()</code> delivered the 1,000 values out of order, while still never delivering two at once, since <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a> measured a peak of one concurrent delivery through the same operator. For time-based operators, concurrent queues are worse: <a href="/combine-debounce-throttle-delay/">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a> found <code class="language-plaintext highlighter-rouge">delay</code> losing values on them. Give every scheduler parameter a serial queue.</p>
+
+<h2 id="three-main-schedulers-and-scrolling">Three main schedulers, and scrolling</h2>
+
+<p>There are three ways to say “the main thread” in Combine: <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code>, <code class="language-plaintext highlighter-rouge">RunLoop.main</code>, and <code class="language-plaintext highlighter-rouge">OperationQueue.main</code>. They differ in how they get there. <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> and <code class="language-plaintext highlighter-rouge">OperationQueue.main</code> submit work to the main dispatch queue, which the main run loop services in all of its common modes. <code class="language-plaintext highlighter-rouge">RunLoop.main</code> performs its blocks in the run loop’s <em>default</em> mode. While a scroll view is being dragged, the main run loop runs in its tracking mode, which is a common mode but not the default one. Reproducing that with a custom common mode, kept alive by a timer as UIKit’s tracking mode is kept alive by its event sources:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">trackingMode</span> <span class="o">=</span> <span class="kt">RunLoop</span><span class="o">.</span><span class="kt">Mode</span><span class="p">(</span><span class="s">"ExampleTrackingMode"</span><span class="p">)</span>
+<span class="kt">CFRunLoopAddCommonMode</span><span class="p">(</span><span class="kt">CFRunLoopGetMain</span><span class="p">(),</span> <span class="kt">CFRunLoopMode</span><span class="p">(</span><span class="n">trackingMode</span><span class="o">.</span><span class="n">rawValue</span> <span class="k">as</span> <span class="kt">CFString</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">keepModeAlive</span> <span class="o">=</span> <span class="kt">Timer</span><span class="p">(</span><span class="nv">timeInterval</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="nv">repeats</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="kt">RunLoop</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">keepModeAlive</span><span class="p">,</span> <span class="nv">forMode</span><span class="p">:</span> <span class="n">trackingMode</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">scrollUpdates</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">viaRunLoop</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">var</span> <span class="nv">viaDispatchQueue</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">var</span> <span class="nv">viaOperationQueue</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">runLoopHandle</span> <span class="o">=</span> <span class="n">scrollUpdates</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">RunLoop</span><span class="o">.</span><span class="n">main</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">viaRunLoop</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">dispatchHandle</span> <span class="o">=</span> <span class="n">scrollUpdates</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">viaDispatchQueue</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">operationHandle</span> <span class="o">=</span> <span class="n">scrollUpdates</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">OperationQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">viaOperationQueue</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+
+<span class="n">scrollUpdates</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="nv">mode</span><span class="p">:</span> <span class="n">trackingMode</span><span class="p">)</span>       <span class="c1">// the user is dragging</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">viaRunLoop</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">viaDispatchQueue</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">viaOperationQueue</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span>                           <span class="c1">// the drag ends</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">viaRunLoop</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">keepModeAlive</span><span class="o">.</span><span class="nf">invalidate</span><span class="p">()</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scheduler</th>
+      <th>Delivers while scrolling</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchQueue.main</code></td>
+      <td>yes</td>
+      <td>the usual choice for UI delivery</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">OperationQueue.main</code></td>
+      <td>yes</td>
+      <td>equivalent here; supports operation dependencies elsewhere</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">RunLoop.main</code></td>
+      <td><strong>no</strong>, held until the drag ends</td>
+      <td>useful only to deliberately defer work during scrolling</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Holding image decoding results until a fling ends is occasionally desirable, and <code class="language-plaintext highlighter-rouge">RunLoop.main</code> does exactly that. For anything the user is waiting for, use <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code>.</p>
+
+<h2 id="swift-6-and-the-main-actor">Swift 6 and the main actor</h2>
+
+<p>Swift 6 adds a rule that turns threading mistakes in Combine pipelines from data races into crashes. A closure written in main-actor code, inside a <code class="language-plaintext highlighter-rouge">@MainActor</code> type or in top-level code, is inferred to be isolated to the main actor. Combine is compiled in Swift 5 mode, so the compiler cannot prove where Combine will call the closure; instead of an error, it inserts a run-time check into the closure that the current executor is the main actor. Called from any other thread, the check stops the process with <code class="language-plaintext highlighter-rouge">EXC_BREAKPOINT</code> in <code class="language-plaintext highlighter-rouge">_swift_task_checkIsolatedSwift</code>. This series has hit that check with subjects, <code class="language-plaintext highlighter-rouge">URLSession</code>, KVO, and notifications. The rule that avoids it is the same in every case:</p>
+
+<blockquote>
+  <p>Every closure that runs <strong>before</strong> <code class="language-plaintext highlighter-rouge">receive(on:)</code> to the main queue must not be main-actor isolated. Every closure <strong>after</strong> it may be.</p>
+</blockquote>
+
+<p>The three main schedulers all satisfy the check: in this article’s tests, values sent from a background thread and delivered through <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code>, <code class="language-plaintext highlighter-rouge">receive(on: RunLoop.main)</code>, and <code class="language-plaintext highlighter-rouge">receive(on: OperationQueue.main)</code> all reached main-actor <code class="language-plaintext highlighter-rouge">sink</code> closures without stopping. The check passes because the closure runs on the main thread, and the main actor’s executor is the main thread.</p>
+
+<p>The pipeline below crashes when a value arrives from a background thread, because the <code class="language-plaintext highlighter-rouge">map</code> closure carries the view model’s isolation:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Crashes when `values` emits on a background thread</span>
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CrashingModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">label</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="kd">func</span> <span class="nf">bind</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s"> items"</span> <span class="p">}</span>                       <span class="c1">// main-actor closure, run on the sender's thread</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>There are four ways to fix it. Each version below receives a value sent from a background queue:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">backgroundValues</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">itemLabel</span><span class="p">(</span><span class="n">_</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="n">count</span><span class="se">)</span><span class="s"> items"</span> <span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Publisher</span> <span class="k">where</span> <span class="kt">Output</span> <span class="o">==</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="c1">/// Built in a nonisolated extension, so its closure carries no actor isolation.</span>
+    <span class="kd">func</span> <span class="nf">itemLabels</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Publishers</span><span class="o">.</span><span class="kt">Map</span><span class="o">&lt;</span><span class="k">Self</span><span class="p">,</span> <span class="kt">String</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s"> items"</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LabelModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">labels</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="c1">// 1. Move the transformation after the hop.</span>
+    <span class="kd">func</span> <span class="nf">bindTransformingAfterHop</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s"> items"</span> <span class="p">}</span>                       <span class="c1">// main-actor closure, now on the main thread</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"after hop: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 2. Mark the early closure @Sendable, which removes the inferred isolation.</span>
+    <span class="kd">func</span> <span class="nf">bindSendable</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">count</span> <span class="k">in</span> <span class="s">"</span><span class="se">\(</span><span class="n">count</span><span class="se">)</span><span class="s"> items"</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"sendable: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 3. Use nonisolated functions or extensions for the early stages.</span>
+    <span class="kd">func</span> <span class="nf">bindNonisolated</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="nf">itemLabels</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"extension: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="n">itemLabel</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"function: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 4. Make the final closure's isolation explicit, so a reader sees what the check enforces.</span>
+    <span class="kd">func</span> <span class="nf">bindExplicit</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">values</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">count</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"explicit: </span><span class="se">\(</span><span class="n">count</span><span class="se">)</span><span class="s"> items"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">labelModel</span> <span class="o">=</span> <span class="kt">LabelModel</span><span class="p">()</span>
+<span class="n">labelModel</span><span class="o">.</span><span class="nf">bindTransformingAfterHop</span><span class="p">(</span><span class="n">backgroundValues</span><span class="p">)</span>
+<span class="n">labelModel</span><span class="o">.</span><span class="nf">bindSendable</span><span class="p">(</span><span class="n">backgroundValues</span><span class="p">)</span>
+<span class="n">labelModel</span><span class="o">.</span><span class="nf">bindNonisolated</span><span class="p">(</span><span class="n">backgroundValues</span><span class="p">)</span>
+<span class="n">labelModel</span><span class="o">.</span><span class="nf">bindExplicit</span><span class="p">(</span><span class="n">backgroundValues</span><span class="p">)</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">backgroundValues</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">labelModel</span><span class="o">.</span><span class="n">labels</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"after hop: 3 items"</span><span class="p">,</span> <span class="s">"sendable: 3 items"</span><span class="p">,</span> <span class="s">"extension: 3 items"</span><span class="p">,</span>
+    <span class="s">"function: 3 items"</span><span class="p">,</span> <span class="s">"explicit: 3 items"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The first option is the simplest and is often fine, at the cost of doing the transformation on the main thread. The second and third keep expensive work, such as formatting or decoding, off the main thread, and the <code class="language-plaintext highlighter-rouge">@Sendable</code> annotation also makes the compiler check that the closure captures nothing it should not. The fourth changes nothing at run time but documents the contract.</p>
+
+<p><code class="language-plaintext highlighter-rouge">MainActor.assumeIsolated</code> is the tool for the opposite situation: a nonisolated closure, such as one in a helper that knows it has already hopped, that must call main-actor code. It checks the same condition at run time and lets you call main-actor API inside it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">bindOnMain</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">,</span>
+                            <span class="nv">apply</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@MainActor</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyCancellable</span> <span class="p">{</span>
+    <span class="n">values</span>
+        <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span> <span class="kt">MainActor</span><span class="o">.</span><span class="n">assumeIsolated</span> <span class="p">{</span> <span class="nf">apply</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">assumedValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">assumedHandle</span> <span class="o">=</span> <span class="nf">bindOnMain</span><span class="p">(</span><span class="n">backgroundValues</span><span class="p">)</span> <span class="p">{</span> <span class="n">assumedValues</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">backgroundValues</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">assumedValues</span> <span class="o">==</span> <span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>If the <code class="language-plaintext highlighter-rouge">receive(on:)</code> were removed, <code class="language-plaintext highlighter-rouge">assumeIsolated</code> would stop the process just as the inferred check does; it is an assertion, not a hop.</p>
+
+<h2 id="injecting-the-scheduler">Injecting the scheduler</h2>
+
+<p>A view model that hard-codes <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> can only be tested by running the main run loop and hoping the delivery happened in time. Injecting the scheduler lets a test pass the virtual-time scheduler instead, so delivery happens exactly when the test advances the clock. The obstacle is the type: <code class="language-plaintext highlighter-rouge">receive(on:)</code> is generic over the scheduler, so a stored property needs one concrete type for both <code class="language-plaintext highlighter-rouge">DispatchQueue</code> and the test scheduler. A type eraser provides it, keeping the time type, which both share, and dropping scheduler-specific options:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A scheduler that forwards to any scheduler with the same time type, ignoring options.</span>
+<span class="kd">struct</span> <span class="kt">AnyScheduler</span><span class="o">&lt;</span><span class="kt">SchedulerTimeType</span><span class="p">:</span> <span class="kt">Strideable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Scheduler</span>
+<span class="k">where</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">:</span> <span class="kt">SchedulerTimeIntervalConvertible</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">SchedulerOptions</span> <span class="o">=</span> <span class="kt">Never</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">currentTime</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">SchedulerTimeType</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">scheduleNow</span><span class="p">:</span> <span class="p">(</span><span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">scheduleAfter</span><span class="p">:</span> <span class="p">(</span><span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">scheduleRepeating</span><span class="p">:</span> <span class="p">(</span><span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                                    <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Cancellable</span>
+
+    <span class="kd">init</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Scheduler</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">base</span><span class="p">:</span> <span class="kt">S</span><span class="p">)</span> <span class="k">where</span> <span class="kt">S</span><span class="o">.</span><span class="kt">SchedulerTimeType</span> <span class="o">==</span> <span class="kt">SchedulerTimeType</span> <span class="p">{</span>
+        <span class="n">currentTime</span> <span class="o">=</span> <span class="p">{</span> <span class="n">base</span><span class="o">.</span><span class="n">now</span> <span class="p">}</span>
+        <span class="n">tolerance</span> <span class="o">=</span> <span class="p">{</span> <span class="n">base</span><span class="o">.</span><span class="n">minimumTolerance</span> <span class="p">}</span>
+        <span class="n">scheduleNow</span> <span class="o">=</span> <span class="p">{</span> <span class="n">base</span><span class="o">.</span><span class="nf">schedule</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">scheduleAfter</span> <span class="o">=</span> <span class="p">{</span> <span class="n">base</span><span class="o">.</span><span class="nf">schedule</span><span class="p">(</span><span class="nv">after</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="nv">$1</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">$2</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">scheduleRepeating</span> <span class="o">=</span> <span class="p">{</span> <span class="n">base</span><span class="o">.</span><span class="nf">schedule</span><span class="p">(</span><span class="nv">after</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="nv">$1</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="nv">$2</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">$3</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span> <span class="p">{</span> <span class="nf">currentTime</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">minimumTolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span> <span class="p">{</span> <span class="nf">tolerance</span><span class="p">()</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span> <span class="nf">scheduleNow</span><span class="p">(</span><span class="n">action</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">scheduleAfter</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span>
+                  <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Cancellable</span> <span class="p">{</span>
+        <span class="nf">scheduleRepeating</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">typealias</span> <span class="kt">MainScheduler</span> <span class="o">=</span> <span class="kt">AnyScheduler</span><span class="o">&lt;</span><span class="kt">DispatchQueue</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<p>A search model takes the scheduler in its initializer, defaults it to the main queue, and uses it for both the debounce and the delivery hop:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">query</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">search</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">],</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">,</span>
+         <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">MainScheduler</span> <span class="o">=</span> <span class="kt">AnyScheduler</span><span class="p">(</span><span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">query</span>
+            <span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="n">search</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">switchToLatest</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">testClock</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">testModel</span> <span class="o">=</span> <span class="kt">SearchModel</span><span class="p">(</span>
+    <span class="nv">search</span><span class="p">:</span> <span class="p">{</span> <span class="n">query</span> <span class="k">in</span> <span class="kt">Just</span><span class="p">([</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">])</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span> <span class="p">},</span>
+    <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">AnyScheduler</span><span class="p">(</span><span class="n">testClock</span><span class="p">))</span>
+
+<span class="n">testModel</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"sw"</span><span class="p">)</span>
+<span class="n">testModel</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span>
+<span class="n">testClock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">299</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">testModel</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>                <span class="c1">// still debouncing</span>
+<span class="n">testClock</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">testModel</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">])</span>    <span class="c1">// debounced and delivered, at exactly 300 ms</span>
+</code></pre></div></div>
+
+<p>The test controls both the debounce and the hop and needs no run loop and no sleeping. The production default goes through the same eraser, so the code path under test is the one that ships:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">liveModel</span> <span class="o">=</span> <span class="kt">SearchModel</span><span class="p">(</span><span class="nv">search</span><span class="p">:</span> <span class="p">{</span> <span class="n">query</span> <span class="k">in</span> <span class="kt">Just</span><span class="p">([</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">])</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span> <span class="p">})</span>
+<span class="n">liveModel</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"combine"</span><span class="p">)</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">liveModel</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"combine result"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><a href="/combine-testing-publishers/">Testing Publishers</a> builds on this in a Swift Testing package. Point-Free’s <a href="https://github.com/pointfreeco/combine-schedulers">combine-schedulers</a> library provides a fuller <code class="language-plaintext highlighter-rouge">AnyScheduler</code> that also forwards options.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">sequenceHandle</span><span class="p">,</span> <span class="n">expensiveHandle</span><span class="p">,</span> <span class="n">hotHandle</span><span class="p">,</span> <span class="n">queuedHandle</span><span class="p">,</span> <span class="n">immediateHandle</span><span class="p">,</span>
+                      <span class="n">runLoopHandle</span><span class="p">,</span> <span class="n">dispatchHandle</span><span class="p">,</span> <span class="n">operationHandle</span><span class="p">,</span> <span class="n">assumedHandle</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Without a scheduler operator, every stage of a pipeline runs on the thread that produced the value.</li>
+  <li><code class="language-plaintext highlighter-rouge">subscribe(on:)</code> moves subscription and demand upstream, so the work of cold publishers such as sequences and <code class="language-plaintext highlighter-rouge">Deferred</code> moved to the background queue. It did not move a subject’s values, and it lost the value sent immediately after subscribing.</li>
+  <li><code class="language-plaintext highlighter-rouge">receive(on:)</code> moves values and completion downstream, and is asynchronous even from the main thread; <code class="language-plaintext highlighter-rouge">ImmediateScheduler</code> is synchronous.</li>
+  <li>A concurrent queue reordered 1,000 values in 20 runs out of 20; a serial queue never did. Use serial queues.</li>
+  <li><code class="language-plaintext highlighter-rouge">RunLoop.main</code> held delivery while the run loop was in a tracking-style mode; <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> and <code class="language-plaintext highlighter-rouge">OperationQueue.main</code> delivered. Use <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> for UI.</li>
+  <li>In Swift 6, closures before <code class="language-plaintext highlighter-rouge">receive(on:)</code> to the main queue must not be main-actor isolated: move the work after the hop, mark the closure <code class="language-plaintext highlighter-rouge">@Sendable</code>, or build it in nonisolated code. All three main schedulers satisfied the main-actor check.</li>
+  <li>Inject an <code class="language-plaintext highlighter-rouge">AnyScheduler</code> to test debouncing and delivery in virtual time while shipping the main queue.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">ThumbnailLoader</code> that takes a publisher of image file URLs, decodes each image on a serial background queue using <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> around a <code class="language-plaintext highlighter-rouge">Deferred</code> decode, delivers the results to a <code class="language-plaintext highlighter-rouge">@MainActor</code> model through <code class="language-plaintext highlighter-rouge">receive(on:)</code>, and holds results during scrolling by switching its delivery scheduler to <code class="language-plaintext highlighter-rouge">RunLoop.main</code> only while a <code class="language-plaintext highlighter-rouge">isScrolling</code> publisher is <code class="language-plaintext highlighter-rouge">true</code>. Inject both schedulers through <code class="language-plaintext highlighter-rouge">AnyScheduler</code>, and test with two virtual schedulers that decoding never runs on the delivery scheduler, that results arrive in input order, and that nothing is delivered while scrolling. Then explain in a comment why <code class="language-plaintext highlighter-rouge">subscribe(on:)</code> would not work if the URLs came from a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> without the <code class="language-plaintext highlighter-rouge">Deferred</code>.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/receive(on:options:)"><code class="language-plaintext highlighter-rouge">receive(on:options:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/subscribe(on:options:)"><code class="language-plaintext highlighter-rouge">subscribe(on:options:)</code></a>, and <a href="https://developer.apple.com/documentation/combine/immediatescheduler"><code class="language-plaintext highlighter-rouge">ImmediateScheduler</code></a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0423-dynamic-actor-isolation.md">SE-0423: Dynamic actor isolation enforcement from non-strict-concurrency contexts</a>, the proposal behind the run-time check that crashes misplaced main-actor closures.</li>
+  <li>The concurrency roadmap’s <a href="/swift-main-actor/">The Main Actor</a> and <a href="/swift-executors/">Executors</a>.</li>
+</ul>
+
+<p>Previous: <a href="/combine-error-handling-catch-retry/">Error Handling: <code class="language-plaintext highlighter-rouge">catch</code>, <code class="language-plaintext highlighter-rouge">retry</code>, and <code class="language-plaintext highlighter-rouge">replaceError</code></a>. Next: <a href="/combine-share-multicasting/">Managing Resources: <code class="language-plaintext highlighter-rouge">share</code> and Multicasting</a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Schedulers%3A+receive%28on%3A%29+and+subscribe%28on%3A%29%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-schedulers-receive-subscribe-on%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/&title=Schedulers%3A+receive%28on%3A%29+and+subscribe%28on%3A%29%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/&title=Schedulers%3A+receive%28on%3A%29+and+subscribe%28on%3A%29%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Schedulers: receive(on:) and subscribe(on:)%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-schedulers-receive-subscribe-on/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Main+Actor">Main Actor</a></li>
+    
+    <li><a href="/tag/#Schedulers">Schedulers</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Building Streams with AsyncStream and AsyncThrowingStream in Swift" href="/swift-asyncstream/"> <p>Previous post</p> Building Streams with AsyncStream and AsyncThrowingStream in Swift </a> </div> <div id="next-post"> <a alt="Consuming Values with AsyncSequence in Swift" href="/swift-asyncsequence/"> <p>Next post</p> Consuming Values with AsyncSequence in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

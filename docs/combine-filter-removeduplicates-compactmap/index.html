@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Filtering: filter, removeDuplicates, and compactMap | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Filtering: filter, removeDuplicates, and compactMap" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Filtering operators decide which values get through. filter keeps the values that satisfy a predicate. compactMap transforms each value and drops the ones that become nil. removeDuplicates drops a value that is equal to the one before it. Between them they handle most of the “only react when something actually changed” logic in an app: ignore empty queries, skip unparseable messages, and stop a view from re-rendering when a poll returns the same data. They look stateless and simple, and three details make them less so. Dropping a value has to be paid for with demand, and filter does that accounting for you. removeDuplicates compares each value with the last value it emitted, not the last one it received, which decides whether a tolerance-based comparison can miss a slow drift. And any state you add yourself, such as a set of values already seen, is shared by every subscriber unless you create it per subscription. This article measures all three, works out when removeDuplicates actually saves anything, and times what equality costs for large values." /> <meta property="og:description" content="Filtering operators decide which values get through. filter keeps the values that satisfy a predicate. compactMap transforms each value and drops the ones that become nil. removeDuplicates drops a value that is equal to the one before it. Between them they handle most of the “only react when something actually changed” logic in an app: ignore empty queries, skip unparseable messages, and stop a view from re-rendering when a poll returns the same data. They look stateless and simple, and three details make them less so. Dropping a value has to be paid for with demand, and filter does that accounting for you. removeDuplicates compares each value with the last value it emitted, not the last one it received, which decides whether a tolerance-based comparison can miss a slow drift. And any state you add yourself, such as a set of values already seen, is shared by every subscriber unless you create it per subscription. This article measures all three, works out when removeDuplicates actually saves anything, and times what equality costs for large values." /> <link rel="canonical" href="https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-15T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Filtering: filter, removeDuplicates, and compactMap" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-15T00:00:00+03:00","datePublished":"2026-07-15T00:00:00+03:00","description":"Filtering operators decide which values get through. filter keeps the values that satisfy a predicate. compactMap transforms each value and drops the ones that become nil. removeDuplicates drops a value that is equal to the one before it. Between them they handle most of the “only react when something actually changed” logic in an app: ignore empty queries, skip unparseable messages, and stop a view from re-rendering when a poll returns the same data. They look stateless and simple, and three details make them less so. Dropping a value has to be paid for with demand, and filter does that accounting for you. removeDuplicates compares each value with the last value it emitted, not the last one it received, which decides whether a tolerance-based comparison can miss a slow drift. And any state you add yourself, such as a set of values already seen, is shared by every subscriber unless you create it per subscription. This article measures all three, works out when removeDuplicates actually saves anything, and times what equality costs for large values.","headline":"Filtering: filter, removeDuplicates, and compactMap","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/"},"url":"https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Filtering: filter, removeDuplicates, and compactMap"> <meta name="twitter:description" content="Filtering operators decide which values get through. filter keeps the values that satisfy a predicate. compactMap transforms each value and drops the ones th..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Filtering: filter, removeDuplicates, and compactMap"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Filtering: filter, removeDuplicates, and compactMap</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-15T00:00:00+03:00">July 15, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Filtering operators decide which values get through. <code class="language-plaintext highlighter-rouge">filter</code> keeps the values that satisfy a predicate. <code class="language-plaintext highlighter-rouge">compactMap</code> transforms each value and drops the ones that become <code class="language-plaintext highlighter-rouge">nil</code>. <code class="language-plaintext highlighter-rouge">removeDuplicates</code> drops a value that is equal to the one before it. Between them they handle most of the “only react when something actually changed” logic in an app: ignore empty queries, skip unparseable messages, and stop a view from re-rendering when a poll returns the same data.</p>
+
+<p>They look stateless and simple, and three details make them less so. Dropping a value has to be paid for with demand, and <code class="language-plaintext highlighter-rouge">filter</code> does that accounting for you. <code class="language-plaintext highlighter-rouge">removeDuplicates</code> compares each value with the last value it <em>emitted</em>, not the last one it received, which decides whether a tolerance-based comparison can miss a slow drift. And any state you add yourself, such as a set of values already seen, is shared by every subscriber unless you create it per subscription. This article measures all three, works out when <code class="language-plaintext highlighter-rouge">removeDuplicates</code> actually saves anything, and times what equality costs for large values.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<h2 id="filter-and-demand"><code class="language-plaintext highlighter-rouge">filter</code> and demand</h2>
+
+<p><code class="language-plaintext highlighter-rouge">filter</code> passes a value downstream when its predicate returns <code class="language-plaintext highlighter-rouge">true</code>. When the predicate returns <code class="language-plaintext highlighter-rouge">false</code>, the value is gone, but the subscriber’s demand has not been used, so <code class="language-plaintext highlighter-rouge">filter</code> asks its upstream for one more. A subscriber that requests exactly two values from a filtered sequence shows the accounting, with <code class="language-plaintext highlighter-rouge">handleEvents</code> logging what crosses the boundary above the filter:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="c1">/// Requests a fixed number of values once and records what it receives.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">FixedDemandSubscriber</span><span class="o">&lt;</span><span class="kt">Input</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Subscriber</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">demand</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">Input</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">demand</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">demand</span> <span class="o">=</span> <span class="n">demand</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span> <span class="p">{</span> <span class="n">subscription</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="n">demand</span><span class="p">))</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="p">{</span> <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">input</span><span class="p">);</span> <span class="k">return</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">aboveFilter</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">multiplesOfFour</span> <span class="o">=</span> <span class="kt">FixedDemandSubscriber</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">demand</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="n">aboveFilter</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">},</span>
+                  <span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="n">aboveFilter</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"request </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">isMultiple</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">multiplesOfFour</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">multiplesOfFour</span><span class="o">.</span><span class="n">received</span> <span class="o">==</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">aboveFilter</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"request max(2)"</span><span class="p">,</span>
+    <span class="s">"value 1"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 2"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 3"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 4"</span><span class="p">,</span>
+    <span class="s">"value 5"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 6"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 7"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span>
+    <span class="s">"value 8"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The upstream produced eight values for a demand of two, because six were rejected, and it stopped at 8: values 9 and 10 were never generated. That is what makes filtering composable with backpressure. If the upstream is expensive, such as rows read from a database on request, the subscriber’s demand still limits how much work is done, and it is measured in <em>accepted</em> values. If the upstream is a subject, which ignores demand, the extra requests are harmless.</p>
+
+<p>The predicate cannot throw. <code class="language-plaintext highlighter-rouge">tryFilter</code> is the throwing version, and a thrown error ends the stream with an <code class="language-plaintext highlighter-rouge">any Error</code> failure, as with <code class="language-plaintext highlighter-rouge">tryMap</code> in <a href="/combine-map-flatmap-scan/">Transforming: <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">flatMap</code>, and <code class="language-plaintext highlighter-rouge">scan</code></a>.</p>
+
+<h2 id="compactmap-transform-and-drop"><code class="language-plaintext highlighter-rouge">compactMap</code>: transform and drop</h2>
+
+<p><code class="language-plaintext highlighter-rouge">compactMap</code> is <code class="language-plaintext highlighter-rouge">map</code> followed by “drop <code class="language-plaintext highlighter-rouge">nil</code>”, and it requests more from upstream for each dropped value in the same way:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">compactSubscriber</span> <span class="o">=</span> <span class="kt">FixedDemandSubscriber</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">demand</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">compactRequests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="n">compactRequests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">isMultiple</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span> <span class="p">?</span> <span class="nv">$0</span> <span class="o">*</span> <span class="mi">10</span> <span class="p">:</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">compactSubscriber</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">compactSubscriber</span><span class="o">.</span><span class="n">received</span> <span class="o">==</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">compactRequests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"max(2)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Its common use is parsing, where a failed conversion returns <code class="language-plaintext highlighter-rouge">nil</code>. That convenience is also its danger: a <code class="language-plaintext highlighter-rouge">compactMap</code> over <code class="language-plaintext highlighter-rouge">try?</code> drops malformed input without a trace. Compare the three ways to handle a feed of messages where one is malformed:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ChatMessage</span><span class="p">:</span> <span class="kt">Decodable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">rawMessages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">": 1, "</span><span class="n">text</span><span class="s">": "</span><span class="n">hi</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span>
+    <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">": 2, "</span><span class="n">txt</span><span class="s">": "</span><span class="n">typo</span> <span class="k">in</span> <span class="n">the</span> <span class="n">key</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span>
+    <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">": 3, "</span><span class="n">text</span><span class="s">": "</span><span class="n">still</span> <span class="n">here</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span>
+<span class="p">]</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">decoder</span> <span class="o">=</span> <span class="kt">JSONDecoder</span><span class="p">()</span>
+
+<span class="c1">// 1. tryMap: the first bad message ends the stream.</span>
+<span class="k">var</span> <span class="nv">strictMessages</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">strictFailed</span> <span class="o">=</span> <span class="kc">false</span>
+<span class="k">let</span> <span class="nv">strictHandle</span> <span class="o">=</span> <span class="n">rawMessages</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">tryMap</span> <span class="p">{</span> <span class="k">try</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">ChatMessage</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">failure</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">{</span> <span class="n">strictFailed</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">},</span>
+          <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">strictMessages</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">strictMessages</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">strictFailed</span><span class="p">)</span>
+
+<span class="c1">// 2. compactMap with try?: the bad message disappears silently.</span>
+<span class="k">var</span> <span class="nv">lenientMessages</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">lenientHandle</span> <span class="o">=</span> <span class="n">rawMessages</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">ChatMessage</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">lenientMessages</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lenientMessages</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="c1">// 3. compactMap that records what it drops.</span>
+<span class="k">var</span> <span class="nv">recordedMessages</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">droppedReasons</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">recordedHandle</span> <span class="o">=</span> <span class="n">rawMessages</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="n">data</span> <span class="o">-&gt;</span> <span class="kt">ChatMessage</span><span class="p">?</span> <span class="k">in</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">ChatMessage</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">droppedReasons</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">describing</span><span class="p">:</span> <span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">error</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">recordedMessages</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recordedMessages</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">droppedReasons</span> <span class="o">==</span> <span class="p">[</span><span class="s">"DecodingError"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>For a live chat feed, the second and third behaviors are both reasonable, because one bad message should not take down the connection. Only the third leaves evidence. In production that closure would log the error with the networking roadmap’s <a href="/swift-redacting-network-logs/">redaction rules</a> and increment a counter, so that a server change that breaks every message shows up as a spike rather than an empty screen.</p>
+
+<p><code class="language-plaintext highlighter-rouge">replaceNil(with:)</code> is the opposite choice, substituting a default instead of dropping. It has a quirk worth knowing: on a <code class="language-plaintext highlighter-rouge">Publishers.Sequence</code>, it is overloaded to return another sequence publisher whose output is still optional, while on every other publisher it unwraps the output:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">replacedInSequence</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">replaceNil</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">replacedInSequence</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Publishers</span><span class="o">.</span><span class="kt">Sequence</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Int</span><span class="p">?],</span> <span class="kt">Never</span><span class="o">&gt;.</span><span class="k">self</span><span class="p">)</span>   <span class="c1">// still Int?</span>
+
+<span class="k">let</span> <span class="nv">replacedInPipeline</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">?,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span><span class="o">.</span><span class="nf">replaceNil</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">replacedInPipeline</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Publishers</span><span class="o">.</span><span class="kt">Map</span><span class="o">&lt;</span><span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">?,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">,</span> <span class="kt">Int</span><span class="o">&gt;.</span><span class="k">self</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>That difference is invisible until a test built on an array publisher fails to compile against code written for a subject, or the reverse.</p>
+
+<h2 id="removeduplicates-compares-with-the-last-emitted-value"><code class="language-plaintext highlighter-rouge">removeDuplicates</code> compares with the last emitted value</h2>
+
+<p><code class="language-plaintext highlighter-rouge">removeDuplicates()</code> drops a value equal to its predecessor. It removes <em>consecutive</em> duplicates only, so it is not a “distinct” operator:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">consecutive</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">consecutiveHandle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">consecutive</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">consecutive</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>            <span class="c1">// the second 1 is not adjacent to the first</span>
+</code></pre></div></div>
+
+<p>The predicate version, <code class="language-plaintext highlighter-rouge">removeDuplicates(by:)</code>, lets you define “the same”, which is useful when values carry fields that change without mattering, such as a timestamp. The question is: the same as <em>what</em>? Logging the predicate’s arguments answers it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">predicateArguments</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">argumentsHandle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">removeDuplicates</span> <span class="p">{</span> <span class="n">previous</span><span class="p">,</span> <span class="n">current</span> <span class="k">in</span>
+        <span class="n">predicateArguments</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"(</span><span class="se">\(</span><span class="n">previous</span><span class="se">)</span><span class="s">, </span><span class="se">\(</span><span class="n">current</span><span class="se">)</span><span class="s">)"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">true</span>                              <span class="c1">// treat everything as a duplicate</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">predicateArguments</span> <span class="o">==</span> <span class="p">[</span><span class="s">"(1, 2)"</span><span class="p">,</span> <span class="s">"(1, 3)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>When the predicate says “duplicate”, the remembered value stays the same. The comparison is always against the last value that was <em>emitted</em>. That matters for tolerance-based comparisons, where “close enough” is not transitive. A sensor that drifts slowly by 0.4 per step never moves 0.5 away from its immediate predecessor, but it does move away from the last value emitted:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">drifting</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">driftHandle</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="n">removeDuplicates</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="nv">$1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">drifting</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">drifting</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">])</span>            <span class="c1">// the drift is reported every 0.8</span>
+</code></pre></div></div>
+
+<p>If <code class="language-plaintext highlighter-rouge">removeDuplicates</code> compared adjacent received values, this stream would have emitted only <code class="language-plaintext highlighter-rouge">0.0</code> and then gone silent while the real value climbed to 2.0. Comparing against the emitted value gives the useful guarantee: the last emitted value is always within the tolerance of the current one, so the screen is never more than one tolerance step wrong.</p>
+
+<h3 id="when-deduplication-saves-anything">When deduplication saves anything</h3>
+
+<p><code class="language-plaintext highlighter-rouge">removeDuplicates</code> helps only as much as consecutive repeats are common. If each value is drawn independently from categories with probabilities \(p_1, \ldots, p_k\), a value repeats its predecessor with probability \(\sum_i p_i^2\), so of \(n\) values the expected number emitted is</p>
+
+\[E[\text{emitted}] \;=\; 1 + (n - 1)\left(1 - \sum_{i=1}^{k} p_i^2\right).\]
+
+<p>For four equally likely values that is \(1 + (n-1)\cdot\tfrac{3}{4}\): deduplication removes only a quarter of the traffic. A seeded simulation agrees:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span> <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">randomStates</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">randomEmitted</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">randomHandle</span> <span class="o">=</span> <span class="n">randomStates</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">randomEmitted</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">predicted</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">randomStates</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.75</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">randomEmitted</span><span class="p">)</span> <span class="o">-</span> <span class="n">predicted</span><span class="p">)</span> <span class="o">/</span> <span class="n">predicted</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"emitted </span><span class="se">\(</span><span class="n">randomEmitted</span><span class="se">)</span><span class="s"> of 10,000, predicted </span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="n">predicted</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The run emitted 7,479 of 10,000 against a prediction of 7,500; the generator is seeded, so the number is the same on every run. State in an app does not usually behave like that: a poll of an order status returns <code class="language-plaintext highlighter-rouge">processing</code> fifty times before <code class="language-plaintext highlighter-rouge">shipped</code>, and <code class="language-plaintext highlighter-rouge">@Published</code> emits on every assignment even when nothing changed, as <a href="/combine-published-properties/"><code class="language-plaintext highlighter-rouge">@Published</code> Properties</a> measured. For slowly changing state, deduplication removes nearly everything, which is where it belongs: directly before the expensive subscriber, such as a view update or a disk write.</p>
+
+<h3 id="what-equality-costs">What equality costs</h3>
+
+<p><code class="language-plaintext highlighter-rouge">removeDuplicates()</code> calls <code class="language-plaintext highlighter-rouge">==</code> once per value, so its cost is the cost of comparing two values of your type. For a struct containing a large array, that can be cheap or expensive depending on where the array came from. Swift’s <code class="language-plaintext highlighter-rouge">Array</code> equality first checks whether both arrays share the same storage and returns <code class="language-plaintext highlighter-rouge">true</code> immediately if they do; only distinct storage forces an element-by-element comparison:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">largeList</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000_000</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sharedCopy</span> <span class="o">=</span> <span class="n">largeList</span>                     <span class="c1">// same storage</span>
+<span class="k">var</span> <span class="nv">separateCopy</span> <span class="o">=</span> <span class="n">largeList</span>
+<span class="n">separateCopy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>                            <span class="c1">// equal contents, separate storage</span>
+
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="kd">func</span> <span class="nf">averageTime</span><span class="p">(</span><span class="n">of</span> <span class="nv">comparison</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span> <span class="nf">precondition</span><span class="p">(</span><span class="nf">comparison</span><span class="p">())</span> <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">20</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">sharedTime</span> <span class="o">=</span> <span class="n">averageTime</span> <span class="p">{</span> <span class="n">largeList</span> <span class="o">==</span> <span class="n">sharedCopy</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">separateTime</span> <span class="o">=</span> <span class="n">averageTime</span> <span class="p">{</span> <span class="n">largeList</span> <span class="o">==</span> <span class="n">separateCopy</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"shared storage: </span><span class="se">\(</span><span class="n">sharedTime</span><span class="se">)</span><span class="s">, separate storage: </span><span class="se">\(</span><span class="n">separateTime</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">separateTime</span> <span class="o">&gt;</span> <span class="n">sharedTime</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In an optimized build, comparing the arrays with shared storage took about 2.5 nanoseconds, and comparing the separate but equal arrays took about 400 microseconds; this unoptimized check showed a gap of four orders of magnitude as well. For a state struct that is copied and lightly modified, the large unchanged fields share storage and deduplication is almost free. For state rebuilt from scratch, such as every poll decoding a fresh response into new arrays, every comparison walks all the elements, on whichever thread the pipeline runs. If that is the main thread, a 10,000-row response compared every second costs real frame time, and a cheaper identity, such as a server-provided version or <code class="language-plaintext highlighter-rouge">ETag</code>, makes a better key for <code class="language-plaintext highlighter-rouge">removeDuplicates(by:)</code>. The networking roadmap’s <a href="/swift-http-caching-etag/">HTTP Caching with <code class="language-plaintext highlighter-rouge">Cache-Control</code> and <code class="language-plaintext highlighter-rouge">ETag</code></a> covers getting one.</p>
+
+<h2 id="state-in-a-filter-belongs-to-one-subscription">State in a filter belongs to one subscription</h2>
+
+<p>Combine has no operator that removes duplicates across a whole stream. The obvious way to write one is a <code class="language-plaintext highlighter-rouge">filter</code> that remembers what it has seen:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">seenEverywhere</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">sharedStateDistinct</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">()</span>                              <span class="c1">// avoid the eager Sequence overload of filter</span>
+    <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">seenEverywhere</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span><span class="o">.</span><span class="n">inserted</span> <span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">firstSubscriberSaw</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">secondSubscriberSaw</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">firstSharedHandle</span> <span class="o">=</span> <span class="n">sharedStateDistinct</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">firstSubscriberSaw</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">secondSharedHandle</span> <span class="o">=</span> <span class="n">sharedStateDistinct</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">secondSubscriberSaw</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstSubscriberSaw</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">secondSubscriberSaw</span> <span class="o">==</span> <span class="p">[])</span>               <span class="c1">// everything was already "seen"</span>
+</code></pre></div></div>
+
+<p>The set belongs to the closure, the closure belongs to the publisher, and every subscription to the publisher uses the same closure, so the second subscriber’s values were all rejected. The bug is easy to miss because most pipelines have a single subscriber until someone adds a second, for example a debugging <code class="language-plaintext highlighter-rouge">sink</code>, or a retry, which resubscribes. (The <code class="language-plaintext highlighter-rouge">handleEvents()</code> is there because, as <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a> showed, <code class="language-plaintext highlighter-rouge">filter</code> on a sequence publisher runs eagerly, once, when the operator is applied.)</p>
+
+<p>The fix is to create the state per subscription, which is exactly what <code class="language-plaintext highlighter-rouge">Deferred</code> is for: its closure runs once for each subscriber:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Publisher</span> <span class="k">where</span> <span class="kt">Output</span><span class="p">:</span> <span class="kt">Hashable</span> <span class="p">{</span>
+    <span class="c1">/// Drops any value already emitted to this subscriber, not just consecutive repeats.</span>
+    <span class="kd">func</span> <span class="nf">uniqued</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Deferred</span><span class="o">&lt;</span><span class="kt">Publishers</span><span class="o">.</span><span class="kt">Filter</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+        <span class="kt">Deferred</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">seen</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Output</span><span class="o">&gt;</span><span class="p">()</span>             <span class="c1">// created for each subscription</span>
+            <span class="k">return</span> <span class="k">self</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">seen</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span><span class="o">.</span><span class="n">inserted</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">perSubscriber</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">handleEvents</span><span class="p">()</span><span class="o">.</span><span class="nf">uniqued</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">firstUniqued</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">secondUniqued</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">firstUniquedHandle</span> <span class="o">=</span> <span class="n">perSubscriber</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">firstUniqued</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">secondUniquedHandle</span> <span class="o">=</span> <span class="n">perSubscriber</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">secondUniqued</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstUniqued</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">secondUniqued</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">seen</code> set grows with every distinct value, so for an unbounded stream, such as message IDs on a long-lived socket, it is a slow memory leak. Bound it by what you actually need: if the server can redeliver a message only within the last few hundred, keep a fixed-size window of recent IDs instead of a set of all of them.</p>
+
+<h2 id="the-rest-of-the-filtering-family">The rest of the filtering family</h2>
+
+<p>The other filtering operators follow the same demand rules and differ only in their predicate:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Operator</th>
+      <th>Drops</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">filter</code>, <code class="language-plaintext highlighter-rouge">tryFilter</code></td>
+      <td>values failing a predicate</td>
+      <td>requests a replacement per drop</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">compactMap</code>, <code class="language-plaintext highlighter-rouge">tryCompactMap</code></td>
+      <td>values mapped to <code class="language-plaintext highlighter-rouge">nil</code></td>
+      <td>silent unless you record drops</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">removeDuplicates</code>, <code class="language-plaintext highlighter-rouge">removeDuplicates(by:)</code></td>
+      <td>values equal to the last emitted</td>
+      <td>consecutive only</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">replaceNil(with:)</code></td>
+      <td>nothing; substitutes a default</td>
+      <td>keeps <code class="language-plaintext highlighter-rouge">Optional</code> on sequence publishers</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ignoreOutput()</code></td>
+      <td>every value</td>
+      <td>keeps only the completion</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dropFirst(_:)</code>, <code class="language-plaintext highlighter-rouge">drop(while:)</code></td>
+      <td>a prefix of the stream</td>
+      <td><code class="language-plaintext highlighter-rouge">dropFirst()</code> skips <code class="language-plaintext highlighter-rouge">@Published</code>’s initial value</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">drop(untilOutputFrom:)</code></td>
+      <td>values before another publisher emits</td>
+      <td>e.g. ignore input until a view appears</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">prefix(_:)</code>, <code class="language-plaintext highlighter-rouge">prefix(while:)</code>, <code class="language-plaintext highlighter-rouge">prefix(untilOutputFrom:)</code></td>
+      <td>everything after a point</td>
+      <td>completes the stream and cancels upstream</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <code class="language-plaintext highlighter-rouge">prefix</code> family belongs with the sequence operators covered in <a href="/combine-first-last-collect/">Sequence Operators: <code class="language-plaintext highlighter-rouge">first</code>, <code class="language-plaintext highlighter-rouge">last</code>, and <code class="language-plaintext highlighter-rouge">collect</code></a>, because ending the stream changes what happens upstream.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">strictHandle</span><span class="p">,</span> <span class="n">lenientHandle</span><span class="p">,</span> <span class="n">recordedHandle</span><span class="p">,</span> <span class="n">consecutiveHandle</span><span class="p">,</span>
+                      <span class="n">argumentsHandle</span><span class="p">,</span> <span class="n">driftHandle</span><span class="p">,</span> <span class="n">randomHandle</span><span class="p">,</span> <span class="n">firstSharedHandle</span><span class="p">,</span>
+                      <span class="n">secondSharedHandle</span><span class="p">,</span> <span class="n">firstUniquedHandle</span><span class="p">,</span> <span class="n">secondUniquedHandle</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">filter</code> and <code class="language-plaintext highlighter-rouge">compactMap</code> request one more value from upstream for each value they drop; with a demand of two, the upstream produced exactly eight values and stopped.</li>
+  <li><code class="language-plaintext highlighter-rouge">compactMap</code> with <code class="language-plaintext highlighter-rouge">try?</code> drops malformed input silently. Record what it drops, or use <code class="language-plaintext highlighter-rouge">tryMap</code> when one bad value should end the stream.</li>
+  <li><code class="language-plaintext highlighter-rouge">replaceNil(with:)</code> keeps an optional output type on sequence publishers and unwraps it everywhere else.</li>
+  <li><code class="language-plaintext highlighter-rouge">removeDuplicates</code> removes consecutive duplicates only, and compares with the last <em>emitted</em> value: a 0.4-per-step drift with a 0.5 tolerance was reported every 0.8.</li>
+  <li>With independent values, deduplication emits \(1 + (n-1)(1 - \sum p_i^2)\) of \(n\); measured 7,479 of 10,000 against 7,500 predicted. It pays off for slowly changing state.</li>
+  <li>Equality of large arrays is constant-time when storage is shared and linear otherwise; measured 2.5 ns against 400 µs for a million elements.</li>
+  <li>State captured by a filter closure is shared by every subscriber; create it per subscription with <code class="language-plaintext highlighter-rouge">Deferred</code>, and bound it.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">removeDuplicates(within:)</code> operator for <code class="language-plaintext highlighter-rouge">Double</code> that treats values within a tolerance as duplicates and also emits a value whenever more than a given interval has passed since the last emission, so that a stuck sensor still produces a heartbeat. Inject a clock so the test can control time. Test the drift case from this article, a stream of identical values that must produce exactly one heartbeat per interval, and a burst of different values within one interval. Then explain in a comment why the operator must compare against the last emitted value rather than the last received one, using the drift test as the counterexample.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/filter(_:)"><code class="language-plaintext highlighter-rouge">filter(_:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/compactmap(_:)"><code class="language-plaintext highlighter-rouge">compactMap(_:)</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/removeduplicates(by:)"><code class="language-plaintext highlighter-rouge">removeDuplicates(by:)</code></a>.</li>
+  <li>The Swift standard library’s <a href="https://github.com/swiftlang/swift/blob/main/stdlib/public/core/Array.swift"><code class="language-plaintext highlighter-rouge">Array</code> equality implementation</a>, which checks for shared storage before comparing elements.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/721/">Combine in Practice</a>, WWDC19, which uses <code class="language-plaintext highlighter-rouge">removeDuplicates</code> and <code class="language-plaintext highlighter-rouge">filter</code> to validate a form.</li>
+</ul>
+
+<p>Previous: <a href="/combine-map-flatmap-scan/">Transforming: <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">flatMap</code>, and <code class="language-plaintext highlighter-rouge">scan</code></a>. Next: <a href="/combine-combinelatest-zip-merge/">Combining: <code class="language-plaintext highlighter-rouge">combineLatest</code>, <code class="language-plaintext highlighter-rouge">zip</code>, and <code class="language-plaintext highlighter-rouge">merge</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Filtering%3A+filter%2C+removeDuplicates%2C+and+compactMap%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-filter-removeduplicates-compactmap%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/&title=Filtering%3A+filter%2C+removeDuplicates%2C+and+compactMap%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/&title=Filtering%3A+filter%2C+removeDuplicates%2C+and+compactMap%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Filtering: filter, removeDuplicates, and compactMap%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-filter-removeduplicates-compactmap/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Operators">Operators</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="The Main Actor and UI-Facing State in Swift" href="/swift-main-actor/"> <p>Previous post</p> The Main Actor and UI-Facing State in Swift </a> </div> <div id="next-post"> <a alt="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points" href="/swift-actor-reentrancy/"> <p>Next post</p> Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

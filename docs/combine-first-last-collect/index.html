@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Sequence Operators: first, last, and collect | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Sequence Operators: first, last, and collect" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Most operators look at one value at a time. A second family looks at the stream as a whole, the way Sequence methods look at a whole collection: first and contains stop as soon as they have their answer, last, reduce, and count cannot answer until the stream ends, and collect gathers values into arrays, either all of them or in batches by count or by time. They are named after their Sequence counterparts and behave like them, with one difference that changes everything: a publisher may never end. That difference produces this family’s characteristic bugs. $property.last() and subject.collect() never emit, because their upstream never completes. collect() buffers everything it receives in the meantime. A batch in progress is emitted when the stream finishes but discarded when it fails. And the time-based collect uses fixed windows that a count-triggered flush does not reset. This article measures each of those behaviors, then works out what batching costs in latency and saves in requests, and checks the formulas with a simulation on the virtual-time scheduler from Time: debounce, throttle, and delay." /> <meta property="og:description" content="Most operators look at one value at a time. A second family looks at the stream as a whole, the way Sequence methods look at a whole collection: first and contains stop as soon as they have their answer, last, reduce, and count cannot answer until the stream ends, and collect gathers values into arrays, either all of them or in batches by count or by time. They are named after their Sequence counterparts and behave like them, with one difference that changes everything: a publisher may never end. That difference produces this family’s characteristic bugs. $property.last() and subject.collect() never emit, because their upstream never completes. collect() buffers everything it receives in the meantime. A batch in progress is emitted when the stream finishes but discarded when it fails. And the time-based collect uses fixed windows that a count-triggered flush does not reset. This article measures each of those behaviors, then works out what batching costs in latency and saves in requests, and checks the formulas with a simulation on the virtual-time scheduler from Time: debounce, throttle, and delay." /> <link rel="canonical" href="https://swiftbydeya.com/combine-first-last-collect/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-first-last-collect/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-22T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Sequence Operators: first, last, and collect" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-22T00:00:00+03:00","datePublished":"2026-07-22T00:00:00+03:00","description":"Most operators look at one value at a time. A second family looks at the stream as a whole, the way Sequence methods look at a whole collection: first and contains stop as soon as they have their answer, last, reduce, and count cannot answer until the stream ends, and collect gathers values into arrays, either all of them or in batches by count or by time. They are named after their Sequence counterparts and behave like them, with one difference that changes everything: a publisher may never end. That difference produces this family’s characteristic bugs. $property.last() and subject.collect() never emit, because their upstream never completes. collect() buffers everything it receives in the meantime. A batch in progress is emitted when the stream finishes but discarded when it fails. And the time-based collect uses fixed windows that a count-triggered flush does not reset. This article measures each of those behaviors, then works out what batching costs in latency and saves in requests, and checks the formulas with a simulation on the virtual-time scheduler from Time: debounce, throttle, and delay.","headline":"Sequence Operators: first, last, and collect","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-first-last-collect/"},"url":"https://swiftbydeya.com/combine-first-last-collect/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Sequence Operators: first, last, and collect"> <meta name="twitter:description" content="Most operators look at one value at a time. A second family looks at the stream as a whole, the way Sequence methods look at a whole collection: first and co..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Sequence Operators: first, last, and collect"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Sequence Operators: first, last, and collect</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-22T00:00:00+03:00">July 22, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Most operators look at one value at a time. A second family looks at the stream as a whole, the way <code class="language-plaintext highlighter-rouge">Sequence</code> methods look at a whole collection: <code class="language-plaintext highlighter-rouge">first</code> and <code class="language-plaintext highlighter-rouge">contains</code> stop as soon as they have their answer, <code class="language-plaintext highlighter-rouge">last</code>, <code class="language-plaintext highlighter-rouge">reduce</code>, and <code class="language-plaintext highlighter-rouge">count</code> cannot answer until the stream ends, and <code class="language-plaintext highlighter-rouge">collect</code> gathers values into arrays, either all of them or in batches by count or by time. They are named after their <code class="language-plaintext highlighter-rouge">Sequence</code> counterparts and behave like them, with one difference that changes everything: a publisher may never end.</p>
+
+<p>That difference produces this family’s characteristic bugs. <code class="language-plaintext highlighter-rouge">$property.last()</code> and <code class="language-plaintext highlighter-rouge">subject.collect()</code> never emit, because their upstream never completes. <code class="language-plaintext highlighter-rouge">collect()</code> buffers everything it receives in the meantime. A batch in progress is emitted when the stream finishes but discarded when it fails. And the time-based <code class="language-plaintext highlighter-rouge">collect</code> uses fixed windows that a count-triggered flush does not reset. This article measures each of those behaviors, then works out what batching costs in latency and saves in requests, and checks the formulas with a simulation on the virtual-time scheduler from <a href="/combine-debounce-throttle-delay/">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a>.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the <code class="language-plaintext highlighter-rouge">VirtualTimeScheduler</code> and <code class="language-plaintext highlighter-rouge">TimelineRecorder</code> from <a href="/combine-debounce-throttle-delay/#a-scheduler-whose-clock-you-control">the time operators article</a> first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: virtual-scheduler -->
+
+<h2 id="operators-that-end-early">Operators that end early</h2>
+
+<p><code class="language-plaintext highlighter-rouge">first()</code> takes the first value, finishes, and cancels its upstream so no more work is done. The order of those steps is worth seeing, because it is not the order most people guess:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">firstEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">liveValues</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">firstHandle</span> <span class="o">=</span> <span class="n">liveValues</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">firstEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"upstream cancelled"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">first</span><span class="p">()</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">firstEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"finished"</span><span class="p">)</span> <span class="p">},</span>
+          <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">firstEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="n">liveValues</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">liveValues</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"upstream cancelled"</span><span class="p">,</span> <span class="s">"value 1"</span><span class="p">,</span> <span class="s">"finished"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The upstream was cancelled <em>before</em> the value was delivered. By the time your <code class="language-plaintext highlighter-rouge">sink</code> sees the first value, the source has already been told to stop, which is what you want for an expensive source such as a network request or a location update. <code class="language-plaintext highlighter-rouge">first(where:)</code> does the same for the first value matching a predicate, and <code class="language-plaintext highlighter-rouge">contains(_:)</code>, <code class="language-plaintext highlighter-rouge">contains(where:)</code>, and <code class="language-plaintext highlighter-rouge">allSatisfy(_:)</code> stop at the first value that settles the answer:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">containsEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">containsHandle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="n">containsEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">},</span>
+                  <span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">containsEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cancel"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">containsEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"contains: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">containsEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"3"</span><span class="p">,</span> <span class="s">"cancel"</span><span class="p">,</span> <span class="s">"contains: true"</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">allEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">allHandle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="n">allEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">},</span>
+                  <span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">allEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cancel"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">allEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"all below 3: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">allEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"3"</span><span class="p">,</span> <span class="s">"cancel"</span><span class="p">,</span> <span class="s">"all below 3: false"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Values 4 through 10 were never generated. If the upstream finishes before an answer is found, these operators answer from what they have: <code class="language-plaintext highlighter-rouge">first()</code> finishes without a value, <code class="language-plaintext highlighter-rouge">contains</code> emits <code class="language-plaintext highlighter-rouge">false</code>, and <code class="language-plaintext highlighter-rouge">allSatisfy</code> emits <code class="language-plaintext highlighter-rouge">true</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">emptyFirst</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">emptyFirstHandle</span> <span class="o">=</span> <span class="kt">Empty</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span><span class="o">.</span><span class="nf">first</span><span class="p">()</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">emptyFirst</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"finished"</span><span class="p">)</span> <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">emptyFirst</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">emptyFirst</span> <span class="o">==</span> <span class="p">[</span><span class="s">"finished"</span><span class="p">])</span>            <span class="c1">// no value: downstream must handle "nothing"</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">first()</code> is also the idiomatic way to read the current value of a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> or a <code class="language-plaintext highlighter-rouge">@Published</code> property as a one-shot publisher, for example to combine it with a request: <code class="language-plaintext highlighter-rouge">$selectedAccount.first().flatMap { load($0) }</code> loads once, for the account selected at that moment, and then the pipeline is done. Without <code class="language-plaintext highlighter-rouge">first()</code>, the same pipeline reloads on every change of account, which may be what you want, but should be a choice. <code class="language-plaintext highlighter-rouge">output(at:)</code>, <code class="language-plaintext highlighter-rouge">output(in:)</code>, and <code class="language-plaintext highlighter-rouge">prefix(_:)</code> complete the family; they also cancel upstream once they have what they need.</p>
+
+<h2 id="operators-that-wait-for-the-end">Operators that wait for the end</h2>
+
+<p><code class="language-plaintext highlighter-rouge">last()</code>, <code class="language-plaintext highlighter-rouge">reduce(_:_:)</code>, <code class="language-plaintext highlighter-rouge">count()</code>, <code class="language-plaintext highlighter-rouge">min()</code>, <code class="language-plaintext highlighter-rouge">max()</code>, and <code class="language-plaintext highlighter-rouge">collect()</code> can only answer when the upstream finishes. For a sequence or a network request, that is soon. For a subject, a <code class="language-plaintext highlighter-rouge">@Published</code> property, a notification, or a timer, it is never:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">lastOfLive</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">liveState</span> <span class="o">=</span> <span class="kt">CurrentValueSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">lastHandle</span> <span class="o">=</span> <span class="n">liveState</span><span class="o">.</span><span class="nf">last</span><span class="p">()</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">lastOfLive</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">liveState</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">liveState</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lastOfLive</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>                     <span class="c1">// and it will stay empty</span>
+</code></pre></div></div>
+
+<p>The code compiles, runs without error, and does nothing, which is why the bug survives. When you want “the latest value so far” from a live stream, that is not <code class="language-plaintext highlighter-rouge">last()</code> but the stream itself, or <code class="language-plaintext highlighter-rouge">CurrentValueSubject.value</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">collect()</code> with no argument has a second cost: it buffers every value until completion, and it asks its upstream for all of them at once, with unlimited demand, regardless of what its own subscriber requested:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Requests one array and records it.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">OneBatchSubscriber</span><span class="p">:</span> <span class="kt">Subscriber</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Input</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">batches</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span> <span class="p">{</span> <span class="n">subscription</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="p">{</span> <span class="n">batches</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">input</span><span class="p">);</span> <span class="k">return</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">collectAllRequests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">collectAllSubscriber</span> <span class="o">=</span> <span class="kt">OneBatchSubscriber</span><span class="p">()</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="n">collectAllRequests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">collect</span><span class="p">()</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">collectAllSubscriber</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">collectAllRequests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"unlimited"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">collectAllSubscriber</span><span class="o">.</span><span class="n">batches</span> <span class="o">==</span> <span class="p">[</span><span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)])</span>
+</code></pre></div></div>
+
+<p>That is the right behavior for gathering a finite result, such as all pages of a paginated response into one array, and a memory leak for anything open-ended.</p>
+
+<h2 id="batches-by-count">Batches by count</h2>
+
+<p><code class="language-plaintext highlighter-rouge">collect(_ count:)</code> emits arrays of up to <code class="language-plaintext highlighter-rouge">count</code> values. It is demand-aware: for each array its subscriber requests, it requests <code class="language-plaintext highlighter-rouge">count</code> values from upstream. When the upstream finishes, the partial batch is emitted. When the upstream <strong>fails</strong>, the partial batch is discarded:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">countRequests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">countSubscriber</span> <span class="o">=</span> <span class="kt">OneBatchSubscriber</span><span class="p">()</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="n">countRequests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">countSubscriber</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">countRequests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"max(3)"</span><span class="p">])</span>           <span class="c1">// one batch requested, three values pulled</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">countSubscriber</span><span class="o">.</span><span class="n">batches</span> <span class="o">==</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]])</span>
+
+<span class="k">var</span> <span class="nv">finishedBatches</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">finishedBatchHandle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">finishedBatches</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">finishedBatches</span> <span class="o">==</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="p">[</span><span class="mi">7</span><span class="p">]])</span>   <span class="c1">// the partial batch is kept</span>
+
+<span class="kd">enum</span> <span class="kt">StreamError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">lost</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">failingEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">StreamError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">failedBatches</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">failedBatchHandle</span> <span class="o">=</span> <span class="n">failingEvents</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">failure</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">{</span> <span class="n">failedBatches</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"failed"</span><span class="p">)</span> <span class="p">}</span> <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">failedBatches</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="nf">forEach</span><span class="p">(</span><span class="n">failingEvents</span><span class="o">.</span><span class="n">send</span><span class="p">)</span>
+<span class="n">failingEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">lost</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">failedBatches</span> <span class="o">==</span> <span class="p">[</span><span class="s">"[1, 2, 3]"</span><span class="p">,</span> <span class="s">"failed"</span><span class="p">])</span>   <span class="c1">// event 4 is gone</span>
+</code></pre></div></div>
+
+<p>For an analytics pipeline, the failure case is the one to design around: if the event stream can fail, every event in the current batch is lost with it. Keep the stream feeding a batcher non-failing, handling errors upstream, so that batches end only by count, time, or a clean finish.</p>
+
+<h2 id="batches-by-time">Batches by time</h2>
+
+<p><code class="language-plaintext highlighter-rouge">collect(_:options:)</code> with a <code class="language-plaintext highlighter-rouge">TimeGroupingStrategy</code> batches by time instead. <code class="language-plaintext highlighter-rouge">.byTime(scheduler, interval)</code> emits whatever has arrived in each interval; <code class="language-plaintext highlighter-rouge">.byTimeOrCount(scheduler, interval, count)</code> also emits early when a batch reaches <code class="language-plaintext highlighter-rouge">count</code>. The virtual scheduler shows exactly where the window boundaries fall:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+
+<span class="k">let</span> <span class="nv">timedEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">timedBatches</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">timedEvents</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="o">.</span><span class="nf">byTime</span><span class="p">(</span><span class="n">clock</span><span class="p">,</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">joined</span><span class="p">()</span> <span class="p">},</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"a"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"b"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">1_500</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"c"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">3_900</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"d"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">4_200</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"e"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">4_300</span><span class="p">,</span> <span class="p">{</span> <span class="n">timedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">6_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">timedBatches</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"ab@1000"</span><span class="p">,</span> <span class="s">"c@2000"</span><span class="p">,</span> <span class="s">"d@4000"</span><span class="p">,</span> <span class="s">"e@4300"</span><span class="p">,</span> <span class="s">"|@4300"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>time (s)    0      1      2      3      4      5
+input        a b      c                d  e |
+windows     [------)[------)[------)[------)[--
+output             ab     c      (none)  d  e|
+</code></pre></div></div>
+
+<p>The windows are fixed, one second apart from the moment of subscription, not from the first value. A window with no values emits nothing, rather than an empty array, so the window from 2 to 3 seconds produced no output. On completion the partial batch <code class="language-plaintext highlighter-rouge">e</code> was emitted at once; on failure it would be discarded, as with <code class="language-plaintext highlighter-rouge">collect(_ count:)</code>.</p>
+
+<p>With a count limit, a full batch is emitted as soon as it fills, but the time windows keep their original schedule:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">mixedEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">mixedBatches</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="o">.</span><span class="nf">byTimeOrCount</span><span class="p">(</span><span class="n">clock</span><span class="p">,</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">joined</span><span class="p">()</span> <span class="p">},</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"a"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"b"</span><span class="p">)</span> <span class="p">}),</span>          <span class="c1">// count reached: emit now</span>
+    <span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"c"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">1_500</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"d"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">1_600</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"e"</span><span class="p">)</span> <span class="p">}),</span>        <span class="c1">// count reached</span>
+    <span class="p">(</span><span class="mi">1_700</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"f"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">2_500</span><span class="p">,</span> <span class="p">{</span> <span class="n">mixedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">6_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">mixedBatches</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"ab@200"</span><span class="p">,</span> <span class="s">"c@1000"</span><span class="p">,</span> <span class="s">"de@1600"</span><span class="p">,</span> <span class="s">"f@2000"</span><span class="p">,</span> <span class="s">"|@2500"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The batch <code class="language-plaintext highlighter-rouge">c</code> was emitted at 1 second although it started at 300 ms: the count flush at 200 ms did not restart the timer. The longest an event can wait is therefore one interval, and a batch that begins just after a count flush is cut short, which is fine for analytics and surprising if you expected each batch to cover a full interval.</p>
+
+<h2 id="what-batching-costs-and-saves">What batching costs and saves</h2>
+
+<p>Batching trades latency for fewer requests. With events arriving at rate \(\lambda\) per second, the two pure strategies have simple costs.</p>
+
+<p><strong>By count, \(N\) per batch.</strong> A batch is sent every \(N\) events, so the request rate is \(\lambda / N\). Within a batch, the \(i\)th event waits for \(N - i\) more arrivals, each taking \(1/\lambda\) on average, so the mean added latency is</p>
+
+\[\bar{L}_{\text{count}} = \frac{1}{N}\sum_{i=1}^{N} \frac{N - i}{\lambda} = \frac{N-1}{2\lambda}.\]
+
+<p><strong>By time, interval \(T\).</strong> Each event waits until the end of its window, on average \(T/2\). A request is sent for every window that contains at least one event, which for Poisson arrivals is a fraction \(1 - e^{-\lambda T}\) of windows, so the request rate is \((1 - e^{-\lambda T})/T\).</p>
+
+<p>The two strategies fail in opposite directions. Count batching has unbounded latency when traffic is slow: at one event per minute, \(N = 10\) holds the first event for nine minutes. Time batching sends many tiny requests when traffic is fast. <code class="language-plaintext highlighter-rouge">byTimeOrCount</code> caps both: latency is at most \(T\), and requests are at most one per \(N\) events plus one per window. A simulation on the virtual scheduler, with each event carrying the time at which it was sent, checks the formulas in two regimes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span> <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BatchingResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">batchesPerSecond</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">meanLatency</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">maxLatency</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">simulateBatching</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">events</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">BatchingResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">scheduler</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">11</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">input</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">VirtualTimeScheduler</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">batched</span><span class="p">:</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">VirtualTimeScheduler</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="p">],</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">if</span> <span class="k">let</span> <span class="nv">interval</span> <span class="p">{</span>
+        <span class="n">input</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="o">.</span><span class="nf">byTimeOrCount</span><span class="p">(</span><span class="n">scheduler</span><span class="p">,</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">interval</span><span class="p">),</span> <span class="n">count</span><span class="p">))</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">input</span><span class="o">.</span><span class="nf">collect</span><span class="p">(</span><span class="n">count</span><span class="p">)</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">batches</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">latencies</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">batched</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">batch</span> <span class="k">in</span>
+        <span class="n">batches</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">latencies</span> <span class="o">+=</span> <span class="n">batch</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">events</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">gap</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="o">-</span><span class="nf">log</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">))</span> <span class="o">/</span> <span class="n">rate</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span>
+        <span class="n">scheduler</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">nanoseconds</span><span class="p">(</span><span class="n">gap</span><span class="p">))</span>
+        <span class="n">input</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">duration</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+    <span class="n">input</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kt">BatchingResult</span><span class="p">(</span><span class="nv">batchesPerSecond</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span> <span class="o">/</span> <span class="n">duration</span><span class="p">,</span>
+                          <span class="nv">meanLatency</span><span class="p">:</span> <span class="n">latencies</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">latencies</span><span class="o">.</span><span class="n">count</span><span class="p">),</span>
+                          <span class="nv">maxLatency</span><span class="p">:</span> <span class="n">latencies</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span> <span class="p">??</span> <span class="mi">0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Fast traffic: 20 events per second, batches of 10.</span>
+<span class="k">let</span> <span class="nv">fastCount</span> <span class="o">=</span> <span class="nf">simulateBatching</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">events</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">fastCount</span><span class="o">.</span><span class="n">batchesPerSecond</span> <span class="o">-</span> <span class="mf">20.0</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">fastCount</span><span class="o">.</span><span class="n">meanLatency</span> <span class="o">-</span> <span class="mf">9.0</span> <span class="o">/</span> <span class="mi">40</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">)</span>            <span class="c1">// (N - 1) / (2λ) = 0.225 s</span>
+
+<span class="c1">// Slow traffic: 2 events per second, batches of 10 or 1 second, whichever comes first.</span>
+<span class="k">let</span> <span class="nv">slowCount</span> <span class="o">=</span> <span class="nf">simulateBatching</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">events</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">slowCapped</span> <span class="o">=</span> <span class="nf">simulateBatching</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">,</span> <span class="nv">events</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">slowCount</span><span class="o">.</span><span class="n">meanLatency</span> <span class="o">-</span> <span class="mf">9.0</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">)</span>              <span class="c1">// 2.25 s without a time cap</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">slowCapped</span><span class="o">.</span><span class="n">maxLatency</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">slowCapped</span><span class="o">.</span><span class="n">meanLatency</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">)</span>                 <span class="c1">// about T / 2</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">slowCapped</span><span class="o">.</span><span class="n">batchesPerSecond</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">)))</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"fast count: %.3f batches/s, %.3f s mean | slow count: %.3f s mean, %.2f s max | slow capped: %.3f batches/s, %.3f s mean, %.3f s max"</span><span class="p">,</span>
+             <span class="n">fastCount</span><span class="o">.</span><span class="n">batchesPerSecond</span><span class="p">,</span> <span class="n">fastCount</span><span class="o">.</span><span class="n">meanLatency</span><span class="p">,</span> <span class="n">slowCount</span><span class="o">.</span><span class="n">meanLatency</span><span class="p">,</span> <span class="n">slowCount</span><span class="o">.</span><span class="n">maxLatency</span><span class="p">,</span>
+             <span class="n">slowCapped</span><span class="o">.</span><span class="n">batchesPerSecond</span><span class="p">,</span> <span class="n">slowCapped</span><span class="o">.</span><span class="n">meanLatency</span><span class="p">,</span> <span class="n">slowCapped</span><span class="o">.</span><span class="n">maxLatency</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The run printed:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Traffic</th>
+      <th>Strategy</th>
+      <th>Batches per second</th>
+      <th>Mean latency</th>
+      <th>Max latency</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20 per s</td>
+      <td>10 per batch</td>
+      <td>2.018 (predicted 2)</td>
+      <td>0.224 s (predicted 0.225)</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>2 per s</td>
+      <td>10 per batch</td>
+      <td> </td>
+      <td>2.237 s (predicted 2.25)</td>
+      <td>11.53 s</td>
+    </tr>
+    <tr>
+      <td>2 per s</td>
+      <td>10 per batch or 1 s</td>
+      <td>0.869 (predicted 0.865)</td>
+      <td>0.499 s (predicted about 0.5)</td>
+      <td>1.000 s</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>At two events per second, count batching alone held events for 2.24 seconds on average and more than 11 seconds at worst; adding a one-second cap brought the worst case to exactly one second, while still sending fewer than half as many requests as one per event would. The same reasoning applies to log shipping, telemetry, and writes coalesced to a database: pick \(T\) from the latency you can tolerate and \(N\) from the largest request the server accepts, and the formulas tell you the request rate you will pay.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">firstHandle</span><span class="p">,</span> <span class="n">containsHandle</span><span class="p">,</span> <span class="n">allHandle</span><span class="p">,</span> <span class="n">emptyFirstHandle</span><span class="p">,</span> <span class="n">lastHandle</span><span class="p">,</span>
+                      <span class="n">finishedBatchHandle</span><span class="p">,</span> <span class="n">failedBatchHandle</span><span class="p">,</span> <span class="n">timedBatches</span><span class="p">,</span> <span class="n">mixedBatches</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">first</code>, <code class="language-plaintext highlighter-rouge">first(where:)</code>, <code class="language-plaintext highlighter-rouge">contains</code>, and <code class="language-plaintext highlighter-rouge">allSatisfy</code> end early and cancel upstream; <code class="language-plaintext highlighter-rouge">first()</code> cancelled its upstream before delivering the value. On an empty upstream they answer with no value, <code class="language-plaintext highlighter-rouge">false</code>, and <code class="language-plaintext highlighter-rouge">true</code> respectively.</li>
+  <li><code class="language-plaintext highlighter-rouge">last</code>, <code class="language-plaintext highlighter-rouge">reduce</code>, <code class="language-plaintext highlighter-rouge">count</code>, and <code class="language-plaintext highlighter-rouge">collect()</code> wait for completion and never emit for a subject or <code class="language-plaintext highlighter-rouge">@Published</code> property. <code class="language-plaintext highlighter-rouge">collect()</code> requests unlimited demand and buffers everything.</li>
+  <li><code class="language-plaintext highlighter-rouge">collect(n)</code> requests <code class="language-plaintext highlighter-rouge">n</code> values per batch, emits a partial batch on finish, and <strong>discards</strong> it on failure; keep batched streams non-failing.</li>
+  <li><code class="language-plaintext highlighter-rouge">collect(.byTime)</code> uses fixed windows from subscription, skips empty windows, and flushes on finish. In <code class="language-plaintext highlighter-rouge">byTimeOrCount</code>, a count flush does not restart the timer, so latency is capped at one interval.</li>
+  <li>Batching by count costs \((N-1)/(2\lambda)\) seconds of latency on average and sends \(\lambda/N\) requests per second; by time it costs about \(T/2\) and sends \((1 - e^{-\lambda T})/T\). The simulations matched every prediction within 1%.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Build an <code class="language-plaintext highlighter-rouge">AnalyticsUploader</code> that accepts events through a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code>, batches them with <code class="language-plaintext highlighter-rouge">collect(.byTimeOrCount(_:_:_:))</code>, and uploads each batch with <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers: .max(1))</code> so uploads never overlap. Simulate an upload that fails one time in four, and make the uploader re-queue the events of a failed batch instead of losing them, without letting the failure reach the batching stage. Test with the virtual scheduler that no event is ever lost or uploaded twice, and add a <code class="language-plaintext highlighter-rouge">flush()</code> method, for when the app moves to the background, that uploads whatever is pending immediately. Measure how <code class="language-plaintext highlighter-rouge">flush()</code> changes the maximum latency in the slow-traffic case above.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/collect(_:options:)"><code class="language-plaintext highlighter-rouge">collect(_:options:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publishers/timegroupingstrategy"><code class="language-plaintext highlighter-rouge">Publishers.TimeGroupingStrategy</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/first()"><code class="language-plaintext highlighter-rouge">first()</code></a>.</li>
+  <li>The networking roadmap’s <a href="/swift-pagination-cursors/">Pagination: Page Numbers, Cursors, and Stable Ordering</a>, where gathering every page into one array is a legitimate use of an operator that waits for completion.</li>
+  <li>Leonard Kleinrock, <em>Queueing Systems, Volume 1: Theory</em>, for the Poisson-process reasoning behind the batching formulas.</li>
+</ul>
+
+<p>Previous: <a href="/combine-debounce-throttle-delay/">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a>. Next: <a href="/combine-urlsession-publishers/">Networking with <code class="language-plaintext highlighter-rouge">URLSession</code> Publishers</a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-first-last-collect/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Sequence+Operators%3A+first%2C+last%2C+and+collect%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-first-last-collect%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-first-last-collect/&title=Sequence+Operators%3A+first%2C+last%2C+and+collect%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-first-last-collect/&title=Sequence+Operators%3A+first%2C+last%2C+and+collect%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-first-last-collect/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Sequence Operators: first, last, and collect%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-first-last-collect/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Operators">Operators</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Isolated and Nonisolated Methods in Swift" href="/swift-isolated-nonisolated/"> <p>Previous post</p> Isolated and Nonisolated Methods in Swift </a> </div> <div id="next-post"> <a alt="Sendable in Swift: Moving Values Across Isolation Boundaries" href="/swift-sendable/"> <p>Next post</p> Sendable in Swift: Moving Values Across Isolation Boundaries </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

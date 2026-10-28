@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>sink and assign | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="sink and assign" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Almost every Combine pipeline in an app ends in one of two built-in subscribers. sink hands each value and the completion to closures you supply. assign writes each value into a property through a key path. They are the point where a pipeline stops being a description and starts doing work, so they are also where its lifetime, its threading, and its memory behavior are decided. Both look trivial, and both have sharp edges that are invisible in a quick test: a cancellable that is thrown away and silently stops the pipeline, a cancel() inside a sink that does nothing, a subscriber that sees values out of order because another subscriber sent a value back into the subject, an assign(to:on:) that keeps its object alive forever, and, in Swift 6, an assign that writes a main-actor property from a background thread without any warning. This article measures each one and shows the version to use instead." /> <meta property="og:description" content="Almost every Combine pipeline in an app ends in one of two built-in subscribers. sink hands each value and the completion to closures you supply. assign writes each value into a property through a key path. They are the point where a pipeline stops being a description and starts doing work, so they are also where its lifetime, its threading, and its memory behavior are decided. Both look trivial, and both have sharp edges that are invisible in a quick test: a cancellable that is thrown away and silently stops the pipeline, a cancel() inside a sink that does nothing, a subscriber that sees values out of order because another subscriber sent a value back into the subject, an assign(to:on:) that keeps its object alive forever, and, in Swift 6, an assign that writes a main-actor property from a background thread without any warning. This article measures each one and shows the version to use instead." /> <link rel="canonical" href="https://swiftbydeya.com/combine-sink-assign/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-sink-assign/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-03T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="sink and assign" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-03T00:00:00+03:00","datePublished":"2026-07-03T00:00:00+03:00","description":"Almost every Combine pipeline in an app ends in one of two built-in subscribers. sink hands each value and the completion to closures you supply. assign writes each value into a property through a key path. They are the point where a pipeline stops being a description and starts doing work, so they are also where its lifetime, its threading, and its memory behavior are decided. Both look trivial, and both have sharp edges that are invisible in a quick test: a cancellable that is thrown away and silently stops the pipeline, a cancel() inside a sink that does nothing, a subscriber that sees values out of order because another subscriber sent a value back into the subject, an assign(to:on:) that keeps its object alive forever, and, in Swift 6, an assign that writes a main-actor property from a background thread without any warning. This article measures each one and shows the version to use instead.","headline":"sink and assign","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-sink-assign/"},"url":"https://swiftbydeya.com/combine-sink-assign/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="sink and assign"> <meta name="twitter:description" content="Almost every Combine pipeline in an app ends in one of two built-in subscribers. sink hands each value and the completion to closures you supply. assign writ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="sink and assign"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>sink and assign</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-03T00:00:00+03:00">July 3, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Almost every Combine pipeline in an app ends in one of two built-in subscribers. <code class="language-plaintext highlighter-rouge">sink</code> hands each value and the completion to closures you supply. <code class="language-plaintext highlighter-rouge">assign</code> writes each value into a property through a key path. They are the point where a pipeline stops being a description and starts doing work, so they are also where its lifetime, its threading, and its memory behavior are decided.</p>
+
+<p>Both look trivial, and both have sharp edges that are invisible in a quick test: a cancellable that is thrown away and silently stops the pipeline, a <code class="language-plaintext highlighter-rouge">cancel()</code> inside a <code class="language-plaintext highlighter-rouge">sink</code> that does nothing, a subscriber that sees values out of order because another subscriber sent a value back into the subject, an <code class="language-plaintext highlighter-rouge">assign(to:on:)</code> that keeps its object alive forever, and, in Swift 6, an <code class="language-plaintext highlighter-rouge">assign</code> that writes a main-actor property from a background thread without any warning. This article measures each one and shows the version to use instead.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The previous article, <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a>, explains the protocol contract that <code class="language-plaintext highlighter-rouge">sink</code> and <code class="language-plaintext highlighter-rouge">assign</code> implement.</p>
+
+<h2 id="sink-closures-as-a-subscriber"><code class="language-plaintext highlighter-rouge">sink</code>: closures as a subscriber</h2>
+
+<p><code class="language-plaintext highlighter-rouge">sink</code> has two forms. The one-closure form, <code class="language-plaintext highlighter-rouge">sink(receiveValue:)</code>, is available only when the publisher’s <code class="language-plaintext highlighter-rouge">Failure</code> is <code class="language-plaintext highlighter-rouge">Never</code>, because there is nowhere to report an error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="k">let</span> <span class="nv">numbers</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">numbersCancellable</span> <span class="o">=</span> <span class="n">numbers</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">numbers</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">numbers</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">received</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>For a publisher that can fail, the compiler insists on the two-closure form. Trying the short form on a failing publisher produces an error that is clearer than most generic-constraint messages:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile</span>
+<span class="kd">enum</span> <span class="kt">ExampleError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">broken</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">failing</span> <span class="o">=</span> <span class="kt">Fail</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">ExampleError</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="o">.</span><span class="n">broken</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="c1">// error: referencing instance method 'sink(receiveValue:)' on 'Publisher'</span>
+<span class="c1">//        requires the types 'ExampleError' and 'Never' be equivalent</span>
+</code></pre></div></div>
+
+<p>With both closures, the completion arrives exactly once, as either <code class="language-plaintext highlighter-rouge">.finished</code> or <code class="language-plaintext highlighter-rouge">.failure</code>, and nothing is delivered after it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">LoadError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">offline</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">pages</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">pageEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">pagesCancellable</span> <span class="o">=</span> <span class="n">pages</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">completion</span> <span class="k">in</span>
+        <span class="k">switch</span> <span class="n">completion</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">finished</span><span class="p">:</span> <span class="n">pageEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"finished"</span><span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="n">pageEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"failed: </span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">pageEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">)</span>
+<span class="n">pages</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"page 1"</span><span class="p">)</span>
+<span class="n">pages</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">offline</span><span class="p">))</span>
+<span class="n">pages</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"page 2"</span><span class="p">)</span>                      <span class="c1">// ignored: the stream is over</span>
+<span class="n">pages</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>         <span class="c1">// also ignored</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pageEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"value: page 1"</span><span class="p">,</span> <span class="s">"failed: offline"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Behind the method is a class, <code class="language-plaintext highlighter-rouge">Subscribers.Sink</code>, which conforms to both <code class="language-plaintext highlighter-rouge">Subscriber</code> and <code class="language-plaintext highlighter-rouge">Cancellable</code>. When it receives its subscription it requests <code class="language-plaintext highlighter-rouge">.unlimited</code> demand immediately and never adjusts it. The <code class="language-plaintext highlighter-rouge">print</code> operator, which logs every signal passing through it, shows that handshake. It writes to any <code class="language-plaintext highlighter-rouge">TextOutputStream</code>, so a small buffer makes the log something a test can inspect:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">LogBuffer</span><span class="p">:</span> <span class="kt">TextOutputStream</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">string</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="n">string</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">String</span><span class="o">.</span><span class="kd">init</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sinkLog</span> <span class="o">=</span> <span class="kt">LogBuffer</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">justCancellable</span> <span class="o">=</span> <span class="kt">Just</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"just"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">sinkLog</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sinkLog</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"just: receive subscription: (Just)"</span><span class="p">,</span>
+    <span class="s">"just: request unlimited"</span><span class="p">,</span>
+    <span class="s">"just: receive value: (42)"</span><span class="p">,</span>
+    <span class="s">"just: receive finished"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>Unlimited demand is the right default for a UI binding, and it is also a decision you cannot change: a <code class="language-plaintext highlighter-rouge">sink</code> cannot slow its upstream down. If a consumer needs backpressure, it has to come from an operator such as <code class="language-plaintext highlighter-rouge">buffer</code>, <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers:)</code>, or a custom subscriber like the <code class="language-plaintext highlighter-rouge">EventRecorder</code> from the previous article.</p>
+
+<h2 id="the-cancellable-is-the-subscriptions-lifetime">The cancellable is the subscription’s lifetime</h2>
+
+<p><code class="language-plaintext highlighter-rouge">sink</code> returns an <code class="language-plaintext highlighter-rouge">AnyCancellable</code>, and an <code class="language-plaintext highlighter-rouge">AnyCancellable</code> cancels its subscription when it is deallocated. That is the most important line in Combine memory management, and it has an immediate consequence: a cancellable that nobody stores is deallocated at the end of the statement, and the pipeline dies with it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">ticks</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">discardedTicks</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">ticks</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">discardedTicks</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">ticks</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">discardedTicks</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>            <span class="c1">// the subscription was already cancelled</span>
+</code></pre></div></div>
+
+<p>The compiler warns, “result of call to ‘sink(receiveValue:)’ is unused”, when you write the call on its own, which is a hint to keep it. Assigning to <code class="language-plaintext highlighter-rouge">_</code> silences the warning and keeps the bug. Synchronous publishers make this harder to spot, because they finish their work before the statement ends:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">discardedSequence</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">_</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">discardedSequence</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">discardedSequence</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>    <span class="c1">// delivered before the cancellable was released</span>
+</code></pre></div></div>
+
+<p>So a test that sinks a sequence or a <code class="language-plaintext highlighter-rouge">Just</code> passes, and the same code against a subject or a network request receives nothing. <a href="/combine-anycancellable-memory/"><code class="language-plaintext highlighter-rouge">AnyCancellable</code> and Memory Management</a> covers where to keep cancellables and what happens to the closures they own; the rule for now is that whatever stores the cancellable decides how long the pipeline runs.</p>
+
+<p>A <code class="language-plaintext highlighter-rouge">Sink</code> also lets go of its closures as soon as the stream completes, without waiting for the cancellable to be released. That matters, because the closures are where captured objects live:</p>
+
+<p>Counting live instances is the simplest way to see that. Swift 6 rejects a <code class="language-plaintext highlighter-rouge">static var</code> counter as unprotected global state, and <code class="language-plaintext highlighter-rouge">deinit</code> is not isolated to any actor, so the counter is an atomic:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Counts live instances. Safe to update from `deinit`, which runs without actor isolation.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">InstanceCounter</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">live</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">increment</span><span class="p">()</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">wrappingAdd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">decrement</span><span class="p">()</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">wrappingSubtract</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Tracked</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span> <span class="kt">Tracked</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span> <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">Tracked</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">downloads</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">downloadsCancellable</span><span class="p">:</span> <span class="kt">AnyCancellable</span><span class="p">?</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">captured</span> <span class="o">=</span> <span class="kt">Tracked</span><span class="p">()</span>
+    <span class="n">downloadsCancellable</span> <span class="o">=</span> <span class="n">downloads</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">_</span> <span class="o">=</span> <span class="n">captured</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Tracked</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>            <span class="c1">// the sink's closure holds it</span>
+<span class="n">downloads</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Tracked</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>            <span class="c1">// released on completion</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">downloadsCancellable</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>       <span class="c1">// even though the cancellable is still stored</span>
+</code></pre></div></div>
+
+<h2 id="cancelling-from-inside-sink">Cancelling from inside <code class="language-plaintext highlighter-rouge">sink</code></h2>
+
+<p>A common way to stop after a condition is met is to cancel the subscription from inside the closure. Against a synchronous publisher, it does nothing:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">seenBeforeStop</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">stopCancellable</span><span class="p">:</span> <span class="kt">AnyCancellable</span><span class="p">?</span>
+<span class="n">stopCancellable</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+    <span class="n">seenBeforeStop</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">{</span> <span class="n">stopCancellable</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">seenBeforeStop</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">))</span>   <span class="c1">// all ten arrived</span>
+</code></pre></div></div>
+
+<p>The assignment to <code class="language-plaintext highlighter-rouge">stopCancellable</code> happens only after <code class="language-plaintext highlighter-rouge">sink</code> returns, and a sequence publisher delivers every value before then, so the closure calls <code class="language-plaintext highlighter-rouge">cancel()</code> on <code class="language-plaintext highlighter-rouge">nil</code>. With an infinite sequence, this loop never ends. The fix that is almost always right is to express the stopping condition as an operator, which also documents intent:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">seenWithPrefix</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">prefixCancellable</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="nv">while</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">seenWithPrefix</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">seenWithPrefix</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">seenWithFirst</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">firstCancellable</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">first</span><span class="p">(</span><span class="nv">where</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">seenWithFirst</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">seenWithFirst</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>When the decision really belongs inside the closure, create the <code class="language-plaintext highlighter-rouge">Subscribers.Sink</code> yourself, store it, and only then subscribe it. The subscriber exists before the first value, so cancelling it works:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">seenWithStoredSink</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">storedSink</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Sink</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+<span class="n">storedSink</span> <span class="o">=</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+        <span class="n">seenWithStoredSink</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">{</span> <span class="n">storedSink</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">storedSink</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">seenWithStoredSink</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h2 id="sending-back-into-a-subject-from-sink">Sending back into a subject from <code class="language-plaintext highlighter-rouge">sink</code></h2>
+
+<p>Subjects deliver synchronously, one subscriber after another. If one subscriber reacts to a value by sending a new value into the same subject, that new value is delivered to every subscriber <em>before</em> the original delivery finishes. Any subscriber that had not yet received the original value then sees the two values in reverse order.</p>
+
+<p>Which subscribers those are depends on the order in which the subject visits them, and that order is not the order in which they subscribed. With two or more subscribers, the subject keeps them in a hashed collection, and Swift seeds its hashing per process. This test repeats the same two-subscriber setup 2,000 times in one process and counts what the second subscriber, a renderer, ends up seeing:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">rendererOutcomes</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Int</span><span class="p">]:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2_000</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">selection</span> <span class="o">=</span> <span class="kt">CurrentValueSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">rendererSaw</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1">// Subscriber 1 "normalizes" a selection of 1 into 2.</span>
+    <span class="k">let</span> <span class="nv">normalizer</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="n">selection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Subscriber 2 renders whatever it is told.</span>
+    <span class="k">let</span> <span class="nv">renderer</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">rendererSaw</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="n">selection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">rendererOutcomes</span><span class="p">[</span><span class="n">rendererSaw</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">normalizer</span><span class="p">,</span> <span class="n">renderer</span><span class="p">))</span> <span class="p">{}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">rendererOutcomes</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span> <span class="o">==</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+</code></pre></div></div>
+
+<p>Both outcomes occurred in every run. Across six launches, one of them accounted for between 96% and 99% of the trials, and <em>which</em> one dominated changed from launch to launch. With five subscribers to a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code>, the trials in each launch split almost evenly between two orders, and those two orders changed from launch to launch; subscription order was one of them in only one launch out of four. So a test that checks the order can pass for weeks and then fail. When the normalizer happens to be visited first, the renderer’s last value is 1 while the subject holds 2, and nothing will ever correct it. The delivery is depth-first:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant App
+    participant Subject as selection
+    participant N as normalizer
+    participant R as renderer
+    App-&gt;&gt;Subject: send(1)
+    Subject-&gt;&gt;N: receive(1)
+    N-&gt;&gt;Subject: send(2)
+    Subject-&gt;&gt;N: receive(2)
+    Subject-&gt;&gt;R: receive(2)
+    Note over Subject: send(2) returns
+    Subject-&gt;&gt;R: receive(1)
+    Note over R: shows 1, subject holds 2
+</code></pre>
+
+<p>This is the subject version of the reentrancy problem from the previous article, and it appears in real code as “a view that occasionally shows the previous value”. The best fix is not to feed values back at all: derive the normalized value with <code class="language-plaintext highlighter-rouge">map</code> and have everyone subscribe to that. If a feedback loop is genuinely needed, deliver the new value asynchronously, so the current delivery completes first. That needs the main run loop to turn, so here is a helper that runs it until a condition holds:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">runMainLoop</span><span class="p">(</span><span class="n">until</span> <span class="nv">condition</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">timeout</span><span class="p">:</span> <span class="kt">TimeInterval</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceNow</span><span class="p">:</span> <span class="n">timeout</span><span class="p">)</span>
+    <span class="k">while</span> <span class="o">!</span><span class="nf">condition</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="kt">Date</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="kt">RunLoop</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSinceNow</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">deferredSelection</span> <span class="o">=</span> <span class="kt">CurrentValueSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">deferredRendererSaw</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">deferredNormalizer</span> <span class="o">=</span> <span class="n">deferredSelection</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">deferredSelection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">deferredRenderer</span> <span class="o">=</span> <span class="n">deferredSelection</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">deferredRendererSaw</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">deferredSelection</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="p">{</span> <span class="n">deferredRendererSaw</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">deferredRendererSaw</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>  <span class="c1">// in order, ending on the current value</span>
+</code></pre></div></div>
+
+<h2 id="assigntoon-and-the-retain-cycle"><code class="language-plaintext highlighter-rouge">assign(to:on:)</code> and the retain cycle</h2>
+
+<p><code class="language-plaintext highlighter-rouge">assign(to:on:)</code> is a subscriber that writes each value into <code class="language-plaintext highlighter-rouge">object[keyPath: keyPath]</code>. It requires <code class="language-plaintext highlighter-rouge">Failure == Never</code>, it also requests unlimited demand, and it holds a <strong>strong</strong> reference to the object. That last fact makes the most natural use of it a leak:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">query</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">SearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">queries</span><span class="o">.</span><span class="nf">assign</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">SearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">queryInput</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">SearchModel</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="n">queryInput</span><span class="p">)</span>
+    <span class="n">queryInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">query</span> <span class="o">==</span> <span class="s">"swift"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">SearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>        <span class="c1">// never deallocated</span>
+</code></pre></div></div>
+
+<p>The model owns the cancellable, the cancellable owns the <code class="language-plaintext highlighter-rouge">Assign</code> subscriber, and the subscriber owns the model:</p>
+
+<pre><code class="language-mermaid">graph LR
+    M[SearchModel] --&gt;|cancellables| C[AnyCancellable]
+    C --&gt; A["Subscribers.Assign"]
+    A --&gt;|"object (strong)"| M
+    S[PassthroughSubject] --&gt;|subscription| A
+</code></pre>
+
+<p>The cycle would break if the upstream completed, because <code class="language-plaintext highlighter-rouge">Assign</code> releases its object on completion, but a subject that represents user input never completes. Writing <code class="language-plaintext highlighter-rouge">queryInput.send(completion: .finished)</code> here would deallocate the model, which is a fact worth knowing and not a strategy.</p>
+
+<p>There are two leak-free replacements. The first is a <code class="language-plaintext highlighter-rouge">sink</code> with a weak capture, which can be wrapped as an operator so call sites stay as short as <code class="language-plaintext highlighter-rouge">assign</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Publisher</span> <span class="k">where</span> <span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+    <span class="c1">/// Like `assign(to:on:)`, but holds `object` weakly.</span>
+    <span class="kd">func</span> <span class="n">assign</span><span class="o">&lt;</span><span class="kt">Root</span><span class="p">:</span> <span class="kt">AnyObject</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="n">to</span> <span class="nv">keyPath</span><span class="p">:</span> <span class="kt">ReferenceWritableKeyPath</span><span class="o">&lt;</span><span class="kt">Root</span><span class="p">,</span> <span class="kt">Output</span><span class="o">&gt;</span><span class="p">,</span>
+        <span class="n">onWeak</span> <span class="nv">object</span><span class="p">:</span> <span class="kt">Root</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyCancellable</span> <span class="p">{</span>
+        <span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="n">object</span><span class="p">]</span> <span class="n">value</span> <span class="k">in</span> <span class="n">object</span><span class="p">?[</span><span class="nv">keyPath</span><span class="p">:</span> <span class="n">keyPath</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">WeakSearchModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">query</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">WeakSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">queries</span><span class="o">.</span><span class="nf">assign</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="nv">onWeak</span><span class="p">:</span> <span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">WeakSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">WeakSearchModel</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="n">queryInput</span><span class="p">)</span>
+    <span class="n">queryInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"combine"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">query</span> <span class="o">==</span> <span class="s">"combine"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">WeakSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>When the model deallocates, its <code class="language-plaintext highlighter-rouge">Set&lt;AnyCancellable&gt;</code> is released with it, which cancels the subscription, so nothing keeps running for a dead object.</p>
+
+<h2 id="assignto-for-published-properties"><code class="language-plaintext highlighter-rouge">assign(to:)</code> for <code class="language-plaintext highlighter-rouge">@Published</code> properties</h2>
+
+<p>The second replacement, available since iOS 14 and macOS 11, is <code class="language-plaintext highlighter-rouge">assign(to:)</code> with an <code class="language-plaintext highlighter-rouge">inout</code> reference to a <code class="language-plaintext highlighter-rouge">@Published</code> property’s publisher. It returns nothing, so there is no cancellable to store, and the subscription’s lifetime is tied to the property itself: when the object that owns the property deallocates, the subscription is cancelled.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">PublishedSearchModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="kd">@Published</span> <span class="k">var</span> <span class="nv">query</span> <span class="o">=</span> <span class="s">""</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">PublishedSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">queries</span><span class="o">.</span><span class="nf">assign</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">$query</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">PublishedSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">PublishedSearchModel</span><span class="p">(</span><span class="nv">queries</span><span class="p">:</span> <span class="n">queryInput</span><span class="p">)</span>
+    <span class="n">queryInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"observation"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">query</span> <span class="o">==</span> <span class="s">"observation"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">PublishedSearchModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This is the form to use whenever the target is a <code class="language-plaintext highlighter-rouge">@Published</code> property, which in an <code class="language-plaintext highlighter-rouge">ObservableObject</code> it usually is. It cannot be cancelled early, so a binding that must be torn down before the object dies, such as one that changes when the user switches accounts, still needs a <code class="language-plaintext highlighter-rouge">sink</code> with a stored cancellable. <a href="/combine-published-properties/"><code class="language-plaintext highlighter-rouge">@Published</code> Properties</a> covers what <code class="language-plaintext highlighter-rouge">$query</code> is and when its values are emitted.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Subscriber</th>
+      <th>Holds target</th>
+      <th>Returns</th>
+      <th>Ends when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sink</code></td>
+      <td>whatever the closures capture</td>
+      <td><code class="language-plaintext highlighter-rouge">AnyCancellable</code></td>
+      <td>cancellable released, or upstream completes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">assign(to:on:)</code></td>
+      <td><strong>strongly</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">AnyCancellable</code></td>
+      <td>cancellable released, or upstream completes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">assign(to:onWeak:)</code> (above)</td>
+      <td>weakly</td>
+      <td><code class="language-plaintext highlighter-rouge">AnyCancellable</code></td>
+      <td>cancellable released, or upstream completes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">assign(to: &amp;$property)</code></td>
+      <td>the property’s own storage</td>
+      <td>nothing</td>
+      <td>owner deallocated, or upstream completes</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="threading-both-subscribers-run-where-values-arrive">Threading: both subscribers run where values arrive</h2>
+
+<p>Neither <code class="language-plaintext highlighter-rouge">sink</code> nor <code class="language-plaintext highlighter-rouge">assign</code> changes threads. The closure runs, and the property is written, on whichever thread delivered the value, which for a subject is whichever thread called <code class="language-plaintext highlighter-rouge">send</code>. In Swift 5 that was a well-known source of “UI updated from a background thread” warnings. In Swift 6 language mode it splits into two very different failures, depending on which subscriber you use.</p>
+
+<p>A <code class="language-plaintext highlighter-rouge">sink</code> closure written inside a <code class="language-plaintext highlighter-rouge">@MainActor</code> type, or in top-level code, is inferred to be isolated to the main actor. Combine is compiled without strict concurrency checking, so the compiler cannot stop it from being called elsewhere; instead it inserts a run-time check into the closure, and the process stops with <code class="language-plaintext highlighter-rouge">EXC_BREAKPOINT</code> the first time a value arrives on a background thread. That is a crash, but at least it is a loud one at the exact line.</p>
+
+<p><code class="language-plaintext highlighter-rouge">assign</code> has no closure to check. Writing through a key path into a <code class="language-plaintext highlighter-rouge">@MainActor</code> class compiles without a diagnostic, and it runs the property’s setter, including any <code class="language-plaintext highlighter-rouge">didSet</code>, on the background thread:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">backgroundFeed</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BadgeModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">didSet</span> <span class="p">{</span> <span class="n">setterRanOnMainThread</span> <span class="o">=</span> <span class="kt">Thread</span><span class="o">.</span><span class="n">isMainThread</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">setterRanOnMainThread</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="kd">func</span> <span class="nf">bindDirectly</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">backgroundFeed</span><span class="o">.</span><span class="nf">assign</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="nv">onWeak</span><span class="p">:</span> <span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">badge</span> <span class="o">=</span> <span class="kt">BadgeModel</span><span class="p">()</span>
+<span class="n">badge</span><span class="o">.</span><span class="nf">bindDirectly</span><span class="p">()</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">backgroundFeed</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="p">{</span> <span class="n">badge</span><span class="o">.</span><span class="n">setterRanOnMainThread</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">badge</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">7</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">badge</span><span class="o">.</span><span class="n">setterRanOnMainThread</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span>  <span class="c1">// a main-actor property, set off the main thread</span>
+</code></pre></div></div>
+
+<p>The weak <code class="language-plaintext highlighter-rouge">assign</code> helper behaves the same way as the built-in <code class="language-plaintext highlighter-rouge">assign(to:on:)</code> here, because its closure is written in a nonisolated extension, not in main-actor code. Running the same pattern under the Thread Sanitizer, with the main thread reading the property while the background thread assigned it, reported <code class="language-plaintext highlighter-rouge">ThreadSanitizer: data race</code> in <code class="language-plaintext highlighter-rouge">BadgeModel.count.setter</code>, called from a key path setter. Swift 6’s data-race safety does not cover this case, because the write happens inside a module compiled in Swift 5 mode.</p>
+
+<p>The fix is the same for both subscribers: move delivery to the main thread <em>before</em> the subscriber, with <code class="language-plaintext highlighter-rouge">receive(on:)</code>.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SafeBadgeModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">didSet</span> <span class="p">{</span> <span class="n">setterRanOnMainThread</span> <span class="o">=</span> <span class="kt">Thread</span><span class="o">.</span><span class="n">isMainThread</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">setterRanOnMainThread</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="kd">func</span> <span class="nf">bind</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">backgroundFeed</span>
+            <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">safeBadge</span> <span class="o">=</span> <span class="kt">SafeBadgeModel</span><span class="p">()</span>
+<span class="n">safeBadge</span><span class="o">.</span><span class="nf">bind</span><span class="p">()</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">backgroundFeed</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">runMainLoop</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="p">{</span> <span class="n">safeBadge</span><span class="o">.</span><span class="n">setterRanOnMainThread</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">safeBadge</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">9</span> <span class="o">&amp;&amp;</span> <span class="n">safeBadge</span><span class="o">.</span><span class="n">setterRanOnMainThread</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Here the <code class="language-plaintext highlighter-rouge">sink</code> closure is main-actor isolated, its run-time check passes because <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code> delivers on the main queue, and the compiler is satisfied that <code class="language-plaintext highlighter-rouge">self?.count = $0</code> is a main-actor access. <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> explains why <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> is a better choice than <code class="language-plaintext highlighter-rouge">RunLoop.main</code> for this, and how to make the isolation explicit.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">numbersCancellable</span><span class="p">,</span> <span class="n">pagesCancellable</span><span class="p">,</span> <span class="n">justCancellable</span><span class="p">,</span> <span class="n">stopCancellable</span><span class="p">,</span>
+                      <span class="n">prefixCancellable</span><span class="p">,</span> <span class="n">firstCancellable</span><span class="p">,</span>
+                      <span class="n">deferredNormalizer</span><span class="p">,</span> <span class="n">deferredRenderer</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="choosing-between-them">Choosing between them</h2>
+
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">assign(to: &amp;$property)</code> to drive a <code class="language-plaintext highlighter-rouge">@Published</code> property from a pipeline that should live exactly as long as the object.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">sink</code> when the value needs to do something other than land in one property, when the pipeline can fail, or when the subscription must be cancellable on its own schedule. Capture <code class="language-plaintext highlighter-rouge">self</code> weakly.</li>
+  <li>Avoid <code class="language-plaintext highlighter-rouge">assign(to:on:)</code> with <code class="language-plaintext highlighter-rouge">self</code> as the target; it is a retain cycle unless the upstream completes. With another object as the target, it is fine.</li>
+  <li>Put <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code> immediately before any subscriber that touches main-actor state, and treat a Swift 6 isolation crash in a <code class="language-plaintext highlighter-rouge">sink</code> closure as a missing <code class="language-plaintext highlighter-rouge">receive(on:)</code>.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">sink</code> and <code class="language-plaintext highlighter-rouge">assign</code> both request <code class="language-plaintext highlighter-rouge">.unlimited</code> demand, so neither can apply backpressure.</li>
+  <li>The returned <code class="language-plaintext highlighter-rouge">AnyCancellable</code> is the subscription’s lifetime. Assigning it to <code class="language-plaintext highlighter-rouge">_</code> cancelled a subject subscription before its first value, while a synchronous sequence still delivered everything, which hides the bug in tests.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">Sink</code> releases its closures, and what they capture, on completion.</li>
+  <li>Cancelling from inside <code class="language-plaintext highlighter-rouge">sink</code> did nothing against a synchronous publisher, because the cancellable was not assigned yet. Use <code class="language-plaintext highlighter-rouge">prefix(while:)</code> or <code class="language-plaintext highlighter-rouge">first(where:)</code>, or create and store the <code class="language-plaintext highlighter-rouge">Subscribers.Sink</code> before subscribing.</li>
+  <li>Sending into a subject from one of its own subscribers delivers depth-first, and subjects visit subscribers in an order that changes between launches: across 2,000 trials, a renderer sometimes ended on a stale value while the subject held the new one. Derive values with operators, or defer the feedback.</li>
+  <li><code class="language-plaintext highlighter-rouge">assign(to:on: self)</code> kept the model alive indefinitely; a weak <code class="language-plaintext highlighter-rouge">sink</code> wrapper and <code class="language-plaintext highlighter-rouge">assign(to: &amp;$property)</code> both let it deallocate.</li>
+  <li>In Swift 6, <code class="language-plaintext highlighter-rouge">assign</code> wrote a <code class="language-plaintext highlighter-rouge">@MainActor</code> property from a background thread with no diagnostic, and the Thread Sanitizer reported the data race; a main-actor <code class="language-plaintext highlighter-rouge">sink</code> crashes instead. <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code> fixes both.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">bind(_:to:on:)</code> helper for a <code class="language-plaintext highlighter-rouge">@MainActor</code> view model that takes a publisher of any failure type, applies <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code>, routes failures to an <code class="language-plaintext highlighter-rouge">onError</code> closure, and writes values through a key path while holding the view model weakly. Make its signature reject a key path to a property that is not main-actor isolated, if you can find a way to express that, and explain in a comment why it is hard. Then test the helper with a subject that sends from a background queue: assert that the property is written on the main thread, that a failure reaches <code class="language-plaintext highlighter-rouge">onError</code> exactly once, and that releasing the view model cancels the subscription, by sending one more value afterwards and checking that nothing is written.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/sink(receivecompletion:receivevalue:)"><code class="language-plaintext highlighter-rouge">sink(receiveCompletion:receiveValue:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/assign(to:on:)"><code class="language-plaintext highlighter-rouge">assign(to:on:)</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/assign(to:)"><code class="language-plaintext highlighter-rouge">assign(to:)</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/721/">Combine in Practice</a>, WWDC19, which introduces <code class="language-plaintext highlighter-rouge">sink</code>, <code class="language-plaintext highlighter-rouge">assign</code>, and cancellation.</li>
+  <li>The concurrency roadmap’s <a href="/swift-main-actor/">The Main Actor</a> and <a href="/swift-6-data-race-safety-migration/">Swift 6 Data-Race Safety Migration</a>, for why a main-actor closure gets a run-time check when it is passed to a Swift 5 module.</li>
+</ul>
+
+<p>Previous: <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a>. Next: <a href="/combine-subjects/">Subjects: <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> and <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-sink-assign/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=sink+and+assign%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-sink-assign%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-sink-assign/&title=sink+and+assign%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-sink-assign/&title=sink+and+assign%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-sink-assign/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=sink and assign%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-sink-assign/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Memory+Management">Memory Management</a></li>
+    
+    <li><a href="/tag/#Reactive+Programming">Reactive Programming</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Subjects: PassthroughSubject and CurrentValueSubject" href="/combine-subjects/"> <p>Previous post</p> Subjects: PassthroughSubject and CurrentValueSubject </a> </div> <div id="next-post"> <a alt="Unstructured and Detached Tasks in Swift: When to Use Each" href="/swift-unstructured-detached-tasks/"> <p>Next post</p> Unstructured and Detached Tasks in Swift: When to Use Each </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
