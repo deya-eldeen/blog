@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Geocoding, Reverse Geocoding, and Request Limits | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Geocoding, Reverse Geocoding, and Request Limits" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Turning coordinates into “Elizabeth Tower, London” and an address into coordinates is a network request to Apple’s servers, and it’s rationed. iOS 26 moved geocoding from Core Location’s CLGeocoder to two MapKit classes, MKReverseGeocodingRequest and MKGeocodingRequest, which return MKMapItem values with new address types. The rationing didn’t change: an app that geocodes every location update finds its requests refused, and the user sees “Unknown location” exactly when they’re moving through interesting places. This article uses the new API in Swift 6 and measures the rationing. From one process, 50 reverse geocodes in 8.7 seconds succeeded. The 51st failed with MKError.loadingThrottled in 3 ms, and so did everything else until about a minute after the first request. Apple documents that throttling exists but not where it starts. Then it builds the client that never meets the limit: a cache keyed by grid cell, one shared lookup for concurrent callers, a token bucket, and a movement policy that cut a 50-minute commute from 3,000 location fixes to 34 lookups." /> <meta property="og:description" content="Turning coordinates into “Elizabeth Tower, London” and an address into coordinates is a network request to Apple’s servers, and it’s rationed. iOS 26 moved geocoding from Core Location’s CLGeocoder to two MapKit classes, MKReverseGeocodingRequest and MKGeocodingRequest, which return MKMapItem values with new address types. The rationing didn’t change: an app that geocodes every location update finds its requests refused, and the user sees “Unknown location” exactly when they’re moving through interesting places. This article uses the new API in Swift 6 and measures the rationing. From one process, 50 reverse geocodes in 8.7 seconds succeeded. The 51st failed with MKError.loadingThrottled in 3 ms, and so did everything else until about a minute after the first request. Apple documents that throttling exists but not where it starts. Then it builds the client that never meets the limit: a cache keyed by grid cell, one shared lookup for concurrent callers, a token bucket, and a movement policy that cut a 50-minute commute from 3,000 location fixes to 34 lookups." /> <link rel="canonical" href="http://localhost:4000/ios-geocoding/" /> <meta property="og:url" content="http://localhost:4000/ios-geocoding/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-09T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Geocoding, Reverse Geocoding, and Request Limits" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-09T00:00:00+03:00","datePublished":"2026-03-09T00:00:00+03:00","description":"Turning coordinates into “Elizabeth Tower, London” and an address into coordinates is a network request to Apple’s servers, and it’s rationed. iOS 26 moved geocoding from Core Location’s CLGeocoder to two MapKit classes, MKReverseGeocodingRequest and MKGeocodingRequest, which return MKMapItem values with new address types. The rationing didn’t change: an app that geocodes every location update finds its requests refused, and the user sees “Unknown location” exactly when they’re moving through interesting places. This article uses the new API in Swift 6 and measures the rationing. From one process, 50 reverse geocodes in 8.7 seconds succeeded. The 51st failed with MKError.loadingThrottled in 3 ms, and so did everything else until about a minute after the first request. Apple documents that throttling exists but not where it starts. Then it builds the client that never meets the limit: a cache keyed by grid cell, one shared lookup for concurrent callers, a token bucket, and a movement policy that cut a 50-minute commute from 3,000 location fixes to 34 lookups.","headline":"Geocoding, Reverse Geocoding, and Request Limits","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ios-geocoding/"},"url":"http://localhost:4000/ios-geocoding/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Geocoding, Reverse Geocoding, and Request Limits"> <meta name="twitter:description" content="Turning coordinates into “Elizabeth Tower, London” and an address into coordinates is a network request to Apple’s servers, and it’s rationed. iOS 26 moved g..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Geocoding, Reverse Geocoding, and Request Limits"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Geocoding, Reverse Geocoding, and Request Limits</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-09T00:00:00+03:00">March 9, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Turning coordinates into “Elizabeth Tower, London” and an address into coordinates is a network request to Apple’s servers, and it’s rationed. iOS 26 moved geocoding from Core Location’s <code class="language-plaintext highlighter-rouge">CLGeocoder</code> to two MapKit classes, <code class="language-plaintext highlighter-rouge">MKReverseGeocodingRequest</code> and <code class="language-plaintext highlighter-rouge">MKGeocodingRequest</code>, which return <code class="language-plaintext highlighter-rouge">MKMapItem</code> values with new address types. The rationing didn’t change: an app that geocodes every location update finds its requests refused, and the user sees “Unknown location” exactly when they’re moving through interesting places.</p>
+
+<p>This article uses the new API in Swift 6 and measures the rationing. From one process, 50 reverse geocodes in 8.7 seconds succeeded. The 51st failed with <code class="language-plaintext highlighter-rouge">MKError.loadingThrottled</code> in 3 ms, and so did everything else until about a minute after the first request. Apple documents that throttling exists but not where it starts. Then it builds the client that never meets the limit: a cache keyed by grid cell, one shared lookup for concurrent callers, a token bucket, and a movement policy that cut a 50-minute commute from 3,000 location fixes to 34 lookups.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. MapKit’s geocoding works from a macOS command-line program, so the blocks ran on macOS 26 against Apple’s live service, and again in a unit-test bundle on an iPhone 17 simulator running iOS 27.0. Geocoding results come from a live service and can change. The ones quoted are what it returned in October 2026.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CoreLocation</span>
+<span class="kd">import</span> <span class="kt">MapKit</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+</code></pre></div></div>
+
+<h2 id="the-ios-26-api">The iOS 26 API</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CLGeocoder</code> is deprecated as of iOS 26 and macOS 26, with messages pointing at its replacements: “Use MKReverseGeocodingRequest” and “Use MKGeocodingRequest”. Both new classes are one-shot requests: create one with a location or an address string, read its <code class="language-plaintext highlighter-rouge">mapItems</code> property asynchronously, or <code class="language-plaintext highlighter-rouge">cancel()</code> it. The results are <code class="language-plaintext highlighter-rouge">MKMapItem</code> values, which in iOS 26 gained <code class="language-plaintext highlighter-rouge">address</code> (an <code class="language-plaintext highlighter-rouge">MKAddress</code> with <code class="language-plaintext highlighter-rouge">fullAddress</code> and <code class="language-plaintext highlighter-rouge">shortAddress</code>) and <code class="language-plaintext highlighter-rouge">addressRepresentations</code> (city, region, and formatted variants). That replaces the deprecated <code class="language-plaintext highlighter-rouge">placemark</code>.</p>
+
+<p>Two details matter for Swift 6. The completion handler is annotated <code class="language-plaintext highlighter-rouge">NS_SWIFT_UI_ACTOR</code>, so the <code class="language-plaintext highlighter-rouge">async</code> getter runs on the main actor. And the map items aren’t <code class="language-plaintext highlighter-rouge">Sendable</code>. A wrapper that converts the result into a plain value at the boundary solves both, and lets the rest of the app, and its tests, work against a protocol:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// What the app shows for a place: Sendable, and free of MapKit's classes.</span>
+<span class="kd">struct</span> <span class="kt">PlaceName</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">short</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">full</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">city</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">timeZone</span><span class="p">:</span> <span class="kt">TimeZone</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">ReverseGeocoding</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">placeName</span><span class="p">(</span><span class="n">at</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">PlaceName</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="c1">/// The real service: MapKit's request (iOS 26 and macOS 26), whose completion runs on the main actor.</span>
+<span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">26</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">26</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">struct</span> <span class="kt">MapKitGeocoder</span><span class="p">:</span> <span class="kt">ReverseGeocoding</span> <span class="p">{</span>
+    <span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">placeName</span><span class="p">(</span><span class="n">at</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">PlaceName</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">MKReverseGeocodingRequest</span><span class="p">(</span><span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">))</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">item</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">mapItems</span><span class="o">.</span><span class="n">first</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">PlaceName</span><span class="p">(</span><span class="nv">short</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">address</span><span class="p">?</span><span class="o">.</span><span class="n">shortAddress</span><span class="p">,</span> <span class="nv">full</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">address</span><span class="p">?</span><span class="o">.</span><span class="n">fullAddress</span><span class="p">,</span>
+                         <span class="nv">city</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">addressRepresentations</span><span class="p">?</span><span class="o">.</span><span class="n">cityName</span><span class="p">,</span> <span class="nv">timeZone</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">timeZone</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">26</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">26</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">started</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="nv">bridge</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">MapKitGeocoder</span><span class="p">()</span><span class="o">.</span><span class="nf">placeName</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"reverse geocode took"</span><span class="p">,</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">started</span><span class="p">,</span> <span class="s">":"</span><span class="p">,</span> <span class="n">bridge</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">bridge</span><span class="p">?</span><span class="o">.</span><span class="n">full</span><span class="p">?</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"London"</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span> <span class="o">&amp;&amp;</span> <span class="n">bridge</span><span class="p">?</span><span class="o">.</span><span class="n">timeZone</span><span class="p">?</span><span class="o">.</span><span class="n">identifier</span> <span class="o">==</span> <span class="s">"Europe/London"</span><span class="p">)</span>
+
+    <span class="n">started</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="nv">downing</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">MKGeocodingRequest</span><span class="p">(</span><span class="nv">addressString</span><span class="p">:</span> <span class="s">"10 Downing Street, London"</span><span class="p">)</span><span class="o">!.</span><span class="n">mapItems</span><span class="o">.</span><span class="n">first</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"forward geocode took"</span><span class="p">,</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">started</span><span class="p">,</span> <span class="s">":"</span><span class="p">,</span> <span class="n">downing</span><span class="p">?</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">coordinate</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">,</span> <span class="n">downing</span><span class="p">?</span><span class="o">.</span><span class="n">address</span><span class="p">?</span><span class="o">.</span><span class="n">fullAddress</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">downing</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5035</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1277</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">100</span> <span class="p">}</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Westminster Bridge reverse-geocoded to “Elizabeth Tower, London, SW1A, England” in 0.23 to 0.47 seconds across runs, with the city “City of Westminster, London” and the time zone “Europe/London”. The time zone alone is worth a request for apps that schedule things in local time. “10 Downing Street, London” forward-geocoded to 51.503541, −0.12767 in about a quarter of a second, with the full postcode. A main-actor method satisfied the protocol’s <code class="language-plaintext highlighter-rouge">async</code> requirement: Swift hops to the main actor when the method is called through the protocol.</p>
+
+<h2 id="measuring-the-limit">Measuring the limit</h2>
+
+<p>Apple’s documentation for <code class="language-plaintext highlighter-rouge">MKError.Code.loadingThrottled</code> says only that “the data didn’t load because data throttling is in effect,” and that it “can occur if an app makes frequent requests for data over a short period of time.” <code class="language-plaintext highlighter-rouge">CLGeocoder</code>’s documentation is more specific about behavior, though not about numbers: “Geocoding requests are rate-limited for each app, so making too many requests in a short period of time may cause some of the requests to fail.”</p>
+
+<p>To find the actual numbers, this script waits two minutes so any earlier quota has reset, reverse-geocodes distinct points one after another until a request fails, then retries every 5 seconds until one succeeds. It isn’t part of the article’s test run, because it deliberately exhausts the quota. I ran it separately, and an earlier version once:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">_</span> <span class="nv">i</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">location</span> <span class="o">=</span> <span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.49</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.0004</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.10</span> <span class="o">-</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.0003</span><span class="p">)</span>
+    <span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">MKReverseGeocodingRequest</span><span class="p">(</span><span class="nv">location</span><span class="p">:</span> <span class="n">location</span><span class="p">)</span><span class="o">!.</span><span class="n">mapItems</span><span class="p">;</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">120</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="k">await</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">throttledAt</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="s">"successes, first throttle at"</span><span class="p">,</span> <span class="n">throttledAt</span><span class="p">,</span> <span class="s">"s"</span><span class="p">)</span>
+<span class="k">repeat</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="p">}</span> <span class="k">while</span> <span class="k">await</span> <span class="o">!</span><span class="nf">lookup</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"recovered"</span><span class="p">,</span> <span class="kt">Date</span><span class="p">()</span><span class="o">.</span><span class="nf">timeIntervalSince</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="s">"s after the first request"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Run</th>
+      <th>Successes before throttling</th>
+      <th>First failure at</th>
+      <th>Recovered</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>50</td>
+      <td>8.5 s</td>
+      <td>not measured</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>50</td>
+      <td>8.7 s</td>
+      <td>61.0 s after the first request</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both runs allowed exactly 50 requests. Every request after that failed with <code class="language-plaintext highlighter-rouge">MKErrorDomain</code> code 3, <code class="language-plaintext highlighter-rouge">loadingThrottled</code>, in 2 to 5 ms, so the refusal is local and costs no network round trip. In the first run, 30 concurrent requests sent while throttled all failed the same way. In the second, polling every 5 seconds, the first success came at 61.0 s, consistent with a window of 60 seconds from the first request. With 5-second polling, the true reset could be up to 5 seconds earlier.</p>
+
+<p>So, as measured from one macOS process in October 2026, the budget is about <strong>50 lookups per minute</strong>. That isn’t a documented contract. It may differ by platform, by app, or over time, and a well-behaved client stays far below it. <code class="language-plaintext highlighter-rouge">CLGeocoder</code>’s documentation suggests a much lower rate as a rule of thumb: “in a typical situation, you should not send more than one geocoding request per minute” while the user moves.</p>
+
+<h2 id="a-client-that-stays-under-the-limit">A client that stays under the limit</h2>
+
+<p>Four techniques keep an app’s lookups to a minimum, and each attacks a different source of waste.</p>
+
+<p><strong>A token bucket</strong> caps the rate whatever the callers do. It holds up to $C$ tokens and refills at $r$ per second. Each request takes a token, and a request with no token is refused immediately. Over any interval of length $t$, it allows at most $C + rt$ requests. With $C$ = 10 and $r$ = 0.5, that’s 40 per minute, under the measured 50:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A token bucket: up to `capacity` requests at once, refilled at `rate` per second.</span>
+<span class="kd">struct</span> <span class="kt">TokenBucket</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">tokens</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">Double</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">perSecond</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">rate</span><span class="p">;</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">capacity</span><span class="p">;</span> <span class="n">last</span> <span class="o">=</span> <span class="n">now</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Takes a token if one is available at time `now`, in seconds.</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">take</span><span class="p">(</span><span class="nv">now</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">+</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">last</span><span class="p">)</span> <span class="o">*</span> <span class="n">rate</span><span class="p">)</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">now</span>
+        <span class="k">guard</span> <span class="n">tokens</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="n">tokens</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Stay under a measured quota of 50 per minute with margin: bursts of 10, then one every 2 seconds (30 per minute).</span>
+<span class="k">var</span> <span class="nv">bucket</span> <span class="o">=</span> <span class="kt">TokenBucket</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">perSecond</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">granted</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">tenth</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">600</span> <span class="k">where</span> <span class="n">bucket</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="nv">now</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">tenth</span><span class="p">)</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span> <span class="n">granted</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>   <span class="c1">// asking 10 times a second for a minute</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"asking 600 times in a minute, the bucket allowed"</span><span class="p">,</span> <span class="n">granted</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">granted</span> <span class="o">==</span> <span class="mi">10</span> <span class="o">+</span> <span class="mi">29</span> <span class="o">||</span> <span class="n">granted</span> <span class="o">==</span> <span class="mi">10</span> <span class="o">+</span> <span class="mi">30</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Asked 600 times in a minute, ten times a second, the bucket allowed 39: the burst of 10, then one every two seconds.</p>
+
+<p><strong>A cache keyed by grid cell</strong> reuses answers for nearby coordinates. Two fixes 5 m apart are the same place to a human, but not to a dictionary keyed by <code class="language-plaintext highlighter-rouge">CLLocationCoordinate2D</code>. Rounding to a 100 m grid cell makes them the same key. <strong>Coalescing</strong> handles the case a cache can’t: several parts of an interface asking for the same place at the same moment, before any answer is cached. An actor keeps the in-flight <code class="language-plaintext highlighter-rouge">Task</code> for each cell, and later callers await it instead of starting their own:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Caches place names by grid cell, shares one lookup among concurrent callers for the same cell,</span>
+<span class="c1">/// and refuses to exceed its token bucket.</span>
+<span class="kd">actor</span> <span class="kt">PlaceNames</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">rateLimited</span> <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ReverseGeocoding</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">cellSize</span><span class="p">:</span> <span class="kt">Double</span>                       <span class="c1">// meters</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">lifetime</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">origin</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">bucket</span><span class="p">:</span> <span class="kt">TokenBucket</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cache</span><span class="p">:</span> <span class="p">[</span><span class="kt">Cell</span><span class="p">:</span> <span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">PlaceName</span><span class="p">?,</span> <span class="nv">stored</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">inFlight</span><span class="p">:</span> <span class="p">[</span><span class="kt">Cell</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">PlaceName</span><span class="p">?,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">lookups</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="kd">struct</span> <span class="kt">Cell</span><span class="p">:</span> <span class="kt">Hashable</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">row</span><span class="p">:</span> <span class="kt">Int</span><span class="p">;</span> <span class="k">var</span> <span class="nv">column</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ReverseGeocoding</span><span class="p">,</span> <span class="nv">cellSize</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">lifetime</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3_600</span><span class="p">),</span>
+         <span class="nv">bucket</span><span class="p">:</span> <span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">perSecond</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">cellSize</span> <span class="o">=</span> <span class="n">cellSize</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">lifetime</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">bucket</span> <span class="o">=</span> <span class="kt">TokenBucket</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="n">bucket</span><span class="o">.</span><span class="n">capacity</span><span class="p">,</span> <span class="nv">perSecond</span><span class="p">:</span> <span class="n">bucket</span><span class="o">.</span><span class="n">perSecond</span><span class="p">,</span> <span class="nv">now</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Meters per degree are nearly constant over a city, so a fixed-angle grid at the cell's latitude is enough here.</span>
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">cell</span><span class="p">(</span><span class="k">for</span> <span class="nv">c</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Cell</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">metersPerDegree</span> <span class="o">=</span> <span class="mf">111_320.0</span>
+        <span class="k">let</span> <span class="nv">row</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">((</span><span class="n">c</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="n">metersPerDegree</span> <span class="o">/</span> <span class="n">cellSize</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">(</span><span class="o">.</span><span class="n">down</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">column</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">((</span><span class="n">c</span><span class="o">.</span><span class="n">longitude</span> <span class="o">*</span> <span class="n">metersPerDegree</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">/</span> <span class="n">cellSize</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">(</span><span class="o">.</span><span class="n">down</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kt">Cell</span><span class="p">(</span><span class="nv">row</span><span class="p">:</span> <span class="n">row</span><span class="p">,</span> <span class="nv">column</span><span class="p">:</span> <span class="n">column</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">placeName</span><span class="p">(</span><span class="n">at</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">PlaceName</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="nf">cell</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">coordinate</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">hit</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">hit</span><span class="o">.</span><span class="n">stored</span> <span class="o">&lt;</span> <span class="n">lifetime</span> <span class="p">{</span> <span class="k">return</span> <span class="n">hit</span><span class="o">.</span><span class="n">name</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="n">inFlight</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">running</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">origin</span>
+        <span class="k">guard</span> <span class="n">bucket</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="nv">now</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e18</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">Failure</span><span class="o">.</span><span class="n">rateLimited</span>
+        <span class="p">}</span>
+        <span class="n">lookups</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">service</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">service</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">placeName</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">coordinate</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">inFlight</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">inFlight</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">name</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// A stand-in service that counts its calls and takes 50 ms, like a fast network round trip.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CountingGeocoder</span><span class="p">:</span> <span class="kt">ReverseGeocoding</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">calls</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">placeName</span><span class="p">(</span><span class="n">at</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">PlaceName</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kt">PlaceName</span><span class="p">(</span><span class="nv">short</span><span class="p">:</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%.4f, %.4f"</span><span class="p">,</span> <span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">counting</span> <span class="o">=</span> <span class="kt">CountingGeocoder</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">names</span> <span class="o">=</span> <span class="kt">PlaceNames</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="n">counting</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">here</span> <span class="o">=</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span><span class="p">)</span>
+<span class="c1">// Ten parts of the interface ask for the same place at the same moment.</span>
+<span class="k">let</span> <span class="nv">answers</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">PlaceName</span><span class="p">?</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">names</span><span class="o">.</span><span class="nf">placeName</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">here</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">all</span><span class="p">:</span> <span class="p">[</span><span class="kt">PlaceName</span><span class="p">?]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">answer</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">all</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">all</span>
+<span class="p">}</span>
+<span class="c1">// A few meters away, in the same 100 m cell, a moment later.</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">names</span><span class="o">.</span><span class="nf">placeName</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.50072</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.12455</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"10 concurrent requests and one nearby request:"</span><span class="p">,</span> <span class="n">counting</span><span class="o">.</span><span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">},</span> <span class="s">"lookup(s); all equal:"</span><span class="p">,</span> <span class="kt">Set</span><span class="p">(</span><span class="n">answers</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="n">short</span> <span class="p">})</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">counting</span><span class="o">.</span><span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Ten concurrent requests for Westminster Bridge, plus one for a point a few meters away, produced exactly one lookup, and all eleven callers got the same answer. The actor makes this safe without locks: between storing the task in <code class="language-plaintext highlighter-rouge">inFlight</code> and awaiting it, no other call can interleave. Suspension happens only at the <code class="language-plaintext highlighter-rouge">await</code>, and by then later callers find the task.</p>
+
+<p><strong>A movement policy</strong> decides when the user’s own location deserves a new lookup at all. The rule from Apple’s guidance is to require both distance and time:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Re-geocode only after moving far enough and waiting long enough, as Apple's geocoding guidance suggests</span>
+<span class="c1">/// ("not more than one geocoding request per minute" while moving).</span>
+<span class="kd">struct</span> <span class="kt">RefreshPolicy</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">minimumDistance</span><span class="p">:</span> <span class="kt">CLLocationDistance</span>
+    <span class="k">var</span> <span class="nv">minimumInterval</span><span class="p">:</span> <span class="kt">TimeInterval</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">last</span><span class="p">:</span> <span class="p">(</span><span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">,</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">)?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">minimumDistance</span><span class="p">:</span> <span class="kt">CLLocationDistance</span><span class="p">,</span> <span class="nv">minimumInterval</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">minimumDistance</span> <span class="o">=</span> <span class="n">minimumDistance</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">minimumInterval</span> <span class="o">=</span> <span class="n">minimumInterval</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">shouldRefresh</span><span class="p">(</span><span class="n">at</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">CLLocation</span><span class="p">,</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">last</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">last</span><span class="o">.</span><span class="n">location</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minimumDistance</span> <span class="o">||</span> <span class="n">time</span> <span class="o">-</span> <span class="n">last</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">minimumInterval</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">false</span>
+        <span class="p">}</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// A commute at one fix per second: 15 minutes walking, 25 minutes on a train, 10 minutes walking.</span>
+<span class="k">var</span> <span class="nv">commute</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">east</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">speed</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="mi">900</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">),</span> <span class="p">(</span><span class="mi">1_500</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">),</span> <span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">seconds</span> <span class="p">{</span>
+        <span class="n">east</span> <span class="o">+=</span> <span class="n">speed</span>
+        <span class="n">commute</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">CLLocation</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mf">51.5007</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1246</span> <span class="o">+</span> <span class="n">east</span> <span class="o">/</span> <span class="mi">69_440</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Every fix, versus 100 m cells (one lookup per new cell), versus the movement policy.</span>
+<span class="k">var</span> <span class="nv">cells</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Int</span><span class="p">]</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">fix</span> <span class="k">in</span> <span class="n">commute</span> <span class="p">{</span>
+    <span class="n">cells</span><span class="o">.</span><span class="nf">insert</span><span class="p">([</span><span class="kt">Int</span><span class="p">((</span><span class="n">fix</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">latitude</span> <span class="o">*</span> <span class="mi">111_320</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">(</span><span class="o">.</span><span class="n">down</span><span class="p">)),</span>
+                  <span class="kt">Int</span><span class="p">((</span><span class="n">fix</span><span class="o">.</span><span class="n">coordinate</span><span class="o">.</span><span class="n">longitude</span> <span class="o">*</span> <span class="mi">69_440</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">(</span><span class="o">.</span><span class="n">down</span><span class="p">))])</span>
+<span class="p">}</span>
+<span class="k">var</span> <span class="nv">policy</span> <span class="o">=</span> <span class="kt">RefreshPolicy</span><span class="p">(</span><span class="nv">minimumDistance</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span> <span class="nv">minimumInterval</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">policyLookups</span> <span class="o">=</span> <span class="n">commute</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">policy</span><span class="o">.</span><span class="nf">shouldRefresh</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">element</span><span class="p">,</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">offset</span><span class="p">))</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"50-minute commute:"</span><span class="p">,</span> <span class="n">commute</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"fixes;"</span><span class="p">,</span> <span class="n">cells</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"lookups with 100 m cells;"</span><span class="p">,</span> <span class="n">policyLookups</span><span class="p">,</span> <span class="s">"with the policy"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On a simulated commute, with fixes every second while walking 15 minutes, riding a train for 25, and walking 10 more:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Strategy</th>
+      <th>Lookups in 50 minutes</th>
+      <th>Per minute</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Every fix</td>
+      <td>3,000</td>
+      <td>60, over the measured quota</td>
+    </tr>
+    <tr>
+      <td>One per new 100 m cell</td>
+      <td>322</td>
+      <td>6.4</td>
+    </tr>
+    <tr>
+      <td>250 m and 60 s since the last</td>
+      <td>34</td>
+      <td>0.7</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The cache alone helps the walkers and does little for the train, which crosses a new 100 m cell every five seconds. The policy’s count is easy to predict. On foot, distance limits it: 1,260 m of walking at 250 m per lookup is about 5. On the train, time limits it: 1,500 s at one per 60 s is 25. The last walk adds about 3. That gives roughly 34, one lookup every minute and a half, which is what “the street you’re on” needs.</p>
+
+<p>Together, the policy decides <em>whether</em> to look up, the cache and coalescing make repeated questions free, and the bucket guarantees that nothing, not even a bug in a loop, can exceed the budget. When the bucket refuses, show the last known place name rather than an error. A place name that’s a minute old is almost always still right.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>iOS 26 replaced <code class="language-plaintext highlighter-rouge">CLGeocoder</code> with MapKit’s <code class="language-plaintext highlighter-rouge">MKReverseGeocodingRequest</code> and <code class="language-plaintext highlighter-rouge">MKGeocodingRequest</code>, which return <code class="language-plaintext highlighter-rouge">MKMapItem</code> values with <code class="language-plaintext highlighter-rouge">address</code> and <code class="language-plaintext highlighter-rouge">addressRepresentations</code>. Their completion runs on the main actor, so wrap them and convert results to <code class="language-plaintext highlighter-rouge">Sendable</code> values.</li>
+  <li>Westminster Bridge reverse-geocoded in 0.23 to 0.47 s, with a city name and a time zone.</li>
+  <li>From one process, 50 requests in about 8.7 s succeeded, the 51st failed locally with <code class="language-plaintext highlighter-rouge">loadingThrottled</code>, and requests succeeded again about 61 s after the first. That’s roughly 50 per minute, measured, not documented.</li>
+  <li>A token bucket bounds any interval of length $t$ to $C + rt$ requests. A cache keyed by grid cell reuses nearby answers. An actor that shares in-flight tasks turned ten simultaneous requests into one.</li>
+  <li>Requiring both 250 m of movement and 60 s between lookups cut a 50-minute commute from 3,000 fixes to 34 lookups. Caching alone still needed 322.</li>
+  <li>When throttled, show the last known place. Never geocode per fix.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add persistence and expiry to <code class="language-plaintext highlighter-rouge">PlaceNames</code>. Write the cache to disk as JSON keyed by cell, so a relaunched app starts warm. Give entries a lifetime that depends on the answer: a street address can stay valid for a day, while a failed lookup should be retried after a minute. Then add a <code class="language-plaintext highlighter-rouge">prefetch(along:)</code> method that takes a planned route and looks up one cell every 500 m, spending at most half the bucket, so a navigation app has names ready before the user arrives.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/mapkit/mkreversegeocodingrequest"><code class="language-plaintext highlighter-rouge">MKReverseGeocodingRequest</code></a> and <a href="https://developer.apple.com/documentation/mapkit/mkgeocodingrequest"><code class="language-plaintext highlighter-rouge">MKGeocodingRequest</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/mapkit/mkerror/code/loadingthrottled"><code class="language-plaintext highlighter-rouge">MKError.Code.loadingThrottled</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/clgeocoder"><code class="language-plaintext highlighter-rouge">CLGeocoder</code></a>, deprecated, but its “Tips for Using a Geocoder Object” remain the clearest statement of Apple’s expectations</li>
+</ul>
+
+<p>Previous: <a href="/ios-visits-significant-location-changes/">Visits and Significant Location Changes</a></p>
+
+<p>Next: <a href="/ios-background-location/">Background Location and App Lifecycle Boundaries</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/ios-geocoding/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Geocoding%2C+Reverse+Geocoding%2C+and+Request+Limits%20http%3A%2F%2Flocalhost%3A4000%2Fios-geocoding%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/ios-geocoding/&title=Geocoding%2C+Reverse+Geocoding%2C+and+Request+Limits%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/ios-geocoding/&title=Geocoding%2C+Reverse+Geocoding%2C+and+Request+Limits%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/ios-geocoding/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Geocoding, Reverse Geocoding, and Request Limits%20%7C%20Swift By Deya&body=http://localhost:4000/ios-geocoding/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#MapKit">MapKit</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Background Location and App Lifecycle Boundaries" href="/ios-background-location/"> <p>Previous post</p> Background Location and App Lifecycle Boundaries </a> </div> <div id="next-post"> <a alt="Visits and Significant Location Changes" href="/ios-visits-significant-location-changes/"> <p>Next post</p> Visits and Significant Location Changes </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

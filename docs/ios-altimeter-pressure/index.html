@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Altitude, Pressure, and Relative Measurements | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Altitude, Pressure, and Relative Measurements" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A barometer is a remarkable altimeter over a minute and a poor one over an afternoon. Air pressure falls by about one hectopascal for every eight meters of climb near sea level, and a phone’s pressure sensor resolves a small fraction of that, so a single flight of stairs shows up clearly. But the weather moves the same pressure by hectopascals over hours, and the sensor can’t tell a falling barometer from a rising user. Every altitude feature on iOS is built around that conflict between resolution and drift. This article starts from the physics: the hypsometric equation behind CMAltimeter, how it scales with altitude and temperature, and how wind fools it. Then it builds a floor counter on simulated data with weather drift. After 28 minutes, the raw relative altitude had drifted 3.85 m and put the user on the wrong floor, while counting only rapid changes got the floor right. It ends with absolute altitude and a statistical trap: averaging ten minutes of GPS altitude cuts its error to 4.4 m, not the 0.4 m the textbook formula promises." /> <meta property="og:description" content="A barometer is a remarkable altimeter over a minute and a poor one over an afternoon. Air pressure falls by about one hectopascal for every eight meters of climb near sea level, and a phone’s pressure sensor resolves a small fraction of that, so a single flight of stairs shows up clearly. But the weather moves the same pressure by hectopascals over hours, and the sensor can’t tell a falling barometer from a rising user. Every altitude feature on iOS is built around that conflict between resolution and drift. This article starts from the physics: the hypsometric equation behind CMAltimeter, how it scales with altitude and temperature, and how wind fools it. Then it builds a floor counter on simulated data with weather drift. After 28 minutes, the raw relative altitude had drifted 3.85 m and put the user on the wrong floor, while counting only rapid changes got the floor right. It ends with absolute altitude and a statistical trap: averaging ten minutes of GPS altitude cuts its error to 4.4 m, not the 0.4 m the textbook formula promises." /> <link rel="canonical" href="http://localhost:4000/ios-altimeter-pressure/" /> <meta property="og:url" content="http://localhost:4000/ios-altimeter-pressure/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-20T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Altitude, Pressure, and Relative Measurements" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-20T00:00:00+03:00","datePublished":"2026-02-20T00:00:00+03:00","description":"A barometer is a remarkable altimeter over a minute and a poor one over an afternoon. Air pressure falls by about one hectopascal for every eight meters of climb near sea level, and a phone’s pressure sensor resolves a small fraction of that, so a single flight of stairs shows up clearly. But the weather moves the same pressure by hectopascals over hours, and the sensor can’t tell a falling barometer from a rising user. Every altitude feature on iOS is built around that conflict between resolution and drift. This article starts from the physics: the hypsometric equation behind CMAltimeter, how it scales with altitude and temperature, and how wind fools it. Then it builds a floor counter on simulated data with weather drift. After 28 minutes, the raw relative altitude had drifted 3.85 m and put the user on the wrong floor, while counting only rapid changes got the floor right. It ends with absolute altitude and a statistical trap: averaging ten minutes of GPS altitude cuts its error to 4.4 m, not the 0.4 m the textbook formula promises.","headline":"Altitude, Pressure, and Relative Measurements","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ios-altimeter-pressure/"},"url":"http://localhost:4000/ios-altimeter-pressure/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Altitude, Pressure, and Relative Measurements"> <meta name="twitter:description" content="A barometer is a remarkable altimeter over a minute and a poor one over an afternoon. Air pressure falls by about one hectopascal for every eight meters of c..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Altitude, Pressure, and Relative Measurements"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Altitude, Pressure, and Relative Measurements</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-20T00:00:00+03:00">February 20, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A barometer is a remarkable altimeter over a minute and a poor one over an afternoon. Air pressure falls by about one hectopascal for every eight meters of climb near sea level, and a phone’s pressure sensor resolves a small fraction of that, so a single flight of stairs shows up clearly. But the weather moves the same pressure by hectopascals over hours, and the sensor can’t tell a falling barometer from a rising user. Every altitude feature on iOS is built around that conflict between resolution and drift.</p>
+
+<p>This article starts from the physics: the hypsometric equation behind <code class="language-plaintext highlighter-rouge">CMAltimeter</code>, how it scales with altitude and temperature, and how wind fools it. Then it builds a floor counter on simulated data with weather drift. After 28 minutes, the raw relative altitude had drifted 3.85 m and put the user on the wrong floor, while counting only rapid changes got the floor right. It ends with absolute altitude and a statistical trap: averaging ten minutes of GPS altitude cuts its error to 4.4 m, not the 0.4 m the textbook formula promises.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS block ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0, which has no barometer. Simulations use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>, and their sensor parameters are stated where they’re used.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+</code></pre></div></div>
+
+<h2 id="what-core-motion-reports">What Core Motion reports</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CMAltimeter</code> offers two services, both behind the Motion &amp; Fitness permission:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Reports</th>
+      <th>Availability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Relative altitude</td>
+      <td><code class="language-plaintext highlighter-rouge">relativeAltitude</code> in meters since the first event, and <code class="language-plaintext highlighter-rouge">pressure</code> in <strong>kilopascals</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">isRelativeAltitudeAvailable()</code></td>
+    </tr>
+    <tr>
+      <td>Absolute altitude</td>
+      <td><code class="language-plaintext highlighter-rouge">altitude</code> in meters, <code class="language-plaintext highlighter-rouge">accuracy</code> and <code class="language-plaintext highlighter-rouge">precision</code> in meters</td>
+      <td><code class="language-plaintext highlighter-rouge">isAbsoluteAltitudeAvailable()</code>. Apple’s documentation says “iPhone 12 and later”</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Apple’s documentation describes the timing plainly: Core Motion “generates events at regular intervals (regardless of whether the data has changed)”. Relative altitude starts at zero with the first event, so “if the altitude changed five meters between the first and second events, the value in this property is 5 for the second event.” Absolute altitude’s <code class="language-plaintext highlighter-rouge">accuracy</code> is “the estimated uncertainty of the altimeter in meters, based on one standard deviation”, and <code class="language-plaintext highlighter-rouge">precision</code> is “the recommended resolution for the altitude”, which is how many digits are worth displaying.</p>
+
+<p>The pressure unit deserves a warning. Core Motion reports kilopascals, while weather services and most physics references use hectopascals (equal to millibars). A factor of ten is easy to lose. The service later in this article converts at the boundary.</p>
+
+<h2 id="the-physics-of-pressure-and-height">The physics of pressure and height</h2>
+
+<p>In a column of air at rest, pressure falls with height because each layer carries the weight of the air above it. For air at temperature $T$, combining the hydrostatic balance $dp = -\rho g\, dh$ with the ideal gas law $\rho = pM/(RT)$ gives $dp/p = -\frac{gM}{RT}\, dh$. Integrating between two pressures gives the <strong>hypsometric equation</strong>:</p>
+
+\[h_2 - h_1 = \frac{R\,\bar T}{g\,M} \ln\frac{p_1}{p_2} = H \ln\frac{p_1}{p_2} ,\]
+
+<p>where $R$ is the gas constant, $M$ the molar mass of dry air, $g$ gravity, $\bar T$ the mean temperature of the layer, and $H$ the <em>scale height</em>. Differentiating gives the local sensitivity $dh/dp = -H/p$, meters per unit of pressure, which grows as pressure drops:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Physical constants of the International Standard Atmosphere.</span>
+<span class="kd">enum</span> <span class="kt">Atmosphere</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">gasConstant</span> <span class="o">=</span> <span class="mf">8.314_4</span><span class="mi">62_618</span>      <span class="c1">// J/(mol·K)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">molarMass</span> <span class="o">=</span> <span class="mf">0.028_9</span><span class="mi">64_4</span>          <span class="c1">// kg/mol, dry air</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">gravity</span> <span class="o">=</span> <span class="mf">9.806_6</span><span class="mi">5</span>               <span class="c1">// m/s²</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">seaLevelPressure</span> <span class="o">=</span> <span class="mf">1_013.25</span>      <span class="c1">// hPa</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">seaLevelTemperature</span> <span class="o">=</span> <span class="mf">288.15</span>     <span class="c1">// K</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">lapseRate</span> <span class="o">=</span> <span class="mf">0.0065</span>               <span class="c1">// K/m, in the troposphere</span>
+
+    <span class="c1">/// Height difference between two pressure readings, for air at a mean temperature in kelvin (hypsometric equation).</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">heightDifference</span><span class="p">(</span><span class="n">from</span> <span class="nv">p1</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">to</span> <span class="nv">p2</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">meanTemperature</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="n">gasConstant</span> <span class="o">*</span> <span class="n">meanTemperature</span> <span class="o">/</span> <span class="p">(</span><span class="n">molarMass</span> <span class="o">*</span> <span class="n">gravity</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="n">p1</span> <span class="o">/</span> <span class="n">p2</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Standard-atmosphere pressure at an altitude, in hPa.</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">pressure</span><span class="p">(</span><span class="n">atAltitude</span> <span class="nv">h</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="n">seaLevelPressure</span> <span class="o">*</span> <span class="nf">pow</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">lapseRate</span> <span class="o">*</span> <span class="n">h</span> <span class="o">/</span> <span class="n">seaLevelTemperature</span><span class="p">,</span> <span class="n">gravity</span> <span class="o">*</span> <span class="n">molarMass</span> <span class="o">/</span> <span class="p">(</span><span class="n">gasConstant</span> <span class="o">*</span> <span class="n">lapseRate</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// How many meters one hectopascal is worth at an altitude in the standard atmosphere.</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">metersPerHectopascal</span><span class="p">(</span><span class="n">atAltitude</span> <span class="nv">h</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">p</span> <span class="o">=</span> <span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nf">heightDifference</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">p</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">p</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">meanTemperature</span><span class="p">:</span> <span class="n">seaLevelTemperature</span> <span class="o">-</span> <span class="n">lapseRate</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">h</span> <span class="k">in</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">1_500</span><span class="p">,</span> <span class="mi">3_000</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5.0f m: %.1f hPa, %.2f m per hPa"</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="n">h</span><span class="p">),</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">metersPerHectopascal</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="n">h</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">scaleHeight</span> <span class="o">=</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="n">gasConstant</span> <span class="o">*</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="n">seaLevelTemperature</span> <span class="o">/</span> <span class="p">(</span><span class="kt">Atmosphere</span><span class="o">.</span><span class="n">molarMass</span> <span class="o">*</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="n">gravity</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"scale height at 15 °C:"</span><span class="p">,</span> <span class="n">scaleHeight</span><span class="p">)</span>
+
+<span class="c1">// A three-floor climb, 9 m, computed with the wrong temperature.</span>
+<span class="k">let</span> <span class="nv">ground</span> <span class="o">=</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">),</span> <span class="n">third</span> <span class="o">=</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="mi">9</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">celsius</span> <span class="k">in</span> <span class="p">[</span><span class="o">-</span><span class="mf">10.0</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">35</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%3.0f °C: 9 m climb reads as %.3f m"</span><span class="p">,</span> <span class="n">celsius</span><span class="p">,</span>
+                 <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">heightDifference</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">ground</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">third</span><span class="p">,</span> <span class="nv">meanTemperature</span><span class="p">:</span> <span class="mf">288.15</span> <span class="o">+</span> <span class="p">(</span><span class="n">celsius</span> <span class="o">-</span> <span class="mi">15</span><span class="p">))))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Altitude (standard atmosphere)</th>
+      <th>Pressure</th>
+      <th>Height per hPa</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0 m</td>
+      <td>1,013.2 hPa</td>
+      <td>8.32 m</td>
+    </tr>
+    <tr>
+      <td>1,500 m</td>
+      <td>845.6 hPa</td>
+      <td>9.64 m</td>
+    </tr>
+    <tr>
+      <td>3,000 m</td>
+      <td>701.1 hPa</td>
+      <td>11.22 m</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>At 15 °C, the scale height is 8,435 m. A sensor that resolves 0.01 hPa resolves about 8 cm of height at sea level. That’s why a phone notices a single step up a staircase.</p>
+
+<p>Temperature is the hidden parameter. The conversion depends on the <em>mean temperature of the air between the two heights</em>, which the phone doesn’t know. Its sensor sits in a warm pocket, not in the stairwell. Getting the temperature wrong scales every height difference by $T_{\text{assumed}}/T_{\text{true}}$. In the standard atmosphere at 15 °C, a 9 m climb read as 8.22 m when converted assuming −10 °C, and 9.63 m assuming 35 °C. That’s about 0.35% per kelvin. For counting floors it’s irrelevant. For a hiking app summing 1,000 m of ascent, a 25 K error is 87 m.</p>
+
+<h2 id="the-weather-problem">The weather problem</h2>
+
+<p>The equation turns <em>pressure differences</em> into <em>height differences</em>. Between two readings taken minutes apart, the pressure difference is almost entirely height. Between readings hours apart, it’s height plus whatever the weather did. Pressure changes of a few hectopascals over a few hours are ordinary as weather systems pass, and each hectopascal is worth 8.3 m.</p>
+
+<p>The simulation below models a building visit, sampled once per second:</p>
+
+<ul>
+  <li>2 minutes standing in the lobby.</li>
+  <li>A climb of 3 floors by stairs, at 0.25 m/s.</li>
+  <li>20 minutes working.</li>
+  <li>An elevator ride down 4 floors, to the basement, at 2 m/s.</li>
+  <li>5 minutes standing.</li>
+</ul>
+
+<p>Floors are 3 m apart, as Apple’s documentation assumes for <code class="language-plaintext highlighter-rouge">floorsAscended</code>. The barometer has 0.012 hPa of noise, about 0.1 m, and the weather lowers pressure at a steady 1 hPa per hour. Both values are illustrative.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A visit to a building, sampled once per second: true height in meters, and the barometer's relative altitude,</span>
+<span class="c1">/// which also sees the weather. Floors are 3 m apart. Illustrative numbers: 0.012 hPa of noise (about 0.1 m),</span>
+<span class="c1">/// and sea-level pressure falling 1 hPa per hour.</span>
+<span class="kd">struct</span> <span class="kt">BuildingVisit</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">trueHeight</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">relativeAltitude</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">floors</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">simulateVisit</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">BuildingVisit</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">visit</span> <span class="o">=</span> <span class="kt">BuildingVisit</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">height</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="c1">// (seconds, vertical speed in m/s): stand, climb 3 floors by stairs, work, take the elevator down 4, stand.</span>
+    <span class="k">let</span> <span class="nv">plan</span><span class="p">:</span> <span class="p">[(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">120</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">),</span> <span class="p">(</span><span class="mi">1_200</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">),</span> <span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="k">let</span> <span class="nv">p0</span> <span class="o">=</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">t</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">speed</span><span class="p">)</span> <span class="k">in</span> <span class="n">plan</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">speed</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span> <span class="n">visit</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">t</span><span class="p">,</span> <span class="kt">Int</span><span class="p">((</span><span class="kt">Double</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="n">speed</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">())))</span> <span class="p">}</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">seconds</span> <span class="p">{</span>
+            <span class="n">height</span> <span class="o">+=</span> <span class="n">speed</span>
+            <span class="k">let</span> <span class="nv">weather</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3_600</span>                       <span class="c1">// hPa change since the start</span>
+            <span class="k">let</span> <span class="nv">pressure</span> <span class="o">=</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">pressure</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="n">height</span><span class="p">)</span> <span class="o">+</span> <span class="n">weather</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="o">*</span> <span class="mf">0.012</span>
+            <span class="n">visit</span><span class="o">.</span><span class="n">trueHeight</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
+            <span class="n">visit</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">heightDifference</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">p0</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">pressure</span><span class="p">,</span> <span class="nv">meanTemperature</span><span class="p">:</span> <span class="mf">288.15</span><span class="p">))</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">visit</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">visit</span> <span class="o">=</span> <span class="nf">simulateVisit</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">9</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">naiveFloor</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">((</span><span class="n">visit</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="o">.</span><span class="n">last</span><span class="o">!</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">())</span>
+<span class="k">let</span> <span class="nv">trueFloor</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">((</span><span class="n">visit</span><span class="o">.</span><span class="n">trueHeight</span><span class="o">.</span><span class="n">last</span><span class="o">!</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"after"</span><span class="p">,</span> <span class="n">visit</span><span class="o">.</span><span class="n">trueHeight</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"s: true floor"</span><span class="p">,</span> <span class="n">trueFloor</span><span class="p">,</span> <span class="s">"relative altitude"</span><span class="p">,</span> <span class="n">visit</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="o">.</span><span class="n">last</span><span class="o">!</span><span class="p">,</span> <span class="s">"naive floor"</span><span class="p">,</span> <span class="n">naiveFloor</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>After 1,662 seconds, the user was on floor −1, the basement. The relative altitude said +0.85 m, which rounds to the lobby. The weather had added 3.85 m of apparent climb in 28 minutes, enough to cancel more than a floor. Any feature that reads “current floor” from <code class="language-plaintext highlighter-rouge">relativeAltitude</code> directly is wrong within the hour, and the error grows for as long as the session runs.</p>
+
+<h2 id="counting-only-fast-changes">Counting only fast changes</h2>
+
+<p>The two signals differ in speed. Stairs move the user at about 0.25 m/s and elevators at a few meters per second. The weather in this scenario moves apparent height at 1 hPa × 8.3 m/hPa per hour, or 0.0023 m/s, about a hundred times slower than stairs. A floor counter can look only at stretches where the height changes faster than a threshold, measure each stretch’s total change, round it to whole floors, and ignore everything between stretches:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Counts floor changes from relative altitude by looking only at the moments the height is changing fast.</span>
+<span class="c1">/// Slow drift between those moments is weather, and it's ignored.</span>
+<span class="kd">struct</span> <span class="kt">FloorCounter</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">floorHeight</span> <span class="o">=</span> <span class="mf">3.0</span>
+    <span class="k">var</span> <span class="nv">movingRate</span> <span class="o">=</span> <span class="mf">0.1</span>          <span class="c1">// m/s over a 10 s window; weather of 1 hPa/h is about 0.0023 m/s</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">floor</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">transitions</span><span class="p">:</span> <span class="p">[(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">floors</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">altitude</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">])</span> <span class="p">{</span>
+        <span class="c1">// Smooth over 5 s, then compare each point with the one 10 s earlier.</span>
+        <span class="k">let</span> <span class="nv">smoothed</span> <span class="o">=</span> <span class="n">altitude</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">window</span> <span class="o">=</span> <span class="n">altitude</span><span class="p">[</span><span class="nf">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span><span class="o">...</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">window</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">segmentStart</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">10</span><span class="o">..&lt;</span><span class="n">smoothed</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">rate</span> <span class="o">=</span> <span class="p">(</span><span class="n">smoothed</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">smoothed</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">10</span><span class="p">])</span> <span class="o">/</span> <span class="mi">10</span>
+            <span class="k">let</span> <span class="nv">moving</span> <span class="o">=</span> <span class="nf">abs</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">movingRate</span>
+            <span class="k">if</span> <span class="n">moving</span><span class="p">,</span> <span class="n">segmentStart</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span> <span class="n">segmentStart</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">15</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">if</span> <span class="o">!</span><span class="n">moving</span><span class="p">,</span> <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">segmentStart</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="mi">20</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">change</span> <span class="o">=</span> <span class="n">smoothed</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">smoothed</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+                <span class="k">let</span> <span class="nv">floors</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">((</span><span class="n">change</span> <span class="o">/</span> <span class="n">floorHeight</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">floors</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span> <span class="n">transitions</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">floors</span><span class="p">));</span> <span class="n">floor</span> <span class="o">+=</span> <span class="n">floors</span> <span class="p">}</span>
+                <span class="n">segmentStart</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">counter</span> <span class="o">=</span> <span class="kt">FloorCounter</span><span class="p">()</span>
+<span class="n">counter</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="n">visit</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"events"</span><span class="p">,</span> <span class="n">visit</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">floors</span><span class="se">)</span><span class="s"> at </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="se">)</span><span class="s"> s"</span> <span class="p">},</span> <span class="s">"detected"</span><span class="p">,</span> <span class="n">counter</span><span class="o">.</span><span class="n">transitions</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">floors</span><span class="se">)</span><span class="s"> at </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="se">)</span><span class="s"> s"</span> <span class="p">},</span> <span class="s">"floor"</span><span class="p">,</span> <span class="n">counter</span><span class="o">.</span><span class="n">floor</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">floor</span> <span class="o">==</span> <span class="n">trueFloor</span> <span class="o">&amp;&amp;</span> <span class="n">naiveFloor</span> <span class="o">!=</span> <span class="n">trueFloor</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">drift</span> <span class="o">=</span> <span class="n">visit</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="o">.</span><span class="n">last</span><span class="o">!</span> <span class="o">-</span> <span class="n">visit</span><span class="o">.</span><span class="n">trueHeight</span><span class="o">.</span><span class="n">last</span><span class="o">!</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"weather drift after </span><span class="se">\(</span><span class="n">visit</span><span class="o">.</span><span class="n">trueHeight</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> s:"</span><span class="p">,</span> <span class="n">drift</span><span class="p">,</span> <span class="s">"m"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The counter found both events, +3 floors at 111 s and −4 at 1,342 s, slightly before their true start times because it backs up 15 seconds to catch the beginning of the motion. It ended on floor −1. The 20 minutes of drift between the two trips didn’t matter, because the counter never looked at it.</p>
+
+<p>The thresholds are trade-offs, and they’re easy to state. Weather faster than the moving rate, 0.1 m/s, would be counted as climbing: that’s 43 hPa per hour, so it never happens. A ramp shallower than the threshold, such as a long, gentle walkway, wouldn’t count as moving. Over a long climb, the drift inside the moving stretch adds a fraction of a meter, which rounding to whole floors absorbs. Pressure changes from doors and ventilation are quick but small, and the minimum stretch duration of 20 seconds filters most of them.</p>
+
+<p>Wind is a different matter. Air moving across a pressure port changes the pressure the port sees, by up to the <em>dynamic pressure</em> $q = \tfrac{1}{2}\rho v^2$:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// GPS altitude errors are correlated in time. Model them as a first-order Gauss-Markov process:</span>
+<span class="c1">/// each second's error keeps a fraction exp(-1/τ) of the last one, with a stationary spread of `sigma`.</span>
+<span class="kd">func</span> <span class="nf">gpsAltitudeErrors</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">correlationTime</span> <span class="nv">tau</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">using</span> <span class="nv">random</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">SeededGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">phi</span> <span class="o">=</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="n">tau</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">error</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="o">*</span> <span class="n">sigma</span>
+    <span class="k">var</span> <span class="nv">errors</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">seconds</span> <span class="p">{</span>
+        <span class="n">errors</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="n">phi</span> <span class="o">*</span> <span class="n">error</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">phi</span> <span class="o">*</span> <span class="n">phi</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">errors</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">gpsRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sigma</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">tau</span> <span class="o">=</span> <span class="mf">60.0</span>
+<span class="k">for</span> <span class="n">window</span> <span class="k">in</span> <span class="p">[</span><span class="mi">60</span><span class="p">,</span> <span class="mi">600</span><span class="p">,</span> <span class="mi">3_600</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">squares</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">let</span> <span class="nv">trials</span> <span class="o">=</span> <span class="mi">2_000</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">trials</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">errors</span> <span class="o">=</span> <span class="nf">gpsAltitudeErrors</span><span class="p">(</span><span class="nv">seconds</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">:</span> <span class="n">sigma</span><span class="p">,</span> <span class="nv">correlationTime</span><span class="p">:</span> <span class="n">tau</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">gpsRandom</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">mean</span> <span class="o">=</span> <span class="n">errors</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+        <span class="n">squares</span> <span class="o">+=</span> <span class="n">mean</span> <span class="o">*</span> <span class="n">mean</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">simulated</span> <span class="o">=</span> <span class="p">(</span><span class="n">squares</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">trials</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">independent</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+    <span class="c1">// Exact variance of the mean of an AR(1) process, and its large-window approximation σ·sqrt(2τ/T).</span>
+    <span class="k">let</span> <span class="nv">phi</span> <span class="o">=</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="n">tau</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">n</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">factor</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="k">in</span> <span class="mi">1</span><span class="o">..&lt;</span><span class="n">window</span> <span class="p">{</span> <span class="n">factor</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="kt">Double</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="nf">pow</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="kt">Double</span><span class="p">(</span><span class="n">k</span><span class="p">))</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">exact</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="p">(</span><span class="n">factor</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%5d s: simulated %.2f m, formula %.2f m, approximation %.2f m, if independent %.2f m"</span><span class="p">,</span>
+                 <span class="n">window</span><span class="p">,</span> <span class="n">simulated</span><span class="p">,</span> <span class="n">exact</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tau</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">(),</span> <span class="n">independent</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Wind on the port</th>
+      <th>Pressure</th>
+      <th>Apparent height</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>5 m/s</td>
+      <td>0.15 hPa</td>
+      <td>1.3 m</td>
+    </tr>
+    <tr>
+      <td>10 m/s</td>
+      <td>0.61 hPa</td>
+      <td>5.1 m</td>
+    </tr>
+    <tr>
+      <td>20 m/s</td>
+      <td>2.45 hPa</td>
+      <td>20.4 m</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These are upper bounds for wind blowing straight into the port. A phone in a pocket sees much less, and how much depends on the case and the pocket. But gusts are fast, so a 10 m/s gust can look like two floors of elevator. Outdoors, floor counting is the wrong question, and the elevation features of outdoor apps combine the barometer with GPS instead.</p>
+
+<h2 id="absolute-altitude-and-averaging-that-doesnt-average">Absolute altitude, and averaging that doesn’t average</h2>
+
+<p>Absolute altitude needs a reference: the barometer measures height <em>differences</em>, so something must say where zero is. A natural approach is to use GPS altitude as that reference and average it to beat its noise. Averaging $N$ independent samples divides the error by $\sqrt N$, so 600 samples of a GPS altitude with 10 m of error should give 0.41 m.</p>
+
+<p>They don’t, because GPS errors aren’t independent from second to second. They come from satellite geometry and atmospheric delays that change over minutes. A standard model is the first-order Gauss-Markov process, in which each second’s error keeps a fraction $\varphi = e^{-1/\tau}$ of the previous one, for a correlation time $\tau$. For that process, the variance of the mean of $N$ samples is</p>
+
+\[\operatorname{Var}(\bar e) = \frac{\sigma^2}{N} \left[ 1 + 2\sum_{k=1}^{N-1} \Big(1 - \frac{k}{N}\Big)\varphi^k \right] \approx \sigma^2\, \frac{2\tau}{T} \quad \text{for } T \gg \tau ,\]
+
+<p>where $T = N\Delta t$ is the averaging time. Roughly, a correlated series of length $T$ contains only $T / 2\tau$ independent samples. With $\sigma = 10$ m and an illustrative $\tau = 60$ s:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Wind blowing into a pressure port adds dynamic pressure q = ½ρv². How tall does it make the user look?</span>
+<span class="k">let</span> <span class="nv">airDensity</span> <span class="o">=</span> <span class="mf">1.225</span>   <span class="c1">// kg/m³ at 15 °C, sea level</span>
+<span class="k">for</span> <span class="n">speed</span> <span class="k">in</span> <span class="p">[</span><span class="mf">5.0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">pascals</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">airDensity</span> <span class="o">*</span> <span class="n">speed</span> <span class="o">*</span> <span class="n">speed</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%2.0f m/s wind: %.0f Pa = %.2f hPa ≈ %.1f m"</span><span class="p">,</span> <span class="n">speed</span><span class="p">,</span> <span class="n">pascals</span><span class="p">,</span> <span class="n">pascals</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>
+                 <span class="n">pascals</span> <span class="o">/</span> <span class="mi">100</span> <span class="o">*</span> <span class="kt">Atmosphere</span><span class="o">.</span><span class="nf">metersPerHectopascal</span><span class="p">(</span><span class="nv">atAltitude</span><span class="p">:</span> <span class="mi">0</span><span class="p">)))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Averaging time</th>
+      <th>Simulated error</th>
+      <th>Exact formula</th>
+      <th>$\sigma\sqrt{2\tau/T}$</th>
+      <th>If samples were independent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 minute</td>
+      <td>8.55 m</td>
+      <td>8.58 m</td>
+      <td>14.14 m</td>
+      <td>1.29 m</td>
+    </tr>
+    <tr>
+      <td>10 minutes</td>
+      <td>4.43 m</td>
+      <td>4.24 m</td>
+      <td>4.47 m</td>
+      <td>0.41 m</td>
+    </tr>
+    <tr>
+      <td>1 hour</td>
+      <td>1.84 m</td>
+      <td>1.81 m</td>
+      <td>1.83 m</td>
+      <td>0.17 m</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The simulation agreed with the exact formula to within 5% at every length. The independent-sample formula was off by a factor of 7 to 11. The approximation is useless for a one-minute average, where $T$ is barely longer than $\tau$: it predicts 14 m, more than the 10 m error of a single sample, which is impossible. It’s good for longer averages. The practical consequence: when an app calibrates the barometer against GPS, the uncertainty of the calibration falls with the square root of <em>minutes</em>, not of samples, and an hour of GPS buys a couple of meters. <code class="language-plaintext highlighter-rouge">CMAbsoluteAltitudeData.accuracy</code> reports Core Motion’s own estimate of this uncertainty as a one-sigma value, which is the number to show.</p>
+
+<h2 id="receiving-altitude-in-swift-6">Receiving altitude in Swift 6</h2>
+
+<p>The altimeter wrapper follows the pattern from the earlier articles: an availability check, a handler from a <code class="language-plaintext highlighter-rouge">nonisolated</code> factory, <code class="language-plaintext highlighter-rouge">Sendable</code> samples, and the pressure converted from kilopascals to hectopascals at the boundary. The test grants motion access first:</p>
+
+<!-- sim-setup -->
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun simctl privacy booted grant motion dev.swiftbydeya.Host
+</code></pre></div></div>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">CoreMotion</span>
+
+<span class="kd">struct</span> <span class="kt">AltitudeSample</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">TimeInterval</span>
+    <span class="k">var</span> <span class="nv">relativeAltitude</span><span class="p">:</span> <span class="kt">Double</span>    <span class="c1">// meters since the first sample</span>
+    <span class="k">var</span> <span class="nv">pressure</span><span class="p">:</span> <span class="kt">Double</span>            <span class="c1">// hPa (Core Motion reports kilopascals)</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">AltimeterService</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">altimeter</span> <span class="o">=</span> <span class="kt">CMAltimeter</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">OperationQueue</span><span class="p">()</span>
+
+    <span class="kd">func</span> <span class="nf">relativeAltitudes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">AltitudeSample</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncThrowingStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">AltitudeSample</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">throwing</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="kt">CMAltimeter</span><span class="o">.</span><span class="nf">isRelativeAltitudeAvailable</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">stream</span>
+        <span class="p">}</span>
+        <span class="n">altimeter</span><span class="o">.</span><span class="nf">startRelativeAltitudeUpdates</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">queue</span><span class="p">,</span> <span class="nv">withHandler</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="nf">handler</span><span class="p">(</span><span class="n">continuation</span><span class="p">))</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">altimeter</span><span class="o">.</span><span class="nf">stopRelativeAltitudeUpdates</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">nonisolated</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">handler</span><span class="p">(</span><span class="n">_</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">AltitudeSample</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CMAltitudeHandler</span> <span class="p">{</span>
+        <span class="p">{</span> <span class="n">data</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span> <span class="k">return</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">data</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="kt">AltitudeSample</span><span class="p">(</span><span class="nv">timestamp</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="nv">relativeAltitude</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">relativeAltitude</span><span class="o">.</span><span class="n">doubleValue</span><span class="p">,</span>
+                                              <span class="nv">pressure</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">doubleValue</span> <span class="o">*</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">CMAltimeter</span><span class="o">.</span><span class="nf">authorizationStatus</span><span class="p">()</span> <span class="o">==</span> <span class="o">.</span><span class="n">authorized</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">CMAltimeter</span><span class="o">.</span><span class="nf">isRelativeAltitudeAvailable</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="kt">CMAltimeter</span><span class="o">.</span><span class="nf">isAbsoluteAltitudeAvailable</span><span class="p">())</span>
+<span class="k">let</span> <span class="nv">altimeterService</span> <span class="o">=</span> <span class="kt">AltimeterService</span><span class="p">()</span>   <span class="c1">// must outlive the stream; see below</span>
+<span class="k">var</span> <span class="nv">altitudeSamples</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">altimeterService</span><span class="o">.</span><span class="nf">relativeAltitudes</span><span class="p">()</span> <span class="p">{</span> <span class="n">altitudeSamples</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">altitudeSamples</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the simulator, neither altitude service is available, so the stream finishes immediately, which is the <a href="/ios-sensor-availability/#what-happens-when-you-start-anyway">availability check</a> doing its job, since a start call there “does nothing”.</p>
+
+<p>One line in the test is there because of a compiler warning. The first version iterated <code class="language-plaintext highlighter-rouge">AltimeterService().relativeAltitudes()</code> directly, and Swift 6.4 warned: “weak reference will always be nil because the referenced object is deallocated here.” The service was a temporary, so it, and the <code class="language-plaintext highlighter-rouge">CMAltimeter</code> it owned, would be deallocated as soon as the stream was created. On a device, updates would have stopped at once, without any error. The fix is to keep the service alive for as long as the stream is consumed. The <a href="/ios-sensor-stopping-updates/">stopping updates article</a> treats ownership and lifetime properly.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Relative altitude is in meters since the first event. Pressure is in kilopascals, ten times hectopascals. Absolute altitude, on iPhone 12 and later, comes with a one-sigma <code class="language-plaintext highlighter-rouge">accuracy</code> and a display <code class="language-plaintext highlighter-rouge">precision</code>.</li>
+  <li>The hypsometric equation turns pressure ratios into height, with a scale height of 8,435 m at 15 °C: 8.32 m per hPa at sea level, 11.22 m per hPa at 3,000 m.</li>
+  <li>The conversion depends on air temperature, at about 0.35% per kelvin. That doesn’t matter for floors, but it does for summed ascent.</li>
+  <li>Weather drift is indistinguishable from climbing. 1 hPa per hour put a simulated user on the wrong floor within 28 minutes.</li>
+  <li>Counting only fast height changes, and rounding each one to whole floors, ignores drift between them. The simulated counter got both trips and the final floor right.</li>
+  <li>Wind on the pressure port can mimic meters of height, up to 5 m for a 10 m/s wind into the port, so floor counting is an indoor feature.</li>
+  <li>Averaging correlated GPS altitude gains $\sqrt{T/2\tau}$, not $\sqrt N$: ten minutes cut 10 m to 4.4 m, not to 0.41 m.</li>
+  <li>Keep the object that owns a <code class="language-plaintext highlighter-rouge">CMAltimeter</code> alive for as long as its stream runs. Swift 6.4 warns when it can see the mistake.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Turn <code class="language-plaintext highlighter-rouge">FloorCounter</code> into a streaming type that consumes <code class="language-plaintext highlighter-rouge">AltitudeSample</code> values one at a time and publishes the current floor. Then make it robust to a missed transition: when the counter has been still for ten minutes and its accumulated relative altitude, corrected for the floors it counted, differs from a whole number of floors by more than 1.5 m, flag the floor as uncertain rather than silently guessing. Test it against <code class="language-plaintext highlighter-rouge">simulateVisit</code> with the weather drift raised to 3 hPa per hour, and with a second, slower elevator.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/coremotion/cmaltimeter"><code class="language-plaintext highlighter-rouge">CMAltimeter</code></a>, <a href="https://developer.apple.com/documentation/coremotion/cmaltitudedata"><code class="language-plaintext highlighter-rouge">CMAltitudeData</code></a>, and <a href="https://developer.apple.com/documentation/coremotion/cmabsolutealtitudedata"><code class="language-plaintext highlighter-rouge">CMAbsoluteAltitudeData</code></a></li>
+  <li>NOAA’s <a href="https://www.ngdc.noaa.gov/stp/space-weather/online-publications/miscellaneous/us-standard-atmosphere-1976/us-standard-atmosphere_st76-1562_noaa.pdf">U.S. Standard Atmosphere, 1976</a>, the reference for the standard-atmosphere constants used here</li>
+  <li>Arthur Gelb (ed.), <em>Applied Optimal Estimation</em>, MIT Press, 1974, on Gauss-Markov error models and why correlated errors average slowly</li>
+</ul>
+
+<p>Previous: <a href="/ios-pedometer-activity/">Pedometer Data and Activity Recognition</a></p>
+
+<p>Next: <a href="/ios-sensor-sampling-filtering/">Sampling Rates, Noise, Filtering, and Drift</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/ios-altimeter-pressure/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Altitude%2C+Pressure%2C+and+Relative+Measurements%20http%3A%2F%2Flocalhost%3A4000%2Fios-altimeter-pressure%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/ios-altimeter-pressure/&title=Altitude%2C+Pressure%2C+and+Relative+Measurements%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/ios-altimeter-pressure/&title=Altitude%2C+Pressure%2C+and+Relative+Measurements%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/ios-altimeter-pressure/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Altitude, Pressure, and Relative Measurements%20%7C%20Swift By Deya&body=http://localhost:4000/ios-altimeter-pressure/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Physics">Physics</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Sampling Rates, Noise, Filtering, and Drift" href="/ios-sensor-sampling-filtering/"> <p>Previous post</p> Sampling Rates, Noise, Filtering, and Drift </a> </div> <div id="next-post"> <a alt="Pedometer Data and Activity Recognition" href="/ios-pedometer-activity/"> <p>Next post</p> Pedometer Data and Activity Recognition </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

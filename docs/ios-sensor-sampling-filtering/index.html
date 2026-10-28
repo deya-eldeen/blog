@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Sampling Rates, Noise, Filtering, and Drift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Sampling Rates, Noise, Filtering, and Drift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every sensor feature is a small signal-processing pipeline, whether or not its author thinks of it that way. A rate is chosen, samples arrive with timestamps, something smooths them, and something interprets the result. Each of those steps can quietly add a bug. A 60 Hz vibration sampled at 50 Hz turns into a 10 Hz wobble that no filter can remove afterwards. Three dropped samples cost 2.7° from an integrated angle. A smoothing filter that looks fine can add 73 ms of lag to a control. And a gyroscope bias that wanders turns a heading into a guess within minutes. This article works through the pipeline in order: choosing a rate and the aliasing that punishes a wrong one, trusting timestamps rather than nominal intervals, choosing a filter by its measured frequency response and delay, characterizing a sensor’s noise with the Allan variance, and controlling drift with rest detection. Every filter’s measured gain and delay is checked against its textbook formula, and the Allan variance of a simulated gyroscope recovers its noise parameter to within 1%." /> <meta property="og:description" content="Every sensor feature is a small signal-processing pipeline, whether or not its author thinks of it that way. A rate is chosen, samples arrive with timestamps, something smooths them, and something interprets the result. Each of those steps can quietly add a bug. A 60 Hz vibration sampled at 50 Hz turns into a 10 Hz wobble that no filter can remove afterwards. Three dropped samples cost 2.7° from an integrated angle. A smoothing filter that looks fine can add 73 ms of lag to a control. And a gyroscope bias that wanders turns a heading into a guess within minutes. This article works through the pipeline in order: choosing a rate and the aliasing that punishes a wrong one, trusting timestamps rather than nominal intervals, choosing a filter by its measured frequency response and delay, characterizing a sensor’s noise with the Allan variance, and controlling drift with rest detection. Every filter’s measured gain and delay is checked against its textbook formula, and the Allan variance of a simulated gyroscope recovers its noise parameter to within 1%." /> <link rel="canonical" href="http://localhost:4000/ios-sensor-sampling-filtering/" /> <meta property="og:url" content="http://localhost:4000/ios-sensor-sampling-filtering/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-23T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Sampling Rates, Noise, Filtering, and Drift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-23T00:00:00+03:00","datePublished":"2026-02-23T00:00:00+03:00","description":"Every sensor feature is a small signal-processing pipeline, whether or not its author thinks of it that way. A rate is chosen, samples arrive with timestamps, something smooths them, and something interprets the result. Each of those steps can quietly add a bug. A 60 Hz vibration sampled at 50 Hz turns into a 10 Hz wobble that no filter can remove afterwards. Three dropped samples cost 2.7° from an integrated angle. A smoothing filter that looks fine can add 73 ms of lag to a control. And a gyroscope bias that wanders turns a heading into a guess within minutes. This article works through the pipeline in order: choosing a rate and the aliasing that punishes a wrong one, trusting timestamps rather than nominal intervals, choosing a filter by its measured frequency response and delay, characterizing a sensor’s noise with the Allan variance, and controlling drift with rest detection. Every filter’s measured gain and delay is checked against its textbook formula, and the Allan variance of a simulated gyroscope recovers its noise parameter to within 1%.","headline":"Sampling Rates, Noise, Filtering, and Drift","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ios-sensor-sampling-filtering/"},"url":"http://localhost:4000/ios-sensor-sampling-filtering/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Sampling Rates, Noise, Filtering, and Drift"> <meta name="twitter:description" content="Every sensor feature is a small signal-processing pipeline, whether or not its author thinks of it that way. A rate is chosen, samples arrive with timestamps..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Sampling Rates, Noise, Filtering, and Drift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Sampling Rates, Noise, Filtering, and Drift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-23T00:00:00+03:00">February 23, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every sensor feature is a small signal-processing pipeline, whether or not its author thinks of it that way. A rate is chosen, samples arrive with timestamps, something smooths them, and something interprets the result. Each of those steps can quietly add a bug. A 60 Hz vibration sampled at 50 Hz turns into a 10 Hz wobble that no filter can remove afterwards. Three dropped samples cost 2.7° from an integrated angle. A smoothing filter that looks fine can add 73 ms of lag to a control. And a gyroscope bias that wanders turns a heading into a guess within minutes.</p>
+
+<p>This article works through the pipeline in order: choosing a rate and the aliasing that punishes a wrong one, trusting timestamps rather than nominal intervals, choosing a filter by its measured frequency response and delay, characterizing a sensor’s noise with the Allan variance, and controlling drift with rest detection. Every filter’s measured gain and delay is checked against its textbook formula, and the Allan variance of a simulated gyroscope recovers its noise parameter to within 1%.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. They ran as a macOS command-line program on macOS 26, because everything here is plain Swift and Accelerate, and it applies unchanged to samples from <code class="language-plaintext highlighter-rouge">CMMotionManager</code>. Simulated signals use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>. Timings come from an optimized build, as noted where they appear.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Accelerate</span>
+</code></pre></div></div>
+
+<h2 id="choosing-a-rate-and-aliasing">Choosing a rate, and aliasing</h2>
+
+<p>Core Motion lets an app choose an update interval, and Apple’s documentation says the maximum “is hardware-dependent but is usually at least 100 Hz.” Lower rates save power and work. But a sampled signal can only represent frequencies below half the sampling rate, the <em>Nyquist frequency</em> $f_s/2$. Anything faster doesn’t disappear. It folds back and masquerades as a slower signal at</p>
+
+\[f_{\text{alias}} = \big\lvert f - k f_s \big\rvert \quad\text{for the integer } k \text{ that brings it into } [0, f_s/2] .\]
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// The frequency an oscillation at `f` appears at when sampled at `rate` (folding about multiples of the rate).</span>
+<span class="kd">func</span> <span class="nf">aliasFrequency</span><span class="p">(</span><span class="n">of</span> <span class="nv">f</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">sampledAt</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">folded</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="nf">truncatingRemainder</span><span class="p">(</span><span class="nv">dividingBy</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nf">min</span><span class="p">(</span><span class="n">folded</span><span class="p">,</span> <span class="n">rate</span> <span class="o">-</span> <span class="n">folded</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Finds the dominant frequency of a sampled signal by correlating it with sines and cosines on a fine grid.</span>
+<span class="kd">func</span> <span class="nf">dominantFrequency</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">upTo</span> <span class="nv">maximum</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">best</span> <span class="o">=</span> <span class="p">(</span><span class="nv">frequency</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">power</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="k">in</span> <span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nv">through</span><span class="p">:</span> <span class="n">maximum</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">c</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">in</span> <span class="n">x</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">phase</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span>
+            <span class="n">c</span> <span class="o">+=</span> <span class="n">v</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">phase</span><span class="p">);</span> <span class="n">s</span> <span class="o">+=</span> <span class="n">v</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">*</span> <span class="n">c</span> <span class="o">+</span> <span class="n">s</span> <span class="o">*</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="n">best</span><span class="o">.</span><span class="n">power</span> <span class="p">{</span> <span class="n">best</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">c</span> <span class="o">*</span> <span class="n">c</span> <span class="o">+</span> <span class="n">s</span> <span class="o">*</span> <span class="n">s</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">best</span><span class="o">.</span><span class="n">frequency</span>
+<span class="p">}</span>
+
+<span class="c1">// A motor vibrating at 60 Hz, as an accelerometer would sample it at 50 Hz and at 200 Hz.</span>
+<span class="k">let</span> <span class="nv">vibration</span> <span class="o">=</span> <span class="p">{</span> <span class="p">(</span><span class="nv">t</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="k">in</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">at50</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">500</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">vibration</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">at200</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">vibration</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">200</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"sampled at 50 Hz, the 60 Hz vibration appears at"</span><span class="p">,</span> <span class="nf">dominantFrequency</span><span class="p">(</span><span class="n">at50</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="nv">upTo</span><span class="p">:</span> <span class="mi">25</span><span class="p">),</span> <span class="s">"Hz; predicted"</span><span class="p">,</span> <span class="nf">aliasFrequency</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="nv">sampledAt</span><span class="p">:</span> <span class="mi">50</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"sampled at 200 Hz it appears at"</span><span class="p">,</span> <span class="nf">dominantFrequency</span><span class="p">(</span><span class="n">at200</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">upTo</span><span class="p">:</span> <span class="mi">100</span><span class="p">),</span> <span class="s">"Hz"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">dominantFrequency</span><span class="p">(</span><span class="n">at50</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="nv">upTo</span><span class="p">:</span> <span class="mi">25</span><span class="p">)</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.06</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A phone on a car’s dashboard picks up engine and road vibration at tens of hertz. Sampled at 50 Hz, a 60 Hz vibration appeared as a clean 10 Hz oscillation, exactly as the formula predicts. Sampled at 200 Hz, it appeared at its true 60 Hz. The damage is permanent, because after sampling, a real 10 Hz motion and an aliased 60 Hz vibration are the same numbers. No filter applied later can separate them. Dedicated sensor chips usually filter before sampling, but the rate an app requests from Core Motion may be a decimation of the hardware’s own, and nothing in the documentation promises how that decimation filters.</p>
+
+<p>So choose the rate from the fastest motion that matters, not the slowest. A step detector needs the 1 to 4 Hz of gait, and 50 Hz leaves plenty of margin. A vibration or impact detector needs the full rate the hardware offers. A tilt control only needs to track hand motion, so 30 to 60 Hz is enough, provided nothing in the environment vibrates near the chosen rate.</p>
+
+<h2 id="trust-timestamps-not-the-nominal-interval">Trust timestamps, not the nominal interval</h2>
+
+<p>The interval property is a request. Apple’s documentation for <code class="language-plaintext highlighter-rouge">accelerometerUpdateInterval</code> says the value “is capped to minimum and maximum values,” and that an app sensitive to timing “should always check the timestamps … to determine the true update interval.” Samples also arrive with jitter, and a busy queue can lose some. A gyroscope turning at a steady 90°/s for 2 seconds, sampled at 100 Hz with 1 ms of jitter and three samples lost, shows what that costs:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TimedSample</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">;</span> <span class="k">var</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">}</span>
+
+<span class="c1">// 2 s of a gyroscope turning at a steady 90°/s, nominally at 100 Hz, with 1 ms of timing jitter</span>
+<span class="c1">// and three dropped samples, the way a busy queue loses them.</span>
+<span class="k">var</span> <span class="nv">timing</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">11</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="k">where</span> <span class="o">!</span><span class="p">[</span><span class="mi">37</span><span class="p">,</span> <span class="mi">38</span><span class="p">,</span> <span class="mi">121</span><span class="p">]</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">samples</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">TimedSample</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span> <span class="o">+</span> <span class="n">timing</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="o">*</span> <span class="mf">0.001</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="mi">90</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">/// The interval between samples as the timestamps report it: the median, which ignores gaps.</span>
+<span class="kd">func</span> <span class="nf">medianInterval</span><span class="p">(</span><span class="n">_</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">intervals</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(),</span> <span class="n">samples</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="nv">$1</span><span class="o">.</span><span class="n">time</span> <span class="p">}</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">intervals</span><span class="p">[</span><span class="n">intervals</span><span class="o">.</span><span class="n">count</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]</span>
+<span class="p">}</span>
+<span class="c1">/// Indices after which at least one sample is missing.</span>
+<span class="kd">func</span> <span class="nf">gaps</span><span class="p">(</span><span class="k">in</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">],</span> <span class="nv">nominal</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nf">zip</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(),</span> <span class="n">samples</span><span class="p">)</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="nv">$0</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">nominal</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">nominal</span> <span class="o">=</span> <span class="nf">medianInterval</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"median interval"</span><span class="p">,</span> <span class="n">nominal</span><span class="p">,</span> <span class="s">"gaps after samples"</span><span class="p">,</span> <span class="nf">gaps</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="n">samples</span><span class="p">,</span> <span class="nv">nominal</span><span class="p">:</span> <span class="n">nominal</span><span class="p">))</span>
+
+<span class="c1">// Integrate the rate to an angle, once assuming every sample is 10 ms apart, once using the timestamps.</span>
+<span class="k">let</span> <span class="nv">byIndex</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">0.01</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">byTime</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(),</span> <span class="n">samples</span><span class="p">)</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="p">(</span><span class="nv">$1</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="nv">$1</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="p">}</span> <span class="o">+</span> <span class="n">samples</span><span class="o">.</span><span class="n">last</span><span class="o">!.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">0.01</span>
+<span class="k">let</span> <span class="nv">truth</span> <span class="o">=</span> <span class="mi">90</span> <span class="o">*</span> <span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">last</span><span class="o">!.</span><span class="n">time</span> <span class="o">+</span> <span class="mf">0.01</span> <span class="o">-</span> <span class="n">samples</span><span class="o">.</span><span class="n">first</span><span class="o">!.</span><span class="n">time</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"angle by index"</span><span class="p">,</span> <span class="n">byIndex</span><span class="p">,</span> <span class="s">"by timestamps"</span><span class="p">,</span> <span class="n">byTime</span><span class="p">,</span> <span class="s">"truth"</span><span class="p">,</span> <span class="n">truth</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">byTime</span> <span class="o">-</span> <span class="n">truth</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">byIndex</span> <span class="o">-</span> <span class="n">truth</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">2.5</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The median interval, 9.93 ms, ignores the gaps and recovers the true rate. Comparing each interval with 1.5 times the median found both gaps, after samples 36 and 118, one of them two samples long. Integrating with a fixed 10 ms per sample gave 177.3°. Integrating with the actual time differences gave 180.07°, which matched the truth. The three lost samples cost 2.7° because nothing noticed they were missing.</p>
+
+<p>Filters such as the ones below assume uniform spacing. When the spacing isn’t uniform, resample onto a uniform grid first. Linear interpolation is exact for a signal that changes linearly between samples, as the angle here does:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Linear resampling onto a uniform grid, so filters that assume a fixed interval see one.</span>
+<span class="kd">func</span> <span class="nf">resample</span><span class="p">(</span><span class="n">_</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">],</span> <span class="n">every</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">output</span><span class="p">:</span> <span class="p">[</span><span class="kt">TimedSample</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">j</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">t</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">first</span><span class="o">!.</span><span class="n">time</span>
+    <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="n">samples</span><span class="o">.</span><span class="n">last</span><span class="o">!.</span><span class="n">time</span> <span class="p">{</span>
+        <span class="k">while</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">t</span> <span class="p">{</span> <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">a</span><span class="p">,</span> <span class="nv">b</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">let</span> <span class="nv">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">TimedSample</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">value</span><span class="p">)))</span>
+        <span class="n">t</span> <span class="o">+=</span> <span class="n">interval</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">output</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ramp</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">TimedSample</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="mi">90</span> <span class="o">*</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="p">}</span>   <span class="c1">// the angle itself, which grows linearly</span>
+<span class="k">let</span> <span class="nv">uniform</span> <span class="o">=</span> <span class="nf">resample</span><span class="p">(</span><span class="n">ramp</span><span class="p">,</span> <span class="nv">every</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">worst</span> <span class="o">=</span> <span class="n">uniform</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="mi">90</span> <span class="o">*</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"resampled"</span><span class="p">,</span> <span class="n">uniform</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"points, worst error"</span><span class="p">,</span> <span class="n">worst</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">worst</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>All 200 resampled points sat on the true line to within $3 \times 10^{-14}$. For signals with curvature, linear interpolation is a low-pass filter of its own, which is usually harmless at rates well above the signal’s bandwidth.</p>
+
+<h2 id="three-filters-measured">Three filters, measured</h2>
+
+<p>Every smoothing filter trades noise for lag, and the useful way to compare filters is by their frequency response: how much of a signal at each frequency gets through, and how late it comes out. Three filters cover most needs:</p>
+
+<ul>
+  <li>The <strong>moving average</strong> of $N$ samples: $y_k = \frac{1}{N}\sum_{i=0}^{N-1} x_{k-i}$.</li>
+  <li>The <strong>exponential</strong> filter: $y_k = y_{k-1} + \alpha(x_k - y_{k-1})$.</li>
+  <li>A second-order <strong>Butterworth</strong> low-pass, built as a <em>biquad</em>, a section with two past inputs and two past outputs. Its coefficients come from the bilinear transform of the analog prototype $H(s) = \omega_c^2 / (s^2 + \sqrt 2\, \omega_c s + \omega_c^2)$.</li>
+</ul>
+
+<p>The code measures each one by running long sines through it and reading the steady-state amplitude, and runs a slow ramp through it to measure the delay:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">Filter</span> <span class="p">{</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">MovingAverage</span><span class="p">:</span> <span class="kt">Filter</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">length</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">buffer</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">length</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="n">buffer</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">x</span><span class="p">);</span> <span class="n">sum</span> <span class="o">+=</span> <span class="n">x</span>
+        <span class="k">if</span> <span class="n">buffer</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;</span> <span class="n">length</span> <span class="p">{</span> <span class="n">sum</span> <span class="o">-=</span> <span class="n">buffer</span><span class="o">.</span><span class="nf">removeFirst</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sum</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Exponential</span><span class="p">:</span> <span class="kt">Filter</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">alpha</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">alpha</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span> <span class="p">??</span> <span class="n">x</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">next</span>
+        <span class="k">return</span> <span class="n">next</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// A second-order section in direct form I. `butterworthLowPass` builds one from the bilinear transform</span>
+<span class="c1">/// (the "Audio EQ Cookbook" formulas with Q = 1/√2).</span>
+<span class="kd">struct</span> <span class="kt">Biquad</span><span class="p">:</span> <span class="kt">Filter</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">b0</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="nv">a2</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">x1</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">b0</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">b1</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">b2</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">a1</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">a2</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">b0</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">b1</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">b2</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">a1</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">a2</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">b0</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">butterworthLowPass</span><span class="p">(</span><span class="nv">cutoff</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Biquad</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">w0</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">cutoff</span> <span class="o">/</span> <span class="n">rate</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="nf">sin</span><span class="p">(</span><span class="n">w0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">())</span>
+        <span class="k">let</span> <span class="nv">a0</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">alpha</span>
+        <span class="k">return</span> <span class="kt">Biquad</span><span class="p">(</span><span class="nv">b0</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w0</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">a0</span><span class="p">,</span> <span class="nv">b1</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w0</span><span class="p">))</span> <span class="o">/</span> <span class="n">a0</span><span class="p">,</span> <span class="nv">b2</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w0</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">a0</span><span class="p">,</span>
+                      <span class="nv">a1</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w0</span><span class="p">)</span> <span class="o">/</span> <span class="n">a0</span><span class="p">,</span> <span class="nv">a2</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">/</span> <span class="n">a0</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">x</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="n">b0</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">b1</span> <span class="o">*</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">b2</span> <span class="o">*</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">a1</span> <span class="o">*</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">a2</span> <span class="o">*</span> <span class="nf">y2</span>
+        <span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">rate</span> <span class="o">=</span> <span class="mf">100.0</span>
+<span class="k">let</span> <span class="nv">filters</span><span class="p">:</span> <span class="p">[(</span><span class="kt">String</span><span class="p">,</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Filter</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s">"moving average, 9"</span><span class="p">,</span> <span class="p">{</span> <span class="kt">MovingAverage</span><span class="p">(</span><span class="nv">length</span><span class="p">:</span> <span class="mi">9</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="s">"exponential, α 0.12"</span><span class="p">,</span> <span class="p">{</span> <span class="kt">Exponential</span><span class="p">(</span><span class="nv">alpha</span><span class="p">:</span> <span class="mf">0.12</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="s">"Butterworth, 5 Hz"</span><span class="p">,</span> <span class="p">{</span> <span class="kt">Biquad</span><span class="o">.</span><span class="nf">butterworthLowPass</span><span class="p">(</span><span class="nv">cutoff</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">]</span>
+<span class="c1">/// Steady-state gain at a frequency, measured by running a 20 s sine through a fresh filter.</span>
+<span class="kd">func</span> <span class="nf">gain</span><span class="p">(</span><span class="n">_</span> <span class="nv">make</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Filter</span><span class="p">,</span> <span class="n">_</span> <span class="nv">frequency</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="nf">make</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">n</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">rate</span> <span class="o">*</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">peak</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">n</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="n">filter</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">frequency</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">n</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">{</span> <span class="n">peak</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">peak</span><span class="p">,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">peak</span>
+<span class="p">}</span>
+
+<span class="c1">/// How far behind a slow ramp the output runs, in seconds: the delay for slowly changing signals.</span>
+<span class="kd">func</span> <span class="nf">delay</span><span class="p">(</span><span class="n">_</span> <span class="nv">make</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Filter</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="nf">make</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">lag</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="kt">Int</span><span class="p">(</span><span class="n">rate</span> <span class="o">*</span> <span class="mi">20</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span>
+        <span class="n">lag</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">filter</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">lag</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"filter                 1 Hz    5 Hz    10 Hz   25 Hz   delay"</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">make</span><span class="p">)</span> <span class="k">in</span> <span class="n">filters</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="nv">toLength</span><span class="p">:</span> <span class="mi">22</span><span class="p">,</span> <span class="nv">withPad</span><span class="p">:</span> <span class="s">" "</span><span class="p">,</span> <span class="nv">startingAt</span><span class="p">:</span> <span class="mi">0</span><span class="p">),</span>
+          <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">]</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%6.3f"</span><span class="p">,</span> <span class="nf">gain</span><span class="p">(</span><span class="n">make</span><span class="p">,</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">))</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"  "</span><span class="p">),</span>
+          <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%6.1f ms"</span><span class="p">,</span> <span class="nf">delay</span><span class="p">(</span><span class="n">make</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">// The textbook predictions for the same three filters.</span>
+<span class="k">let</span> <span class="nv">w5</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">5</span> <span class="o">/</span> <span class="n">rate</span>
+<span class="k">let</span> <span class="nv">movingAverageGain5</span> <span class="o">=</span> <span class="nf">abs</span><span class="p">(</span><span class="nf">sin</span><span class="p">(</span><span class="mi">9</span> <span class="o">*</span> <span class="n">w5</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">9</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">w5</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="k">let</span> <span class="nv">exponentialGain5</span> <span class="o">=</span> <span class="mf">0.12</span> <span class="o">/</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.88</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w5</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.88</span> <span class="o">*</span> <span class="nf">cos</span><span class="p">(</span><span class="n">w5</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.88</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">w5</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.88</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">w5</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">gain</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span> <span class="o">-</span> <span class="n">movingAverageGain5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.002</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">gain</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span> <span class="o">-</span> <span class="n">exponentialGain5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.002</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">delay</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">/</span> <span class="n">rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s">"(N - 1) / 2 samples"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">delay</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="mf">0.88</span> <span class="o">/</span> <span class="mf">0.12</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s">"(1 - α) / α samples"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Butterworth delay, analog prediction:"</span><span class="p">,</span> <span class="mf">2.0</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="s">"ms"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>At 100 Hz, with each filter tuned to pass roughly 5 Hz:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Filter</th>
+      <th>1 Hz</th>
+      <th>5 Hz</th>
+      <th>10 Hz</th>
+      <th>25 Hz</th>
+      <th>Delay</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Moving average, 9 samples</td>
+      <td>0.987</td>
+      <td>0.702</td>
+      <td>0.106</td>
+      <td>0.111</td>
+      <td>40.0 ms</td>
+    </tr>
+    <tr>
+      <td>Exponential, α = 0.12</td>
+      <td>0.898</td>
+      <td>0.377</td>
+      <td>0.201</td>
+      <td>0.068</td>
+      <td>73.3 ms</td>
+    </tr>
+    <tr>
+      <td>Butterworth, 5 Hz</td>
+      <td>0.999</td>
+      <td>0.707</td>
+      <td>0.226</td>
+      <td>0.024</td>
+      <td>44.6 ms</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each column agrees with its formula, and the assertions check the first two:</p>
+
+<ul>
+  <li><strong>Moving average</strong>: $\lvert H(f)\rvert = \left\lvert \frac{\sin(N\pi f/f_s)}{N \sin(\pi f / f_s)} \right\rvert$, 0.7015 at 5 Hz, and the delay is $(N-1)/2$ samples, 40 ms.</li>
+  <li><strong>Exponential</strong>: $\lvert H(f)\rvert = \alpha / \lvert 1 - (1-\alpha)e^{-i\omega}\rvert$, 0.378 at 5 Hz, and the delay for slow signals is $(1-\alpha)/\alpha$ samples, 73.3 ms.</li>
+  <li><strong>Butterworth</strong>: the analog prototype’s delay at low frequencies is $\sqrt 2 / \omega_c$, which is 45.0 ms at 5 Hz. The digital filter measured 44.6 ms, slightly less because the bilinear transform warps frequencies.</li>
+</ul>
+
+<p>The table explains why the Butterworth filter is worth its few extra lines. It’s flat in the passband: 0.999 at 1 Hz, where the exponential filter already loses 10%. And it keeps falling past the cutoff: 0.024 at 25 Hz, where the moving average lets 11% through, from a sidelobe of its sinc-shaped response. The exponential filter is the worst of the three on both counts, with the longest delay. Its virtues are one line of code, one multiply, and no history, which makes it the right choice when the signal is far below the noise frequency and the lag doesn’t matter.</p>
+
+<p>Delay is the number to watch in interactive features. A tilt game with 73 ms of filter lag feels sluggish, while one with 40 ms feels direct. A rule of thumb: halving the cutoff doubles the delay, for all three filters.</p>
+
+<h3 id="the-same-filter-with-accelerate">The same filter with Accelerate</h3>
+
+<p>For filtering recordings or long buffers, Accelerate’s <code class="language-plaintext highlighter-rouge">vDSP.Biquad</code> runs the same section natively:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The same Butterworth section through Accelerate, checked sample by sample and timed against the loop above.</span>
+<span class="k">let</span> <span class="nv">design</span> <span class="o">=</span> <span class="kt">Biquad</span><span class="o">.</span><span class="nf">butterworthLowPass</span><span class="p">(</span><span class="nv">cutoff</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="nv">rate</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">noisy</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">12</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">input</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">i</span> <span class="k">in</span> <span class="nf">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">noisy</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">handWritten</span> <span class="o">=</span> <span class="n">design</span>
+<span class="k">var</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">ours</span> <span class="o">=</span> <span class="n">input</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">handWritten</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">loopTime</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="k">var</span> <span class="nv">accelerate</span> <span class="o">=</span> <span class="n">vDSP</span><span class="o">.</span><span class="kt">Biquad</span><span class="p">(</span><span class="nv">coefficients</span><span class="p">:</span> <span class="p">[</span><span class="n">design</span><span class="o">.</span><span class="n">b0</span><span class="p">,</span> <span class="n">design</span><span class="o">.</span><span class="n">b1</span><span class="p">,</span> <span class="n">design</span><span class="o">.</span><span class="n">b2</span><span class="p">,</span> <span class="n">design</span><span class="o">.</span><span class="n">a1</span><span class="p">,</span> <span class="n">design</span><span class="o">.</span><span class="n">a2</span><span class="p">],</span>
+                             <span class="nv">channelCount</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">sectionCount</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">ofType</span><span class="p">:</span> <span class="kt">Double</span><span class="o">.</span><span class="k">self</span><span class="p">)</span><span class="o">!</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">theirs</span> <span class="o">=</span> <span class="n">accelerate</span><span class="o">.</span><span class="nf">apply</span><span class="p">(</span><span class="nv">input</span><span class="p">:</span> <span class="n">input</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">vDSPTime</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="k">let</span> <span class="nv">largestDifference</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">ours</span><span class="p">,</span> <span class="n">theirs</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="nv">$0</span> <span class="o">-</span> <span class="nv">$1</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"largest difference"</span><span class="p">,</span> <span class="n">largestDifference</span><span class="p">,</span> <span class="s">"loop"</span><span class="p">,</span> <span class="n">loopTime</span><span class="p">,</span> <span class="s">"vDSP"</span><span class="p">,</span> <span class="n">vDSPTime</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">largestDifference</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The two outputs agreed to $4 \times 10^{-15}$ over a million samples. In an optimized build, the Swift loop took about 92 ms and <code class="language-plaintext highlighter-rouge">vDSP.Biquad</code> about 1.6 ms, roughly 55 times faster. For live sensor data the difference doesn’t matter: at 100 Hz, even the loop spends under 10 µs per second of data. It matters for batch work, such as filtering an hour of recorded motion on a background task.</p>
+
+<h2 id="characterizing-noise-with-the-allan-variance">Characterizing noise with the Allan variance</h2>
+
+<p>Datasheets describe sensor noise with two numbers that an app developer can measure on any phone: the <strong>angle random walk</strong> $N$, which is white noise on the rate, integrated into angle, and the <strong>rate random walk</strong> $K$, a bias that wanders. The Allan variance separates them. Average the rate over clusters of length $\tau$, and take half the mean squared difference between neighboring clusters:</p>
+
+\[\sigma_A^2(\tau) = \tfrac{1}{2} \left\langle \big(\bar\Omega_{k+1}(\tau) - \bar\Omega_k(\tau)\big)^2 \right\rangle .\]
+
+<p>For a sensor with only those two noise terms, the theory gives</p>
+
+\[\sigma_A^2(\tau) = \frac{N^2}{\tau} + \frac{K^2 \tau}{3} ,\]
+
+<p>so on a log-log plot, white noise falls with slope −½ and the wandering bias rises with slope +½. The curve’s minimum, at $\tau^* = \sqrt 3\, N / K$, is where averaging stops helping. The computation below uses the overlapping estimator, written with the integrated angle so each cluster mean is a single difference:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Overlapping Allan deviation of a rate signal sampled every `dt`, at averaging times m·dt.</span>
+<span class="c1">/// Uses the integrated signal θ: σ²(τ) = Σ (θ[k+2m] − 2θ[k+m] + θ[k])² / (2 τ² (N − 2m)).</span>
+<span class="kd">func</span> <span class="nf">allanDeviation</span><span class="p">(</span><span class="n">_</span> <span class="nv">rate</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="nv">dt</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">clusterSizes</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[(</span><span class="nv">tau</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">deviation</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">theta</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+    <span class="n">theta</span><span class="o">.</span><span class="nf">reserveCapacity</span><span class="p">(</span><span class="n">rate</span><span class="o">.</span><span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="k">in</span> <span class="n">rate</span> <span class="p">{</span> <span class="n">theta</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">last</span><span class="o">!</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">clusterSizes</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">m</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">tau</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">var</span> <span class="nv">sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">let</span> <span class="nv">count</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">d</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">sum</span> <span class="o">+=</span> <span class="n">d</span> <span class="o">*</span> <span class="n">d</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="p">(</span><span class="n">sum</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tau</span> <span class="o">*</span> <span class="n">tau</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">count</span><span class="p">)))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">())</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Two hours of a still gyroscope axis at 100 Hz: white noise plus a slowly wandering bias (a rate random walk).</span>
+<span class="k">let</span> <span class="nv">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="k">let</span> <span class="nv">whiteSigma</span> <span class="o">=</span> <span class="mf">0.002</span>                       <span class="c1">// rad/s per sample</span>
+<span class="k">let</span> <span class="nv">angleRandomWalk</span> <span class="o">=</span> <span class="n">whiteSigma</span> <span class="o">*</span> <span class="n">dt</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>   <span class="c1">// N, in rad/√s</span>
+<span class="k">let</span> <span class="nv">rateRandomWalk</span> <span class="o">=</span> <span class="mf">2e-5</span>                    <span class="c1">// K, in rad/s/√s</span>
+<span class="k">var</span> <span class="nv">gyroRandom</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">13</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">bias</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">var</span> <span class="nv">still</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">720_000</span> <span class="p">{</span>
+    <span class="n">bias</span> <span class="o">+=</span> <span class="n">rateRandomWalk</span> <span class="o">*</span> <span class="n">dt</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">*</span> <span class="n">gyroRandom</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span>
+    <span class="n">still</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">bias</span> <span class="o">+</span> <span class="n">whiteSigma</span> <span class="o">*</span> <span class="n">gyroRandom</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">clusters</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">1_000</span><span class="p">,</span> <span class="mi">3_000</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">,</span> <span class="mi">100_000</span><span class="p">]</span>
+<span class="k">let</span> <span class="nv">curve</span> <span class="o">=</span> <span class="nf">allanDeviation</span><span class="p">(</span><span class="n">still</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="n">dt</span><span class="p">,</span> <span class="nv">clusterSizes</span><span class="p">:</span> <span class="n">clusters</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"    τ (s)   Allan dev (rad/s)   theory"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">point</span> <span class="k">in</span> <span class="n">curve</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">theory</span> <span class="o">=</span> <span class="p">(</span><span class="n">angleRandomWalk</span> <span class="o">*</span> <span class="n">angleRandomWalk</span> <span class="o">/</span> <span class="n">point</span><span class="o">.</span><span class="n">tau</span> <span class="o">+</span> <span class="n">rateRandomWalk</span> <span class="o">*</span> <span class="n">rateRandomWalk</span> <span class="o">*</span> <span class="n">point</span><span class="o">.</span><span class="n">tau</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span>
+    <span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%9.2f   %.3e           %.3e"</span><span class="p">,</span> <span class="n">point</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span> <span class="n">point</span><span class="o">.</span><span class="n">deviation</span><span class="p">,</span> <span class="n">theory</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">atOneSecond</span> <span class="o">=</span> <span class="nf">allanDeviation</span><span class="p">(</span><span class="n">still</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="n">dt</span><span class="p">,</span> <span class="nv">clusterSizes</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">deviation</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"read off at τ = 1 s:"</span><span class="p">,</span> <span class="n">atOneSecond</span><span class="p">,</span> <span class="s">"rad/√s; true angle random walk"</span><span class="p">,</span> <span class="n">angleRandomWalk</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>$\tau$</th>
+      <th>Allan deviation</th>
+      <th>Theory</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0.01 s</td>
+      <td>1.997 × 10⁻³</td>
+      <td>2.000 × 10⁻³</td>
+    </tr>
+    <tr>
+      <td>0.1 s</td>
+      <td>6.322 × 10⁻⁴</td>
+      <td>6.325 × 10⁻⁴</td>
+    </tr>
+    <tr>
+      <td>1 s</td>
+      <td>1.984 × 10⁻⁴</td>
+      <td>2.003 × 10⁻⁴</td>
+    </tr>
+    <tr>
+      <td>10 s</td>
+      <td>7.244 × 10⁻⁵</td>
+      <td>7.303 × 10⁻⁵</td>
+    </tr>
+    <tr>
+      <td>30 s</td>
+      <td>6.964 × 10⁻⁵</td>
+      <td>7.303 × 10⁻⁵</td>
+    </tr>
+    <tr>
+      <td>100 s</td>
+      <td>1.035 × 10⁻⁴</td>
+      <td>1.172 × 10⁻⁴</td>
+    </tr>
+    <tr>
+      <td>1,000 s</td>
+      <td>4.509 × 10⁻⁴</td>
+      <td>3.652 × 10⁻⁴</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two hours of simulated data reproduced both slopes. Read at τ = 1 s, where the white-noise term $N/\sqrt\tau$ equals $N$, the curve gave 1.984 × 10⁻⁴ rad/√s against a true angle random walk of 2.000 × 10⁻⁴, within 1%. The minimum fell between 10 and 30 s, around the predicted $\tau^* = 17$ s. At long $\tau$ the estimate scatters, because two hours hold only a handful of 1,000-second clusters. A real measurement needs a recording several times longer than the largest $\tau$ of interest.</p>
+
+<p>On a device, record a still phone’s raw gyroscope for an hour or two, with the screen locked out of reach of fingers and on a surface that doesn’t vibrate, then run <code class="language-plaintext highlighter-rouge">allanDeviation</code> on each axis. The value at 1 s is the angle random walk, the minimum is roughly the bias instability, and the right-hand slope says how fast the bias wanders. Those three numbers replace the illustrative parameters in the rest of this series.</p>
+
+<h2 id="controlling-drift">Controlling drift</h2>
+
+<p>A bias that wanders defeats a one-time calibration. The simulation below integrates a z-axis gyroscope into a heading for ten minutes. The phone rests for 5 seconds at the start of every minute and turns in between. Its bias starts at 0.003 rad/s and wanders with $K = 2 \times 10^{-4}$ rad/s/√s, ten times faster than in the Allan example, to make the effect visible within ten minutes. Three strategies compete:</p>
+
+<ol>
+  <li>Never correct the bias.</li>
+  <li>Estimate it once, during the first rest.</li>
+  <li>Re-estimate it during every rest, and hold the heading fixed while resting. This is the technique pedestrian navigation calls a <em>zero-velocity update</em>.</li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Ten minutes of heading from a z-axis gyroscope whose bias wanders. The phone rests for 5 s at the start of every</span>
+<span class="c1">/// minute and turns at a varying rate otherwise. Returns the final heading error, in degrees, for three strategies:</span>
+<span class="c1">/// never correct the bias, estimate it once during the first rest, or re-estimate it (and hold the heading) at every rest.</span>
+<span class="kd">func</span> <span class="nf">headingErrors</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">,</span> <span class="nv">initialBias</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">wander</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">none</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">once</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">rests</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">bias</span> <span class="o">=</span> <span class="n">initialBias</span><span class="p">,</span> <span class="n">truth</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">var</span> <span class="nv">none</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">once</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">rests</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">var</span> <span class="nv">onceEstimate</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">restEstimate</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">var</span> <span class="nv">restSum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">restCount</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="kt">Int</span><span class="p">(</span><span class="mi">600</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">let</span> <span class="nv">resting</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="nf">truncatingRemainder</span><span class="p">(</span><span class="nv">dividingBy</span><span class="p">:</span> <span class="mi">60</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span>
+        <span class="k">let</span> <span class="nv">turnRate</span> <span class="o">=</span> <span class="n">resting</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="nf">sin</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="mf">3.1</span><span class="p">)</span>
+        <span class="n">bias</span> <span class="o">+=</span> <span class="n">wander</span> <span class="o">*</span> <span class="n">dt</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">reading</span> <span class="o">=</span> <span class="n">turnRate</span> <span class="o">+</span> <span class="n">bias</span> <span class="o">+</span> <span class="n">noise</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span>
+        <span class="n">truth</span> <span class="o">+=</span> <span class="n">turnRate</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">if</span> <span class="n">resting</span> <span class="p">{</span>
+            <span class="n">restSum</span> <span class="o">+=</span> <span class="n">reading</span><span class="p">;</span> <span class="n">restCount</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">5</span> <span class="p">{</span> <span class="n">onceEstimate</span> <span class="o">=</span> <span class="n">restSum</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">restCount</span><span class="p">)</span> <span class="p">}</span>
+            <span class="n">restEstimate</span> <span class="o">=</span> <span class="n">restSum</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">restCount</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">restSum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">restCount</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="k">none</span> <span class="o">+=</span> <span class="n">reading</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="n">once</span> <span class="o">+=</span> <span class="p">(</span><span class="n">reading</span> <span class="o">-</span> <span class="n">onceEstimate</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="n">rests</span> <span class="o">+=</span> <span class="n">resting</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="p">(</span><span class="n">reading</span> <span class="o">-</span> <span class="n">restEstimate</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>     <span class="c1">// at rest, the heading is known not to change</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">degrees</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">/</span> <span class="kt">Double</span><span class="o">.</span><span class="n">pi</span>
+    <span class="nf">return</span> <span class="p">((</span><span class="k">none</span> <span class="o">-</span> <span class="n">truth</span><span class="p">)</span> <span class="o">*</span> <span class="n">degrees</span><span class="p">,</span> <span class="p">(</span><span class="n">once</span> <span class="o">-</span> <span class="n">truth</span><span class="p">)</span> <span class="o">*</span> <span class="n">degrees</span><span class="p">,</span> <span class="p">(</span><span class="n">rests</span> <span class="o">-</span> <span class="n">truth</span><span class="p">)</span> <span class="o">*</span> <span class="n">degrees</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">single</span> <span class="o">=</span> <span class="nf">headingErrors</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">14</span><span class="p">,</span> <span class="nv">initialBias</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span> <span class="nv">wander</span><span class="p">:</span> <span class="mf">2e-4</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="n">whiteSigma</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="n">dt</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"one run: no correction %.1f°, calibrated once %.1f°, re-estimated at rests %.1f°"</span><span class="p">,</span> <span class="n">single</span><span class="o">.</span><span class="k">none</span><span class="p">,</span> <span class="n">single</span><span class="o">.</span><span class="n">once</span><span class="p">,</span> <span class="n">single</span><span class="o">.</span><span class="n">rests</span><span class="p">))</span>
+
+<span class="k">var</span> <span class="nv">squares</span> <span class="o">=</span> <span class="p">(</span><span class="nv">none</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">once</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">rests</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">runs</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="k">for</span> <span class="n">seed</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">runs</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">e</span> <span class="o">=</span> <span class="nf">headingErrors</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">(</span><span class="mi">100</span> <span class="o">+</span> <span class="n">seed</span><span class="p">),</span> <span class="nv">initialBias</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span> <span class="nv">wander</span><span class="p">:</span> <span class="mf">2e-4</span><span class="p">,</span> <span class="nv">noise</span><span class="p">:</span> <span class="n">whiteSigma</span><span class="p">,</span> <span class="nv">dt</span><span class="p">:</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">squares</span><span class="o">.</span><span class="k">none</span> <span class="o">+=</span> <span class="n">e</span><span class="o">.</span><span class="k">none</span> <span class="o">*</span> <span class="n">e</span><span class="o">.</span><span class="k">none</span><span class="p">;</span> <span class="n">squares</span><span class="o">.</span><span class="n">once</span> <span class="o">+=</span> <span class="n">e</span><span class="o">.</span><span class="n">once</span> <span class="o">*</span> <span class="n">e</span><span class="o">.</span><span class="n">once</span><span class="p">;</span> <span class="n">squares</span><span class="o">.</span><span class="n">rests</span> <span class="o">+=</span> <span class="n">e</span><span class="o">.</span><span class="n">rests</span> <span class="o">*</span> <span class="n">e</span><span class="o">.</span><span class="n">rests</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">rmsError</span> <span class="o">=</span> <span class="p">(</span><span class="nv">none</span><span class="p">:</span> <span class="p">(</span><span class="n">squares</span><span class="o">.</span><span class="k">none</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">runs</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">(),</span> <span class="nv">once</span><span class="p">:</span> <span class="p">(</span><span class="n">squares</span><span class="o">.</span><span class="n">once</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">runs</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">(),</span>
+                <span class="nv">rests</span><span class="p">:</span> <span class="p">(</span><span class="n">squares</span><span class="o">.</span><span class="n">rests</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">runs</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"RMS over %d runs: no correction %.1f°, calibrated once %.1f°, re-estimated at rests %.1f°"</span><span class="p">,</span>
+             <span class="n">runs</span><span class="p">,</span> <span class="n">rmsError</span><span class="o">.</span><span class="k">none</span><span class="p">,</span> <span class="n">rmsError</span><span class="o">.</span><span class="n">once</span><span class="p">,</span> <span class="n">rmsError</span><span class="o">.</span><span class="n">rests</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">rmsError</span><span class="o">.</span><span class="n">rests</span> <span class="o">&lt;</span> <span class="n">rmsError</span><span class="o">.</span><span class="n">once</span> <span class="o">&amp;&amp;</span> <span class="n">rmsError</span><span class="o">.</span><span class="n">once</span> <span class="o">&lt;</span> <span class="n">rmsError</span><span class="o">.</span><span class="k">none</span><span class="p">)</span>
+
+<span class="c1">// Predictions: a constant bias b gives b·T; a bias that random-walks with K gives K·T^(3/2)/√3 on top.</span>
+<span class="k">let</span> <span class="nv">fromInitial</span> <span class="o">=</span> <span class="mf">0.003</span> <span class="o">*</span> <span class="mi">600</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="k">let</span> <span class="nv">fromWander</span> <span class="o">=</span> <span class="mf">2e-4</span> <span class="o">*</span> <span class="nf">pow</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span> <span class="o">/</span> <span class="mf">3.0</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"predicted: initial bias %.1f°, wander %.1f°, both %.1f°"</span><span class="p">,</span> <span class="n">fromInitial</span><span class="p">,</span> <span class="n">fromWander</span><span class="p">,</span>
+             <span class="p">(</span><span class="n">fromInitial</span> <span class="o">*</span> <span class="n">fromInitial</span> <span class="o">+</span> <span class="n">fromWander</span> <span class="o">*</span> <span class="n">fromWander</span><span class="p">)</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">()))</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Strategy</th>
+      <th>One run</th>
+      <th>RMS over 200 runs</th>
+      <th>Prediction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>No correction</td>
+      <td>43.1°</td>
+      <td>143.5°</td>
+      <td>141.7°</td>
+    </tr>
+    <tr>
+      <td>Calibrated once</td>
+      <td>−52.4°</td>
+      <td>93.1°</td>
+      <td>97.2° (wander only)</td>
+    </tr>
+    <tr>
+      <td>Re-estimated at rests</td>
+      <td>−5.3°</td>
+      <td>9.0°</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A single run is misleading. In this one, calibrating once did <em>worse</em> than doing nothing, because the bias wandered past where it started, and the uncorrected error happened to partly cancel. Over 200 runs, the picture is clear and matches the error-growth formulas from the <a href="/ios-accelerometer-gyroscope/#integrating-rotation-correctly">accelerometer article</a>. A constant bias $b$ grows into $bT$, 103°. A random-walk bias adds $K T^{3/2} / \sqrt 3$, 97°, independently. Calibrating once removes only the first. Re-estimating at every rest restarts the random walk each minute, so its error grows over minutes instead of over the whole session, and it cut the RMS error by a factor of ten.</p>
+
+<p>The lesson generalizes beyond gyroscopes. Any slowly wandering error, whether barometric drift or magnetometer offsets, is best controlled by finding moments when the truth is known (the phone is still, the user is on a known floor, a GPS fix arrives) and re-anchoring at each one. Detecting rest reliably is its own small problem. The usual test is a low variance of the accelerometer magnitude and a small gyroscope magnitude over a window of a second or two, and Core Motion’s device-motion service does something like it internally to remove gyroscope bias.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Sample at least twice the fastest frequency present, not just the fastest one of interest. A 60 Hz vibration sampled at 50 Hz became a permanent 10 Hz artifact.</li>
+  <li>Use timestamps. The median interval recovers the true rate, and intervals over 1.5 times the median reveal gaps. Three lost samples cost 2.7° from a fixed-interval integration. Resample onto a uniform grid before applying filters that assume one.</li>
+  <li>Compare filters by frequency response and delay. At 100 Hz, a 9-sample moving average delays by 40 ms but leaks 11% at 25 Hz. An exponential filter with α = 0.12 delays by 73 ms. A 5 Hz Butterworth biquad is flat to 1 Hz, passes 2.4% at 25 Hz, and delays by 45 ms. All matched their formulas.</li>
+  <li><code class="language-plaintext highlighter-rouge">vDSP.Biquad</code> matched a hand-written section to $10^{-14}$ and ran about 55 times faster, which matters for recordings, not live data.</li>
+  <li>The Allan deviation separates white noise (slope −½) from a wandering bias (slope +½). On simulated data, its value at τ = 1 s recovered the angle random walk within 1%. Measure your own device this way.</li>
+  <li>A wandering bias defeats one-time calibration. Re-estimating at every rest cut a ten-minute heading error from 93° to 9° RMS, and re-anchoring at moments of known truth is the general cure.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">RestDetector</code> that consumes accelerometer and gyroscope samples and reports rest when, over the last 1.5 seconds, the standard deviation of the accelerometer magnitude is below 0.01 g and the mean gyroscope magnitude is below 0.02 rad/s. Feed it a synthetic session built with <code class="language-plaintext highlighter-rouge">SensorModel</code> from the accelerometer article, with the phone resting, then walking, then resting again, and measure its detection delay and how often it reports rest while walking. Then replace the fixed rest schedule in <code class="language-plaintext highlighter-rouge">headingErrors</code> with the detector’s output and compare the RMS heading error.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/coremotion/cmmotionmanager/accelerometerupdateinterval"><code class="language-plaintext highlighter-rouge">accelerometerUpdateInterval</code></a>, on caps and checking timestamps</li>
+  <li><a href="https://developer.apple.com/documentation/accelerate/vdsp/biquad"><code class="language-plaintext highlighter-rouge">vDSP.Biquad</code></a>, Accelerate’s biquad filter</li>
+  <li>Robert Bristow-Johnson, <a href="https://www.w3.org/TR/audio-eq-cookbook/">Cookbook formulae for audio EQ biquad filter coefficients</a>, published as a W3C note, the source of the low-pass coefficients above</li>
+  <li><a href="https://doi.org/10.1109/IEEESTD.1998.86153">IEEE Standard Specification Format Guide and Test Procedure for Single-Axis Interferometric Fiber Optic Gyros</a>, IEEE Std 952-1997, whose Annex C defines the Allan variance analysis used for inertial sensors</li>
+</ul>
+
+<p>Previous: <a href="/ios-altimeter-pressure/">Altitude, Pressure, and Relative Measurements</a></p>
+
+<p>Next: <a href="/ios-location-updates-accuracy/">Location Updates and Accuracy Requirements</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/ios-sensor-sampling-filtering/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Sampling+Rates%2C+Noise%2C+Filtering%2C+and+Drift%20http%3A%2F%2Flocalhost%3A4000%2Fios-sensor-sampling-filtering%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/ios-sensor-sampling-filtering/&title=Sampling+Rates%2C+Noise%2C+Filtering%2C+and+Drift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/ios-sensor-sampling-filtering/&title=Sampling+Rates%2C+Noise%2C+Filtering%2C+and+Drift%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/ios-sensor-sampling-filtering/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Sampling Rates, Noise, Filtering, and Drift%20%7C%20Swift By Deya&body=http://localhost:4000/ios-sensor-sampling-filtering/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Accelerate">Accelerate</a></li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Signal+Processing">Signal Processing</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Location Updates and Accuracy Requirements" href="/ios-location-updates-accuracy/"> <p>Previous post</p> Location Updates and Accuracy Requirements </a> </div> <div id="next-post"> <a alt="Altitude, Pressure, and Relative Measurements" href="/ios-altimeter-pressure/"> <p>Next post</p> Altitude, Pressure, and Relative Measurements </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

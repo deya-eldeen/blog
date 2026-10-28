@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Combining Motion and Location Without Shared-State Races | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Combining Motion and Location Without Shared-State Races" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Motion and location complement each other almost perfectly. GPS knows where the device is to within meters, but only once a second, and not at all in a tunnel. The accelerometer reports fifty times a second, but drifts by hundreds of meters a minute when integrated alone. Fusing them gives position estimates that are both smooth and anchored. The difficulty isn’t the math. It’s that the two sources arrive on different threads, at different rates, in an order that isn’t the order of events, and the obvious way to combine them is a shared object that both write to, which is a data race. This article builds the combination correctly in Swift 6 and measures each mistake on the way. A shared object written from two queues compiled with only a warning, and Thread Sanitizer reported a data race at once. Hopping onto an actor with a new Task per sample put 1.3% to 3.9% of samples out of order. Feeding both sources through one AsyncStream into an actor kept every sample in order. Then a Kalman filter in that actor fuses a biased accelerometer with GPS: through a simulated 30-second tunnel, the error stayed under 12 m in every run, against 242 m for GPS-only extrapolation. A first version that ignored when samples arrived learned an accelerometer bias forty times too large." /> <meta property="og:description" content="Motion and location complement each other almost perfectly. GPS knows where the device is to within meters, but only once a second, and not at all in a tunnel. The accelerometer reports fifty times a second, but drifts by hundreds of meters a minute when integrated alone. Fusing them gives position estimates that are both smooth and anchored. The difficulty isn’t the math. It’s that the two sources arrive on different threads, at different rates, in an order that isn’t the order of events, and the obvious way to combine them is a shared object that both write to, which is a data race. This article builds the combination correctly in Swift 6 and measures each mistake on the way. A shared object written from two queues compiled with only a warning, and Thread Sanitizer reported a data race at once. Hopping onto an actor with a new Task per sample put 1.3% to 3.9% of samples out of order. Feeding both sources through one AsyncStream into an actor kept every sample in order. Then a Kalman filter in that actor fuses a biased accelerometer with GPS: through a simulated 30-second tunnel, the error stayed under 12 m in every run, against 242 m for GPS-only extrapolation. A first version that ignored when samples arrived learned an accelerometer bias forty times too large." /> <link rel="canonical" href="http://localhost:4000/ios-combining-motion-location/" /> <meta property="og:url" content="http://localhost:4000/ios-combining-motion-location/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-03-16T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Combining Motion and Location Without Shared-State Races" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-03-16T00:00:00+03:00","datePublished":"2026-03-16T00:00:00+03:00","description":"Motion and location complement each other almost perfectly. GPS knows where the device is to within meters, but only once a second, and not at all in a tunnel. The accelerometer reports fifty times a second, but drifts by hundreds of meters a minute when integrated alone. Fusing them gives position estimates that are both smooth and anchored. The difficulty isn’t the math. It’s that the two sources arrive on different threads, at different rates, in an order that isn’t the order of events, and the obvious way to combine them is a shared object that both write to, which is a data race. This article builds the combination correctly in Swift 6 and measures each mistake on the way. A shared object written from two queues compiled with only a warning, and Thread Sanitizer reported a data race at once. Hopping onto an actor with a new Task per sample put 1.3% to 3.9% of samples out of order. Feeding both sources through one AsyncStream into an actor kept every sample in order. Then a Kalman filter in that actor fuses a biased accelerometer with GPS: through a simulated 30-second tunnel, the error stayed under 12 m in every run, against 242 m for GPS-only extrapolation. A first version that ignored when samples arrived learned an accelerometer bias forty times too large.","headline":"Combining Motion and Location Without Shared-State Races","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ios-combining-motion-location/"},"url":"http://localhost:4000/ios-combining-motion-location/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Combining Motion and Location Without Shared-State Races"> <meta name="twitter:description" content="Motion and location complement each other almost perfectly. GPS knows where the device is to within meters, but only once a second, and not at all in a tunne..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Combining Motion and Location Without Shared-State Races"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Combining Motion and Location Without Shared-State Races</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-03-16T00:00:00+03:00">March 16, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Motion and location complement each other almost perfectly. GPS knows where the device is to within meters, but only once a second, and not at all in a tunnel. The accelerometer reports fifty times a second, but drifts by hundreds of meters a minute when integrated alone. Fusing them gives position estimates that are both smooth and anchored. The difficulty isn’t the math. It’s that the two sources arrive on different threads, at different rates, in an order that isn’t the order of events, and the obvious way to combine them is a shared object that both write to, which is a data race.</p>
+
+<p>This article builds the combination correctly in Swift 6 and measures each mistake on the way. A shared object written from two queues compiled with only a warning, and Thread Sanitizer reported a data race at once. Hopping onto an actor with a new <code class="language-plaintext highlighter-rouge">Task</code> per sample put 1.3% to 3.9% of samples out of order. Feeding both sources through one <code class="language-plaintext highlighter-rouge">AsyncStream</code> into an actor kept every sample in order. Then a Kalman filter in that actor fuses a biased accelerometer with GPS: through a simulated 30-second tunnel, the error stayed under 12 m in every run, against 242 m for GPS-only extrapolation. A first version that ignored <em>when</em> samples arrived learned an accelerometer bias forty times too large.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. They ran as a macOS command-line program on macOS 26. The sensor callbacks are simulated with dispatch queues and tasks shaped like Core Motion’s and Core Location’s, because the iOS simulator has no motion hardware. The simulated sensors use the seeded generator from the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+</code></pre></div></div>
+
+<h2 id="the-shared-object">The shared object</h2>
+
+<p>The first design that comes to mind is a class with a few properties: the latest speed, counts, a buffer. The accelerometer handler writes to it from Core Motion’s queue, and the location delegate writes to it from the main thread. In Swift 6 language mode, capturing a non-<code class="language-plaintext highlighter-rouge">Sendable</code> class in a <code class="language-plaintext highlighter-rouge">DispatchQueue.async</code> closure produces a warning, not an error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile cleanly: Swift 6.4 warns "capture of 'fusion' with non-Sendable type 'Fusion' in a '@Sendable' closure"</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Fusion</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">lastSpeed</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="p">}</span>
+<span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="n">_</span> <span class="nv">fusion</span><span class="p">:</span> <span class="kt">Fusion</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"motion"</span><span class="p">)</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">fusion</span><span class="o">.</span><span class="n">lastSpeed</span> <span class="o">+=</span> <span class="mf">0.001</span> <span class="p">}</span>
+    <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"location"</span><span class="p">)</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">fusion</span><span class="o">.</span><span class="n">lastSpeed</span> <span class="o">*=</span> <span class="mf">0.999</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>It’s a warning because Dispatch’s annotations are imported with <code class="language-plaintext highlighter-rouge">@preconcurrency</code>, so the program builds and runs. The usual way to silence the warning is to mark the class <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code>. That compiles cleanly and runs, and it’s wrong:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// The tempting shortcut: one object that both sensor callbacks write to, marked @unchecked Sendable to quiet Swift 6.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SharedFusion</span><span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">motionSamples</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">locationFixes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">lastSpeed</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">SharedFusion</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">motionQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"motion"</span><span class="p">),</span> <span class="n">locationQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"location"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">both</span> <span class="o">=</span> <span class="kt">DispatchGroup</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100_000</span> <span class="p">{</span>
+    <span class="n">motionQueue</span><span class="o">.</span><span class="nf">async</span><span class="p">(</span><span class="nv">group</span><span class="p">:</span> <span class="n">both</span><span class="p">)</span> <span class="p">{</span> <span class="n">shared</span><span class="o">.</span><span class="n">motionSamples</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">shared</span><span class="o">.</span><span class="n">lastSpeed</span> <span class="o">+=</span> <span class="mf">0.001</span> <span class="p">}</span>
+    <span class="n">locationQueue</span><span class="o">.</span><span class="nf">async</span><span class="p">(</span><span class="nv">group</span><span class="p">:</span> <span class="n">both</span><span class="p">)</span> <span class="p">{</span> <span class="n">shared</span><span class="o">.</span><span class="n">locationFixes</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">shared</span><span class="o">.</span><span class="n">lastSpeed</span> <span class="o">*=</span> <span class="mf">0.999</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">flushed</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="n">both</span><span class="o">.</span><span class="nf">notify</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="n">main</span><span class="p">)</span> <span class="p">{</span> <span class="n">flushed</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">}</span>
+<span class="k">while</span> <span class="o">!</span><span class="n">flushed</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"shared object: motion"</span><span class="p">,</span> <span class="n">shared</span><span class="o">.</span><span class="n">motionSamples</span><span class="p">,</span> <span class="s">"location"</span><span class="p">,</span> <span class="n">shared</span><span class="o">.</span><span class="n">locationFixes</span><span class="p">,</span> <span class="s">"of 100,000 each"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The counters came out exact, 100,000 each, because each counter is written by only one queue. <code class="language-plaintext highlighter-rouge">lastSpeed</code> is written by both. Built with <code class="language-plaintext highlighter-rouge">-sanitize=thread</code>, the same program produced two reports immediately: “Swift access race” for the overlapping accesses to the stored property, and “data race” for the read and write of its 8 bytes, each naming the two threads involved. Without the sanitizer, nothing visible happens. The value is just wrong some of the time, which is the worst kind of bug in a fusion engine, where wrong numbers look like noise.</p>
+
+<h2 id="getting-samples-into-an-actor-in-order">Getting samples into an actor, in order</h2>
+
+<p>An actor removes the race by owning the state. The question is how samples get into it. The obvious bridge from a callback, <code class="language-plaintext highlighter-rouge">Task { await engine.add(sample) }</code>, creates an independent task per sample, and independent tasks are scheduled independently. The test below delivers 10,000 numbered samples from a serial queue, first through one task each, then through one <code class="language-plaintext highlighter-rouge">AsyncStream</code> with a single consumer:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">Log</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Counts positions where a value is smaller than the one before it.</span>
+<span class="kd">func</span> <span class="nf">inversions</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span> <span class="nf">zip</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(),</span> <span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="nv">$0</span><span class="o">.</span><span class="mi">1</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+
+<span class="c1">// A serial queue stands in for Core Motion's handler queue: 10,000 samples, in order.</span>
+<span class="k">let</span> <span class="nv">handlerQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"motion-handler"</span><span class="p">)</span>
+
+<span class="c1">// One task per sample, each hopping onto the actor.</span>
+<span class="k">let</span> <span class="nv">perSample</span> <span class="o">=</span> <span class="kt">Log</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span> <span class="p">{</span>
+    <span class="n">handlerQueue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span>
+        <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="n">perSample</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">while</span> <span class="k">await</span> <span class="n">perSample</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="mi">10_000</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">taskOrder</span> <span class="o">=</span> <span class="k">await</span> <span class="n">perSample</span><span class="o">.</span><span class="n">values</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"task per sample:"</span><span class="p">,</span> <span class="n">taskOrder</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"values,"</span><span class="p">,</span> <span class="nf">inversions</span><span class="p">(</span><span class="n">taskOrder</span><span class="p">),</span> <span class="s">"out of order"</span><span class="p">)</span>
+
+<span class="c1">// One AsyncStream: the handler yields, a single consumer appends.</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">viaStream</span> <span class="o">=</span> <span class="kt">Log</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">consumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span> <span class="k">await</span> <span class="n">viaStream</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10_000</span> <span class="p">{</span> <span class="n">handlerQueue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="n">handlerQueue</span><span class="o">.</span><span class="n">sync</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">consumer</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">streamOrder</span> <span class="o">=</span> <span class="k">await</span> <span class="n">viaStream</span><span class="o">.</span><span class="n">values</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"one stream:"</span><span class="p">,</span> <span class="n">streamOrder</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"values,"</span><span class="p">,</span> <span class="nf">inversions</span><span class="p">(</span><span class="n">streamOrder</span><span class="p">),</span> <span class="s">"out of order"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">inversions</span><span class="p">(</span><span class="n">streamOrder</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">streamOrder</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">10_000</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Bridge</th>
+      <th>Out of order, three runs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>One <code class="language-plaintext highlighter-rouge">Task</code> per sample</td>
+      <td>128 to 387 of 10,000, over six runs</td>
+    </tr>
+    <tr>
+      <td>One <code class="language-plaintext highlighter-rouge">AsyncStream</code>, one consumer</td>
+      <td>0, every run</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The serial queue produced the samples in order, and up to 3.9% of them still reached the actor out of order. Swift makes no promise about the order in which separately created tasks start. A stream does: its continuation is safe to call from any thread, and a single <code class="language-plaintext highlighter-rouge">for await</code> loop receives elements in the order they were yielded. The <a href="/ios-accelerometer-gyroscope/#receiving-samples-in-swift-6">accelerometer article</a> wrapped each sensor in exactly this kind of stream.</p>
+
+<p>This experiment also tripped over the isolation trap from earlier articles, in a new place. The first version waited for the queue with a <code class="language-plaintext highlighter-rouge">DispatchGroup</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Crashes: the notify closure is written in main-actor code, so it's main-actor isolated, and runs on a global queue</span>
+<span class="k">let</span> <span class="nv">group</span> <span class="o">=</span> <span class="kt">DispatchGroup</span><span class="p">()</span>
+<span class="n">group</span><span class="o">.</span><span class="nf">enter</span><span class="p">()</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="nf">leave</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">done</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+    <span class="n">group</span><span class="o">.</span><span class="nf">notify</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span> <span class="p">{</span> <span class="n">done</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The closure passed to <code class="language-plaintext highlighter-rouge">notify</code> was created inside the continuation’s body, which runs on the main actor, and Swift inferred main-actor isolation for it. When Dispatch ran it on a global queue, the process stopped with a trap before printing anything. Passing <code class="language-plaintext highlighter-rouge">queue: .main</code> would make it correct. The code in this article simply avoids the pattern.</p>
+
+<h2 id="two-sources-one-stream">Two sources, one stream</h2>
+
+<p>Two sensors can share one stream. Wrap their samples in one <code class="language-plaintext highlighter-rouge">Sendable</code> enum and have both producers yield into the same continuation. Each producer’s own order is preserved, and the consumer sees the two interleaved in arrival order. That’s close to time order when samples are delivered as they’re produced, and the <a href="/ios-sensor-timestamps/#out-of-order-events">timestamps article</a> showed how to restore exact order when the jitter matters.</p>
+
+<p>The consumer is an actor that owns a Kalman filter. Its state is position $p$, velocity $v$, and the accelerometer’s bias $b$, along a road. Between samples, the measured acceleration $a$ drives the prediction:</p>
+
+\[\begin{pmatrix} p \\ v \\ b \end{pmatrix}_{k+1} =
+\begin{pmatrix} 1 &amp; \Delta t &amp; -\tfrac{1}{2}\Delta t^2 \\ 0 &amp; 1 &amp; -\Delta t \\ 0 &amp; 0 &amp; 1 \end{pmatrix}
+\begin{pmatrix} p \\ v \\ b \end{pmatrix}_k +
+\begin{pmatrix} \tfrac{1}{2}\Delta t^2 \\ \Delta t \\ 0 \end{pmatrix} a_k ,\]
+
+<p>and its covariance grows by the accelerometer’s noise, plus a small allowance for the bias to wander. A GPS fix $z$ with accuracy $\sigma$ corrects the state with the gain $K = P H^\top (H P H^\top + \sigma^2)^{-1}$, where $H = (1, 0, 0)$ picks out the position. The bias isn’t measured directly. The filter learns it because a biased accelerometer makes predictions that GPS keeps contradicting in the same direction.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="n">simd</span>
+
+<span class="c1">/// Everything the fusion engine consumes, as one Sendable type so both sources can share one ordered stream.</span>
+<span class="kd">enum</span> <span class="kt">SensorInput</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">acceleration</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">forward</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span>              <span class="c1">// m/s², along the direction of travel</span>
+    <span class="k">case</span> <span class="nf">fix</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span>    <span class="c1">// meters along the road, 1σ in meters</span>
+<span class="p">}</span>
+
+<span class="c1">/// A Kalman filter on position, velocity, and accelerometer bias along a road.</span>
+<span class="c1">/// The accelerometer drives the prediction; GPS fixes correct it, and teach the filter the bias.</span>
+<span class="kd">struct</span> <span class="kt">RoadKalman</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">x</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>                     <span class="c1">// position, velocity, bias</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">P</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">diagonal</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">accelerationNoise</span><span class="p">:</span> <span class="kt">Double</span>                                     <span class="c1">// σ of one accelerometer sample, m/s²</span>
+    <span class="k">let</span> <span class="nv">biasWander</span><span class="p">:</span> <span class="kt">Double</span>                                            <span class="c1">// how fast the bias may drift, m/s² per √s</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">accelerationNoise</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">biasWander</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">accelerationNoise</span> <span class="o">=</span> <span class="n">accelerationNoise</span><span class="p">;</span> <span class="k">self</span><span class="o">.</span><span class="n">biasWander</span> <span class="o">=</span> <span class="n">biasWander</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">position</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">x</span><span class="o">.</span><span class="n">x</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">bias</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">x</span><span class="o">.</span><span class="n">z</span> <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">predict</span><span class="p">(</span><span class="n">to</span> <span class="nv">t</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">measuredAcceleration</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">time</span> <span class="o">=</span> <span class="n">t</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">last</span> <span class="o">=</span> <span class="n">time</span><span class="p">,</span> <span class="n">t</span> <span class="o">&gt;</span> <span class="n">last</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">dt</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">last</span>
+        <span class="c1">// p += v dt + ½ (a - b) dt², v += (a - b) dt, b stays.</span>
+        <span class="k">let</span> <span class="nv">F</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">rows</span><span class="p">:</span> <span class="p">[</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="o">-</span><span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">dt</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="kt">F</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span>
+        <span class="k">let</span> <span class="nv">g</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">q</span> <span class="o">=</span> <span class="n">accelerationNoise</span> <span class="o">*</span> <span class="n">accelerationNoise</span>
+        <span class="k">var</span> <span class="nv">Q</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">rows</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span> <span class="o">*</span> <span class="n">g</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">q</span><span class="p">,</span> <span class="n">g</span> <span class="o">*</span> <span class="n">g</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">q</span><span class="p">,</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)])</span>
+        <span class="kt">Q</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">biasWander</span> <span class="o">*</span> <span class="n">biasWander</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="kt">P</span> <span class="o">=</span> <span class="kt">F</span> <span class="o">*</span> <span class="kt">P</span> <span class="o">*</span> <span class="kt">F</span><span class="o">.</span><span class="n">transpose</span> <span class="o">+</span> <span class="kt">Q</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">correct</span><span class="p">(</span><span class="n">position</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">H</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">S</span> <span class="o">=</span> <span class="nf">simd_dot</span><span class="p">(</span><span class="kt">H</span><span class="p">,</span> <span class="kt">P</span> <span class="o">*</span> <span class="kt">H</span><span class="p">)</span> <span class="o">+</span> <span class="n">accuracy</span> <span class="o">*</span> <span class="n">accuracy</span>
+        <span class="k">let</span> <span class="nv">K</span> <span class="o">=</span> <span class="p">(</span><span class="kt">P</span> <span class="o">*</span> <span class="kt">H</span><span class="p">)</span> <span class="o">/</span> <span class="kt">S</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="kt">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="nf">simd_dot</span><span class="p">(</span><span class="kt">H</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">I</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">diagonal</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">KH</span> <span class="o">=</span> <span class="nf">simd_double3x3</span><span class="p">(</span><span class="nv">rows</span><span class="p">:</span> <span class="p">[</span><span class="kt">K</span> <span class="o">*</span> <span class="kt">H</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="kt">K</span> <span class="o">*</span> <span class="kt">H</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="kt">K</span> <span class="o">*</span> <span class="kt">H</span><span class="o">.</span><span class="n">z</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span>
+        <span class="kt">P</span> <span class="o">=</span> <span class="p">(</span><span class="kt">I</span> <span class="o">-</span> <span class="kt">KH</span><span class="p">)</span> <span class="o">*</span> <span class="kt">P</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// The fusion engine: one actor owns the filter; one stream feeds it, in the order the sources produced.</span>
+<span class="kd">actor</span> <span class="kt">FusionEngine</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="kt">RoadKalman</span><span class="p">(</span><span class="nv">accelerationNoise</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nv">biasWander</span><span class="p">:</span> <span class="mf">0.002</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">lastAcceleration</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">estimates</span><span class="p">:</span> <span class="p">[(</span><span class="nv">time</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">inputs</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">SensorInput</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">input</span> <span class="k">in</span> <span class="n">inputs</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="n">input</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">acceleration</span><span class="p">(</span><span class="k">let</span> <span class="nv">t</span><span class="p">,</span> <span class="k">let</span> <span class="nv">a</span><span class="p">):</span>
+                <span class="n">filter</span><span class="o">.</span><span class="nf">predict</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">measuredAcceleration</span><span class="p">:</span> <span class="n">lastAcceleration</span><span class="p">)</span>
+                <span class="n">lastAcceleration</span> <span class="o">=</span> <span class="n">a</span>
+                <span class="n">estimates</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">t</span><span class="p">,</span> <span class="n">filter</span><span class="o">.</span><span class="n">position</span><span class="p">))</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">fix</span><span class="p">(</span><span class="k">let</span> <span class="nv">t</span><span class="p">,</span> <span class="k">let</span> <span class="nv">p</span><span class="p">,</span> <span class="k">let</span> <span class="nv">accuracy</span><span class="p">):</span>
+                <span class="n">filter</span><span class="o">.</span><span class="nf">predict</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">measuredAcceleration</span><span class="p">:</span> <span class="n">lastAcceleration</span><span class="p">)</span>
+                <span class="n">filter</span><span class="o">.</span><span class="nf">correct</span><span class="p">(</span><span class="nv">position</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="n">accuracy</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">bias</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">filter</span><span class="o">.</span><span class="n">bias</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="a-drive-through-a-tunnel">A drive through a tunnel</h2>
+
+<p>The test drive lasts 120 seconds. The car accelerates to 20 m/s, cruises, slows to 8 m/s, then drives through a tunnel from 50 to 80 seconds, where GPS has no signal, and accelerates again after it. The accelerometer reports at 50 Hz with a bias of 0.05 m/s² and noise of 0.1 m/s². GPS reports once a second with 4 m of noise. These are illustrative values, like the rest of the series’ sensor models.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A 120 s drive: speed up to 20 m/s, cruise, slow to 8 m/s before a tunnel from 50 s to 80 s, speed up after it.</span>
+<span class="kd">func</span> <span class="nf">trueAcceleration</span><span class="p">(</span><span class="n">_</span> <span class="nv">t</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">t</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">..&lt;</span><span class="mi">10</span><span class="p">:</span> <span class="k">return</span> <span class="mf">2.0</span>
+    <span class="k">case</span> <span class="mi">44</span><span class="o">..&lt;</span><span class="mi">50</span><span class="p">:</span> <span class="k">return</span> <span class="o">-</span><span class="mf">2.0</span>
+    <span class="k">case</span> <span class="mi">82</span><span class="o">..&lt;</span><span class="mi">88</span><span class="p">:</span> <span class="k">return</span> <span class="mf">2.0</span>
+    <span class="k">default</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">inTunnel</span><span class="p">(</span><span class="n">_</span> <span class="nv">t</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="mi">50</span> <span class="o">&amp;&amp;</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">80</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">imuRate</span> <span class="o">=</span> <span class="mf">50.0</span><span class="p">,</span> <span class="n">steps</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="mi">120</span> <span class="o">*</span> <span class="n">imuRate</span><span class="p">),</span> <span class="n">dt</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">imuRate</span>
+<span class="k">var</span> <span class="nv">truth</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">truthPosition</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">truthVelocity</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">steps</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">a</span> <span class="o">=</span> <span class="nf">trueAcceleration</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">truth</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">truthPosition</span><span class="p">)</span>
+    <span class="n">truthPosition</span> <span class="o">+=</span> <span class="n">truthVelocity</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dt</span>
+    <span class="n">truthVelocity</span> <span class="o">+=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span>
+<span class="p">}</span>
+
+<span class="c1">// Sensors: the accelerometer has a 0.05 m/s² bias and 0.1 m/s² of noise; GPS has 4 m of noise, once a second,</span>
+<span class="c1">// and nothing in the tunnel.</span>
+<span class="k">var</span> <span class="nv">noise</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">23</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">measured</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="n">steps</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">trueAcceleration</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">noise</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">fixes</span> <span class="o">=</span> <span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">steps</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">imuRate</span><span class="p">))</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="o">!</span><span class="nf">inTunnel</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">index</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="n">truth</span><span class="p">[</span><span class="nv">$0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">noise</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The producers model the two callback sources: each runs on its own and delivers samples at the pace its sensor produces them, on a clock sped up 20 times so the test takes six seconds instead of two minutes. Two alternatives provide comparison: integrating the accelerometer alone, and extrapolating from the last two GPS fixes.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Two producers, like Core Motion's queue and Core Location's delegate, each delivering at the pace its sensor</span>
+<span class="c1">// produces (with the clock sped up 20 times), into one stream.</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">sensorStream</span><span class="p">,</span> <span class="nv">sensorContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">SensorInput</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">engine</span> <span class="o">=</span> <span class="kt">FusionEngine</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="n">sensorStream</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">(),</span> <span class="n">origin</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">speedUp</span> <span class="o">=</span> <span class="mf">20.0</span>
+<span class="k">let</span> <span class="nv">imuProducer</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">steps</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">origin</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="n">speedUp</span><span class="p">))</span>
+        <span class="n">sensorContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">acceleration</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">forward</span><span class="p">:</span> <span class="n">measured</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">gpsProducer</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">fix</span> <span class="k">in</span> <span class="n">fixes</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">t</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">fix</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">origin</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="n">speedUp</span><span class="p">))</span>
+        <span class="n">sensorContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">fix</span><span class="p">(</span><span class="nv">time</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="nv">position</span><span class="p">:</span> <span class="n">fix</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="nv">accuracy</span><span class="p">:</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">imuProducer</span><span class="o">.</span><span class="n">value</span><span class="p">;</span> <span class="k">await</span> <span class="n">gpsProducer</span><span class="o">.</span><span class="n">value</span>
+<span class="n">sensorContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">running</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">fused</span> <span class="o">=</span> <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">sorted</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="nv">$1</span><span class="o">.</span><span class="n">time</span> <span class="p">}</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">learnedBias</span> <span class="o">=</span> <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">bias</span>
+
+<span class="c1">// Alternative 1: integrate the accelerometer alone, from the true start.</span>
+<span class="k">var</span> <span class="nv">reckoned</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">speed</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">position</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">steps</span> <span class="p">{</span> <span class="n">reckoned</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">position</span><span class="p">);</span> <span class="n">position</span> <span class="o">+=</span> <span class="n">speed</span> <span class="o">*</span> <span class="n">dt</span><span class="p">;</span> <span class="n">speed</span> <span class="o">+=</span> <span class="n">measured</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">}</span>
+
+<span class="c1">// Alternative 2: GPS alone, extrapolating at the speed between the last two fixes.</span>
+<span class="k">var</span> <span class="nv">extrapolated</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">fixIterator</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">steps</span> <span class="p">{</span>
+    <span class="k">while</span> <span class="n">fixIterator</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">fixes</span><span class="o">.</span><span class="n">count</span> <span class="o">&amp;&amp;</span> <span class="n">fixes</span><span class="p">[</span><span class="n">fixIterator</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="p">{</span> <span class="n">fixIterator</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">last</span> <span class="o">=</span> <span class="n">fixes</span><span class="p">[</span><span class="n">fixIterator</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">fixes</span><span class="p">[</span><span class="nf">max</span><span class="p">(</span><span class="n">fixIterator</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="k">let</span> <span class="nv">velocity</span> <span class="o">=</span> <span class="n">last</span><span class="o">.</span><span class="n">index</span> <span class="o">==</span> <span class="n">previous</span><span class="o">.</span><span class="n">index</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">position</span> <span class="o">-</span> <span class="n">previous</span><span class="o">.</span><span class="n">position</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">index</span> <span class="o">-</span> <span class="n">previous</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">extrapolated</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">position</span> <span class="o">+</span> <span class="n">velocity</span> <span class="o">*</span> <span class="kt">Double</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="n">last</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">errors</span><span class="p">(</span><span class="n">_</span> <span class="nv">estimate</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="n">against</span> <span class="nv">truth</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">],</span> <span class="k">where</span> <span class="nv">keep</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">rms</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">max</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">e</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">estimate</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">truth</span><span class="o">.</span><span class="n">count</span><span class="p">))</span><span class="o">.</span><span class="nf">filter</span><span class="p">(</span><span class="n">keep</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">abs</span><span class="p">(</span><span class="n">estimate</span><span class="p">[</span><span class="nv">$0</span><span class="p">]</span> <span class="o">-</span> <span class="n">truth</span><span class="p">[</span><span class="nv">$0</span><span class="p">])</span> <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">((</span><span class="n">e</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">*</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">count</span><span class="p">))</span><span class="o">.</span><span class="nf">squareRoot</span><span class="p">(),</span> <span class="n">e</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">tunnel</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="p">{</span> <span class="nf">inTunnel</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">open</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="p">{</span> <span class="o">!</span><span class="nf">inTunnel</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span> <span class="o">&gt;</span> <span class="mi">250</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"fused estimates"</span><span class="p">,</span> <span class="n">fused</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"learned bias"</span><span class="p">,</span> <span class="n">learnedBias</span><span class="p">)</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">estimate</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"accelerometer only"</span><span class="p">,</span> <span class="n">reckoned</span><span class="p">),</span> <span class="p">(</span><span class="s">"GPS only"</span><span class="p">,</span> <span class="n">extrapolated</span><span class="p">),</span> <span class="p">(</span><span class="s">"fused"</span><span class="p">,</span> <span class="n">fused</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">outside</span> <span class="o">=</span> <span class="nf">errors</span><span class="p">(</span><span class="n">estimate</span><span class="p">,</span> <span class="nv">against</span><span class="p">:</span> <span class="n">truth</span><span class="p">,</span> <span class="nv">where</span><span class="p">:</span> <span class="kd">open</span><span class="p">),</span> <span class="n">inside</span> <span class="o">=</span> <span class="nf">errors</span><span class="p">(</span><span class="n">estimate</span><span class="p">,</span> <span class="nv">against</span><span class="p">:</span> <span class="n">truth</span><span class="p">,</span> <span class="nv">where</span><span class="p">:</span> <span class="n">tunnel</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="nv">toLength</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">withPad</span><span class="p">:</span> <span class="s">" "</span><span class="p">,</span> <span class="nv">startingAt</span><span class="p">:</span> <span class="mi">0</span><span class="p">),</span>
+          <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"open road RMS %6.1f m | tunnel RMS %6.1f m, max %6.1f m"</span><span class="p">,</span> <span class="n">outside</span><span class="o">.</span><span class="n">rms</span><span class="p">,</span> <span class="n">inside</span><span class="o">.</span><span class="n">rms</span><span class="p">,</span> <span class="n">inside</span><span class="o">.</span><span class="n">max</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Estimate</th>
+      <th>Open road, RMS error</th>
+      <th>Tunnel, RMS error</th>
+      <th>Tunnel, worst error</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Accelerometer only</td>
+      <td>183.7 m</td>
+      <td>111.5 m</td>
+      <td>161.7 m</td>
+    </tr>
+    <tr>
+      <td>GPS only, extrapolated</td>
+      <td>6.2 m</td>
+      <td>141.9 m</td>
+      <td>241.7 m</td>
+    </tr>
+    <tr>
+      <td>Fused</td>
+      <td><strong>2.7 m</strong></td>
+      <td><strong>5.3 to 7.5 m</strong></td>
+      <td><strong>7.8 to 11.6 m</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each source alone fails in its own way. The accelerometer alone drifts with its bias, by about half of $0.05\,t^2$ meters, which is 360 m after two minutes. GPS alone is decent in the open, but extrapolating through the tunnel at the speed between the last two fixes is a disaster, because that speed is computed from two fixes each 4 m off, so it’s uncertain by about $\sqrt 2 \times 4 = 5.7$ m/s. The fused estimate beat GPS even in the open, because the accelerometer smooths the jitter between fixes, and through the tunnel it never strayed more than 11.6 m. The fused numbers vary slightly between runs, because the two paced producers interleave a little differently each time, which shifts when each fix is applied. The single-sensor rows don’t depend on timing and were identical in every run. It learned the bias as 0.055 to 0.057 m/s², against a true value of 0.05, from the open-road stretch before the tunnel. That’s what kept dead reckoning honest for 30 seconds without GPS.</p>
+
+<h3 id="the-version-that-ignored-arrival-time">The version that ignored arrival time</h3>
+
+<p>The first version of this test produced every sample at once: each producer looped over its sensor’s whole recording and yielded as fast as it could. The fused result was absurd: an open-road error of 678 m, and a learned bias of 2.0 m/s², forty times the truth. The accelerometer producer had pushed all 6,000 samples through before the consumer saw most GPS fixes, so each fix arrived after the filter had already predicted to the end of the drive. Each correction was applied ‘now’ to a fix taken minutes earlier, and the filter explained the mismatch the only way it could, with an enormous bias.</p>
+
+<p>Real sensors don’t do that, because they produce samples in real time, which is why the paced producers fixed it. But replaying a recording at full speed, which is exactly what the <a href="/ios-sensor-recorded-data-tests/">testing article</a> will do, recreates the problem. A fusion engine that might ever see replayed data has to order by timestamp, not arrival, using a reorder buffer, or a replay source that releases events in timestamp order on a virtual clock.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Writing shared state from Core Motion’s queue and Core Location’s delegate is a data race. Swift 6.4 only warns about it with Dispatch, <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> silences even the warning, and Thread Sanitizer reported it immediately.</li>
+  <li>Hopping to an actor with one <code class="language-plaintext highlighter-rouge">Task</code> per sample doesn’t preserve order: 1.3% to 3.9% of 10,000 ordered samples arrived out of order. One <code class="language-plaintext highlighter-rouge">AsyncStream</code> with a single consumer preserved order exactly.</li>
+  <li>A closure written in main-actor code and handed to Dispatch is main-actor isolated. <code class="language-plaintext highlighter-rouge">DispatchGroup.notify</code> on a global queue trapped.</li>
+  <li>Merge both sensors into one stream of a <code class="language-plaintext highlighter-rouge">Sendable</code> enum and let one actor own the fusion state.</li>
+  <li>A three-state Kalman filter (position, velocity, accelerometer bias) fused a 50 Hz accelerometer with 1 Hz GPS. Through a 30 s tunnel it stayed within 7.8 to 11.6 m, against 242 m for GPS extrapolation and 162 m for the accelerometer alone. It learned the bias to within 14%.</li>
+  <li>Fusion depends on event time. Feeding samples in arrival order from a full-speed replay produced a 678 m error and a fortyfold bias. Order by timestamp whenever producers aren’t real-time.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add the <a href="/ios-sensor-timestamps/#out-of-order-events">reorder buffer</a> to <code class="language-plaintext highlighter-rouge">FusionEngine</code> so it processes inputs in timestamp order, with an allowed lateness in <em>event time</em> rather than arrival time. Then reproduce the failing full-speed replay, with every sample yielded at once, and show that the buffered engine gives the same answer as the paced one. Finally, let the GPS fixes arrive 300 ms late, as fixes from a busy main thread might, and measure what the allowed lateness must be for the result not to change.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>R. E. Kalman, “A New Approach to Linear Filtering and Prediction Problems”, <em>Journal of Basic Engineering</em> 82(1), 1960, <a href="https://doi.org/10.1115/1.3662552">doi:10.1115/1.3662552</a></li>
+  <li>Greg Welch and Gary Bishop, <a href="https://techreports.cs.unc.edu/papers/95-041.pdf">An Introduction to the Kalman Filter</a>, University of North Carolina TR 95-041, a short and practical derivation</li>
+  <li><a href="https://developer.apple.com/documentation/swift/asyncstream"><code class="language-plaintext highlighter-rouge">AsyncStream</code></a> and <a href="https://developer.apple.com/documentation/swift/asyncstream/continuation"><code class="language-plaintext highlighter-rouge">AsyncStream.Continuation</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/xcode/diagnosing-memory-thread-and-crash-issues-early">Thread Sanitizer</a>, in Xcode’s guide to diagnosing issues early</li>
+</ul>
+
+<p>Previous: <a href="/ios-sensor-timestamps/">Timestamps, Stale Samples, and Out-of-Order Events</a></p>
+
+<p>Next: <a href="/ios-sensor-missing-data/">Distinguishing Missing Data from a Valid Zero Reading</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/ios-combining-motion-location/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Combining+Motion+and+Location+Without+Shared-State+Races%20http%3A%2F%2Flocalhost%3A4000%2Fios-combining-motion-location%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/ios-combining-motion-location/&title=Combining+Motion+and+Location+Without+Shared-State+Races%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/ios-combining-motion-location/&title=Combining+Motion+and+Location+Without+Shared-State+Races%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/ios-combining-motion-location/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Combining Motion and Location Without Shared-State Races%20%7C%20Swift By Deya&body=http://localhost:4000/ios-combining-motion-location/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Core+Location">Core Location</a></li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Kalman+Filter">Kalman Filter</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Distinguishing Missing Data from a Valid Zero Reading" href="/ios-sensor-missing-data/"> <p>Previous post</p> Distinguishing Missing Data from a Valid Zero Reading </a> </div> <div id="next-post"> <a alt="Timestamps, Stale Samples, and Out-of-Order Events" href="/ios-sensor-timestamps/"> <p>Next post</p> Timestamps, Stale Samples, and Out-of-Order Events </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

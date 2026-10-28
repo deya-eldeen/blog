@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="http://localhost:4000" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-http://localhost:4000'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Attitude, Reference Frames, and Coordinate Conversion | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Attitude, Reference Frames, and Coordinate Conversion" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An attitude is a rotation, and a rotation is only meaningful once two things are pinned down: which frame it’s measured from, and which way it maps. Core Motion pins down the first with its reference frames. It leaves the second to the reader: Apple’s documentation describes CMAttitude as “the device’s orientation relative to a known frame of reference”, but nowhere says whether its quaternion turns device-frame vectors into reference-frame vectors or the other way around. Nor does it say in which order its roll, pitch, and yaw are applied. Most attitude bugs live in exactly those two gaps. This article fills them in with math that can be checked. It covers the four reference frames and what each costs, quaternions and their double cover, a test that settles the mapping direction from the data itself, and why Euler angles fail near vertical: a 0.2° nudge moved extracted yaw by 34°. Then come the conversions an app actually needs, into compass bearings, screen coordinates, and y-up 3D scenes, plus the new iOS 27 API that lets Core Motion do the screen conversion itself." /> <meta property="og:description" content="An attitude is a rotation, and a rotation is only meaningful once two things are pinned down: which frame it’s measured from, and which way it maps. Core Motion pins down the first with its reference frames. It leaves the second to the reader: Apple’s documentation describes CMAttitude as “the device’s orientation relative to a known frame of reference”, but nowhere says whether its quaternion turns device-frame vectors into reference-frame vectors or the other way around. Nor does it say in which order its roll, pitch, and yaw are applied. Most attitude bugs live in exactly those two gaps. This article fills them in with math that can be checked. It covers the four reference frames and what each costs, quaternions and their double cover, a test that settles the mapping direction from the data itself, and why Euler angles fail near vertical: a 0.2° nudge moved extracted yaw by 34°. Then come the conversions an app actually needs, into compass bearings, screen coordinates, and y-up 3D scenes, plus the new iOS 27 API that lets Core Motion do the screen conversion itself." /> <link rel="canonical" href="http://localhost:4000/ios-attitude-reference-frames/" /> <meta property="og:url" content="http://localhost:4000/ios-attitude-reference-frames/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-02-16T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Attitude, Reference Frames, and Coordinate Conversion" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-02-16T00:00:00+03:00","datePublished":"2026-02-16T00:00:00+03:00","description":"An attitude is a rotation, and a rotation is only meaningful once two things are pinned down: which frame it’s measured from, and which way it maps. Core Motion pins down the first with its reference frames. It leaves the second to the reader: Apple’s documentation describes CMAttitude as “the device’s orientation relative to a known frame of reference”, but nowhere says whether its quaternion turns device-frame vectors into reference-frame vectors or the other way around. Nor does it say in which order its roll, pitch, and yaw are applied. Most attitude bugs live in exactly those two gaps. This article fills them in with math that can be checked. It covers the four reference frames and what each costs, quaternions and their double cover, a test that settles the mapping direction from the data itself, and why Euler angles fail near vertical: a 0.2° nudge moved extracted yaw by 34°. Then come the conversions an app actually needs, into compass bearings, screen coordinates, and y-up 3D scenes, plus the new iOS 27 API that lets Core Motion do the screen conversion itself.","headline":"Attitude, Reference Frames, and Coordinate Conversion","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ios-attitude-reference-frames/"},"url":"http://localhost:4000/ios-attitude-reference-frames/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="http://localhost:4000/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Attitude, Reference Frames, and Coordinate Conversion"> <meta name="twitter:description" content="An attitude is a rotation, and a rotation is only meaningful once two things are pinned down: which frame it’s measured from, and which way it maps. Core Mot..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="http://localhost:4000/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Attitude, Reference Frames, and Coordinate Conversion"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Attitude, Reference Frames, and Coordinate Conversion</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-02-16T00:00:00+03:00">February 16, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An attitude is a rotation, and a rotation is only meaningful once two things are pinned down: which frame it’s measured from, and which way it maps. Core Motion pins down the first with its reference frames. It leaves the second to the reader: Apple’s documentation describes <code class="language-plaintext highlighter-rouge">CMAttitude</code> as “the device’s orientation relative to a known frame of reference”, but nowhere says whether its quaternion turns device-frame vectors into reference-frame vectors or the other way around. Nor does it say in which order its roll, pitch, and yaw are applied. Most attitude bugs live in exactly those two gaps.</p>
+
+<p>This article fills them in with math that can be checked. It covers the four reference frames and what each costs, quaternions and their double cover, a test that settles the mapping direction from the data itself, and why Euler angles fail near vertical: a 0.2° nudge moved extracted yaw by 34°. Then come the conversions an app actually needs, into compass bearings, screen coordinates, and y-up 3D scenes, plus the new iOS 27 API that lets Core Motion do the screen conversion itself.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The plain Swift blocks ran as a macOS command-line program on macOS 26, and the iOS block ran in a unit-test bundle hosted by an app on an iPhone 17 simulator running iOS 27.0. The simulator has no motion hardware, so attitudes in this article are constructed with <code class="language-plaintext highlighter-rouge">simd_quatd</code>, whose behavior is fully specified, and the article never claims what a device would report without saying how to check it. Random test attitudes come from the seeded generator in the <a href="/ios-location-permission-changes/#distance-from-snapped-positions">permission changes article</a>.</p>
+
+<!-- check-uses: sensor-random -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="n">simd</span>
+</code></pre></div></div>
+
+<h2 id="the-four-reference-frames">The four reference frames</h2>
+
+<p>Every Core Motion reference frame is right-handed with z vertical. They differ in what x is tied to:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Frame</th>
+      <th>x axis</th>
+      <th>Sensors</th>
+      <th>Notes from Apple’s documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">xArbitraryZVertical</code></td>
+      <td>The device’s heading when updates start</td>
+      <td>Gyroscope, accelerometer</td>
+      <td>“Uses fewer sensors” and “is more power efficient”</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">xArbitraryCorrectedZVertical</code></td>
+      <td>Same</td>
+      <td>Adds the magnetometer</td>
+      <td>“Improve[s] long-term accuracy for the z axis (yaw)”, but “requires more CPU usage”</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">xMagneticNorthZVertical</code></td>
+      <td>Magnetic north</td>
+      <td>Adds the magnetometer</td>
+      <td>Yaw is 0 when x points to magnetic north. May prompt for calibration</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">xTrueNorthZVertical</code></td>
+      <td>True north</td>
+      <td>Adds the magnetometer and location</td>
+      <td>Needs Location Services “to calculate the difference between magnetic and true north”</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>With z up and x north, y points west. That surprises anyone who expects y to be east, as it is in the east-north-up convention of geodesy. It matters as soon as an attitude meets a map.</p>
+
+<p>Choosing a frame is a question of what the feature needs to know:</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    A[What does the feature need?] --&gt; B{An absolute direction, such as north?}
+    B -- no --&gt; C{Long sessions where yaw drift would show?}
+    C -- no --&gt; D[xArbitraryZVertical&lt;br/&gt;cheapest]
+    C -- yes --&gt; E[xArbitraryCorrectedZVertical&lt;br/&gt;magnetometer limits drift]
+    B -- yes --&gt; F{Must match a map or GPS bearing?}
+    F -- no --&gt; G[xMagneticNorthZVertical]
+    F -- yes --&gt; H[xTrueNorthZVertical&lt;br/&gt;also needs location]
+</code></pre>
+
+<p>The drift in the second question is real. Gravity tells the fusion which way is down, so it corrects pitch and roll, but rotation about the vertical axis leaves gravity unchanged. In the arbitrary frame, any gyroscope bias around the vertical axis turns straight into yaw drift. The illustrative gyroscope from the <a href="/ios-accelerometer-gyroscope/#a-model-of-a-real-sensor">accelerometer article</a> has a 0.003 rad/s bias on z, which is 10.3° per minute of drift that nothing in that frame can see. Core Motion estimates and removes bias while the device is still, so a real phone does much better, but the asymmetry stays: the magnetometer is the only sensor that observes yaw.</p>
+
+<h2 id="quaternions-and-two-numbers-for-every-rotation">Quaternions, and two numbers for every rotation</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CMAttitude</code> offers three representations: a quaternion, a rotation matrix, and Euler angles. The quaternion is the one to compute with. Apple’s <code class="language-plaintext highlighter-rouge">CMQuaternion</code> documentation defines it in the standard way: a rotation by $\theta$ about the unit axis $\mathbf n$ is</p>
+
+\[q = \Big(\mathbf n \sin\tfrac{\theta}{2},\ \cos\tfrac{\theta}{2}\Big),\]
+
+<p>stored as <code class="language-plaintext highlighter-rouge">x</code>, <code class="language-plaintext highlighter-rouge">y</code>, <code class="language-plaintext highlighter-rouge">z</code>, <code class="language-plaintext highlighter-rouge">w</code>. That maps directly onto <code class="language-plaintext highlighter-rouge">simd_quatd(ix: x, iy: y, iz: z, r: w)</code>. Because of the half angle, $q$ and $-q$ describe the same rotation. One turns by $\theta$ about $\mathbf n$, the other by $2\pi - \theta$ about $-\mathbf n$, which ends in the same place. This <em>double cover</em> means two attitudes can’t be compared by their numbers:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">rotation</span><span class="p">(</span><span class="n">_</span> <span class="nv">degrees</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">about</span> <span class="nv">axis</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span>
+    <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">angle</span><span class="p">:</span> <span class="n">degrees</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="nv">axis</span><span class="p">:</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">angleDegrees</span><span class="p">(</span><span class="n">between</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="nf">acos</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nf">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nf">simd_dot</span><span class="p">(</span><span class="nf">simd_normalize</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nf">simd_normalize</span><span class="p">(</span><span class="n">b</span><span class="p">)))))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="p">}</span>
+<span class="c1">/// The angle of the rotation from `a` to `b`, in degrees. It treats q and -q as the same rotation.</span>
+<span class="kd">func</span> <span class="nf">angleDegrees</span><span class="p">(</span><span class="n">between</span> <span class="nv">a</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="n">_</span> <span class="nv">b</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">d</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">inverse</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="nf">atan2</span><span class="p">(</span><span class="nf">simd_length</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">imag</span><span class="p">),</span> <span class="nf">abs</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">real</span><span class="p">))</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">q</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">negated</span> <span class="o">=</span> <span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">vector</span><span class="p">:</span> <span class="o">-</span><span class="n">q</span><span class="o">.</span><span class="n">vector</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">q</span> <span class="o">!=</span> <span class="n">negated</span><span class="p">,</span> <span class="s">"different numbers..."</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="n">negated</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s">"...same rotation"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">simd_distance</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">negated</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Code that compares quaternions for equality, averages their components, or checks for a jump between consecutive samples has to use the angle between them, or flip one quaternion onto the same hemisphere first (negate it if the dot product is negative). The helper above uses $2\operatorname{atan2}(\lvert\mathbf v\rvert, \lvert w\rvert)$ of the relative rotation, which is safe under the sign flip and numerically stable for small angles, unlike $2\arccos w$.</p>
+
+<h2 id="which-way-does-the-attitude-map">Which way does the attitude map?</h2>
+
+<p>An attitude $q$ either turns a device-frame vector into the reference frame, $\mathbf v_{\text{ref}} = q\,\mathbf v_{\text{dev}}\,q^{-1}$, or the reverse. The two choices differ by an inverse, and picking the wrong one rotates everything the wrong way. It still produces plausible-looking numbers, so the mistake survives casual testing. Apple’s documentation doesn’t say which convention <code class="language-plaintext highlighter-rouge">CMAttitude</code> uses.</p>
+
+<p>Device motion carries the means to find out. Each <code class="language-plaintext highlighter-rouge">CMDeviceMotion</code> holds both the attitude and the gravity vector in the device frame, and in every reference frame gravity is $(0, 0, -1)$. Map gravity with the attitude both ways. The right convention lands on straight down, up to sensor noise, and the wrong one lands somewhere else:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">AttitudeConvention</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">deviceToReference</span>   <span class="c1">// attitude.act(v) turns a device-frame vector into the reference frame</span>
+    <span class="k">case</span> <span class="n">referenceToDevice</span>   <span class="c1">// attitude.act(v) does the opposite</span>
+<span class="p">}</span>
+
+<span class="c1">/// Decides the convention from samples that carry both an attitude and a gravity vector.</span>
+<span class="c1">/// In every reference frame Core Motion offers, z is vertical, so gravity there is (0, 0, -1).</span>
+<span class="c1">/// Returns the convention and the mean angle between "down" and gravity mapped each way, in degrees.</span>
+<span class="kd">func</span> <span class="nf">detectConvention</span><span class="p">(</span><span class="n">_</span> <span class="nv">samples</span><span class="p">:</span> <span class="p">[(</span><span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)])</span>
+    <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">convention</span><span class="p">:</span> <span class="kt">AttitudeConvention</span><span class="p">,</span> <span class="nv">forward</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">backward</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">down</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">forward</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">attitude</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">gravity</span><span class="p">),</span> <span class="n">down</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">backward</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">attitude</span><span class="o">.</span><span class="n">inverse</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">gravity</span><span class="p">),</span> <span class="n">down</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">forward</span> <span class="o">&lt;</span> <span class="n">backward</span> <span class="p">?</span> <span class="o">.</span><span class="nv">deviceToReference</span> <span class="p">:</span> <span class="o">.</span><span class="n">referenceToDevice</span><span class="p">,</span> <span class="n">forward</span><span class="p">,</span> <span class="n">backward</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Test the detector on synthetic samples in both conventions, with noisy gravity.</span>
+<span class="k">var</span> <span class="nv">random</span> <span class="o">=</span> <span class="kt">SeededGenerator</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">randomAttitude</span><span class="p">(</span><span class="n">using</span> <span class="nv">random</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">SeededGenerator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span>
+    <span class="nf">simd_normalize</span><span class="p">(</span><span class="nf">simd_quatd</span><span class="p">(</span><span class="nv">vector</span><span class="p">:</span> <span class="kt">SIMD4</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())))</span>
+<span class="p">}</span>
+<span class="k">var</span> <span class="nv">deviceToWorld</span><span class="p">:</span> <span class="p">[(</span><span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">attitude</span> <span class="o">=</span> <span class="nf">randomAttitude</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">random</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">noise</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="nf">gaussian</span><span class="p">())</span> <span class="o">*</span> <span class="mf">0.01</span>
+    <span class="n">deviceToWorld</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">attitude</span><span class="p">,</span> <span class="n">attitude</span><span class="o">.</span><span class="n">inverse</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">noise</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">worldToDevice</span> <span class="o">=</span> <span class="n">deviceToWorld</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">attitude</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">attitude</span><span class="o">.</span><span class="n">inverse</span><span class="p">,</span> <span class="nv">gravity</span><span class="p">:</span> <span class="nv">$0</span><span class="o">.</span><span class="n">gravity</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="nf">detectConvention</span><span class="p">(</span><span class="n">deviceToWorld</span><span class="p">),</span> <span class="n">second</span> <span class="o">=</span> <span class="nf">detectConvention</span><span class="p">(</span><span class="n">worldToDevice</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"detected"</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">convention</span> <span class="o">==</span> <span class="o">.</span><span class="n">deviceToReference</span> <span class="o">&amp;&amp;</span> <span class="n">second</span><span class="o">.</span><span class="n">convention</span> <span class="o">==</span> <span class="o">.</span><span class="n">referenceToDevice</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">forward</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">first</span><span class="o">.</span><span class="n">backward</span> <span class="o">&gt;</span> <span class="mi">45</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On 200 synthetic samples with 0.01 g of noise on gravity, the right convention put gravity 0.73° from straight down on average, which is just the noise. The wrong one put it 61.8° away. The margin is huge, so a few seconds of real samples settle the question.</p>
+
+<p>Run this once on a device and keep the result as an assertion in debug builds. It costs a dot product per sample, and it turns a silent sign error into a failure on the first run. The same test catches a different mistake too: a quaternion assembled with <code class="language-plaintext highlighter-rouge">w</code> in the wrong slot also fails it, by a wide margin.</p>
+
+<h2 id="euler-angles-and-gimbal-lock">Euler angles and gimbal lock</h2>
+
+<p>Roll, pitch, and yaw are the attitude’s most readable form and its least reliable one. Apple’s documentation defines each as a rotation about one device axis: roll about the axis “from its top to bottom”, pitch about the axis “from side to side”, yaw about the vertical axis. It doesn’t say in which order they compose. Order matters, as the <a href="/ios-accelerometer-gyroscope/#integrating-rotation-correctly">accelerometer article</a> showed with two 90° turns that ended 120° apart.</p>
+
+<p>Whatever the order, every three-angle description has a singularity. In the common aerospace convention, yaw $\psi$ about z, then pitch $\theta$ about the new y, then roll $\varphi$ about the newest x, the angles come out of the rotation matrix as</p>
+
+\[\theta = -\arcsin R_{31}, \qquad \psi = \operatorname{atan2}(R_{21}, R_{11}), \qquad \varphi = \operatorname{atan2}(R_{32}, R_{33}) .\]
+
+<p>At $\theta = \pm 90°$, the first and last rotations turn about the same axis, so only $\psi \mp \varphi$ is determined. Both atan2 calls then divide zero by zero. This is gimbal lock:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Aerospace convention: yaw ψ about z, then pitch θ about the new y, then roll φ about the newest x.</span>
+<span class="kd">func</span> <span class="nf">fromEuler</span><span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span>
+    <span class="nf">rotation</span><span class="p">(</span><span class="n">yaw</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="n">pitch</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="n">roll</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">_</span> <span class="nv">q</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">m</span> <span class="o">=</span> <span class="nf">simd_matrix3x3</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>   <span class="c1">// columns are the rotated x, y, z axes</span>
+    <span class="k">let</span> <span class="nv">pitch</span> <span class="o">=</span> <span class="nf">asin</span><span class="p">(</span><span class="nf">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nf">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">])))</span>
+    <span class="k">let</span> <span class="nv">yaw</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">let</span> <span class="nv">roll</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">yaw</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">pitch</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">roll</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ordinary</span> <span class="o">=</span> <span class="nf">fromEuler</span><span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">recovered</span> <span class="o">=</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">ordinary</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">recovered</span><span class="o">.</span><span class="n">yaw</span> <span class="o">-</span> <span class="mi">40</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">recovered</span><span class="o">.</span><span class="n">pitch</span> <span class="o">-</span> <span class="mi">20</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">recovered</span><span class="o">.</span><span class="n">roll</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+
+<span class="c1">// At pitch 90°, yaw and roll turn about the same axis: only their difference matters.</span>
+<span class="k">let</span> <span class="nv">lockedA</span> <span class="o">=</span> <span class="nf">fromEuler</span><span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mi">90</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">lockedB</span> <span class="o">=</span> <span class="nf">fromEuler</span><span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="mi">70</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mi">90</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">40</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"gimbal lock: rotations differ by"</span><span class="p">,</span> <span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">lockedA</span><span class="p">,</span> <span class="n">lockedB</span><span class="p">),</span> <span class="s">"degrees; extracted"</span><span class="p">,</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">lockedA</span><span class="p">),</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">lockedB</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">lockedA</span><span class="p">,</span> <span class="n">lockedB</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">)</span>
+
+<span class="c1">// Near the lock, a tiny rotation moves yaw and roll by large amounts.</span>
+<span class="k">let</span> <span class="nv">near</span> <span class="o">=</span> <span class="nf">fromEuler</span><span class="p">(</span><span class="nv">yaw</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">pitch</span><span class="p">:</span> <span class="mf">89.9</span><span class="p">,</span> <span class="nv">roll</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">nudged</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">*</span> <span class="n">near</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"0.2° nudge near the lock:"</span><span class="p">,</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">near</span><span class="p">),</span> <span class="s">"→"</span><span class="p">,</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">nudged</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Yaw 40° and roll 10° gave exactly the same rotation as yaw 70° and roll 40°, to within $10^{-14}$ degrees, and the extraction returned two different triples, neither of them the input. Near the lock it’s worse than ambiguous. At a pitch of 89.9°, rotating the device by 0.2° moved the extracted yaw from 40° to 73.8° and the roll from 10° to 43.8°. For a phone, pitch 90° in this convention is simply the phone stood upright, the most common way to hold a camera. An interface driven by Euler angles jitters wildly exactly when the user lifts the phone to look through it.</p>
+
+<p>So use Euler angles only for display, and only in orientations far from the lock. For computation, keep the quaternion, and when a single angle is needed, ask a geometric question instead.</p>
+
+<h2 id="asking-where-an-axis-points">Asking where an axis points</h2>
+
+<p>“Which way is the phone facing?” has two different answers depending on how it’s held. Lying flat, the useful direction is where its top edge points. Held upright like a camera, it’s where the back camera looks, along the device’s −z axis. Both are the same computation: rotate a device axis into the reference frame and take the bearing of its horizontal part.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Where a device-frame axis points, as a compass-style angle in the reference frame's horizontal plane.</span>
+<span class="c1">/// Returns nil when the axis is too close to vertical for its horizontal direction to mean anything.</span>
+<span class="kd">func</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="n">of</span> <span class="nv">axis</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="nv">minimumHorizontal</span><span class="p">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">world</span> <span class="o">=</span> <span class="n">attitude</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">horizontal</span> <span class="o">=</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="n">world</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">world</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">guard</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">horizontal</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">minimumHorizontal</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="c1">// Reference x is "north" in the north frames; measure clockwise from it, as a compass does (y is then west).</span>
+    <span class="k">let</span> <span class="nv">degrees</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="o">-</span><span class="n">horizontal</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">horizontal</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+    <span class="k">return</span> <span class="n">degrees</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">degrees</span> <span class="o">+</span> <span class="mi">360</span> <span class="p">:</span> <span class="n">degrees</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">top</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">camera</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1">// A phone lying flat, its top edge turned 30° clockwise from reference x (north).</span>
+<span class="k">let</span> <span class="nv">flat</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="c1">// The same phone stood upright, as for taking a photo: tip it 90° about its own x axis.</span>
+<span class="k">let</span> <span class="nv">upright</span> <span class="o">=</span> <span class="n">flat</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"flat: top"</span><span class="p">,</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">flat</span><span class="p">)</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">,</span> <span class="s">"camera"</span><span class="p">,</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">camera</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">flat</span><span class="p">)</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"upright: top"</span><span class="p">,</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">upright</span><span class="p">)</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">,</span> <span class="s">"camera"</span><span class="p">,</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">camera</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">upright</span><span class="p">)</span> <span class="k">as</span> <span class="kt">Any</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">flat</span><span class="p">)</span><span class="o">!</span> <span class="o">-</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">camera</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">flat</span><span class="p">)</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">upright</span><span class="p">)</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">horizontalBearing</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">camera</span><span class="p">,</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">upright</span><span class="p">)</span><span class="o">!</span> <span class="o">-</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Flat, the top edge reports 30°, and the camera axis points at the floor, so its bearing is undefined and the function says so. Upright, the roles swap. The camera axis reports 30° and the top edge points at the sky. A compass that reads the top edge freezes or spins when the user lifts the phone. One that switches to the camera axis when the top edge goes vertical keeps working, with no Euler angle anywhere. The cutoff on the horizontal component, 0.2 here, is the angle of about 78° from horizontal beyond which the bearing is declared meaningless. It’s a design choice, and it shouldn’t be left to atan2’s behavior near zero.</p>
+
+<p>The bearing here is relative to the reference frame’s x axis. In the north frames that’s north, and the <a href="/ios-heading-compass/">heading article</a> covers where north comes from and how wrong it can be.</p>
+
+<h2 id="relative-attitude">Relative attitude</h2>
+
+<p>Many features don’t care about the world, only about change since a moment: “hold the phone how you like, then tilt to steer.” <code class="language-plaintext highlighter-rouge">CMAttitude.multiply(byInverseOf:)</code> exists for this. Apple’s documentation says it “multiplies the inverse of the specified <code class="language-plaintext highlighter-rouge">CMAttitude</code> object by the attitude represented by the receiving object”, leaving the attitude <em>change</em> relative to the saved one. With quaternions that map device to reference, the change expressed in the device’s starting frame is $q_{\text{ref}}^{-1} q$:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// "Zeroing" an attitude: the rotation from a saved reference attitude to the current one, in the device's terms.</span>
+<span class="c1">/// With attitudes that map device to reference, this is what CMAttitude.multiply(byInverseOf:) computes.</span>
+<span class="kd">func</span> <span class="nf">change</span><span class="p">(</span><span class="n">from</span> <span class="nv">reference</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">,</span> <span class="n">to</span> <span class="nv">current</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span> <span class="n">reference</span><span class="o">.</span><span class="n">inverse</span> <span class="o">*</span> <span class="n">current</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">atCalibration</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">later</span> <span class="o">=</span> <span class="n">atCalibration</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">delta</span> <span class="o">=</span> <span class="nf">change</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">atCalibration</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">later</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">angleDegrees</span><span class="p">(</span><span class="nv">between</span><span class="p">:</span> <span class="n">delta</span><span class="p">,</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s">"the change is the 25° the user made"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A 25° turn about the device’s own y axis after calibration comes back as exactly that rotation. This works whatever the reference frame, which is why even <code class="language-plaintext highlighter-rouge">xArbitraryZVertical</code> is enough for steering. Apple’s documentation for that frame gives the same advice: “save the first reported attitude value, and compare it to new values.”</p>
+
+<h2 id="into-the-screens-coordinates">Into the screen’s coordinates</h2>
+
+<p>The device frame is fixed to the hardware, with y pointing to the top in portrait. The interface rotates. A tilt-controlled game in landscape has to convert device-frame tilt into the content’s coordinates, and the classic bug is getting the landscape direction backwards. UIKit doesn’t help, because its two enums name the same hold oppositely. <code class="language-plaintext highlighter-rouge">UIInterfaceOrientation.landscapeRight</code> is documented as “the Home button on the right”. <code class="language-plaintext highlighter-rouge">UIDeviceOrientation.landscapeLeft</code> is “the front-facing camera on the left side”, and the camera sits at the opposite end from the Home side, so that’s the same physical hold. The conversion is a rotation about z:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// How far the interface is turned relative to the device's portrait axes, named as UIInterfaceOrientation names them.</span>
+<span class="c1">/// landscapeRight means the Home side is on the right, so the device's top edge points left.</span>
+<span class="kd">enum</span> <span class="kt">InterfaceRotation</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="kt">CaseIterable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">portrait</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">landscapeRight</span> <span class="o">=</span> <span class="mi">90</span><span class="p">,</span> <span class="n">portraitUpsideDown</span> <span class="o">=</span> <span class="mi">180</span><span class="p">,</span> <span class="n">landscapeLeft</span> <span class="o">=</span> <span class="mi">270</span>
+<span class="p">}</span>
+
+<span class="c1">/// Expresses a device-frame vector in screen coordinates: x to the right of the content, y toward its top.</span>
+<span class="kd">func</span> <span class="nf">screenVector</span><span class="p">(</span><span class="n">_</span> <span class="nv">device</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">interface</span><span class="p">:</span> <span class="kt">InterfaceRotation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nf">rotation</span><span class="p">(</span><span class="n">interface</span><span class="o">.</span><span class="n">rawValue</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Rounds away floating-point dust, and turns -0 into 0, so vectors print and compare cleanly.</span>
+<span class="kd">func</span> <span class="nf">tidy</span><span class="p">(</span><span class="n">_</span> <span class="nv">v</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span> <span class="p">{</span> <span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span><span class="o">.</span><span class="nf">rounded</span><span class="p">(</span><span class="o">.</span><span class="n">toNearestOrEven</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span> <span class="o">+</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="c1">// The phone is held in landscape, home side on the right: gravity runs along device -x.</span>
+<span class="k">let</span> <span class="nv">gravityLandscape</span> <span class="o">=</span> <span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">interface</span> <span class="k">in</span> <span class="kt">InterfaceRotation</span><span class="o">.</span><span class="n">allCases</span> <span class="p">{</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">interface</span><span class="p">,</span> <span class="nf">tidy</span><span class="p">(</span><span class="nf">screenVector</span><span class="p">(</span><span class="n">gravityLandscape</span><span class="p">,</span> <span class="nv">interface</span><span class="p">:</span> <span class="n">interface</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">tidy</span><span class="p">(</span><span class="nf">screenVector</span><span class="p">(</span><span class="n">gravityLandscape</span><span class="p">,</span> <span class="nv">interface</span><span class="p">:</span> <span class="o">.</span><span class="n">landscapeRight</span><span class="p">))</span> <span class="o">==</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+       <span class="s">"in the matching interface, gravity points to the bottom of the content"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">tidy</span><span class="p">(</span><span class="nf">screenVector</span><span class="p">(</span><span class="n">gravityLandscape</span><span class="p">,</span> <span class="nv">interface</span><span class="p">:</span> <span class="o">.</span><span class="n">portrait</span><span class="p">))</span> <span class="o">==</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+       <span class="s">"a portrait interface on a landscape phone sees gravity pointing left"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>With the phone held landscape and its Home side to the right, gravity runs along the device’s −x axis. In the matching interface, <code class="language-plaintext highlighter-rouge">landscapeRight</code>, the converted gravity points straight down the content, (0, −1, 0). Rendered in a portrait interface, it would point left.</p>
+
+<p>iOS 27 adds a way to let Core Motion do this: <code class="language-plaintext highlighter-rouge">CMMotionManager.deviceMotionBody</code>, and the matching <code class="language-plaintext highlighter-rouge">CLLocationManager.headingBody</code>, which replaces the deprecated <code class="language-plaintext highlighter-rouge">headingOrientation</code>. The headers describe the new properties as specifying “a body from which device motion should be referenced”, and <code class="language-plaintext highlighter-rouge">UIView</code> adopts both body protocols. Passing the view that shows the content ties the reference to the interface. The headers don’t document the exact semantics, and the simulator can’t show them. It does confirm that the properties accept and keep a view:</p>
+
+<!-- ios -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">CoreMotion</span>
+<span class="kd">import</span> <span class="kt">UIKit</span>
+
+<span class="k">let</span> <span class="nv">motion</span> <span class="o">=</span> <span class="kt">CMMotionManager</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">CMMotionManager</span><span class="o">.</span><span class="nf">availableAttitudeReferenceFrames</span><span class="p">()</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"default reference frame on the simulator:"</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">attitudeReferenceFrame</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)</span>
+
+<span class="c1">// iOS 27: tell Core Motion which view its attitude should be expressed for.</span>
+<span class="k">let</span> <span class="nv">screenView</span> <span class="o">=</span> <span class="kt">UIView</span><span class="p">(</span><span class="nv">frame</span><span class="p">:</span> <span class="kt">CGRect</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">width</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">height</span><span class="p">:</span> <span class="mi">100</span><span class="p">))</span>
+<span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">motion</span><span class="o">.</span><span class="n">deviceMotionBody</span> <span class="o">=</span> <span class="n">screenView</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">deviceMotionBody</span> <span class="o">===</span> <span class="n">screenView</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">locationManager</span> <span class="o">=</span> <span class="kt">CLLocationManager</span><span class="p">()</span>
+    <span class="n">locationManager</span><span class="o">.</span><span class="n">headingBody</span> <span class="o">=</span> <span class="n">screenView</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">locationManager</span><span class="o">.</span><span class="n">headingBody</span> <span class="o">===</span> <span class="n">screenView</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The default <code class="language-plaintext highlighter-rouge">attitudeReferenceFrame</code> read back as raw value 1, <code class="language-plaintext highlighter-rouge">xArbitraryZVertical</code>, on hardware with no frames available. Apple’s documentation calls the value “undefined” in that case, so don’t rely on it. Until the body APIs’ behavior is confirmed on a device, the explicit rotation above remains the conversion I’d trust, because it’s testable without hardware.</p>
+
+<h2 id="into-a-3d-scene">Into a 3D scene</h2>
+
+<p>SceneKit and RealityKit use a y-up world, while Core Motion’s frames are z-up. Converting a whole attitude means rotating both the frame it’s measured in and the frame it’s measured from. With $C$ the rotation that takes z-up to y-up, $-90°$ about x, the attitude in scene terms is the conjugate $C q C^{-1}$:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Core Motion's reference frames are z-up. SceneKit and RealityKit scenes are y-up.</span>
+<span class="c1">/// This maps a z-up rotation into the y-up world with the same physical meaning.</span>
+<span class="kd">func</span> <span class="nf">yUp</span><span class="p">(</span><span class="n">_</span> <span class="nv">attitude</span><span class="p">:</span> <span class="n">simd_quatd</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">simd_quatd</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">zUpToYUp</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">zUpToYUp</span> <span class="o">*</span> <span class="n">attitude</span> <span class="o">*</span> <span class="n">zUpToYUp</span><span class="o">.</span><span class="n">inverse</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">zUpToYUp</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+<span class="k">let</span> <span class="nv">tiltedNorth</span> <span class="o">=</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="nf">rotation</span><span class="p">(</span><span class="mi">35</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">converted</span> <span class="o">=</span> <span class="nf">yUp</span><span class="p">(</span><span class="n">tiltedNorth</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">axis</span> <span class="k">in</span> <span class="p">[</span><span class="kt">SIMD3</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">before</span> <span class="o">=</span> <span class="n">zUpToYUp</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">tiltedNorth</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">after</span> <span class="o">=</span> <span class="n">converted</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">zUpToYUp</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">simd_distance</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">simd_distance</span><span class="p">(</span><span class="n">zUpToYUp</span><span class="o">.</span><span class="nf">act</span><span class="p">(</span><span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="s">"up stays up"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The check confirms the physical meaning is preserved: rotating any device axis with the original attitude and then converting gives the same vector as converting first and then rotating with the converted attitude. For a camera node, the device-to-camera difference is one more fixed rotation, since a scene camera looks down its −z axis exactly like the phone’s back camera.</p>
+
+<h2 id="averaging-angles">Averaging angles</h2>
+
+<p>Smoothing a heading or an attitude is the last trap. Angles wrap, and arithmetic doesn’t:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Averaging two headings near north as numbers, and as directions.</span>
+<span class="k">let</span> <span class="nv">headings</span> <span class="o">=</span> <span class="p">[</span><span class="mf">359.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">357.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]</span>
+<span class="k">let</span> <span class="nv">naiveMean</span> <span class="o">=</span> <span class="n">headings</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">headings</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">vectorSum</span> <span class="o">=</span> <span class="n">headings</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="kt">SIMD2</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">())</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+</span> <span class="kt">SIMD2</span><span class="p">(</span><span class="nf">cos</span><span class="p">(</span><span class="nv">$1</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">),</span> <span class="nf">sin</span><span class="p">(</span><span class="nv">$1</span> <span class="o">*</span> <span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">circularMean</span> <span class="o">=</span> <span class="nf">atan2</span><span class="p">(</span><span class="n">vectorSum</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">vectorSum</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="o">.</span><span class="n">pi</span>
+<span class="k">if</span> <span class="n">circularMean</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">{</span> <span class="n">circularMean</span> <span class="o">+=</span> <span class="mi">360</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"naive"</span><span class="p">,</span> <span class="n">naiveMean</span><span class="p">,</span> <span class="s">"circular"</span><span class="p">,</span> <span class="n">circularMean</span><span class="p">,</span> <span class="s">"resultant length"</span><span class="p">,</span> <span class="nf">simd_length</span><span class="p">(</span><span class="n">vectorSum</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">headings</span><span class="o">.</span><span class="n">count</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveMean</span> <span class="o">==</span> <span class="mi">181</span> <span class="o">&amp;&amp;</span> <span class="nf">abs</span><span class="p">(</span><span class="n">circularMean</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+
+<span class="c1">// The same holds for whole attitudes: to smooth, slerp from the old value toward the new one.</span>
+<span class="k">let</span> <span class="nv">smoothed</span> <span class="o">=</span> <span class="nf">simd_slerp</span><span class="p">(</span><span class="nf">rotation</span><span class="p">(</span><span class="mi">170</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="nf">rotation</span><span class="p">(</span><span class="o">-</span><span class="mi">170</span><span class="p">,</span> <span class="nv">about</span><span class="p">:</span> <span class="kt">SIMD3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"slerp halfway between yaw 170° and -170°:"</span><span class="p">,</span> <span class="nf">toEuler</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span><span class="o">.</span><span class="n">yaw</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">toEuler</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span><span class="o">.</span><span class="n">yaw</span><span class="p">)</span> <span class="o">-</span> <span class="mi">180</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Four headings scattered around north, 359°, 3°, 357°, and 5°, average to 181° as numbers, which is due south. As unit vectors they average to 1.0°, and the length of the mean vector, 0.998, measures how tightly they agree: 1 for identical headings, 0 for headings spread evenly around the circle. For whole attitudes, <code class="language-plaintext highlighter-rouge">simd_slerp</code> interpolates along the shortest arc. Halfway between yaw 170° and yaw −170°, it lands on 180°, not on 0°. Exponential smoothing of an attitude is one slerp per sample, from the smoothed value toward the new one by a small fraction.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Core Motion’s reference frames are right-handed with z up. x is the starting heading, the starting heading corrected by the magnetometer, magnetic north, or true north. With x north, y points west.</li>
+  <li>Gravity corrects pitch and roll but not yaw, so only the magnetometer stops yaw drift. A 0.003 rad/s vertical bias is 10.3° per minute in the arbitrary frame.</li>
+  <li>$q$ and $-q$ are the same rotation. Compare attitudes by the angle between them.</li>
+  <li>Apple doesn’t document whether the attitude maps device to reference or the reverse. Gravity settles it: the right convention mapped it to within 0.73° of straight down, and the wrong one missed by 61.8°.</li>
+  <li>Euler angles lock at pitch ±90°, which for a phone is simply upright. A 0.2° nudge near the lock moved yaw by 34°. Use them only for display.</li>
+  <li>For “which way is it facing”, rotate the relevant device axis into the world and take the bearing of its horizontal part: the top edge when flat, the camera axis when upright.</li>
+  <li>Relative attitude is $q_{\text{ref}}^{-1} q$. Screen conversion is a rotation about z, and <code class="language-plaintext highlighter-rouge">UIInterfaceOrientation.landscapeRight</code> is <code class="language-plaintext highlighter-rouge">UIDeviceOrientation.landscapeLeft</code>. y-up scenes need the conjugate $C q C^{-1}$.</li>
+  <li>Average angles as vectors and attitudes with slerp. Naive averaging put four headings around north at due south.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">AttitudeFilter</code>, which smooths a stream of attitudes with a time constant given in seconds. It should compute each sample’s interpolation fraction from the actual time step, $1 - e^{-\Delta t / \tau}$, rather than assuming a fixed rate, flip each incoming quaternion onto the hemisphere of the current estimate before interpolating, and reset when the angle between the estimate and a new sample exceeds 45°, so a deliberate fast turn isn’t smeared. Test it with synthetic attitudes that cross yaw ±180° and with sample intervals that jitter between 8 and 12 ms.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/coremotion/cmattitude"><code class="language-plaintext highlighter-rouge">CMAttitude</code></a>, <a href="https://developer.apple.com/documentation/coremotion/cmquaternion"><code class="language-plaintext highlighter-rouge">CMQuaternion</code></a>, and <a href="https://developer.apple.com/documentation/coremotion/cmattitudereferenceframe"><code class="language-plaintext highlighter-rouge">CMAttitudeReferenceFrame</code></a></li>
+  <li><a href="https://developer.apple.com/documentation/coremotion/cmattitude/multiply(byinverseof:)"><code class="language-plaintext highlighter-rouge">multiply(byInverseOf:)</code></a>, for relative attitude</li>
+  <li><a href="https://developer.apple.com/documentation/uikit/uiinterfaceorientation"><code class="language-plaintext highlighter-rouge">UIInterfaceOrientation</code></a> and <a href="https://developer.apple.com/documentation/uikit/uideviceorientation"><code class="language-plaintext highlighter-rouge">UIDeviceOrientation</code></a>, whose landscape cases name the same hold oppositely</li>
+  <li>Ken Shoemake, “Animating Rotation with Quaternion Curves”, <em>SIGGRAPH ‘85</em>, <a href="https://doi.org/10.1145/325334.325242">doi:10.1145/325334.325242</a>, the paper that introduced slerp to computer graphics</li>
+</ul>
+
+<p>Previous: <a href="/ios-device-motion/">Device Motion, Gravity, and User Acceleration</a></p>
+
+<p>Next: <a href="/ios-pedometer-activity/">Pedometer Data and Activity Recognition</a></p>
+
+<p>Return to the <a href="/ios-sensors/">Sensors and Location roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/ios-attitude-reference-frames/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Attitude%2C+Reference+Frames%2C+and+Coordinate+Conversion%20http%3A%2F%2Flocalhost%3A4000%2Fios-attitude-reference-frames%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=http://localhost:4000/ios-attitude-reference-frames/&title=Attitude%2C+Reference+Frames%2C+and+Coordinate+Conversion%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/ios-attitude-reference-frames/&title=Attitude%2C+Reference+Frames%2C+and+Coordinate+Conversion%20%7C%20Swift+By+Deya&summary=&source=http://localhost:4000/ios-attitude-reference-frames/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Attitude, Reference Frames, and Coordinate Conversion%20%7C%20Swift By Deya&body=http://localhost:4000/ios-attitude-reference-frames/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Core+Motion">Core Motion</a></li>
+    
+    <li><a href="/tag/#Math">Math</a></li>
+    
+    <li><a href="/tag/#Sensors">Sensors</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#iOS">iOS</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Pedometer Data and Activity Recognition" href="/ios-pedometer-activity/"> <p>Previous post</p> Pedometer Data and Activity Recognition </a> </div> <div id="next-post"> <a alt="Device Motion, Gravity, and User Acceleration" href="/ios-device-motion/"> <p>Next post</p> Device Motion, Gravity, and User Acceleration </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
