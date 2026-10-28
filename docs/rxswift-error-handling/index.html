@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Error Handling: catch, catchAndReturn, and retry | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Error Handling: catch, catchAndReturn, and retry" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An error in RxSwift is not an exception that a caller can catch and move past. It is the last event of a sequence. When a network request fails inside a chain, the chain ends: the subscriber’s onError runs, the subscription is disposed, and nothing that chain would have done later will happen. Every earlier article has run into a version of this. A failed search ended searching for good in Driver and Signal, and a failed request cancelled a healthy one in Transforming Operators. Error handling in RxSwift is therefore about where a sequence is allowed to end, and what replaces it. This article covers the three families of operators for that: catch and catchAndReturn, which replace a failed sequence with another one; retry and retry(when:), which subscribe again; and materialize, which turns errors into ordinary elements. It measures each on a virtual clock, derives the total waiting time of an exponential backoff, and shows two retries that look correct and do nothing: retrying a subject, and retrying a cached failure." /> <meta property="og:description" content="An error in RxSwift is not an exception that a caller can catch and move past. It is the last event of a sequence. When a network request fails inside a chain, the chain ends: the subscriber’s onError runs, the subscription is disposed, and nothing that chain would have done later will happen. Every earlier article has run into a version of this. A failed search ended searching for good in Driver and Signal, and a failed request cancelled a healthy one in Transforming Operators. Error handling in RxSwift is therefore about where a sequence is allowed to end, and what replaces it. This article covers the three families of operators for that: catch and catchAndReturn, which replace a failed sequence with another one; retry and retry(when:), which subscribe again; and materialize, which turns errors into ordinary elements. It measures each on a virtual clock, derives the total waiting time of an exponential backoff, and shows two retries that look correct and do nothing: retrying a subject, and retrying a cached failure." /> <link rel="canonical" href="https://swiftbydeya.com/rxswift-error-handling/" /> <meta property="og:url" content="https://swiftbydeya.com/rxswift-error-handling/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-05-18T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Error Handling: catch, catchAndReturn, and retry" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-05-18T00:00:00+03:00","datePublished":"2026-05-18T00:00:00+03:00","description":"An error in RxSwift is not an exception that a caller can catch and move past. It is the last event of a sequence. When a network request fails inside a chain, the chain ends: the subscriber’s onError runs, the subscription is disposed, and nothing that chain would have done later will happen. Every earlier article has run into a version of this. A failed search ended searching for good in Driver and Signal, and a failed request cancelled a healthy one in Transforming Operators. Error handling in RxSwift is therefore about where a sequence is allowed to end, and what replaces it. This article covers the three families of operators for that: catch and catchAndReturn, which replace a failed sequence with another one; retry and retry(when:), which subscribe again; and materialize, which turns errors into ordinary elements. It measures each on a virtual clock, derives the total waiting time of an exponential backoff, and shows two retries that look correct and do nothing: retrying a subject, and retrying a cached failure.","headline":"Error Handling: catch, catchAndReturn, and retry","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/rxswift-error-handling/"},"url":"https://swiftbydeya.com/rxswift-error-handling/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Error Handling: catch, catchAndReturn, and retry"> <meta name="twitter:description" content="An error in RxSwift is not an exception that a caller can catch and move past. It is the last event of a sequence. When a network request fails inside a chai..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Error Handling: catch, catchAndReturn, and retry"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Error Handling: catch, catchAndReturn, and retry</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-05-18T00:00:00+03:00">May 18, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An error in RxSwift is not an exception that a caller can catch and move past. It is the last event of a sequence. When a network request fails inside a chain, the chain ends: the subscriber’s <code class="language-plaintext highlighter-rouge">onError</code> runs, the subscription is disposed, and nothing that chain would have done later will happen. Every earlier article has run into a version of this. A failed search ended searching for good in <a href="/rxswift-driver-signal/#a-driver-that-cannot-fail-can-still-end">Driver and Signal</a>, and a failed request cancelled a healthy one in <a href="/rxswift-transforming-operators/#errors-inside-a-flattening-operator">Transforming Operators</a>.</p>
+
+<p>Error handling in RxSwift is therefore about <em>where</em> a sequence is allowed to end, and what replaces it. This article covers the three families of operators for that: <code class="language-plaintext highlighter-rouge">catch</code> and <code class="language-plaintext highlighter-rouge">catchAndReturn</code>, which replace a failed sequence with another one; <code class="language-plaintext highlighter-rouge">retry</code> and <code class="language-plaintext highlighter-rouge">retry(when:)</code>, which subscribe again; and <code class="language-plaintext highlighter-rouge">materialize</code>, which turns errors into ordinary elements. It measures each on a virtual clock, derives the total waiting time of an exponential backoff, and shows two retries that look correct and do nothing: retrying a subject, and retrying a cached failure.</p>
+
+<!--more-->
+
+<p>The examples use RxSwift 6.10.2 in Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code> of an executable target that depends on <code class="language-plaintext highlighter-rouge">RxSwift</code> and <code class="language-plaintext highlighter-rouge">RxTest</code>, together with <code class="language-plaintext highlighter-rouge">record</code> from <a href="/rxswift-observables-observers/">Observables and Observers</a> and <code class="language-plaintext highlighter-rouge">timeline</code> and <code class="language-plaintext highlighter-rouge">millisecondScheduler</code> from <a href="/rxswift-filtering-operators/#a-clock-you-control">Filtering Operators</a>.</p>
+
+<!-- check-uses: rx-record -->
+<!-- check-uses: rx-timeline -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">RxSwift</span>
+<span class="kd">import</span> <span class="kt">RxTest</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+</code></pre></div></div>
+
+<p>The examples use a request that fails a given number of times before it succeeds, counting its attempts. It is cold, built with <code class="language-plaintext highlighter-rouge">create</code>, so each subscription is a new attempt, which is exactly what makes retrying meaningful:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">FlakyEndpoint</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">attempts</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">failuresBeforeSuccess</span> <span class="o">=</span> <span class="n">failuresBeforeSuccess</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">fetch</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">Observable</span><span class="o">.</span><span class="n">create</span> <span class="p">{</span> <span class="n">observer</span> <span class="k">in</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="k">self</span><span class="o">.</span><span class="n">attempts</span> <span class="o">&lt;=</span> <span class="k">self</span><span class="o">.</span><span class="n">failuresBeforeSuccess</span> <span class="p">{</span>
+                <span class="n">observer</span><span class="o">.</span><span class="nf">onError</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">observer</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="s">"data on attempt </span><span class="se">\(</span><span class="k">self</span><span class="o">.</span><span class="n">attempts</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                <span class="n">observer</span><span class="o">.</span><span class="nf">onCompleted</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="kt">Disposables</span><span class="o">.</span><span class="nf">create</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="an-error-ends-the-sequence">An error ends the sequence</h2>
+
+<p>Elements after an error never arrive, and the operators above the failure point are disposed:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">upstreamDisposed</span> <span class="o">=</span> <span class="kc">false</span>
+<span class="k">let</span> <span class="nv">interrupted</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">concat</span><span class="p">(</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">boom</span><span class="p">),</span> <span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="o">.</span><span class="nf">do</span><span class="p">(</span><span class="nv">onDispose</span><span class="p">:</span> <span class="p">{</span> <span class="n">upstreamDisposed</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">interrupted</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"x(boom)"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">upstreamDisposed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>So the question for each chain is not “how do I continue after the error?” (you cannot) but “which sequence should take the failed one’s place?”</p>
+
+<h2 id="catch-replace-the-failed-sequence"><code class="language-plaintext highlighter-rouge">catch</code>: replace the failed sequence</h2>
+
+<p><code class="language-plaintext highlighter-rouge">catch</code> subscribes to a fallback observable, chosen by a closure that receives the error, and forwards it in place of the failed source. Elements before the error are kept:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">withFallback</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">concat</span><span class="p">(</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="s">"live 1"</span><span class="p">,</span> <span class="s">"live 2"</span><span class="p">),</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">timeout</span><span class="p">))</span>
+    <span class="o">.</span><span class="k">catch</span> <span class="p">{</span> <span class="n">error</span> <span class="k">in</span>
+        <span class="n">error</span> <span class="k">as?</span> <span class="kt">DemoError</span> <span class="o">==</span> <span class="o">.</span><span class="n">timeout</span> <span class="p">?</span> <span class="o">.</span><span class="nf">just</span><span class="p">(</span><span class="s">"cached"</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">withFallback</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"live 1"</span><span class="p">,</span> <span class="s">"live 2"</span><span class="p">,</span> <span class="s">"cached"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The closure decides per error. Returning <code class="language-plaintext highlighter-rouge">.error(error)</code> passes an error through unchanged, which is how to handle only the errors a fallback can fix, and returning <code class="language-plaintext highlighter-rouge">.empty()</code> swallows the error and completes.</p>
+
+<p><code class="language-plaintext highlighter-rouge">catchAndReturn</code> is the common special case of a single fallback element:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">withDefault</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">catchAndReturn</span><span class="p">(</span><span class="s">"placeholder"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">withDefault</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"placeholder"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Both <em>complete</em> after the fallback. The failed source is gone, and the fallback is finite, so the whole chain is now finished. That is fine for a one-shot request and is the trap measured in <a href="/rxswift-driver-signal/#a-driver-that-cannot-fail-can-still-end">Driver and Signal</a> for long-lived chains: <code class="language-plaintext highlighter-rouge">asDriver(onErrorJustReturn:)</code> is <code class="language-plaintext highlighter-rouge">catchAndReturn</code> with main-thread delivery.</p>
+
+<h3 id="catch-where-ending-is-acceptable">Catch where ending is acceptable</h3>
+
+<p>The rule that falls out is to catch at the level where ending is harmless. For a stream of requests, that is <em>inside</em> the flattening operator, so each request ends on its own and the stream of triggers lives on. Here three refresh taps each start a request; the second fails:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">outcomes</span> <span class="o">=</span> <span class="p">[</span><span class="s">"first"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="s">"second"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="s">"third"</span><span class="p">:</span> <span class="kc">true</span><span class="p">]</span>
+<span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">refresh</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="n">outcomes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">!</span> <span class="p">?</span> <span class="o">.</span><span class="nf">just</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s"> refreshed"</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">taps</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="s">"first"</span><span class="p">,</span> <span class="s">"second"</span><span class="p">,</span> <span class="s">"third"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">caughtOutside</span> <span class="o">=</span> <span class="n">taps</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nf">refresh</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">catchAndReturn</span><span class="p">(</span><span class="s">"refresh failed"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">caughtOutside</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"first refreshed"</span><span class="p">,</span> <span class="s">"refresh failed"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>   <span class="c1">// "third" never ran</span>
+
+<span class="k">let</span> <span class="nv">caughtInside</span> <span class="o">=</span> <span class="n">taps</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nf">refresh</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span><span class="o">.</span><span class="nf">catchAndReturn</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s"> failed"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">caughtInside</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"first refreshed"</span><span class="p">,</span> <span class="s">"second failed"</span><span class="p">,</span> <span class="s">"third refreshed"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>With the <code class="language-plaintext highlighter-rouge">catch</code> outside, one failure ended refreshing; with it inside, the failure became one element and the third refresh ran. In UI code this is the single most important error-handling decision.</p>
+
+<h2 id="retry-subscribe-again"><code class="language-plaintext highlighter-rouge">retry</code>: subscribe again</h2>
+
+<p><code class="language-plaintext highlighter-rouge">retry(_:)</code> resubscribes to the source when it fails, up to a maximum number of <em>attempts</em> (not retries), and forwards the last error if every attempt fails. Because the request is cold, each subscription makes a new attempt:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">flaky</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">flaky</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"data on attempt 3"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">flaky</span><span class="o">.</span><span class="n">attempts</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">broken</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">broken</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"x(timeout)"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">broken</span><span class="o">.</span><span class="n">attempts</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>                               <span class="c1">// three attempts, then the error</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">retry(3)</code> made three attempts in total, so it allows two retries. <code class="language-plaintext highlighter-rouge">retry()</code> with no argument retries forever, which with a permanent failure and a synchronous source is an infinite loop on the current thread.</p>
+
+<p>Retrying repeats <em>everything</em> between the source and the <code class="language-plaintext highlighter-rouge">retry</code>, including side effects. A <code class="language-plaintext highlighter-rouge">do(onNext:)</code> that logs, or elements already emitted before the failure, are produced again on each attempt:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">partialAttempts</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">partial</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="n">create</span> <span class="p">{</span> <span class="n">observer</span> <span class="k">in</span>
+    <span class="n">partialAttempts</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">observer</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">observer</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">partialAttempts</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="p">{</span> <span class="n">observer</span><span class="o">.</span><span class="nf">onError</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">boom</span><span class="p">)</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="n">observer</span><span class="o">.</span><span class="nf">onCompleted</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">Disposables</span><span class="o">.</span><span class="nf">create</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">partial</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>  <span class="c1">// the subscriber saw 1 and 2 twice</span>
+</code></pre></div></div>
+
+<p>For a paginated download, that is a duplicated page. Either make the retried unit produce nothing until it has succeeded, typically by retrying a <code class="language-plaintext highlighter-rouge">Single</code>, or deduplicate downstream.</p>
+
+<h3 id="retries-that-do-nothing">Retries that do nothing</h3>
+
+<p>Retrying works by subscribing again, so it only helps when subscribing again does new work. Two common sources do not.</p>
+
+<p>A subject remembers its error and delivers it to every new subscriber immediately, as <a href="/rxswift-publishsubject/#completion-is-remembered"><code class="language-plaintext highlighter-rouge">PublishSubject</code></a> measured. Retrying a subject just collects the same error again, instantly:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">socketMessages</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="n">socketMessages</span><span class="o">.</span><span class="nf">onError</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+
+<span class="k">var</span> <span class="nv">resubscriptions</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">retriedSubject</span> <span class="o">=</span> <span class="n">socketMessages</span><span class="o">.</span><span class="nf">do</span><span class="p">(</span><span class="nv">onSubscribe</span><span class="p">:</span> <span class="p">{</span> <span class="n">resubscriptions</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">})</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">retriedSubject</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"x(timeout)"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resubscriptions</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>                                <span class="c1">// three attempts, no new work</span>
+</code></pre></div></div>
+
+<p>To retry a connection, retry the <em>operation that creates it</em>, such as a <code class="language-plaintext highlighter-rouge">create</code> that opens a socket and feeds a fresh subject, not the subject.</p>
+
+<p>A shared sequence with <code class="language-plaintext highlighter-rouge">share(replay: 1, scope: .forever)</code> caches its failure, as <a href="/rxswift-replaysubject/#sharereplayscope-replay-as-a-sharing-mechanism"><code class="language-plaintext highlighter-rouge">ReplaySubject</code></a> measured, so a <code class="language-plaintext highlighter-rouge">retry</code> after it resubscribes to the cache:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">cachedFlaky</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">cachedRequest</span> <span class="o">=</span> <span class="n">cachedFlaky</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">share</span><span class="p">(</span><span class="nv">replay</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">scope</span><span class="p">:</span> <span class="o">.</span><span class="n">forever</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">cachedRequest</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"x(timeout)"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cachedFlaky</span><span class="o">.</span><span class="n">attempts</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                          <span class="c1">// one real attempt; two retries hit the cache</span>
+
+<span class="k">let</span> <span class="nv">retriedThenShared</span> <span class="o">=</span> <span class="n">cachedFlaky</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">share</span><span class="p">(</span><span class="nv">replay</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">scope</span><span class="p">:</span> <span class="o">.</span><span class="n">forever</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">retriedThenShared</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"data on attempt 2"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Put <code class="language-plaintext highlighter-rouge">retry</code> <em>before</em> <code class="language-plaintext highlighter-rouge">share</code>, so the retries happen against the real source and only the final outcome is shared.</p>
+
+<h2 id="retrywhen-retry-with-a-delay"><code class="language-plaintext highlighter-rouge">retry(when:)</code>: retry with a delay</h2>
+
+<p>Retrying instantly is rarely right for a network request. If the server is overloaded, an immediate retry adds load at the worst moment. <code class="language-plaintext highlighter-rouge">retry(when:)</code> gives control over <em>when</em> to resubscribe: it passes a closure an observable of the errors, and resubscribes each time the observable the closure returns emits an element. Returning an error from it gives up.</p>
+
+<p>Exponential backoff waits \(b\), then \(2b\), then \(4b\), and so on before each retry. In virtual time with a base of 100 milliseconds and at most three retries:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">exponentialBackoff</span><span class="p">(</span>
+    <span class="nv">base</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">maxRetries</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">SchedulerType</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="p">{</span> <span class="n">errors</span> <span class="k">in</span>
+        <span class="n">errors</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">attempt</span><span class="p">,</span> <span class="n">error</span> <span class="o">-&gt;</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">maxRetries</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="n">error</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">delay</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">attempt</span><span class="p">)</span>                    <span class="c1">// base, 2 base, 4 base, ...</span>
+            <span class="k">return</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="nf">timer</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">delay</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">backoffClock</span> <span class="o">=</span> <span class="nf">millisecondScheduler</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">backoffEndpoint</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">attemptTimes</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">backedOff</span> <span class="o">=</span> <span class="n">backoffClock</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">created</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">subscribed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">disposed</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">backoffEndpoint</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span>
+        <span class="o">.</span><span class="nf">do</span><span class="p">(</span><span class="nv">onSubscribe</span><span class="p">:</span> <span class="p">{</span> <span class="n">attemptTimes</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">backoffClock</span><span class="o">.</span><span class="n">clock</span><span class="p">)</span> <span class="p">})</span>
+        <span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="nv">when</span><span class="p">:</span> <span class="nf">exponentialBackoff</span><span class="p">(</span><span class="nv">base</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">maxRetries</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">backoffClock</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">attemptTimes</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">700</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">timeline</span><span class="p">(</span><span class="n">backedOff</span><span class="o">.</span><span class="n">events</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"data on attempt 4@700"</span><span class="p">,</span> <span class="s">"|@700"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The attempts started at 0, 100, 300, and 700 milliseconds: waits of 100, 200, and 400. After \(n\) retries with base \(b\) and factor 2, the total time spent waiting is a geometric series,</p>
+
+\[\sum_{k=0}^{n-1} b \cdot 2^{k} = b\,(2^{n} - 1),\]
+
+<p>which is \(100 \times (2^3 - 1) = 700\) milliseconds here, matching the measured time of the fourth attempt. The formula is what sets the limits in practice: with a base of one second, five retries already wait \(31\) seconds in total, longer than most users will look at a spinner, and ten retries wait 17 minutes.</p>
+
+<h3 id="jitter">Jitter</h3>
+
+<p>When a server fails, every client that was using it fails at nearly the same moment, and identical backoff schedules make them all retry at the same moments too. Randomizing each wait spreads them out. With “full jitter”, each wait is drawn uniformly between zero and the exponential value, which halves the expected total to \(b(2^n - 1)/2\) while breaking the synchronization. It is a one-line change to the delay above, using a random number generator that you inject so tests stay reproducible.</p>
+
+<h3 id="giving-up">Giving up</h3>
+
+<p>When the closure returns an error, the retrying stops and that error is forwarded. With four failures and three retries allowed:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">giveUpClock</span> <span class="o">=</span> <span class="nf">millisecondScheduler</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">hopeless</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">gaveUp</span> <span class="o">=</span> <span class="n">giveUpClock</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">created</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">subscribed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">disposed</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">hopeless</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span><span class="o">.</span><span class="nf">retry</span><span class="p">(</span><span class="nv">when</span><span class="p">:</span> <span class="nf">exponentialBackoff</span><span class="p">(</span><span class="nv">base</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">maxRetries</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">giveUpClock</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">timeline</span><span class="p">(</span><span class="n">gaveUp</span><span class="o">.</span><span class="n">events</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"x(timeout)@700"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">hopeless</span><span class="o">.</span><span class="n">attempts</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A retry policy should also decide <em>which</em> errors to retry. A timeout or a 503 is worth retrying; a 401 or a decoding error will fail the same way every time. Checking the error inside the <code class="language-plaintext highlighter-rouge">flatMap</code> and returning <code class="language-plaintext highlighter-rouge">.error(error)</code> immediately for permanent failures keeps the app from waiting 700 milliseconds to report something it knew at once.</p>
+
+<h2 id="materialize-errors-as-elements"><code class="language-plaintext highlighter-rouge">materialize</code>: errors as elements</h2>
+
+<p><code class="language-plaintext highlighter-rouge">materialize()</code> turns every event into an element of type <code class="language-plaintext highlighter-rouge">Event&lt;Element&gt;</code>. When the source fails, the error becomes the last element and the materialized sequence then completes normally; when the source completes, a <code class="language-plaintext highlighter-rouge">.completed</code> element is emitted before the completion. The sequence can never fail, and the error becomes data that later operators can inspect:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">materialized</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">concat</span><span class="p">(</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="o">.</span><span class="nf">error</span><span class="p">(</span><span class="kt">DemoError</span><span class="o">.</span><span class="n">boom</span><span class="p">))</span><span class="o">.</span><span class="nf">materialize</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">materialized</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"next(1)"</span><span class="p">,</span> <span class="s">"error(boom)"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>     <span class="c1">// the error is now an element</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="kt">Observable</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="nf">materialize</span><span class="p">())</span> <span class="o">==</span> <span class="p">[</span><span class="s">"next(1)"</span><span class="p">,</span> <span class="s">"completed"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The more readable variant for app code maps each request to a <code class="language-plaintext highlighter-rouge">Result</code> and catches into the failure case, which keeps the error and lets a long-lived chain show it without ending:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">results</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">of</span><span class="p">(</span><span class="s">"first"</span><span class="p">,</span> <span class="s">"second"</span><span class="p">,</span> <span class="s">"third"</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">name</span> <span class="k">in</span>
+        <span class="nf">refresh</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;.</span><span class="nf">success</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="k">catch</span> <span class="p">{</span> <span class="o">.</span><span class="nf">just</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="nv">$0</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">result</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">in</span>
+        <span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="k">let</span> <span class="nv">message</span><span class="p">):</span> <span class="n">message</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="s">"failed: </span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"first refreshed"</span><span class="p">,</span> <span class="s">"failed: timeout"</span><span class="p">,</span> <span class="s">"third refreshed"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">dematerialize()</code> reverses <code class="language-plaintext highlighter-rouge">materialize()</code>, turning <code class="language-plaintext highlighter-rouge">Event</code> elements back into real events, which is occasionally useful to carry errors through a section of a chain that must not fail, such as a <code class="language-plaintext highlighter-rouge">Relay</code>.</p>
+
+<h2 id="observing-errors-without-handling-them">Observing errors without handling them</h2>
+
+<p><code class="language-plaintext highlighter-rouge">do(onError:)</code> runs a closure when an error passes, without changing the sequence. It is the place to log, before a <code class="language-plaintext highlighter-rouge">catch</code> replaces the error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">logged</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">logThenRecover</span> <span class="o">=</span> <span class="kt">FlakyEndpoint</span><span class="p">(</span><span class="nv">failuresBeforeSuccess</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="nf">fetch</span><span class="p">()</span>
+    <span class="o">.</span><span class="nf">do</span><span class="p">(</span><span class="nv">onError</span><span class="p">:</span> <span class="p">{</span> <span class="n">logged</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"request failed: </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="nf">catchAndReturn</span><span class="p">(</span><span class="s">"offline"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">record</span><span class="p">(</span><span class="n">logThenRecover</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"offline"</span><span class="p">,</span> <span class="s">"|"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span> <span class="o">==</span> <span class="p">[</span><span class="s">"request failed: timeout"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Errors that reach a subscriber without an <code class="language-plaintext highlighter-rouge">onError</code> closure go to <code class="language-plaintext highlighter-rouge">Hooks.defaultErrorHandler</code>, which <a href="/rxswift-subscribing/#unhandled-errors">Subscribing</a> recommends replacing at launch.</p>
+
+<h2 id="names-in-older-code">Names in older code</h2>
+
+<p>RxSwift 6 renamed the error operators. Code written for RxSwift 5 uses <code class="language-plaintext highlighter-rouge">catchError(_:)</code> for <code class="language-plaintext highlighter-rouge">catch(_:)</code>, <code class="language-plaintext highlighter-rouge">catchErrorJustReturn(_:)</code> for <code class="language-plaintext highlighter-rouge">catchAndReturn(_:)</code>, and <code class="language-plaintext highlighter-rouge">retryWhen(_:)</code> for <code class="language-plaintext highlighter-rouge">retry(when:)</code>. The old names still compile with deprecation warnings.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>RxSwift 6</th>
+      <th>Combine</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">catch</code></td>
+      <td><code class="language-plaintext highlighter-rouge">catch</code>, <code class="language-plaintext highlighter-rouge">tryCatch</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">catchAndReturn</code></td>
+      <td><code class="language-plaintext highlighter-rouge">replaceError(with:)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retry(n)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">retry(n - 1)</code> (Combine counts retries, RxSwift counts attempts)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retry(when:)</code></td>
+      <td>no built-in equivalent</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">materialize</code>, <code class="language-plaintext highlighter-rouge">dematerialize</code></td>
+      <td>no built-in equivalent</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">do(onError:)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">handleEvents(receiveCompletion:)</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <code class="language-plaintext highlighter-rouge">retry</code> row is worth a second look when porting code: RxSwift’s <code class="language-plaintext highlighter-rouge">retry(3)</code> makes three attempts in total, while Combine’s <code class="language-plaintext highlighter-rouge">retry(3)</code> makes four. <a href="/combine-error-handling-catch-retry/">Error Handling: <code class="language-plaintext highlighter-rouge">catch</code>, <code class="language-plaintext highlighter-rouge">retry</code>, and <code class="language-plaintext highlighter-rouge">replaceError</code></a> builds exponential backoff for Combine, which has no <code class="language-plaintext highlighter-rouge">retry(when:)</code>.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>An error ends the sequence and disposes everything above it; error handling chooses what replaces it.</li>
+  <li><code class="language-plaintext highlighter-rouge">catch</code> and <code class="language-plaintext highlighter-rouge">catchAndReturn</code> keep earlier elements, switch to a fallback, and complete. Catch inside <code class="language-plaintext highlighter-rouge">flatMap</code> so each request ends on its own: measured, catching outside lost the third refresh.</li>
+  <li><code class="language-plaintext highlighter-rouge">retry(n)</code> makes <code class="language-plaintext highlighter-rouge">n</code> attempts in total and repeats every side effect and element before the failure on each attempt.</li>
+  <li>Retrying a subject or a <code class="language-plaintext highlighter-rouge">share(replay:scope: .forever)</code> cache resubscribes to a remembered error: three attempts, one real request. Put <code class="language-plaintext highlighter-rouge">retry</code> before <code class="language-plaintext highlighter-rouge">share</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">retry(when:)</code> with exponential backoff waited 100, 200, and 400 ms, for a total of \(b(2^n - 1) = 700\) ms; full jitter halves the expected total.</li>
+  <li><code class="language-plaintext highlighter-rouge">materialize</code> or a <code class="language-plaintext highlighter-rouge">Result</code> mapping turns errors into elements, so a long-lived chain can show them without ending.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">retry(maxAttempts:baseDelay:isRetriable:scheduler:)</code>, an exponential backoff with full jitter, a cap of 5 seconds on any single wait, and a predicate that stops immediately for errors it considers permanent. Test it in virtual time with a seeded random generator: check that a permanent error is forwarded at the time of the first failure, that the waits never exceed the cap, and that across 10,000 simulated runs the mean total wait for four retries with a 100 ms base is close to \(b(2^n - 1)/2 = 750\) ms.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/ReactiveX/RxSwift/blob/main/Documentation/GettingStarted.md#error-handling">Error handling</a> in RxSwift’s Getting Started guide.</li>
+  <li><a href="https://reactivex.io/documentation/operators/catch.html">Catch</a>, <a href="https://reactivex.io/documentation/operators/retry.html">Retry</a>, and <a href="https://reactivex.io/documentation/operators/materialize-dematerialize.html">Materialize</a> on ReactiveX.io.</li>
+  <li>Marc Brooker, <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">Exponential Backoff and Jitter</a>, AWS Architecture Blog, the analysis behind full jitter.</li>
+  <li><a href="/combine-error-handling-catch-retry/">Error Handling: <code class="language-plaintext highlighter-rouge">catch</code>, <code class="language-plaintext highlighter-rouge">retry</code>, and <code class="language-plaintext highlighter-rouge">replaceError</code></a> for the Combine side.</li>
+</ul>
+
+<p>Previous: <a href="/rxswift-combining-operators/">Combining Operators</a>. Next: <a href="/rxswift-schedulers/">Schedulers: <code class="language-plaintext highlighter-rouge">observe(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a>.</p>
+
+<p>Return to the <a href="/rxswift/">RxSwift roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/rxswift-error-handling/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Error+Handling%3A+catch%2C+catchAndReturn%2C+and+retry%20https%3A%2F%2Fswiftbydeya.com%2Frxswift-error-handling%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/rxswift-error-handling/&title=Error+Handling%3A+catch%2C+catchAndReturn%2C+and+retry%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/rxswift-error-handling/&title=Error+Handling%3A+catch%2C+catchAndReturn%2C+and+retry%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/rxswift-error-handling/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Error Handling: catch, catchAndReturn, and retry%20%7C%20Swift By Deya&body=https://swiftbydeya.com/rxswift-error-handling/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Error+Handling">Error Handling</a></li>
+    
+    <li><a href="/tag/#Reactive+Programming">Reactive Programming</a></li>
+    
+    <li><a href="/tag/#RxSwift">RxSwift</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Schedulers: observe(on:) and subscribe(on:)" href="/rxswift-schedulers/"> <p>Previous post</p> Schedulers: observe(on:) and subscribe(on:) </a> </div> <div id="next-post"> <a alt="Combining Operators: combineLatest, zip, merge, concat, withLatestFrom" href="/rxswift-combining-operators/"> <p>Next post</p> Combining Operators: combineLatest, zip, merge, concat, withLatestFrom </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

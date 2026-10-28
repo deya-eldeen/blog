@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Cancellation Handlers and Reliable Resource Cleanup in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Cancellation Handlers and Reliable Resource Cleanup in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Cooperative cancellation works when the cancelled code is running and can check a flag. It does nothing for code that is suspended, waiting for a callback, a legacy download, a queued permit, or a child process. That code will not check anything until it wakes up, and it may not wake up until the very operation you wanted to cancel finishes. withTaskCancellationHandler closes that gap. It runs a closure at the moment of cancellation, from whichever thread called cancel(), so you can poke the underlying operation and make it stop. The price is concurrency: the handler races with the operation, and getting that race right is where most of the subtlety lies. This article builds the race-free patterns, then turns to the other half of the problem, cleanup that runs reliably on every exit path, including cleanup that needs to await." /> <meta property="og:description" content="Cooperative cancellation works when the cancelled code is running and can check a flag. It does nothing for code that is suspended, waiting for a callback, a legacy download, a queued permit, or a child process. That code will not check anything until it wakes up, and it may not wake up until the very operation you wanted to cancel finishes. withTaskCancellationHandler closes that gap. It runs a closure at the moment of cancellation, from whichever thread called cancel(), so you can poke the underlying operation and make it stop. The price is concurrency: the handler races with the operation, and getting that race right is where most of the subtlety lies. This article builds the race-free patterns, then turns to the other half of the problem, cleanup that runs reliably on every exit path, including cleanup that needs to await." /> <link rel="canonical" href="https://swiftbydeya.com/swift-cancellation-handlers-cleanup/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-cancellation-handlers-cleanup/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-30T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Cancellation Handlers and Reliable Resource Cleanup in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-30T00:00:00+03:00","datePublished":"2026-06-30T00:00:00+03:00","description":"Cooperative cancellation works when the cancelled code is running and can check a flag. It does nothing for code that is suspended, waiting for a callback, a legacy download, a queued permit, or a child process. That code will not check anything until it wakes up, and it may not wake up until the very operation you wanted to cancel finishes. withTaskCancellationHandler closes that gap. It runs a closure at the moment of cancellation, from whichever thread called cancel(), so you can poke the underlying operation and make it stop. The price is concurrency: the handler races with the operation, and getting that race right is where most of the subtlety lies. This article builds the race-free patterns, then turns to the other half of the problem, cleanup that runs reliably on every exit path, including cleanup that needs to await.","headline":"Cancellation Handlers and Reliable Resource Cleanup in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-cancellation-handlers-cleanup/"},"url":"https://swiftbydeya.com/swift-cancellation-handlers-cleanup/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Cancellation Handlers and Reliable Resource Cleanup in Swift"> <meta name="twitter:description" content="Cooperative cancellation works when the cancelled code is running and can check a flag. It does nothing for code that is suspended, waiting for a callback, a..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Cancellation Handlers and Reliable Resource Cleanup in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Cancellation Handlers and Reliable Resource Cleanup in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-30T00:00:00+03:00">June 30, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Cooperative cancellation works when the cancelled code is running and can check a flag. It does nothing for code that is <em>suspended</em>, waiting for a callback, a legacy download, a queued permit, or a child process. That code will not check anything until it wakes up, and it may not wake up until the very operation you wanted to cancel finishes.</p>
+
+<p><code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code> closes that gap. It runs a closure at the moment of cancellation, from whichever thread called <code class="language-plaintext highlighter-rouge">cancel()</code>, so you can poke the underlying operation and make it stop. The price is concurrency: the handler races with the operation, and getting that race right is where most of the subtlety lies. This article builds the race-free patterns, then turns to the other half of the problem, cleanup that runs reliably on every exit path, including cleanup that needs to <code class="language-plaintext highlighter-rouge">await</code>.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="what-a-cancellation-handler-is">What a cancellation handler is</h2>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="n">withTaskCancellationHandler</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="nv">operation</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">,</span>
+    <span class="n">onCancel</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">,</span>
+    <span class="nv">isolation</span><span class="p">:</span> <span class="nf">isolated</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Actor</span><span class="p">)?</span> <span class="o">=</span> <span class="k">#isolation</span>
+<span class="p">)</span> <span class="k">async</span> <span class="k">rethrows</span> <span class="o">-&gt;</span> <span class="kt">T</span>
+</code></pre></div></div>
+
+<p>The function runs <code class="language-plaintext highlighter-rouge">operation</code> normally. If the current task is cancelled while <code class="language-plaintext highlighter-rouge">operation</code> is in progress, <code class="language-plaintext highlighter-rouge">handler</code> runs <strong>immediately</strong>, synchronously, on the thread that called <code class="language-plaintext highlighter-rouge">cancel()</code>. Precisely:</p>
+
+<ul>
+  <li>If the task is already cancelled when <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code> is entered, <code class="language-plaintext highlighter-rouge">handler</code> runs <em>before</em> <code class="language-plaintext highlighter-rouge">operation</code> starts.</li>
+  <li>If cancellation happens while <code class="language-plaintext highlighter-rouge">operation</code> runs, <code class="language-plaintext highlighter-rouge">handler</code> runs concurrently with it, possibly on another thread at the same instant.</li>
+  <li>If cancellation happens after <code class="language-plaintext highlighter-rouge">operation</code> returns, <code class="language-plaintext highlighter-rouge">handler</code> never runs.</li>
+  <li>The handler runs at most once.</li>
+</ul>
+
+<p>The handler does not cancel anything on its own, and it does not stop <code class="language-plaintext highlighter-rouge">operation</code>. Its job is to forward the cancellation to something that can: a legacy object’s <code class="language-plaintext highlighter-rouge">cancel()</code> method, a continuation waiting in a queue, a file descriptor to close.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// A thread-safe ordered list of event names.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">EventList</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">storage</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">preCancelled</span> <span class="o">=</span> <span class="kt">EventList</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">preCancelledTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+        <span class="n">preCancelled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"operation"</span><span class="p">)</span>
+    <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">preCancelled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"handler"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">preCancelledTask</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preCancelled</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"handler"</span><span class="p">,</span> <span class="s">"operation"</span><span class="p">],</span> <span class="s">"An already-cancelled task runs the handler first"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The handler is <code class="language-plaintext highlighter-rouge">@Sendable</code> and may run on any thread, so it can only touch state that is safe to share, typically a <code class="language-plaintext highlighter-rouge">Mutex</code>, an atomic, or an object with its own thread safety. It cannot be isolated to an actor, and it cannot <code class="language-plaintext highlighter-rouge">await</code>: it must do its work, quickly, right now.</p>
+
+<h2 id="forwarding-cancellation-to-a-legacy-operation">Forwarding cancellation to a legacy operation</h2>
+
+<p>Here is a legacy downloader of the kind found in older SDKs and third-party libraries: it starts work, reports completion through a callback, and can be cancelled with a method. Cancelling it makes it call the completion handler early with an error.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">DownloadError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">cancelled</span>
+<span class="p">}</span>
+
+<span class="c1">/// A callback-based API with its own cancellation, standing in for a legacy SDK.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyDownload</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">completion</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">(</span><span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">DownloadError</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">bytes</span> <span class="o">=</span> <span class="n">bytes</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="n">afterMilliseconds</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">DownloadError</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">completion</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">completion</span> <span class="p">}</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">delay</span><span class="p">))</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="nf">finish</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="n">bytes</span><span class="p">)))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nf">finish</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">cancelled</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Calls the completion handler at most once, whichever of the timer or cancel gets here first.</span>
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">finish</span><span class="p">(</span><span class="n">with</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">DownloadError</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">pending</span> <span class="o">=</span> <span class="n">completion</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">stored</span> <span class="k">in</span>
+            <span class="k">defer</span> <span class="p">{</span> <span class="n">stored</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">stored</span>
+        <span class="p">}</span>
+        <span class="nf">pending</span><span class="p">?(</span><span class="n">result</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Wrapping it with a continuation alone produces an async function that cannot be cancelled: the continuation waits for the callback, and the callback waits for the download. Adding a cancellation handler connects the task’s cancellation to the download’s <code class="language-plaintext highlighter-rouge">cancel()</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">download</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">afterMilliseconds</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">legacy</span> <span class="o">=</span> <span class="kt">LegacyDownload</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="n">bytes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="n">legacy</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">afterMilliseconds</span><span class="p">:</span> <span class="n">delay</span><span class="p">)</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">legacy</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">finished</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">download</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span> <span class="nv">afterMilliseconds</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">finished</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">512</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">slowDownload</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">download</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span> <span class="nv">afterMilliseconds</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">cancelStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="n">slowDownload</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">outcome</span> <span class="o">=</span> <span class="k">await</span> <span class="n">slowDownload</span><span class="o">.</span><span class="n">result</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cancelStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="s">"Cancellation reached the legacy download"</span><span class="p">)</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">)</span> <span class="o">=</span> <span class="n">outcome</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">DownloadError</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A cancelled download must fail"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A five-second download stopped within a millisecond of <code class="language-plaintext highlighter-rouge">cancel()</code>. The task was suspended in the continuation the whole time and never checked a flag. The handler did the work, from the cancelling thread.</p>
+
+<p>The wrapper is simple because <code class="language-plaintext highlighter-rouge">LegacyDownload</code> already handles the hard part itself: its <code class="language-plaintext highlighter-rouge">finish</code> method guarantees the completion runs at most once, even when <code class="language-plaintext highlighter-rouge">cancel()</code> races with natural completion. (The simulated timer still fires five seconds later and finds nothing to do; a real downloader would also stop its network activity.) That is what keeps the continuation from being resumed twice. When an API lacks that guarantee, the wrapper has to provide it, as the <a href="/swift-continuation-ownership/">continuation ownership article</a> shows.</p>
+
+<p>There is also a timing case this wrapper gets wrong: if the task is cancelled <em>before</em> <code class="language-plaintext highlighter-rouge">start</code> runs, the handler calls <code class="language-plaintext highlighter-rouge">cancel()</code> on a download with no completion registered, which does nothing, and then <code class="language-plaintext highlighter-rouge">start</code> begins a download that nobody will cancel. The continuation then waits the full five seconds. The next section treats that race properly.</p>
+
+<h2 id="the-three-way-race">The three-way race</h2>
+
+<p>A cancellation handler interacts with an operation that is itself changing state. For any resource the handler needs to touch, there are three moments cancellation can arrive:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Cancellation can arrive before, during, or after the operation registers its resource
+    participant C as Canceller thread
+    participant H as Handler
+    participant O as Operation
+    participant S as Shared state
+    Note over C,S: Case 1, before registration
+    C-&gt;&gt;H: cancel()
+    H-&gt;&gt;S: nothing registered yet, record "cancelled"
+    O-&gt;&gt;S: register, sees "cancelled", gives up at once
+    Note over C,S: Case 2, while waiting
+    O-&gt;&gt;S: register resource, suspend
+    C-&gt;&gt;H: cancel()
+    H-&gt;&gt;S: take resource, wake it with CancellationError
+    Note over C,S: Case 3, after completion
+    O-&gt;&gt;S: completed, unregister
+    C-&gt;&gt;H: cancel()
+    H-&gt;&gt;S: nothing to do
+</code></pre>
+
+<p>The shared state must make each case resolve correctly whichever order the two sides reach it in. Handling only the second case, which is the one tests usually exercise, leaves two bugs: a lost cancellation in case 1, and a stale reference or double resume in case 3.</p>
+
+<h2 id="a-complete-example-an-async-permit-pool">A complete example: an async permit pool</h2>
+
+<p>A pool of permits limits how many operations can use a scarce resource at once: concurrent uploads, database connections, simultaneous image decodes. <code class="language-plaintext highlighter-rouge">acquire()</code> suspends until a permit is free; <code class="language-plaintext highlighter-rouge">release()</code> hands it to the next waiter. A waiter that is cancelled while queued must leave the queue and resume with <code class="language-plaintext highlighter-rouge">CancellationError</code>. If it stayed, the next <code class="language-plaintext highlighter-rouge">release()</code> would hand a permit to a task that no longer wants it, and that permit would be lost forever.</p>
+
+<p>Each acquisition gets an identifier and a phase stored under one lock. Every transition happens inside <code class="language-plaintext highlighter-rouge">withLock</code>, so the operation and the handler always see a consistent phase:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Limits concurrent access to `capacity` holders. Cancellable while waiting.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Permits</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">Phase</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">registering</span>
+        <span class="k">case</span> <span class="nf">waiting</span><span class="p">(</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="n">cancelledEarly</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">available</span><span class="p">:</span> <span class="kt">Int</span>
+        <span class="k">var</span> <span class="nv">phases</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt64</span><span class="p">:</span> <span class="kt">Phase</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+        <span class="k">var</span> <span class="nv">queue</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt64</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">var</span> <span class="nv">nextID</span><span class="p">:</span> <span class="kt">UInt64</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">State</span><span class="o">&gt;</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">precondition</span><span class="p">(</span><span class="n">capacity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">(</span><span class="nv">available</span><span class="p">:</span> <span class="n">capacity</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">acquire</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">state</span><span class="o">.</span><span class="n">nextID</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">registering</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">nextID</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+                <span class="kd">enum</span> <span class="kt">Decision</span> <span class="p">{</span> <span class="k">case</span> <span class="n">granted</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">,</span> <span class="n">queued</span> <span class="p">}</span>
+                <span class="k">let</span> <span class="nv">decision</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Decision</span> <span class="k">in</span>
+                    <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">cancelledEarly</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="p">{</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                        <span class="k">return</span> <span class="o">.</span><span class="n">cancelled</span>
+                    <span class="p">}</span>
+                    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">available</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">available</span> <span class="o">-=</span> <span class="mi">1</span>
+                        <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+                        <span class="k">return</span> <span class="o">.</span><span class="n">granted</span>
+                    <span class="p">}</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="n">queued</span>
+                <span class="p">}</span>
+                <span class="k">switch</span> <span class="n">decision</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">granted</span><span class="p">:</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">cancelled</span><span class="p">:</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">CancellationError</span><span class="p">())</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">queued</span><span class="p">:</span> <span class="k">break</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">waiter</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span> <span class="k">in</span>
+                <span class="k">switch</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">registering</span><span class="p">:</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">cancelledEarly</span>     <span class="c1">// Case 1: the operation will see this.</span>
+                    <span class="k">return</span> <span class="kc">nil</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="k">let</span> <span class="nv">continuation</span><span class="p">):</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>                 <span class="c1">// Case 2: leave the queue now.</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">removeAll</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="n">id</span> <span class="p">}</span>
+                    <span class="k">return</span> <span class="n">continuation</span>
+                <span class="k">case</span> <span class="o">.</span><span class="n">cancelledEarly</span><span class="p">,</span> <span class="nv">nil</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">nil</span>                             <span class="c1">// Case 3: already granted or resolved.</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">waiter</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">CancellationError</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">release</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span> <span class="k">in</span>
+            <span class="k">while</span> <span class="o">!</span><span class="n">state</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="nf">removeFirst</span><span class="p">()</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">waiting</span><span class="p">(</span><span class="k">let</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">phases</span><span class="o">.</span><span class="nf">removeValue</span><span class="p">(</span><span class="nv">forKey</span><span class="p">:</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="n">continuation</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">available</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="n">next</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// For tests: everything a leak would leave behind.</span>
+    <span class="k">var</span> <span class="nv">bookkeeping</span><span class="p">:</span> <span class="p">(</span><span class="nv">available</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">phases</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">queued</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">available</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">phases</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Several rules make this correct, and they generalize to any handler-based design:</p>
+
+<ul>
+  <li><strong>One lock covers every piece of state both sides read.</strong> The phase, the queue, and the count change together.</li>
+  <li><strong>Continuations are resumed outside the lock.</strong> Resuming can run arbitrary code, and holding a lock while doing that invites deadlocks.</li>
+  <li><strong>Every path resumes each continuation exactly once.</strong> A continuation leaves the state at the same moment it is chosen for resumption, so no other path can find it again.</li>
+  <li><strong>The early-cancellation case leaves a marker.</strong> If the handler runs before the operation has registered, it records <code class="language-plaintext highlighter-rouge">cancelledEarly</code>, and the operation checks for it before queuing.</li>
+  <li><strong>Late cancellation is a no-op.</strong> Once a permit is granted, the phase entry is gone, and the handler finds nothing to do. The caller now holds a permit in a cancelled task and must release it as usual.</li>
+</ul>
+
+<p>The tests below exercise all three cases and check that nothing is left behind:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">permits</span> <span class="o">=</span> <span class="kt">Permits</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">permits</span><span class="o">.</span><span class="nf">acquire</span><span class="p">()</span>                            <span class="c1">// The only permit is now held.</span>
+
+<span class="k">let</span> <span class="nv">queued</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">permits</span><span class="o">.</span><span class="nf">acquire</span><span class="p">()</span> <span class="p">}</span>      <span class="c1">// Waits in the queue.</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">queued</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>                                        <span class="c1">// Case 2: cancelled while waiting.</span>
+<span class="k">switch</span> <span class="k">await</span> <span class="n">queued</span><span class="o">.</span><span class="n">result</span> <span class="p">{</span>
+<span class="k">case</span> <span class="o">.</span><span class="nv">success</span><span class="p">:</span> <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A cancelled waiter must not get a permit"</span><span class="p">)</span>
+<span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">is</span> <span class="kt">CancellationError</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">permits</span><span class="o">.</span><span class="n">bookkeeping</span><span class="o">.</span><span class="n">queued</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"The cancelled waiter left the queue"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">early</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">permits</span><span class="o">.</span><span class="nf">acquire</span><span class="p">()</span>                        <span class="c1">// Case 1: cancelled before registering.</span>
+<span class="p">}</span>
+<span class="k">switch</span> <span class="k">await</span> <span class="n">early</span><span class="o">.</span><span class="n">result</span> <span class="p">{</span>
+<span class="k">case</span> <span class="o">.</span><span class="nv">success</span><span class="p">:</span> <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A pre-cancelled task must not wait for a permit"</span><span class="p">)</span>
+<span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">is</span> <span class="kt">CancellationError</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">permits</span><span class="o">.</span><span class="nf">release</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">permits</span><span class="o">.</span><span class="n">bookkeeping</span><span class="o">.</span><span class="n">available</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"The released permit was not handed to a cancelled waiter"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">late</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="k">in</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">permits</span><span class="o">.</span><span class="nf">acquire</span><span class="p">()</span>                        <span class="c1">// Granted immediately.</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>             <span class="c1">// Case 3: cancelled after the grant.</span>
+    <span class="n">permits</span><span class="o">.</span><span class="nf">release</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">lateResult</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">late</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lateResult</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">bookkeeping</span> <span class="o">=</span> <span class="n">permits</span><span class="o">.</span><span class="n">bookkeeping</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bookkeeping</span><span class="o">.</span><span class="n">available</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">bookkeeping</span><span class="o">.</span><span class="n">phases</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">bookkeeping</span><span class="o">.</span><span class="n">queued</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"No leaked state"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="cleanup-on-every-exit-path">Cleanup on every exit path</h2>
+
+<p>The second half of cancellation safety is making sure resources are released however an operation ends: success, error, or cancellation. In Swift, <code class="language-plaintext highlighter-rouge">defer</code> is the primary tool. A <code class="language-plaintext highlighter-rouge">defer</code> block runs when its scope exits for any reason, and cancellation is just one of the ways a scope exits, typically by a thrown <code class="language-plaintext highlighter-rouge">CancellationError</code>.</p>
+
+<p>A scoped helper makes acquisition and release impossible to separate:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Permits</span> <span class="p">{</span>
+    <span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="n">withPermit</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">acquire</span><span class="p">()</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="nf">release</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">body</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">pool</span> <span class="o">=</span> <span class="kt">Permits</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">peak</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">((</span><span class="nv">current</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">peak</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">8</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">withPermit</span> <span class="p">{</span>
+                <span class="n">peak</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">peak</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">peak</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span><span class="p">)</span> <span class="p">}</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+                <span class="n">peak</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">waitForAll</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">peak</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">peak</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">bookkeeping</span><span class="o">.</span><span class="n">available</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">"Every permit came back"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Notice <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> on the helper. <code class="language-plaintext highlighter-rouge">withPermit</code> takes a non-<code class="language-plaintext highlighter-rouge">Sendable</code> closure and calls it. Under default Swift 6 rules, a plain non-isolated <code class="language-plaintext highlighter-rouge">async</code> function runs on the global executor, so calling it from main-actor code would send a main-actor closure to another executor, and the compiler rejects that. <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code>, new in Swift 6.2, makes the helper run on the caller’s executor instead, so the closure never crosses an isolation boundary. Before Swift 6.2, the same effect needed an extra <code class="language-plaintext highlighter-rouge">isolation: isolated (any Actor)? = #isolation</code> parameter, which is how <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code> itself is declared. Every scoped “with” helper that calls a closure should use one of the two.</p>
+
+<p><code class="language-plaintext highlighter-rouge">release()</code> is synchronous, and that is a deliberate design choice. Until Swift 6.4, a <code class="language-plaintext highlighter-rouge">defer</code> block could not contain <code class="language-plaintext highlighter-rouge">await</code> at all, so a resource whose release had to be awaited, such as an actor method, could not be released from <code class="language-plaintext highlighter-rouge">defer</code>. Swift 6.4 lifts that restriction, as the next section shows, but synchronous release is still the more robust design: it cannot be interrupted by cancellation, cannot suspend while other code observes the resource half-released, and works with every toolchain. When you design a resource type, make its release path synchronous and thread-safe, backed by a lock. That decision matters more for reliable cleanup than any other.</p>
+
+<p>Files are the same. Creating a temporary directory and removing it in <code class="language-plaintext highlighter-rouge">defer</code> guarantees removal even when the work inside is cancelled:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+<span class="kd">func</span> <span class="n">withTemporaryDirectory</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">(</span><span class="kt">URL</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">directory</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span>
+        <span class="o">.</span><span class="nf">appendingPathComponent</span><span class="p">(</span><span class="s">"cleanup-demo-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">isDirectory</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createDirectory</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">directory</span><span class="p">,</span> <span class="nv">withIntermediateDirectories</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">directory</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">body</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">createdPaths</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">URL</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+<span class="k">let</span> <span class="nv">cancelledExport</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withTemporaryDirectory</span> <span class="p">{</span> <span class="n">directory</span> <span class="k">in</span>
+        <span class="n">createdPaths</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"partial"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">directory</span><span class="o">.</span><span class="nf">appendingPathComponent</span><span class="p">(</span><span class="s">"export.part"</span><span class="p">))</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>     <span class="c1">// Cancelled here.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="n">cancelledExport</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cancelledExport</span><span class="o">.</span><span class="n">result</span>
+<span class="k">let</span> <span class="nv">exportDirectory</span> <span class="o">=</span> <span class="n">createdPaths</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="n">first</span><span class="o">!</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">fileExists</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">exportDirectory</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="s">"The temporary directory was removed"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="when-cleanup-must-await">When cleanup must <code class="language-plaintext highlighter-rouge">await</code></h2>
+
+<p>Some cleanup is inherently asynchronous: closing an upload session on the server, flushing a log through an actor, shutting down a network connection gracefully. Two obstacles stand in the way. Before Swift 6.4, <code class="language-plaintext highlighter-rouge">defer</code> could not <code class="language-plaintext highlighter-rouge">await</code>. And in a cancelled task, as the <a href="/swift-cooperative-cancellation/">cooperative cancellation article</a> shows, every cancellable <code class="language-plaintext highlighter-rouge">await</code> fails immediately, including the ones in cleanup code.</p>
+
+<p>Swift 6.4 removes the first obstacle. <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0493-defer-async.md">SE-0493</a> allows <code class="language-plaintext highlighter-rouge">await</code> inside <code class="language-plaintext highlighter-rouge">defer</code>; the scope implicitly awaits the deferred work on every exit. It is a compiler feature, so it works on any deployment target. But the deferred code still runs <em>in the cancelled task</em>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">uploadWithAsyncDefer</span><span class="p">(</span><span class="nv">log</span><span class="p">:</span> <span class="kt">EventList</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">defer</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>     <span class="c1">// Stands in for closing the session.</span>
+            <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"upload session closed"</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cleanup saw the cancellation"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"uploading"</span><span class="p">)</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">"uploaded"</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">deferLog</span> <span class="o">=</span> <span class="kt">EventList</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">deferredUpload</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">uploadWithAsyncDefer</span><span class="p">(</span><span class="nv">log</span><span class="p">:</span> <span class="n">deferLog</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">deferredUpload</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">deferredUpload</span><span class="o">.</span><span class="n">result</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">deferLog</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"uploading"</span><span class="p">,</span> <span class="s">"cleanup saw the cancellation"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">defer</code> ran, and awaited, but its network call stand-in failed at once because the task’s cancelled flag is permanent. Async <code class="language-plaintext highlighter-rouge">defer</code> solves “where do I put asynchronous cleanup”; it does not solve “how does cleanup survive cancellation.”</p>
+
+<h3 id="cancellation-shields-on-ios-27-and-macos-27">Cancellation shields, on iOS 27 and macOS 27</h3>
+
+<p>Swift 6.4 also adds the missing piece, <code class="language-plaintext highlighter-rouge">withTaskCancellationShield</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0504-task-cancellation-shields.md">SE-0504</a>). Inside a shield, the current task observes itself as <em>not</em> cancelled: <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> is <code class="language-plaintext highlighter-rouge">false</code>, <code class="language-plaintext highlighter-rouge">Task.sleep</code> does not throw early, child tasks created inside are not cancelled automatically, and cancellation handlers registered inside do not fire. When the shield ends, the task is cancelled again, because it always was; the shield changes what code can <em>observe</em>, not the task’s state. Asking a task handle from the outside, with <code class="language-plaintext highlighter-rouge">task.isCancelled</code>, always reports the real state.</p>
+
+<p>The shield requires runtime support, so it is available only on iOS 27, macOS 27, and the corresponding releases of other platforms, with no back-deployment:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">uploadWithShieldedCleanup</span><span class="p">(</span><span class="nv">log</span><span class="p">:</span> <span class="kt">EventList</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">defer</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">withTaskCancellationShield</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+                <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"upload session closed"</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cleanup saw the cancellation"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"uploading"</span><span class="p">)</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">"uploaded"</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">shieldLog</span> <span class="o">=</span> <span class="kt">EventList</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">shieldedUpload</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">uploadWithShieldedCleanup</span><span class="p">(</span><span class="nv">log</span><span class="p">:</span> <span class="n">shieldLog</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">shieldedUpload</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">shieldedUpload</span><span class="o">.</span><span class="n">result</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">shieldLog</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"uploading"</span><span class="p">,</span> <span class="s">"upload session closed"</span><span class="p">])</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The shielded example was compiled for this article but not executed, because the test machine runs macOS 26.6. Its expected behavior follows directly from the proposal’s semantics.</p>
+
+<p>There is a practical trap here. With the Xcode 27.1 toolchain, a binary built for a macOS 26 deployment target that contains this code, even behind <code class="language-plaintext highlighter-rouge">#available</code>, failed to launch on macOS 26.6 with <code class="language-plaintext highlighter-rouge">dyld: Symbol not found: _swift_task_cancellationShieldPush</code>. The shield’s inlined implementation referenced its runtime entry points as strong, not weak, symbols. If your app supports systems older than iOS 27 or macOS 27, launch it on the oldest supported OS before shipping code that uses shields, and keep the fallback below.</p>
+
+<h3 id="the-fallback-a-fresh-unstructured-task">The fallback: a fresh unstructured task</h3>
+
+<p>Before iOS 27 and macOS 27, the standard workaround, which SE-0504 itself describes, is to run the cleanup in a <strong>new unstructured task</strong>, which does not inherit cancellation, and await it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs `body`, then `cleanup`, even if `body` throws or the task is cancelled.</span>
+<span class="c1">/// `cleanup` runs in a fresh task, so cancellation of the caller does not abort it.</span>
+<span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+<span class="kd">func</span> <span class="n">withAsyncCleanup</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">,</span>
+    <span class="nv">cleanup</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+<span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="nf">body</span><span class="p">())</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">cleanup</span><span class="p">()</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="n">result</span><span class="o">.</span><span class="nf">get</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cleanupLog</span> <span class="o">=</span> <span class="kt">EventList</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">abandonedUpload</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withAsyncCleanup</span> <span class="p">{</span>
+        <span class="n">cleanupLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"uploading"</span><span class="p">)</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s">"uploaded"</span>
+    <span class="p">}</span> <span class="nv">cleanup</span><span class="p">:</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>     <span class="c1">// Stands in for closing the session.</span>
+            <span class="n">cleanupLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"upload session closed"</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">cleanupLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cleanup saw the cancellation"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">abandonedUpload</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">abandonedUpload</span><span class="o">.</span><span class="n">result</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cleanupLog</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"uploading"</span><span class="p">,</span> <span class="s">"upload session closed"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The cleanup’s own <code class="language-plaintext highlighter-rouge">Task.sleep</code> succeeded even though the caller was cancelled, because the cleanup task has its own, uncancelled flag. Awaiting <code class="language-plaintext highlighter-rouge">.value</code> keeps the ordering structured: <code class="language-plaintext highlighter-rouge">withAsyncCleanup</code> does not return until the cleanup finishes, so callers can rely on it having happened. The costs, compared with a shield, are an extra task to schedule, a cleanup that cannot touch non-<code class="language-plaintext highlighter-rouge">Sendable</code> state, and a pattern that only works in <code class="language-plaintext highlighter-rouge">async</code> code.</p>
+
+<p>Whichever mechanism you use, use it sparingly and bound it. A shielded cleanup that hangs, for example because the server never answers, now holds up the cancelled caller indefinitely, because the caller can no longer interrupt it. Give asynchronous cleanup its own timeout, such as the <code class="language-plaintext highlighter-rouge">withTimeout</code> helper from the <a href="/swift-task-groups/">task groups article</a>, and treat cleanup failure as something to log, not something to retry forever.</p>
+
+<h2 id="rules-that-keep-cleanup-reliable">Rules that keep cleanup reliable</h2>
+
+<ul>
+  <li><strong>Prefer synchronous release.</strong> Design resources so that releasing them is synchronous and thread-safe. Then <code class="language-plaintext highlighter-rouge">defer</code> handles every exit path.</li>
+  <li><strong>Never hold a lock across <code class="language-plaintext highlighter-rouge">await</code>.</strong> <code class="language-plaintext highlighter-rouge">Mutex.withLock</code> takes a synchronous closure, so the compiler enforces this for <code class="language-plaintext highlighter-rouge">Mutex</code>. Hand-rolled locks with separate lock and unlock calls do not have that protection.</li>
+  <li><strong>Keep handlers short and non-blocking.</strong> A cancellation handler runs on the canceller’s thread, which may be the main thread. Flip state and call a non-blocking <code class="language-plaintext highlighter-rouge">cancel()</code>; never wait in a handler.</li>
+  <li><strong>Resolve all three timings.</strong> Before registration, during the wait, after completion. Test each one deliberately, as the permit tests do.</li>
+  <li><strong>Make cancellation idempotent.</strong> A resource may see <code class="language-plaintext highlighter-rouge">cancel()</code> from the handler and a natural completion at the same moment. Exactly one of them should win.</li>
+  <li><strong>Shield async cleanup only when necessary, and bound it.</strong></li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code> runs its handler immediately on cancellation, concurrently with the operation, or before it if the task was already cancelled.</li>
+  <li>Use the handler to forward cancellation into operations that are suspended and cannot check a flag: legacy cancellable APIs, queued continuations, file descriptors.</li>
+  <li>Guard shared state with one lock, model each acquisition’s phase explicitly, resume continuations outside the lock, and handle early, waiting, and late cancellation.</li>
+  <li><code class="language-plaintext highlighter-rouge">defer</code> handles cleanup on every exit, including cancellation, as long as the cleanup is synchronous.</li>
+  <li>Swift 6.4 allows <code class="language-plaintext highlighter-rouge">await</code> in <code class="language-plaintext highlighter-rouge">defer</code>, but deferred code still observes cancellation.</li>
+  <li>For cleanup that must survive cancellation, use <code class="language-plaintext highlighter-rouge">withTaskCancellationShield</code> on iOS 27 and macOS 27, or a fresh <code class="language-plaintext highlighter-rouge">Task</code> whose value you await on earlier systems, always with a time bound.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Extend <code class="language-plaintext highlighter-rouge">Permits</code> with <code class="language-plaintext highlighter-rouge">func acquire(timeout: Duration) async throws</code> that throws a <code class="language-plaintext highlighter-rouge">TimeoutError</code> if no permit becomes available in time. The timeout and cancellation must share the same removal path, so a waiter is removed from the queue exactly once whichever happens first, and a permit released at the same instant as the timeout is either granted or returned, never lost. Write a stress test that runs thousands of acquisitions with random timeouts, cancellations, and releases, then checks that <code class="language-plaintext highlighter-rouge">bookkeeping</code> returns to its initial state.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/swift/withtaskcancellationhandler(operation:oncancel:isolation:)">withTaskCancellationHandler(operation:onCancel:isolation:)</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>, section “Cancellation handlers.”</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0433-mutex.md">SE-0433: Synchronous Mutual Exclusion Lock</a>, which introduced <code class="language-plaintext highlighter-rouge">Mutex</code>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0493-defer-async.md">SE-0493: Support <code class="language-plaintext highlighter-rouge">async</code> calls in <code class="language-plaintext highlighter-rouge">defer</code> bodies</a> and <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0504-task-cancellation-shields.md">SE-0504: Task Cancellation Shields</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-cooperative-cancellation/">Cooperative Cancellation and Cancellation Checks</a>. Next: <a href="/swift-unstructured-detached-tasks/">Unstructured and Detached Tasks: When to Use Each</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-cancellation-handlers-cleanup/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Cancellation+Handlers+and+Reliable+Resource+Cleanup+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-cancellation-handlers-cleanup%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-cancellation-handlers-cleanup/&title=Cancellation+Handlers+and+Reliable+Resource+Cleanup+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-cancellation-handlers-cleanup/&title=Cancellation+Handlers+and+Reliable+Resource+Cleanup+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-cancellation-handlers-cleanup/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Cancellation Handlers and Reliable Resource Cleanup in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-cancellation-handlers-cleanup/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Cancellation">Cancellation</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Resource+Management">Resource Management</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Publishers, Subscribers, and Subscriptions" href="/combine-publishers-subscribers-subscriptions/"> <p>Previous post</p> Publishers, Subscribers, and Subscriptions </a> </div> <div id="next-post"> <a alt="Cooperative Cancellation and Cancellation Checks in Swift" href="/swift-cooperative-cancellation/"> <p>Next post</p> Cooperative Cancellation and Cancellation Checks in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Handling Logout During an In-Flight Request | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Handling Logout During an In-Flight Request" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Logging out looks like the simplest feature in an app: delete the token, show the sign-in screen. The bugs live in everything that was already happening when the user tapped the button. A request for the user’s loans was in flight; its response arrives two seconds later and writes Alice’s loans into the store, which by then belongs to Bob, who just signed in on the same family iPad. A response was cached with Alice’s profile; Bob’s first request for his profile is answered from the cache. A refresh was in progress; it completes after logout and puts a valid token back. None of these show up in a test that logs out an idle app. All of them are privacy bugs, because the data of one person is shown to another. This article reproduces three of them against a local server, then builds a user session object whose lifetime bounds every request, cache entry, and credential made on the user’s behalf, so that ending the session ends all of them." /> <meta property="og:description" content="Logging out looks like the simplest feature in an app: delete the token, show the sign-in screen. The bugs live in everything that was already happening when the user tapped the button. A request for the user’s loans was in flight; its response arrives two seconds later and writes Alice’s loans into the store, which by then belongs to Bob, who just signed in on the same family iPad. A response was cached with Alice’s profile; Bob’s first request for his profile is answered from the cache. A refresh was in progress; it completes after logout and puts a valid token back. None of these show up in a test that logs out an idle app. All of them are privacy bugs, because the data of one person is shown to another. This article reproduces three of them against a local server, then builds a user session object whose lifetime bounds every request, cache entry, and credential made on the user’s behalf, so that ending the session ends all of them." /> <link rel="canonical" href="https://swiftbydeya.com/swift-logout-in-flight-requests/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-logout-in-flight-requests/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-25T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Handling Logout During an In-Flight Request" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-25T00:00:00+03:00","datePublished":"2026-09-25T00:00:00+03:00","description":"Logging out looks like the simplest feature in an app: delete the token, show the sign-in screen. The bugs live in everything that was already happening when the user tapped the button. A request for the user’s loans was in flight; its response arrives two seconds later and writes Alice’s loans into the store, which by then belongs to Bob, who just signed in on the same family iPad. A response was cached with Alice’s profile; Bob’s first request for his profile is answered from the cache. A refresh was in progress; it completes after logout and puts a valid token back. None of these show up in a test that logs out an idle app. All of them are privacy bugs, because the data of one person is shown to another. This article reproduces three of them against a local server, then builds a user session object whose lifetime bounds every request, cache entry, and credential made on the user’s behalf, so that ending the session ends all of them.","headline":"Handling Logout During an In-Flight Request","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-logout-in-flight-requests/"},"url":"https://swiftbydeya.com/swift-logout-in-flight-requests/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Handling Logout During an In-Flight Request"> <meta name="twitter:description" content="Logging out looks like the simplest feature in an app: delete the token, show the sign-in screen. The bugs live in everything that was already happening when..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Handling Logout During an In-Flight Request"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Handling Logout During an In-Flight Request</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-25T00:00:00+03:00">September 25, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Logging out looks like the simplest feature in an app: delete the token, show the sign-in screen. The bugs live in everything that was already happening when the user tapped the button. A request for the user’s loans was in flight; its response arrives two seconds later and writes Alice’s loans into the store, which by then belongs to Bob, who just signed in on the same family iPad. A response was cached with Alice’s profile; Bob’s first request for his profile is answered from the cache. A refresh was in progress; it completes after logout and puts a valid token back.</p>
+
+<p>None of these show up in a test that logs out an idle app. All of them are privacy bugs, because the data of one person is shown to another. This article reproduces three of them against a local server, then builds a user session object whose lifetime bounds every request, cache entry, and credential made on the user’s behalf, so that ending the session ends all of them.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="something-is-almost-always-in-flight">Something is almost always in flight</h2>
+
+<p>It is tempting to treat “logout during a request” as an edge case. Little’s law, from <a href="/swift-concurrency-vs-parallelism/">Concurrency vs. Parallelism</a>, says otherwise. If an app issues requests at an average rate \(\lambda\) and each takes \(W\) on average, the average number in flight at any moment is:</p>
+
+\[L = \lambda W\]
+
+<p>An app that polls, prefetches, and syncs at two requests per second with a typical mobile latency of 600 ms has \(L = 1.2\) requests in flight on average. If arrivals are roughly Poisson, the chance that <em>nothing</em> is in flight at the moment of logout is about \(e^{-L} \approx 30\%\). In the other 70% of logouts, something will complete after the user has gone, and the code that handles its result has to know that.</p>
+
+<h2 id="the-test-server">The test server</h2>
+
+<p>The server identifies the user by the bearer token. Its profile response is cacheable for a minute, the loans response is slow, and logout is an endpoint, because the server must revoke the refresh token too:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)?</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"Bearer token-"</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">""</span><span class="p">)</span> <span class="p">??</span> <span class="s">"nobody"</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/me/profile"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Cache-Control"</span><span class="p">,</span> <span class="s">"max-age=60"</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="s">"/me/profile-vary"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Cache-Control"</span><span class="p">,</span> <span class="s">"max-age=60"</span><span class="p">),</span> <span class="p">(</span><span class="s">"Vary"</span><span class="p">,</span> <span class="s">"Authorization"</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="s">"/me/loans"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">)],</span>
+                            <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"["</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="err">'</span><span class="n">s</span> <span class="n">loan</span><span class="s">"]"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))],</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">400</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/auth/logout"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">204</span><span class="p">)</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">get</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="k">as</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+    <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer token-</span><span class="se">\(</span><span class="n">user</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="bug-1-a-late-response-writes-into-the-next-users-state">Bug 1: a late response writes into the next user’s state</h2>
+
+<p>The naive store keeps the current user’s data in one place and loads it with a plain <code class="language-plaintext highlighter-rouge">async</code> method. Logout clears the store; a new sign-in starts loading the new user’s data:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">NaiveStore</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">loans</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">loadLoans</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">user</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">get</span><span class="p">(</span><span class="s">"me/loans"</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">session</span><span class="p">)</span>
+        <span class="n">loans</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">logout</span><span class="p">()</span> <span class="p">{</span> <span class="n">user</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">;</span> <span class="n">loans</span> <span class="o">=</span> <span class="p">[]</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">login</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">user</span> <span class="o">=</span> <span class="n">name</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">naive</span> <span class="o">=</span> <span class="kt">NaiveStore</span><span class="p">()</span>
+<span class="n">naive</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"alice"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">aliceLoad</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">naive</span><span class="o">.</span><span class="nf">loadLoans</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="o">.</span><span class="n">shared</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>  <span class="c1">// Alice's request is on the wire</span>
+<span class="n">naive</span><span class="o">.</span><span class="nf">logout</span><span class="p">()</span>
+<span class="n">naive</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"bob"</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">aliceLoad</span><span class="o">.</span><span class="n">value</span>                      <span class="c1">// the response arrives</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naive</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="s">"bob"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naive</span><span class="o">.</span><span class="n">loans</span> <span class="o">==</span> <span class="p">[</span><span class="s">"alice's loan"</span><span class="p">])</span>        <span class="c1">// Bob now sees Alice's loans</span>
+</code></pre></div></div>
+
+<p>Nothing here is a data race. The store is main-actor isolated, and every access is serialized. The bug is a <strong>race condition across a suspension point</strong>, the kind <a href="/swift-actor-reentrancy/">Actor Reentrancy Across Suspension Points</a> describes: the facts that were true before <code class="language-plaintext highlighter-rouge">await</code> (who the user is) were not true after it, and the code did not check.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A response for the previous user is committed after logout and a new sign-in
+    participant UI
+    participant Store
+    participant Server
+    UI-&gt;&gt;Store: loadLoans() as alice
+    Store-&gt;&gt;Server: GET /me/loans (token-alice)
+    UI-&gt;&gt;Store: logout(), then login("bob")
+    Note over Store: user = bob, loans = []
+    Server--&gt;&gt;Store: ["alice's loan"]
+    Store-&gt;&gt;Store: loans = ["alice's loan"]
+    Note over UI,Store: Bob sees Alice's data
+</code></pre>
+
+<h2 id="bug-2-the-cache-answers-for-the-wrong-user">Bug 2: the cache answers for the wrong user</h2>
+
+<p><code class="language-plaintext highlighter-rouge">URLCache</code> stores responses keyed by URL. Two users requesting <code class="language-plaintext highlighter-rouge">/me/profile</code> request the same URL, and a cacheable response for the first one is a valid cached answer for the second:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">profileLeak</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">alice</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">bob</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">serverHits</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="k">default</span>
+    <span class="n">configuration</span><span class="o">.</span><span class="n">urlCache</span> <span class="o">=</span> <span class="kt">URLCache</span><span class="p">(</span><span class="nv">memoryCapacity</span><span class="p">:</span> <span class="mi">1_000_000</span><span class="p">,</span> <span class="nv">diskCapacity</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">shared</span><span class="o">.</span><span class="nf">finishTasksAndInvalidate</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">before</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+    <span class="k">let</span> <span class="nv">alice</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="s">"alice"</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">shared</span><span class="p">)</span>
+    <span class="c1">// ... alice logs out, bob logs in, same session and cache ...</span>
+    <span class="k">let</span> <span class="nv">bob</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="s">"bob"</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">shared</span><span class="p">)</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">alice</span><span class="p">,</span> <span class="n">bob</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">before</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">leaked</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">profileLeak</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"me/profile"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaked</span><span class="o">.</span><span class="n">alice</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">alice</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaked</span><span class="o">.</span><span class="n">bob</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">alice</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>   <span class="c1">// served from cache, with a different Authorization</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaked</span><span class="o">.</span><span class="n">serverHits</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">varied</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">profileLeak</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"me/profile-vary"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">varied</span><span class="o">.</span><span class="n">bob</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">bob</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>     <span class="c1">// Vary: Authorization made the cache check the header</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">varied</span><span class="o">.</span><span class="n">serverHits</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Response headers</th>
+      <th>Bob’s first <code class="language-plaintext highlighter-rouge">/me/profile</code></th>
+      <th>Server requests</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Cache-Control: max-age=60</code></td>
+      <td>Alice’s profile, from cache</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Cache-Control: private, max-age=60</code></td>
+      <td>Alice’s profile, from cache</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Cache-Control: no-store</code></td>
+      <td>Bob’s profile</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Cache-Control: max-age=60</code>, <code class="language-plaintext highlighter-rouge">Vary: Authorization</code></td>
+      <td>Bob’s profile</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code class="language-plaintext highlighter-rouge">private</code> does not help, because it means “only a private cache may store this,” and <code class="language-plaintext highlighter-rouge">URLCache</code> <em>is</em> a private cache: one that belongs to a single client. <a href="https://www.rfc-editor.org/rfc/rfc9111#section-3.5">RFC 9111</a> restricts <em>shared</em> caches from reusing responses to authenticated requests; a private cache is assumed to serve one user. That assumption fails on shared devices, on any device where a second account can sign in, and in apps that let one person switch between accounts.</p>
+
+<p>Two fixes exist on the server, <code class="language-plaintext highlighter-rouge">Vary: Authorization</code> and <code class="language-plaintext highlighter-rouge">no-store</code> for personal data, and one belongs to the client: never let two users share a cache. The design below makes that structural.</p>
+
+<h2 id="bug-3-work-that-resurrects-the-session">Bug 3: work that resurrects the session</h2>
+
+<p>The third bug is subtler. A token refresh in flight at logout completes afterwards and stores a fresh token, so the app is signed in again, invisibly, as the previous user. The same happens with any background work that holds credentials: a sync task that retries with “the current token,” or an upload that re-authenticates. The coordinator in <a href="/swift-token-refresh/">Refreshing Credentials Without Duplicate Requests</a> moves to <code class="language-plaintext highlighter-rouge">.signedOut</code> on failure, but a refresh that <em>succeeds</em> after logout needs the session itself to have ended. The fix below gives each signed-in user an object whose end is final.</p>
+
+<h2 id="a-session-object-with-a-lifetime">A session object with a lifetime</h2>
+
+<p>The idea is to make “the user’s session” a concrete object that owns everything done on the user’s behalf, and to derive every request from it:</p>
+
+<ul>
+  <li>its own <code class="language-plaintext highlighter-rouge">URLSession</code>, with an ephemeral configuration and its own cache, so invalidating it cancels every request and drops every cached response;</li>
+  <li>the user’s credentials;</li>
+  <li>an <code class="language-plaintext highlighter-rouge">isActive</code> flag, flipped exactly once, that every commit checks.</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserSession</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">urlSession</span><span class="p">:</span> <span class="kt">URLSession</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">active</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">user</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="s">"token-</span><span class="se">\(</span><span class="n">user</span><span class="se">)</span><span class="s">"</span>
+        <span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="n">ephemeral</span>  <span class="c1">// memory-only cache, cookies, credentials</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">urlCache</span> <span class="o">=</span> <span class="kt">URLCache</span><span class="p">(</span><span class="nv">memoryCapacity</span><span class="p">:</span> <span class="mi">2_000_000</span><span class="p">,</span> <span class="nv">diskCapacity</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">httpAdditionalHeaders</span> <span class="o">=</span> <span class="p">[</span><span class="s">"Accept"</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">]</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">urlSession</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">isActive</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">active</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+
+    <span class="c1">/// Ends the session: no further commits, every in-flight request cancelled, all storage dropped.</span>
+    <span class="kd">func</span> <span class="nf">end</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">active</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="n">urlSession</span><span class="o">.</span><span class="nf">invalidateAndCancel</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">get</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">isActive</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">CancellationError</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer </span><span class="se">\(</span><span class="n">token</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">urlSession</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span><span class="o">.</span><span class="mi">0</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The token lives in the session object, not in a global. Code that has a <code class="language-plaintext highlighter-rouge">UserSession</code> can make requests as that user; code that does not, cannot. When the session ends, <code class="language-plaintext highlighter-rouge">invalidateAndCancel()</code> cancels every task the <code class="language-plaintext highlighter-rouge">URLSession</code> owns, and each throws <code class="language-plaintext highlighter-rouge">URLError.cancelled</code>. A <code class="language-plaintext highlighter-rouge">URLSession</code> that has been invalidated cannot create new tasks, and Apple documents that trying to do so is a programming error, which is why <code class="language-plaintext highlighter-rouge">get</code> checks <code class="language-plaintext highlighter-rouge">isActive</code> first.</p>
+
+<p>The store now commits a result only if the session that produced it is still the current one. The check runs <em>after</em> the <code class="language-plaintext highlighter-rouge">await</code>, at the moment of commit, which is the only moment when the answer matters:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Store</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">UserSession</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">loans</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">discardedResponses</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="kd">func</span> <span class="nf">login</span><span class="p">(</span><span class="n">_</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">session</span> <span class="o">=</span> <span class="kt">UserSession</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">user</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">loadLoans</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">session</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">get</span><span class="p">(</span><span class="s">"me/loans"</span><span class="p">)</span>
+            <span class="k">guard</span> <span class="n">session</span> <span class="o">===</span> <span class="k">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">isActive</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">discardedResponses</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1">// belongs to a session that has ended</span>
+                <span class="k">return</span>
+            <span class="p">}</span>
+            <span class="n">loans</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="c1">// Cancellation is expected after logout; other errors would be shown for the current session.</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">logout</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">ending</span> <span class="o">=</span> <span class="n">session</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="kc">nil</span>        <span class="c1">// 1. no new work can start for this user</span>
+        <span class="n">loans</span> <span class="o">=</span> <span class="p">[]</span>           <span class="c1">// 2. nothing of theirs is on screen</span>
+        <span class="n">ending</span><span class="o">.</span><span class="nf">end</span><span class="p">()</span>         <span class="c1">// 3. cancel in-flight requests, drop cache, cookies, credentials</span>
+        <span class="k">await</span> <span class="nf">revokeOnServer</span><span class="p">(</span><span class="nv">token</span><span class="p">:</span> <span class="n">ending</span><span class="o">.</span><span class="n">token</span><span class="p">)</span>  <span class="c1">// 4. best effort, on a session of its own</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">revokeOnServer</span><span class="p">(</span><span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"auth/logout"</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer </span><span class="se">\(</span><span class="n">token</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">timeoutInterval</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">)</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Running the same sequence as before, with Alice’s load in flight when she logs out and Bob signs in:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">store</span> <span class="o">=</span> <span class="kt">Store</span><span class="p">()</span>
+<span class="n">store</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"alice"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">inFlight</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">loadLoans</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">logout</span><span class="p">()</span>
+<span class="n">store</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"bob"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">inFlight</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">loans</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>   <span class="c1">// Alice's response never reached Bob's state</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">discardedResponses</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1">// it was cancelled before it could even arrive</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">session</span><span class="p">?</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="s">"bob"</span><span class="p">)</span>
+
+<span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">loadLoans</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">loans</span> <span class="o">==</span> <span class="p">[</span><span class="s">"bob's loan"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">last</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/auth/logout"</span> <span class="p">}?</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"Bearer token-alice"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Alice’s request was cancelled by <code class="language-plaintext highlighter-rouge">end()</code>, so in this run its result never arrived at all. The identity check after <code class="language-plaintext highlighter-rouge">await</code> is still needed, because cancellation is not instantaneous: a response that had fully arrived before <code class="language-plaintext highlighter-rouge">invalidateAndCancel()</code> may still be delivered. A test with a response that completes before the session ends, but whose commit happens after, exercises that path:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">racing</span> <span class="o">=</span> <span class="kt">Store</span><span class="p">()</span>
+<span class="n">racing</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"alice"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">aliceSession</span> <span class="o">=</span> <span class="n">racing</span><span class="o">.</span><span class="n">session</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">early</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">aliceSession</span><span class="o">.</span><span class="nf">get</span><span class="p">(</span><span class="s">"me/profile"</span><span class="p">)</span>  <span class="c1">// completed while alice was signed in</span>
+<span class="k">await</span> <span class="n">racing</span><span class="o">.</span><span class="nf">logout</span><span class="p">()</span>
+<span class="n">racing</span><span class="o">.</span><span class="nf">login</span><span class="p">(</span><span class="s">"bob"</span><span class="p">)</span>
+<span class="c1">// Committing `early` now must be refused: it was produced by a session that has ended.</span>
+<span class="k">let</span> <span class="nv">wouldCommit</span> <span class="o">=</span> <span class="n">aliceSession</span> <span class="o">===</span> <span class="n">racing</span><span class="o">.</span><span class="n">session</span> <span class="o">&amp;&amp;</span> <span class="n">aliceSession</span><span class="o">.</span><span class="n">isActive</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">wouldCommit</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">early</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">alice</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The check is identity of the session object, not equality of user names. If Alice logs out and logs back in, her old session and her new one are different objects, and a response from the old one is still discarded. A user-name comparison would let it through, and with it any state that was meant to be reset by signing out, such as a changed password or revoked permissions.</p>
+
+<p>Bob’s session has its own <code class="language-plaintext highlighter-rouge">URLCache</code>, so the cache leak from bug 2 cannot happen between them either:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">alice</span> <span class="o">=</span> <span class="kt">UserSession</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="s">"alice"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">aliceProfile</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">alice</span><span class="o">.</span><span class="nf">get</span><span class="p">(</span><span class="s">"me/profile"</span><span class="p">)</span>
+<span class="n">alice</span><span class="o">.</span><span class="nf">end</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">bob</span> <span class="o">=</span> <span class="kt">UserSession</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="s">"bob"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">bobProfile</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">bob</span><span class="o">.</span><span class="nf">get</span><span class="p">(</span><span class="s">"me/profile"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">aliceProfile</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">alice</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">bobProfile</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">name</span><span class="s">":"</span><span class="n">bob</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+<span class="n">bob</span><span class="o">.</span><span class="nf">end</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="ending-a-session-in-order">Ending a session, in order</h2>
+
+<p>The order of the steps in <code class="language-plaintext highlighter-rouge">logout()</code> is deliberate. Each step closes a door before the next one could be walked through:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: The lifecycle of a user session and the order of logout steps
+    [*] --&gt; SignedOut
+    SignedOut --&gt; Active: login creates UserSession
+    Active --&gt; Ending: logout
+    state Ending {
+        [*] --&gt; Detach: 1. store forgets the session
+        Detach --&gt; Clear: 2. remove the user's data from memory and UI
+        Clear --&gt; Cancel: 3. session.end() cancels requests, drops cache
+        Cancel --&gt; Revoke: 4. tell the server, best effort
+        Revoke --&gt; Purge: 5. delete Keychain items, files, database
+        Purge --&gt; [*]
+    }
+    Ending --&gt; SignedOut
+</code></pre>
+
+<ol>
+  <li><strong>Detach first.</strong> Once the store no longer holds the session, no new request can be made as that user, and every commit check fails.</li>
+  <li><strong>Clear visible state</strong> before any <code class="language-plaintext highlighter-rouge">await</code>, so the next frame does not show the previous user’s data.</li>
+  <li><strong>Cancel and drop.</strong> <code class="language-plaintext highlighter-rouge">end()</code> cancels requests and releases the session’s memory-only cache, cookies, and credential storage.</li>
+  <li><strong>Revoke on the server</strong> with the old token, on a separate <code class="language-plaintext highlighter-rouge">URLSession</code>, because the user’s own session has just been invalidated. This is best effort: if the device is offline, the local logout must still complete. The refresh token, not the short-lived access token, is the one that matters to revoke; <a href="https://www.rfc-editor.org/rfc/rfc7009">RFC 7009</a> defines a standard revocation endpoint.</li>
+  <li><strong>Purge persistent data</strong>: Keychain items, downloaded files, the local database. This is the step that takes the longest, and it is safe to do last because nothing can read the data anymore.</li>
+</ol>
+
+<h2 id="writes-that-were-in-flight">Writes that were in flight</h2>
+
+<p>Reads that finish after logout can simply be discarded. Writes are different: a <code class="language-plaintext highlighter-rouge">POST</code> that was sent before logout may already have been applied by the server, and cancelling it locally does not undo that. <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a> called this an outcome that is <em>unknown</em>.</p>
+
+<p>There are three reasonable policies, and an app should choose one per kind of write:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Policy</th>
+      <th>When it fits</th>
+      <th>What logout does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Wait briefly</td>
+      <td>Small writes the user just made, such as a rating</td>
+      <td>Delay logout until pending writes finish, with a short timeout</td>
+    </tr>
+    <tr>
+      <td>Hand to the system</td>
+      <td>Large uploads</td>
+      <td>Let a background <code class="language-plaintext highlighter-rouge">URLSession</code> finish them; the result is reconciled at next sign-in by the same user</td>
+    </tr>
+    <tr>
+      <td>Discard and reconcile</td>
+      <td>Everything else</td>
+      <td>Cancel; when the same user signs in again, fetch the server’s state rather than replaying</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The policy that does not fit anything is “queue it and send it later as whoever is signed in.” An offline outbox, as in <a href="/swift-offline-reachability/">Offline Behavior and Reachability Assumptions</a>, belongs to one user’s session and must be deleted or kept aside with it, never replayed with another user’s token.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>At logout, something is usually in flight: on average \(\lambda W\) requests, and with Poisson arrivals at least one about \(1 - e^{-\lambda W}\) of the time.</li>
+  <li>A response that completes after logout must not be committed. Check, after the <code class="language-plaintext highlighter-rouge">await</code>, that the session that made the request is still the current one, by identity.</li>
+  <li><code class="language-plaintext highlighter-rouge">URLCache</code> keys by URL. Measured: a second user received the first user’s cached profile, even with <code class="language-plaintext highlighter-rouge">private</code>; only <code class="language-plaintext highlighter-rouge">no-store</code> or <code class="language-plaintext highlighter-rouge">Vary: Authorization</code> prevented it.</li>
+  <li>Give each signed-in user a session object that owns an ephemeral <code class="language-plaintext highlighter-rouge">URLSession</code> with its own cache, and the user’s credentials. Ending it cancels every request and drops all storage at once.</li>
+  <li>Log out in order: detach, clear visible state, cancel, revoke on the server best effort, then purge persistent data.</li>
+  <li>Decide per kind of write whether to wait, hand off, or discard and reconcile. Never replay one user’s queued writes as another.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">TokenCoordinator</code> from the token refresh article to <code class="language-plaintext highlighter-rouge">UserSession</code>, and write a test in which a refresh is in flight when the user logs out. Make the server’s refresh endpoint slow, call <code class="language-plaintext highlighter-rouge">logout()</code> while it is pending, and assert that when the refresh completes, the new token is not stored anywhere and no further request is made with it. Then add a “switch account” feature that keeps two <code class="language-plaintext highlighter-rouge">UserSession</code> objects alive at once and verify, using <code class="language-plaintext highlighter-rouge">server.requests</code>, that every request carried the token of the session that made it.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc9111">RFC 9111: HTTP Caching</a>, §3.5 on storing responses to authenticated requests, and §4.1 on <code class="language-plaintext highlighter-rouge">Vary</code>.</li>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc7009">RFC 7009: OAuth 2.0 Token Revocation</a>.</li>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/foundation/urlsession/invalidateandcancel()"><code class="language-plaintext highlighter-rouge">invalidateAndCancel()</code></a> and <a href="https://developer.apple.com/documentation/foundation/urlcache"><code class="language-plaintext highlighter-rouge">URLCache</code></a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-ats-tls-trust/">App Transport Security and TLS Trust</a>. Next: <a href="/swift-redacting-network-logs/">Redacting Sensitive Data from Network Logs</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-logout-in-flight-requests/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Handling+Logout+During+an+In-Flight+Request%20https%3A%2F%2Fswiftbydeya.com%2Fswift-logout-in-flight-requests%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-logout-in-flight-requests/&title=Handling+Logout+During+an+In-Flight+Request%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-logout-in-flight-requests/&title=Handling+Logout+During+an+In-Flight+Request%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-logout-in-flight-requests/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Handling Logout During an In-Flight Request%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-logout-in-flight-requests/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Authentication">Authentication</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Privacy">Privacy</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Redacting Sensitive Data from Network Logs" href="/swift-redacting-network-logs/"> <p>Previous post</p> Redacting Sensitive Data from Network Logs </a> </div> <div id="next-post"> <a alt="App Transport Security and TLS Trust" href="/swift-ats-tls-trust/"> <p>Next post</p> App Transport Security and TLS Trust </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

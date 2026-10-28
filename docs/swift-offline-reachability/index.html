@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Offline Behavior and Reachability Assumptions | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Offline Behavior and Reachability Assumptions" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="“Check whether the network is reachable before making a request” is one of the most persistent pieces of networking advice, and one of the least useful. A reachability check answers a question about the device’s interfaces at one instant. The question the app needs answered is whether a particular request to a particular server will succeed in the next few seconds, and no local check can answer that. Devices report a satisfied path behind captive portals, and report an unsatisfied one for a moment while switching from Wi-Fi to cellular, after which the request would have worked. This article treats connectivity as something to react to rather than predict. It shows what NWPathMonitor can and cannot tell an app, measures a surprising interaction between waitsForConnectivity and servers that are simply down, and builds the two pieces an offline-capable client needs: reads that show the last known data immediately, and writes that are kept in a durable outbox and sent, exactly once, when the network allows." /> <meta property="og:description" content="“Check whether the network is reachable before making a request” is one of the most persistent pieces of networking advice, and one of the least useful. A reachability check answers a question about the device’s interfaces at one instant. The question the app needs answered is whether a particular request to a particular server will succeed in the next few seconds, and no local check can answer that. Devices report a satisfied path behind captive portals, and report an unsatisfied one for a moment while switching from Wi-Fi to cellular, after which the request would have worked. This article treats connectivity as something to react to rather than predict. It shows what NWPathMonitor can and cannot tell an app, measures a surprising interaction between waitsForConnectivity and servers that are simply down, and builds the two pieces an offline-capable client needs: reads that show the last known data immediately, and writes that are kept in a durable outbox and sent, exactly once, when the network allows." /> <link rel="canonical" href="https://swiftbydeya.com/swift-offline-reachability/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-offline-reachability/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-02T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Offline Behavior and Reachability Assumptions" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-02T00:00:00+03:00","datePublished":"2026-10-02T00:00:00+03:00","description":"“Check whether the network is reachable before making a request” is one of the most persistent pieces of networking advice, and one of the least useful. A reachability check answers a question about the device’s interfaces at one instant. The question the app needs answered is whether a particular request to a particular server will succeed in the next few seconds, and no local check can answer that. Devices report a satisfied path behind captive portals, and report an unsatisfied one for a moment while switching from Wi-Fi to cellular, after which the request would have worked. This article treats connectivity as something to react to rather than predict. It shows what NWPathMonitor can and cannot tell an app, measures a surprising interaction between waitsForConnectivity and servers that are simply down, and builds the two pieces an offline-capable client needs: reads that show the last known data immediately, and writes that are kept in a durable outbox and sent, exactly once, when the network allows.","headline":"Offline Behavior and Reachability Assumptions","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-offline-reachability/"},"url":"https://swiftbydeya.com/swift-offline-reachability/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Offline Behavior and Reachability Assumptions"> <meta name="twitter:description" content="“Check whether the network is reachable before making a request” is one of the most persistent pieces of networking advice, and one of the least useful. A re..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Offline Behavior and Reachability Assumptions"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Offline Behavior and Reachability Assumptions</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-02T00:00:00+03:00">October 2, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>“Check whether the network is reachable before making a request” is one of the most persistent pieces of networking advice, and one of the least useful. A reachability check answers a question about the device’s interfaces at one instant. The question the app needs answered is whether a particular request to a particular server will succeed in the next few seconds, and no local check can answer that. Devices report a satisfied path behind captive portals, and report an unsatisfied one for a moment while switching from Wi-Fi to cellular, after which the request would have worked.</p>
+
+<p>This article treats connectivity as something to react to rather than predict. It shows what <code class="language-plaintext highlighter-rouge">NWPathMonitor</code> can and cannot tell an app, measures a surprising interaction between <code class="language-plaintext highlighter-rouge">waitsForConnectivity</code> and servers that are simply down, and builds the two pieces an offline-capable client needs: reads that show the last known data immediately, and writes that are kept in a durable outbox and sent, exactly once, when the network allows.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="what-a-path-can-tell-you">What a path can tell you</h2>
+
+<p>Network framework’s <code class="language-plaintext highlighter-rouge">NWPathMonitor</code> reports the system’s view of the network path: whether any interface can carry traffic, which interfaces exist, and their properties. Since iOS 17 and macOS 14 it is an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> of <code class="language-plaintext highlighter-rouge">NWPath</code> values, so observing it is a loop:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Network</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">monitor</span> <span class="o">=</span> <span class="kt">NWPathMonitor</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">firstPath</span><span class="p">:</span> <span class="kt">NWPath</span><span class="p">?</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">path</span> <span class="k">in</span> <span class="n">monitor</span> <span class="p">{</span>
+    <span class="n">firstPath</span> <span class="o">=</span> <span class="n">path</span>
+    <span class="k">break</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">path</span> <span class="o">=</span> <span class="n">firstPath</span><span class="o">!</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">availableInterfaces</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">type</span><span class="p">),</span> <span class="s">"expensive:"</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">isExpensive</span><span class="p">,</span>
+      <span class="s">"constrained:"</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">isConstrained</span><span class="p">,</span> <span class="s">"quality:"</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">linkQuality</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="o">.</span><span class="n">satisfied</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the Mac used for this article, the first path arrived in under a millisecond: <code class="language-plaintext highlighter-rouge">satisfied</code>, over Wi-Fi, not expensive, not constrained, and with a <code class="language-plaintext highlighter-rouge">linkQuality</code> of <code class="language-plaintext highlighter-rouge">.good</code>. The properties are worth knowing:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Meaning</th>
+      <th>Use it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">status</code></td>
+      <td><code class="language-plaintext highlighter-rouge">.satisfied</code>, <code class="language-plaintext highlighter-rouge">.unsatisfied</code>, or <code class="language-plaintext highlighter-rouge">.requiresConnection</code> (e.g. on-demand VPN)</td>
+      <td>UI hints, triggering a retry when it becomes satisfied</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">isExpensive</code></td>
+      <td>Cellular or a personal hotspot</td>
+      <td>Deferring large optional downloads</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">isConstrained</code></td>
+      <td>Low Data Mode is on</td>
+      <td>Skipping prefetching, lowering image quality</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">linkQuality</code> (iOS 26, macOS 26)</td>
+      <td><code class="language-plaintext highlighter-rouge">.minimal</code>, <code class="language-plaintext highlighter-rouge">.moderate</code>, <code class="language-plaintext highlighter-rouge">.good</code>, or <code class="language-plaintext highlighter-rouge">.unknown</code></td>
+      <td>Choosing a lighter payload or fewer concurrent requests</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">unsatisfiedReason</code></td>
+      <td>Why the path is down, e.g. cellular denied for the app</td>
+      <td>Telling the user what to change</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>What a path cannot tell you is just as important. A satisfied path means a packet can leave the device. It says nothing about whether DNS resolves, whether the network is a hotel Wi-Fi that redirects everything to a login page, whether the server is up, or whether a firewall between the two drops the traffic. An unsatisfied path, observed during a handover, can turn satisfied a few hundred milliseconds later.</p>
+
+<h2 id="why-preflight-checks-fail">Why preflight checks fail</h2>
+
+<p>A preflight check, “if the path is satisfied, send the request; otherwise show an offline error,” has two failure modes. It shows “offline” during a brief unsatisfied moment when the request would have succeeded after a short wait. And it sends requests that fail anyway, because a satisfied path does not imply a reachable server. Both come from the gap between the check and the use, the classic time-of-check-to-time-of-use problem.</p>
+
+<p>The size of the gap matters less than one might expect. If connectivity changes are modeled as a Poisson process with rate \(\mu\), the probability that the state changes between a check and a request sent \(\Delta t\) later is \(1 - e^{-\mu \Delta t}\), which is small for a request sent immediately. The real problem is that the check measures the wrong thing even when nothing changes. The only reliable test of whether a request will succeed is to send it.</p>
+
+<p>So the guidance reverses: send the request, and use the path monitor for two things it is good at. One is <strong>explaining</strong> a failure: if a request fails with a transport error and the path is unsatisfied, “You’re offline” is accurate; if the path is satisfied, “Couldn’t reach the library” is. The other is <strong>timing</strong> a retry: when the path becomes satisfied, it is a good moment to flush pending work.</p>
+
+<h2 id="waitsforconnectivity-waits-for-more-than-connectivity"><code class="language-plaintext highlighter-rouge">waitsForConnectivity</code> waits for more than connectivity</h2>
+
+<p><code class="language-plaintext highlighter-rouge">URLSessionConfiguration.waitsForConnectivity</code> makes a task wait for a usable network instead of failing at once with <code class="language-plaintext highlighter-rouge">notConnectedToInternet</code>. When it waits, the delegate’s <code class="language-plaintext highlighter-rouge">urlSession(_:taskIsWaitingForConnectivity:)</code> is called, once, which is the place to show “Waiting for network.” The task then starts when connectivity appears, or fails when the <strong>resource</strong> timeout expires.</p>
+
+<p>The question is what counts as “no connectivity.” The test below points a waiting session at two things that are not network outages: a port with nothing listening, and a host name that does not exist. Without waiting, the first fails in about 30 ms and the second in about 100 ms, as measured in <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">WaitingObserver</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionTaskDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">waits</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="n">taskIsWaitingForConnectivity</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">waits</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">gone</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">""</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">refusedURL</span> <span class="o">=</span> <span class="n">gone</span><span class="o">.</span><span class="n">baseURL</span>
+<span class="n">gone</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+
+<span class="k">let</span> <span class="nv">waitingConfiguration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="n">ephemeral</span>
+<span class="n">waitingConfiguration</span><span class="o">.</span><span class="n">waitsForConnectivity</span> <span class="o">=</span> <span class="kc">true</span>
+<span class="n">waitingConfiguration</span><span class="o">.</span><span class="n">timeoutIntervalForResource</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="k">let</span> <span class="nv">observer</span> <span class="o">=</span> <span class="kt">WaitingObserver</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">waitingSession</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">waitingConfiguration</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">observer</span><span class="p">,</span> <span class="nv">delegateQueue</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">elapsedFailure</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="p">?,</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">waitingSession</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="nf">return</span> <span class="p">((</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">)?</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">refusedCode</span><span class="p">,</span> <span class="nv">refusedTime</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">elapsedFailure</span><span class="p">(</span><span class="n">refusedURL</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">dnsCode</span><span class="p">,</span> <span class="nv">dnsTime</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">elapsedFailure</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://library.invalid/books"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"refused: </span><span class="se">\(</span><span class="n">refusedCode</span> <span class="k">as</span> <span class="kt">Any</span><span class="se">)</span><span class="s"> after </span><span class="se">\(</span><span class="n">refusedTime</span><span class="se">)</span><span class="s">; unknown host: </span><span class="se">\(</span><span class="n">dnsCode</span> <span class="k">as</span> <span class="kt">Any</span><span class="se">)</span><span class="s"> after </span><span class="se">\(</span><span class="n">dnsTime</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">refusedCode</span> <span class="o">==</span> <span class="o">.</span><span class="n">timedOut</span> <span class="o">&amp;&amp;</span> <span class="n">refusedTime</span> <span class="o">&gt;</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">dnsCode</span> <span class="o">==</span> <span class="o">.</span><span class="n">timedOut</span> <span class="o">&amp;&amp;</span> <span class="n">dnsTime</span> <span class="o">&gt;</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">observer</span><span class="o">.</span><span class="n">waits</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">waitingSession</span><span class="o">.</span><span class="nf">invalidateAndCancel</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Both requests waited for “connectivity” until the three-second resource timeout, between 3.3 and 4.0 seconds across runs, and failed with <code class="language-plaintext highlighter-rouge">timedOut</code> instead of the specific error. The delegate was told each time that the task was waiting. With the default resource timeout of seven days, a waiting task pointed at a server that is down never fails within the life of the screen that started it.</p>
+
+<p>Two rules follow. Never enable <code class="language-plaintext highlighter-rouge">waitsForConnectivity</code> without also setting <code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code> to the longest time anyone will wait for that request. And use it for requests whose purpose survives a wait, such as syncing an outbox or downloading content for later, not for requests a user is staring at. For the latter, fail fast and say why.</p>
+
+<h2 id="reads-show-what-you-have-then-refresh">Reads: show what you have, then refresh</h2>
+
+<p>An offline-capable screen shows the last known data immediately and replaces it when fresh data arrives. Expressed as a stream of states, the screen’s model consumes a sequence like <em>cached → fresh</em> when online, and <em>cached → failed (with cached data still shown)</em> when offline:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">online</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="n">online</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="n">drop</span> <span class="p">}</span>  <span class="c1">// stands in for an unreachable network</span>
+    <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">","</span><span class="n">copies</span><span class="s">":</span><span class="err">\</span><span class="s">#(Int.random(in: 1...9))}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Cache-Control"</span><span class="p">,</span> <span class="s">"max-age=0"</span><span class="p">),</span> <span class="p">(</span><span class="s">"ETag"</span><span class="p">,</span> <span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)])</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">Loaded</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">cached</span><span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">fresh</span><span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">failed</span><span class="p">(</span><span class="nv">cached</span><span class="p">:</span> <span class="kt">Value</span><span class="p">?,</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">URLError</span><span class="o">.</span><span class="kt">Code</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">cacheThenNetwork</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Loaded</span><span class="o">&lt;</span><span class="kt">Data</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+    <span class="kt">AsyncStream</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">cachedRequest</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+            <span class="n">cachedRequest</span><span class="o">.</span><span class="n">cachePolicy</span> <span class="o">=</span> <span class="o">.</span><span class="n">returnCacheDataDontLoad</span>
+            <span class="k">let</span> <span class="nv">cached</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">cachedRequest</span><span class="p">)</span><span class="o">.</span><span class="mi">0</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">cached</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">cached</span><span class="p">(</span><span class="n">cached</span><span class="p">))</span> <span class="p">}</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">var</span> <span class="nv">refresh</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+                <span class="n">refresh</span><span class="o">.</span><span class="n">cachePolicy</span> <span class="o">=</span> <span class="o">.</span><span class="n">reloadIgnoringLocalCacheData</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">fresh</span><span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">refresh</span><span class="p">)</span><span class="o">.</span><span class="mi">0</span><span class="p">))</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="o">.</span><span class="nf">failed</span><span class="p">(</span><span class="nv">cached</span><span class="p">:</span> <span class="n">cached</span><span class="p">,</span> <span class="nv">error</span><span class="p">:</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">))</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">readConfiguration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="k">default</span>
+<span class="n">readConfiguration</span><span class="o">.</span><span class="n">urlCache</span> <span class="o">=</span> <span class="kt">URLCache</span><span class="p">(</span><span class="nv">memoryCapacity</span><span class="p">:</span> <span class="mi">2_000_000</span><span class="p">,</span> <span class="nv">diskCapacity</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">readSession</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">readConfiguration</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">bookURL</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books/b-7"</span><span class="p">)</span>
+
+<span class="k">var</span> <span class="nv">onlineStates</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">state</span> <span class="k">in</span> <span class="nf">cacheThenNetwork</span><span class="p">(</span><span class="n">bookURL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">readSession</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">state</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">cached</span><span class="p">:</span> <span class="n">onlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cached"</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">fresh</span><span class="p">:</span> <span class="n">onlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"fresh"</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">failed</span><span class="p">:</span> <span class="n">onlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"failed"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">onlineStates</span> <span class="o">==</span> <span class="p">[</span><span class="s">"fresh"</span><span class="p">])</span>  <span class="c1">// nothing cached on the first visit</span>
+
+<span class="n">online</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">offlineStates</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">shownWhileOffline</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">state</span> <span class="k">in</span> <span class="nf">cacheThenNetwork</span><span class="p">(</span><span class="n">bookURL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">readSession</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">state</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">cached</span><span class="p">(</span><span class="k">let</span> <span class="nv">data</span><span class="p">):</span> <span class="n">offlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cached"</span><span class="p">);</span> <span class="n">shownWhileOffline</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">fresh</span><span class="p">:</span> <span class="n">offlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"fresh"</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">failed</span><span class="p">(</span><span class="k">let</span> <span class="nv">cached</span><span class="p">,</span> <span class="k">let</span> <span class="nv">code</span><span class="p">):</span> <span class="n">offlineStates</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"failed </span><span class="se">\(</span><span class="n">code</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s"> cached:</span><span class="se">\(</span><span class="n">cached</span> <span class="o">!=</span> <span class="kc">nil</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">offlineStates</span> <span class="o">==</span> <span class="p">[</span><span class="s">"cached"</span><span class="p">,</span> <span class="s">"failed -1005 cached:true"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">shownWhileOffline</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="n">online</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The second visit, made while the server was unreachable, showed the cached book first and then reported the failure while keeping it on screen. The response had <code class="language-plaintext highlighter-rouge">max-age=0</code>, so it was stale the moment it was stored, and <code class="language-plaintext highlighter-rouge">.returnCacheDataDontLoad</code> used it anyway, which is exactly the trade an offline screen wants: old data, clearly labeled, beats no data. <a href="/swift-http-caching-etag/">HTTP Caching with <code class="language-plaintext highlighter-rouge">Cache-Control</code> and <code class="language-plaintext highlighter-rouge">ETag</code></a> covers the cache policies in detail; a production version would also keep a timestamp so the screen can say “Updated 3 hours ago.”</p>
+
+<p>The test’s “offline” is a server that drops connections, which produces <code class="language-plaintext highlighter-rouge">networkConnectionLost</code>. On a device without connectivity the code would be <code class="language-plaintext highlighter-rouge">notConnectedToInternet</code>; the stream handles both the same way.</p>
+
+<h2 id="writes-a-durable-outbox">Writes: a durable outbox</h2>
+
+<p>Writes cannot be shown from a cache. An offline-capable app must keep the user’s change, show it as pending, and send it later. The structure for that is an <strong>outbox</strong>: a persistent, ordered queue of pending writes, each carrying everything needed to send it again correctly:</p>
+
+<ul>
+  <li>an <strong>idempotency key</strong>, created when the user acted, so a write whose response was lost is not applied twice (<a href="/swift-retry-backoff-idempotency/">Retry Policies, Backoff, and Idempotency</a>);</li>
+  <li>the <strong>version</strong> the user edited, sent as <code class="language-plaintext highlighter-rouge">If-Match</code>, so a write made against stale data is detected rather than silently overwriting someone else’s change;</li>
+  <li>its own <strong>state</strong>, so a conflict or a permanent rejection is shown to the user instead of retried forever.</li>
+</ul>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: The states of a write in an offline outbox
+    [*] --&gt; Pending: user edits, saved to disk
+    Pending --&gt; Sending: flush (path satisfied, app active)
+    Sending --&gt; [*]: 2xx, removed
+    Sending --&gt; Pending: transport error, keep order, retry later
+    Sending --&gt; Conflict: 412 Precondition Failed
+    Sending --&gt; Rejected: other 4xx
+    Conflict --&gt; Pending: user resolves, new If-Match
+    Rejected --&gt; [*]: user discards
+</code></pre>
+
+<p>The server below stores one book with a version number. It honors <code class="language-plaintext highlighter-rouge">If-Match</code>, answers <code class="language-plaintext highlighter-rouge">412 Precondition Failed</code> when the version has moved on, and replays recorded results for idempotency keys it has already seen:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">LibraryBackend</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">title</span> <span class="o">=</span> <span class="s">"Dune"</span>
+        <span class="k">var</span> <span class="nv">version</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">var</span> <span class="nv">applied</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>  <span class="c1">// idempotency key -&gt; response body</span>
+        <span class="k">var</span> <span class="nv">writes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+
+    <span class="kd">func</span> <span class="nf">handle</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">HTTPRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">HTTPResponse</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">etag</span> <span class="o">=</span> <span class="err">#</span><span class="s">""</span><span class="n">v</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">version</span><span class="p">)</span><span class="s">""</span><span class="err">#</span>
+            <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="s">"GET"</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">title</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"ETag"</span><span class="p">,</span> <span class="n">etag</span><span class="p">)])</span>
+            <span class="k">case</span> <span class="s">"PUT"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Idempotency-Key"</span><span class="p">),</span> <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">applied</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">guard</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"If-Match"</span><span class="p">)</span> <span class="o">==</span> <span class="n">etag</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">error</span><span class="s">":"</span><span class="n">stale</span> <span class="n">version</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">412</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"ETag"</span><span class="p">,</span> <span class="n">etag</span><span class="p">)])</span>
+                <span class="p">}</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">))?[</span><span class="s">"title"</span><span class="p">]</span> <span class="p">??</span> <span class="n">state</span><span class="o">.</span><span class="n">title</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">version</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">writes</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">title</span><span class="p">)</span><span class="s">","</span><span class="n">version</span><span class="s">":</span><span class="err">\</span><span class="s">#(state.version)}"</span><span class="err">#</span>
+                <span class="k">if</span> <span class="k">let</span> <span class="nv">key</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Idempotency-Key"</span><span class="p">)</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">applied</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">body</span> <span class="p">}</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"ETag"</span><span class="p">,</span> <span class="err">#</span><span class="s">""</span><span class="n">v</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">version</span><span class="p">)</span><span class="s">""</span><span class="err">#</span><span class="p">)])</span>
+            <span class="k">default</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"method not allowed"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">405</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The outbox is an actor that persists its items to a JSON file after every change, so a pending write survives the app being terminated. Flushing sends items in order, stops at the first transport failure so later writes cannot overtake earlier ones, and moves items that the server rejected out of the queue:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">PendingWrite</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Status</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span> <span class="k">case</span> <span class="n">pending</span><span class="p">,</span> <span class="n">conflict</span><span class="p">,</span> <span class="n">rejected</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span>          <span class="c1">// idempotency key, created once</span>
+    <span class="k">let</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span>
+    <span class="k">let</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">status</span><span class="p">:</span> <span class="kt">Status</span> <span class="o">=</span> <span class="o">.</span><span class="n">pending</span>
+    <span class="k">var</span> <span class="nv">attempts</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">Outbox</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">PendingWrite</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">file</span><span class="p">:</span> <span class="kt">URL</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">file</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">PendingWrite</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">file</span><span class="p">)))</span> <span class="p">??</span> <span class="p">[]</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">enqueue</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="n">items</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">PendingWrite</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="p">,</span> <span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="n">body</span><span class="p">,</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="n">ifMatch</span><span class="p">))</span>
+        <span class="k">try</span> <span class="nf">persist</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Sends pending writes in order. Returns the number sent successfully.</span>
+    <span class="kd">func</span> <span class="nf">flush</span><span class="p">(</span><span class="n">to</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">sent</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">items</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="o">.</span><span class="n">pending</span> <span class="k">else</span> <span class="p">{</span> <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">continue</span> <span class="p">}</span>
+            <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"PUT"</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">body</span>
+            <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+            <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Idempotency-Key"</span><span class="p">)</span>
+            <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">ifMatch</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"If-Match"</span><span class="p">)</span>
+            <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">let</span> <span class="nv">status</span><span class="p">:</span> <span class="kt">Int</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span><span class="o">.</span><span class="mi">1</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">URLError</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="nf">persist</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">sent</span>  <span class="c1">// keep order: stop at the first transport failure</span>
+            <span class="p">}</span>
+            <span class="k">switch</span> <span class="n">status</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="mi">200</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">:</span> <span class="n">items</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">index</span><span class="p">);</span> <span class="n">sent</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">case</span> <span class="mi">412</span><span class="p">:</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="o">.</span><span class="n">conflict</span><span class="p">;</span> <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">default</span><span class="p">:</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="o">.</span><span class="n">rejected</span><span class="p">;</span> <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+            <span class="k">try</span> <span class="nf">persist</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">sent</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">persist</span><span class="p">()</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="kt">JSONEncoder</span><span class="p">()</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">items</span><span class="p">)</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">file</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="o">.</span><span class="n">atomic</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The test edits the title twice while the server is unreachable, restarts the outbox from its file as if the app had been terminated, and flushes when the server is back. A third edit was made against an old version to produce a conflict:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">backend</span> <span class="o">=</span> <span class="kt">LibraryBackend</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">backendOnline</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">library</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="n">backendOnline</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">?</span> <span class="n">backend</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="n">drop</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">outboxFile</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"outbox-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">.json"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">syncSession</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">outbox</span> <span class="o">=</span> <span class="kt">Outbox</span><span class="p">(</span><span class="nv">file</span><span class="p">:</span> <span class="n">outboxFile</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="nf">enqueue</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books/b-7"</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span> <span class="kt">Messiah</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">offlineSent</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="nf">flush</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">library</span><span class="o">.</span><span class="n">baseURL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">syncSession</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">offlineSent</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">attemptsWhileOffline</span> <span class="o">=</span> <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">first</span><span class="p">?</span><span class="o">.</span><span class="n">attempts</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">attemptsWhileOffline</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1">// The app is terminated and relaunched: the outbox is restored from disk.</span>
+<span class="k">let</span> <span class="nv">restored</span> <span class="o">=</span> <span class="kt">Outbox</span><span class="p">(</span><span class="nv">file</span><span class="p">:</span> <span class="n">outboxFile</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">restoredCount</span> <span class="o">=</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">count</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">restoredCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="nf">enqueue</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books/b-7"</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Children</span> <span class="n">of</span> <span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="err">#</span><span class="s">""</span><span class="n">v2</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="nf">enqueue</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"books/b-7"</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Stale</span> <span class="n">edit</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">ifMatch</span><span class="p">:</span> <span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+
+<span class="n">backendOnline</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>  <span class="c1">// in an app: the path became satisfied, or the app came to the foreground</span>
+<span class="k">let</span> <span class="nv">flushed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="nf">flush</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">library</span><span class="o">.</span><span class="n">baseURL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">syncSession</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">flushed</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">remaining</span> <span class="o">=</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="n">items</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">remaining</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">status</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="o">.</span><span class="n">conflict</span><span class="p">])</span>           <span class="c1">// the stale edit is waiting for the user</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">writes</span><span class="p">)</span> <span class="p">}</span> <span class="o">==</span> <span class="p">(</span><span class="s">"Children of Dune"</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="c1">// Flushing again, e.g. after a lost response, sends nothing twice.</span>
+<span class="k">let</span> <span class="nv">again</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">restored</span><span class="o">.</span><span class="nf">flush</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">library</span><span class="o">.</span><span class="n">baseURL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="n">syncSession</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">again</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">backend</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">writes</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">outboxFile</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The first edit was attempted while offline, survived the restart, and was applied in order before the second. The stale third edit was not applied: the server answered <code class="language-plaintext highlighter-rouge">412</code>, and the outbox kept it as a conflict for the user to resolve, because “the last writer wins” would have replaced <em>Children of Dune</em> with a title based on a version of the book that no longer exists. The second edit’s <code class="language-plaintext highlighter-rouge">If-Match</code> of <code class="language-plaintext highlighter-rouge">"v2"</code> assumed the first edit would succeed; an outbox that queues several edits to the same resource has to make that assumption, and a conflict is how it learns the assumption failed.</p>
+
+<h2 id="telling-the-user-the-truth">Telling the user the truth</h2>
+
+<p>The point of all this is a UI that never lies about state:</p>
+
+<ul>
+  <li>Show pending writes as pending (“Saved on this device”), not as done, and as done only after the server confirmed them.</li>
+  <li>Show conflicts as decisions the user must make, with both versions, not as errors.</li>
+  <li>Say <em>why</em> something is unavailable when you know: “You’re offline,” “Low Data Mode is on,” “Couldn’t reach the library.” The path monitor’s <code class="language-plaintext highlighter-rouge">status</code> and <code class="language-plaintext highlighter-rouge">isConstrained</code>, and <code class="language-plaintext highlighter-rouge">URLError.networkUnavailableReason</code>, are what make those messages accurate.</li>
+  <li>Do not block the UI on connectivity. Reading cached data and queueing writes keeps the app useful on a train, and a satisfied path is merely a good moment to flush, not a precondition for doing anything.</li>
+</ul>
+
+<p>The outbox belongs to one signed-in user. <a href="/swift-logout-in-flight-requests/">Handling Logout During an In-Flight Request</a> explains why it must be deleted, or set aside, at logout, and never flushed with another user’s credentials.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">NWPathMonitor</code> is an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> (iOS 17+) reporting status, interfaces, <code class="language-plaintext highlighter-rouge">isExpensive</code>, <code class="language-plaintext highlighter-rouge">isConstrained</code>, and, since iOS 26, <code class="language-plaintext highlighter-rouge">linkQuality</code>. It says whether packets can leave the device, not whether a server is reachable.</li>
+  <li>Do not preflight requests. Send them, use the path to explain failures, and use path changes to time retries.</li>
+  <li>Measured: with <code class="language-plaintext highlighter-rouge">waitsForConnectivity</code>, a refused connection and an unknown host both waited until the resource timeout instead of failing in milliseconds. Always set <code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code>, and keep waiting for work whose purpose survives a wait.</li>
+  <li>Reads: show cached data at once with <code class="language-plaintext highlighter-rouge">.returnCacheDataDontLoad</code>, then refresh, keeping the cached data on screen if the refresh fails.</li>
+  <li>Writes: a durable outbox with idempotency keys and <code class="language-plaintext highlighter-rouge">If-Match</code> versions, flushed in order, stopping at transport failures, and surfacing <code class="language-plaintext highlighter-rouge">412</code> conflicts to the user.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Connect the outbox to <code class="language-plaintext highlighter-rouge">NWPathMonitor</code>: write an actor that iterates the monitor, and flushes the outbox when the path changes from unsatisfied to satisfied, with a short delay and at most one flush at a time. Test it by injecting a sequence of fake paths, since a test cannot toggle the real network. Then add coalescing to <code class="language-plaintext highlighter-rouge">enqueue</code>: when two pending writes target the same resource and neither has been attempted, merge them into one, and verify with the backend’s <code class="language-plaintext highlighter-rouge">writes</code> counter that the merged version produces one write instead of two.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/network/nwpathmonitor"><code class="language-plaintext highlighter-rouge">NWPathMonitor</code></a> and <a href="https://developer.apple.com/documentation/foundation/urlsessionconfiguration/waitsforconnectivity"><code class="language-plaintext highlighter-rouge">waitsForConnectivity</code></a> documentation.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2018/715/">Introducing Network.framework: A modern alternative to Sockets</a>, WWDC18, which introduced path monitoring and explains why preflight reachability checks are discouraged.</li>
+  <li>Martin Kleppmann et al., <a href="https://www.inkandswitch.com/local-first/"><em>Local-First Software</em></a>, on designing apps that work offline by default.</li>
+</ul>
+
+<p>Previous: <a href="/swift-http-caching-etag/">HTTP Caching with <code class="language-plaintext highlighter-rouge">Cache-Control</code> and <code class="language-plaintext highlighter-rouge">ETag</code></a>. Next: <a href="/swift-request-coalescing/">Coalescing Duplicate Requests and Rejecting Stale Results</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-offline-reachability/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Offline+Behavior+and+Reachability+Assumptions%20https%3A%2F%2Fswiftbydeya.com%2Fswift-offline-reachability%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-offline-reachability/&title=Offline+Behavior+and+Reachability+Assumptions%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-offline-reachability/&title=Offline+Behavior+and+Reachability+Assumptions%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-offline-reachability/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Offline Behavior and Reachability Assumptions%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-offline-reachability/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Network+Framework">Network Framework</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Offline">Offline</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Coalescing Duplicate Requests and Rejecting Stale Results" href="/swift-request-coalescing/"> <p>Previous post</p> Coalescing Duplicate Requests and Rejecting Stale Results </a> </div> <div id="next-post"> <a alt="HTTP Caching with Cache-Control and ETag" href="/swift-http-caching-etag/"> <p>Next post</p> HTTP Caching with Cache-Control and ETag </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

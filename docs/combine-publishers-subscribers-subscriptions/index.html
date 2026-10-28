@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Publishers, Subscribers, and Subscriptions | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Publishers, Subscribers, and Subscriptions" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every Combine pipeline, however many operators it chains, is built from three protocols. A publisher describes values that will arrive over time. A subscriber consumes them. A subscription is the live connection between one publisher and one subscriber, and it carries the one idea that separates Combine from a callback list: the subscriber decides how many values it is ready for, and the publisher may never send more. That number is called demand. Most code never touches these protocols directly, because sink, assign, and the built-in operators implement them for you. But every confusing Combine behavior, from a subject that silently loses values to a pipeline that does its work at the wrong moment, is explained by the contract between them. This article implements both ends by hand: a subscriber that records every signal it receives and a publisher that honors demand, survives reentrant requests, and stops when cancelled. Along the way it measures how the built-in publishers behave when that contract is pushed." /> <meta property="og:description" content="Every Combine pipeline, however many operators it chains, is built from three protocols. A publisher describes values that will arrive over time. A subscriber consumes them. A subscription is the live connection between one publisher and one subscriber, and it carries the one idea that separates Combine from a callback list: the subscriber decides how many values it is ready for, and the publisher may never send more. That number is called demand. Most code never touches these protocols directly, because sink, assign, and the built-in operators implement them for you. But every confusing Combine behavior, from a subject that silently loses values to a pipeline that does its work at the wrong moment, is explained by the contract between them. This article implements both ends by hand: a subscriber that records every signal it receives and a publisher that honors demand, survives reentrant requests, and stops when cancelled. Along the way it measures how the built-in publishers behave when that contract is pushed." /> <link rel="canonical" href="https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-01T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Publishers, Subscribers, and Subscriptions" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-01T00:00:00+03:00","datePublished":"2026-07-01T00:00:00+03:00","description":"Every Combine pipeline, however many operators it chains, is built from three protocols. A publisher describes values that will arrive over time. A subscriber consumes them. A subscription is the live connection between one publisher and one subscriber, and it carries the one idea that separates Combine from a callback list: the subscriber decides how many values it is ready for, and the publisher may never send more. That number is called demand. Most code never touches these protocols directly, because sink, assign, and the built-in operators implement them for you. But every confusing Combine behavior, from a subject that silently loses values to a pipeline that does its work at the wrong moment, is explained by the contract between them. This article implements both ends by hand: a subscriber that records every signal it receives and a publisher that honors demand, survives reentrant requests, and stops when cancelled. Along the way it measures how the built-in publishers behave when that contract is pushed.","headline":"Publishers, Subscribers, and Subscriptions","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/"},"url":"https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Publishers, Subscribers, and Subscriptions"> <meta name="twitter:description" content="Every Combine pipeline, however many operators it chains, is built from three protocols. A publisher describes values that will arrive over time. A subscribe..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Publishers, Subscribers, and Subscriptions"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Publishers, Subscribers, and Subscriptions</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-01T00:00:00+03:00">July 1, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every Combine pipeline, however many operators it chains, is built from three protocols. A <strong>publisher</strong> describes values that will arrive over time. A <strong>subscriber</strong> consumes them. A <strong>subscription</strong> is the live connection between one publisher and one subscriber, and it carries the one idea that separates Combine from a callback list: the subscriber decides how many values it is ready for, and the publisher may never send more. That number is called <strong>demand</strong>.</p>
+
+<p>Most code never touches these protocols directly, because <code class="language-plaintext highlighter-rouge">sink</code>, <code class="language-plaintext highlighter-rouge">assign</code>, and the built-in operators implement them for you. But every confusing Combine behavior, from a subject that silently loses values to a pipeline that does its work at the wrong moment, is explained by the contract between them. This article implements both ends by hand: a subscriber that records every signal it receives and a publisher that honors demand, survives reentrant requests, and stops when cancelled. Along the way it measures how the built-in publishers behave when that contract is pushed.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Combine ships with the OS on every Apple platform since iOS 13 and macOS 10.15, so nothing needs to be installed. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>; each one relies on the declarations before it, and every <code class="language-plaintext highlighter-rouge">assert</code> passed when the file was run.</p>
+
+<h2 id="three-protocols-and-a-contract">Three protocols and a contract</h2>
+
+<p>These are the declarations from the Combine module interface, with attributes removed:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">associatedtype</span> <span class="kt">Output</span>
+    <span class="kd">associatedtype</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span>
+    <span class="kd">func</span> <span class="n">receive</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Subscriber</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">subscriber</span><span class="p">:</span> <span class="kt">S</span><span class="p">)</span> <span class="k">where</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">Output</span><span class="p">,</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Failure</span>
+<span class="p">}</span>
+
+<span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">Subscriber</span><span class="o">&lt;</span><span class="kt">Input</span><span class="p">,</span> <span class="kt">Failure</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">CustomCombineIdentifierConvertible</span> <span class="p">{</span>
+    <span class="kd">associatedtype</span> <span class="kt">Input</span>
+    <span class="kd">associatedtype</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Failure</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">Subscription</span><span class="p">:</span> <span class="kt">Cancellable</span><span class="p">,</span> <span class="kt">CustomCombineIdentifierConvertible</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">request</span><span class="p">(</span><span class="n">_</span> <span class="nv">demand</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Everything in Combine is a refinement of these seven requirements. A few things are worth noticing before any code runs:</p>
+
+<ul>
+  <li>A publisher has a single requirement, and it is not “send values”. <code class="language-plaintext highlighter-rouge">receive(subscriber:)</code> is called when someone subscribes, and its job is to hand that subscriber a subscription. A publisher is therefore usually a cheap value type that <em>describes</em> work; the subscription is the object that does it.</li>
+  <li>The subscriber’s three methods are the only three signals that can ever flow downstream: “here is your subscription”, “here is a value”, and “the stream is over”. A completion is either <code class="language-plaintext highlighter-rouge">.finished</code> or <code class="language-plaintext highlighter-rouge">.failure(Failure)</code>, and a publisher whose <code class="language-plaintext highlighter-rouge">Failure</code> is <code class="language-plaintext highlighter-rouge">Never</code> can only finish.</li>
+  <li>Signals flow upstream through the subscription: <code class="language-plaintext highlighter-rouge">request(_:)</code> adds demand, and <code class="language-plaintext highlighter-rouge">cancel()</code>, inherited from <code class="language-plaintext highlighter-rouge">Cancellable</code>, ends the relationship.</li>
+  <li>The return value of <code class="language-plaintext highlighter-rouge">receive(_:)</code> is also demand. A subscriber can raise its demand either by calling <code class="language-plaintext highlighter-rouge">request(_:)</code> on the subscription it was given or by returning a non-zero demand after each value.</li>
+</ul>
+
+<p>Those signals have to arrive in a particular order. Combine follows the <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/master/README.md">Reactive Streams</a> specification, which grew out of the same problem on the JVM, and the rules that matter in practice are these:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Rule</th>
+      <th>What it means for a publisher</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Subscription first</td>
+      <td>Call <code class="language-plaintext highlighter-rouge">receive(subscription:)</code> exactly once, before any value or completion</td>
+    </tr>
+    <tr>
+      <td>Bounded by demand</td>
+      <td>The number of values sent never exceeds the total demand requested</td>
+    </tr>
+    <tr>
+      <td>One terminal signal</td>
+      <td>Send at most one completion, and nothing after it</td>
+    </tr>
+    <tr>
+      <td>Serial signals</td>
+      <td>Never call the subscriber’s methods concurrently from two threads</td>
+    </tr>
+    <tr>
+      <td>Cancel is final</td>
+      <td>After <code class="language-plaintext highlighter-rouge">cancel()</code>, stop sending eventually and release the subscriber</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The bounded-by-demand rule can be written precisely. If the subscriber has made requests \(r_1, r_2, \ldots\) through <code class="language-plaintext highlighter-rouge">request(_:)</code> and returned demands \(d_1, d_2, \ldots\) from <code class="language-plaintext highlighter-rouge">receive(_:)</code>, then at every moment \(t\) the number of values delivered satisfies</p>
+
+\[N(t) \;\le\; D(t) \;=\; \sum_{i} r_i \;+\; \sum_{j} d_j ,\]
+
+<p>where any term equal to <code class="language-plaintext highlighter-rouge">.unlimited</code> makes \(D(t)\) infinite. The difference \(D(t) - N(t)\) is the <em>outstanding demand</em>: how many more values the publisher is allowed to send right now. Every publisher you write keeps that one number, and every built-in operator does too.</p>
+
+<h2 id="watching-the-handshake">Watching the handshake</h2>
+
+<p>The fastest way to see the contract is to subscribe with something that writes down every signal. This subscriber records events as strings, asks for an initial batch, and lets the caller decide how much extra demand to return after each value:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="c1">/// A subscriber that records every signal it receives.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Input</span><span class="p">,</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Subscriber</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">subscription</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)?</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">initialDemand</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">demandAfterValue</span><span class="p">:</span> <span class="p">(</span><span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">,</span>
+         <span class="nv">demandAfterValue</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="o">.</span><span class="k">none</span> <span class="p">})</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">initialDemand</span> <span class="o">=</span> <span class="n">initialDemand</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">demandAfterValue</span> <span class="o">=</span> <span class="n">demandAfterValue</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"subscription"</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">subscription</span> <span class="o">=</span> <span class="n">subscription</span>
+        <span class="k">if</span> <span class="n">initialDemand</span> <span class="o">&gt;</span> <span class="o">.</span><span class="k">none</span> <span class="p">{</span> <span class="nf">request</span><span class="p">(</span><span class="n">initialDemand</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">more</span> <span class="o">=</span> <span class="nf">demandAfterValue</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">more</span> <span class="o">&gt;</span> <span class="o">.</span><span class="k">none</span> <span class="p">?</span> <span class="s">"value </span><span class="se">\(</span><span class="n">input</span><span class="se">)</span><span class="s"> (+</span><span class="se">\(</span><span class="n">more</span><span class="se">)</span><span class="s">)"</span> <span class="p">:</span> <span class="s">"value </span><span class="se">\(</span><span class="n">input</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">more</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Failure</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"completion </span><span class="se">\(</span><span class="n">completion</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">subscription</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">request</span><span class="p">(</span><span class="n">_</span> <span class="nv">demand</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"request </span><span class="se">\(</span><span class="n">demand</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">subscription</span><span class="p">?</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="n">demand</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"cancel"</span><span class="p">)</span>
+        <span class="n">subscription</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">subscription</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The recorder keeps a strong reference to its subscription, and the subscription keeps a strong reference to the recorder so it can deliver values. That reference cycle is deliberate and universal in Combine: it is what keeps a pipeline alive while nobody else holds it, and it is broken when the stream completes or is cancelled. That is why <code class="language-plaintext highlighter-rouge">receive(completion:)</code> and <code class="language-plaintext highlighter-rouge">cancel()</code> both set <code class="language-plaintext highlighter-rouge">subscription</code> to <code class="language-plaintext highlighter-rouge">nil</code>.</p>
+
+<p>Now subscribe it to a sequence publisher, ask for two values, and return one more unit of demand after the second:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">recorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="mi">2</span> <span class="p">?</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+<span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">recorder</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">recorder</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"subscription"</span><span class="p">,</span>
+    <span class="s">"request max(2)"</span><span class="p">,</span>
+    <span class="s">"value 1"</span><span class="p">,</span>
+    <span class="s">"value 2 (+max(1))"</span><span class="p">,</span>
+    <span class="s">"value 3"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The pipeline stopped after three values even though the sequence holds five, and it did so without any buffering or blocking: the publisher had no outstanding demand left, so it simply waited. Two more facts are visible in the order of events. All three values were delivered <em>inside</em> the call to <code class="language-plaintext highlighter-rouge">request(.max(2))</code>, before it returned, because a sequence has its values available immediately. And the extra unit of demand returned from the second <code class="language-plaintext highlighter-rouge">receive(_:)</code> was honored in the same loop.</p>
+
+<p>Asking for more later resumes the stream where it stopped, and the completion arrives as soon as the sequence runs out:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">recorder</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recorder</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">suffix</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"request max(10)"</span><span class="p">,</span>
+    <span class="s">"value 4"</span><span class="p">,</span>
+    <span class="s">"value 5"</span><span class="p">,</span>
+    <span class="s">"completion finished"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The handshake has the same shape for every publisher, whether its values come from an array, a network response, or a user tapping a button:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Sub as Subscriber
+    participant Pub as Publisher
+    participant S as Subscription
+    Sub-&gt;&gt;Pub: subscribe(subscriber)
+    Pub-&gt;&gt;S: create, holding the subscriber
+    Pub-&gt;&gt;Sub: receive(subscription:)
+    Sub-&gt;&gt;S: request(.max(2))
+    S-&gt;&gt;Sub: receive(1) returns .none
+    S-&gt;&gt;Sub: receive(2) returns .max(1)
+    S-&gt;&gt;Sub: receive(3) returns .none
+    Note over S: outstanding demand is 0, so it waits
+    Sub-&gt;&gt;S: request(.max(10))
+    S-&gt;&gt;Sub: receive(4), receive(5)
+    S-&gt;&gt;Sub: receive(completion: .finished)
+</code></pre>
+
+<h2 id="demand-is-a-saturating-counter">Demand is a saturating counter</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Subscribers.Demand</code> is either <code class="language-plaintext highlighter-rouge">.unlimited</code> or <code class="language-plaintext highlighter-rouge">.max(n)</code> for a non-negative <code class="language-plaintext highlighter-rouge">n</code>, and its arithmetic is designed so that bookkeeping code can add demands freely without worrying about overflow:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">typealias</span> <span class="kt">Demand</span> <span class="o">=</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="o">.</span><span class="n">unlimited</span> <span class="o">==</span> <span class="o">.</span><span class="n">unlimited</span><span class="p">)</span>       <span class="c1">// unlimited absorbs everything</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="n">unlimited</span> <span class="o">-</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">unlimited</span><span class="p">)</span>       <span class="c1">// and survives subtraction</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="n">max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">unlimited</span><span class="p">)</span> <span class="c1">// saturates instead of overflowing</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="n">max</span><span class="p">)</span> <span class="o">!=</span> <span class="o">.</span><span class="n">unlimited</span><span class="p">)</span>               <span class="c1">// a huge finite demand is still finite</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="k">none</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Demand</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">max</span> <span class="o">==</span> <span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="kt">Demand</span><span class="o">.</span><span class="n">unlimited</span><span class="o">.</span><span class="n">max</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Subtraction is the operation to be careful with: <code class="language-plaintext highlighter-rouge">Demand.max(2) - .max(5)</code> traps at run time, because a demand can never be negative. A publisher should subtract only after checking that the outstanding demand is greater than <code class="language-plaintext highlighter-rouge">.none</code>, which is exactly what the publisher later in this article does.</p>
+
+<p>Requesting <code class="language-plaintext highlighter-rouge">.none</code> is a contract violation, and the built-in publishers do not agree on how to treat it. A sequence publisher ignores <code class="language-plaintext highlighter-rouge">request(.none)</code>; a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> traps inside <code class="language-plaintext highlighter-rouge">request(_:)</code>. Never request zero; if a subscriber wants nothing yet, it should simply not call <code class="language-plaintext highlighter-rouge">request</code>.</p>
+
+<h3 id="what-publishers-do-when-demand-runs-out">What publishers do when demand runs out</h3>
+
+<p>Demand is how Combine expresses backpressure, but a publisher can only respect it if it has somewhere to put values the subscriber has not asked for. Publishers that compute values on request, like sequences, can stop and resume at no cost. Publishers whose values are <em>pushed into them</em> from outside, like subjects, have to decide what to do with a value that arrives when demand is zero. The two built-in subjects decide differently:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">passthrough</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">passthroughRecorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="o">.</span><span class="k">none</span><span class="p">)</span>
+<span class="n">passthrough</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">passthroughRecorder</span><span class="p">)</span>
+<span class="n">passthrough</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>                       <span class="c1">// no demand yet</span>
+<span class="n">passthroughRecorder</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">passthrough</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">passthrough</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>                       <span class="c1">// demand used up again</span>
+<span class="n">passthrough</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">passthroughRecorder</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"subscription"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span> <span class="s">"value 2"</span><span class="p">,</span> <span class="s">"completion finished"</span><span class="p">,</span>
+<span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">current</span> <span class="o">=</span> <span class="kt">CurrentValueSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">currentRecorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="o">.</span><span class="k">none</span><span class="p">)</span>
+<span class="n">current</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">currentRecorder</span><span class="p">)</span>
+<span class="n">current</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">current</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>                           <span class="c1">// still no demand</span>
+<span class="n">currentRecorder</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>          <span class="c1">// delivers the latest value, 3</span>
+<span class="n">current</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>                           <span class="c1">// no demand: kept as the current value</span>
+<span class="n">currentRecorder</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>          <span class="c1">// delivers 4</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">currentRecorder</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"subscription"</span><span class="p">,</span> <span class="s">"request max(1)"</span><span class="p">,</span> <span class="s">"value 3"</span><span class="p">,</span> <span class="s">"request max(5)"</span><span class="p">,</span> <span class="s">"value 4"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>A <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> drops every value that arrives without demand: 1 and 3 were lost. A <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> keeps exactly one value, its current one, and delivers it when demand arrives; 1 and 2 were overwritten before anyone asked. Neither subject buffers a queue of values. That is not a bug but a choice you make by picking a subject, and it is the reason the <a href="https://developer.apple.com/documentation/combine/publisher/buffer(size:prefetch:whenfull:)"><code class="language-plaintext highlighter-rouge">buffer(size:prefetch:whenFull:)</code></a> operator exists. In practice most subscribers, including <code class="language-plaintext highlighter-rouge">sink</code> and <code class="language-plaintext highlighter-rouge">assign</code>, request <code class="language-plaintext highlighter-rouge">.unlimited</code> at once, so subjects rarely drop anything. The cases where they do, such as bridging a subject to <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> with <code class="language-plaintext highlighter-rouge">.values</code>, are covered in the subjects article and in <a href="/combine-publisher-values-async/">Bridging Publishers to <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> with <code class="language-plaintext highlighter-rouge">.values</code></a>.</p>
+
+<p>Completion, by contrast, does not need demand. An <code class="language-plaintext highlighter-rouge">Empty</code> publisher finishes as soon as it is subscribed, even if the subscriber has requested nothing:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">emptyRecorder</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="o">.</span><span class="k">none</span><span class="p">)</span>
+<span class="kt">Empty</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">emptyRecorder</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">emptyRecorder</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"subscription"</span><span class="p">,</span> <span class="s">"completion finished"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h2 id="writing-a-publisher-that-honors-demand">Writing a publisher that honors demand</h2>
+
+<p>A publisher becomes concrete when you write one. <code class="language-plaintext highlighter-rouge">Countdown</code> emits a starting number and counts down to zero, then finishes. Its <code class="language-plaintext highlighter-rouge">receive(subscriber:)</code> creates one <code class="language-plaintext highlighter-rouge">Inner</code> subscription per subscriber, and <code class="language-plaintext highlighter-rouge">Inner</code> does all the work:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Countdown</span><span class="p">:</span> <span class="kt">Publisher</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Output</span> <span class="o">=</span> <span class="kt">Int</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+
+    <span class="k">let</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="kd">func</span> <span class="n">receive</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Subscriber</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">subscriber</span><span class="p">:</span> <span class="kt">S</span><span class="p">)</span> <span class="k">where</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">Int</span><span class="p">,</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+        <span class="n">subscriber</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kt">Inner</span><span class="p">(</span><span class="nv">next</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="nv">downstream</span><span class="p">:</span> <span class="n">subscriber</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Inner</span><span class="o">&lt;</span><span class="kt">Downstream</span><span class="p">:</span> <span class="kt">Subscriber</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Subscription</span>
+    <span class="k">where</span> <span class="kt">Downstream</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">Int</span><span class="p">,</span> <span class="kt">Downstream</span><span class="o">.</span><span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+        <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">Step</span> <span class="p">{</span> <span class="k">case</span> <span class="nf">send</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Downstream</span><span class="p">),</span> <span class="nf">finish</span><span class="p">(</span><span class="kt">Downstream</span><span class="p">),</span> <span class="n">stop</span> <span class="p">}</span>
+
+        <span class="kd">private</span> <span class="k">let</span> <span class="nv">lock</span> <span class="o">=</span> <span class="kt">NSLock</span><span class="p">()</span>
+        <span class="kd">private</span> <span class="k">var</span> <span class="nv">next</span><span class="p">:</span> <span class="kt">Int</span>
+        <span class="kd">private</span> <span class="k">var</span> <span class="nv">demand</span> <span class="o">=</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="o">.</span><span class="k">none</span>
+        <span class="kd">private</span> <span class="k">var</span> <span class="nv">isDraining</span> <span class="o">=</span> <span class="kc">false</span>
+        <span class="kd">private</span> <span class="k">var</span> <span class="nv">downstream</span><span class="p">:</span> <span class="kt">Downstream</span><span class="p">?</span>   <span class="c1">// nil once finished or cancelled</span>
+
+        <span class="nf">init</span><span class="p">(</span><span class="nv">next</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">downstream</span><span class="p">:</span> <span class="kt">Downstream</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">next</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">downstream</span> <span class="o">=</span> <span class="n">downstream</span>
+        <span class="p">}</span>
+
+        <span class="kd">func</span> <span class="nf">request</span><span class="p">(</span><span class="n">_</span> <span class="nv">additional</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">shouldDrain</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span>
+                <span class="n">demand</span> <span class="o">+=</span> <span class="n">additional</span>
+                <span class="k">guard</span> <span class="o">!</span><span class="n">isDraining</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>   <span class="c1">// the active loop will see the new demand</span>
+                <span class="n">isDraining</span> <span class="o">=</span> <span class="kc">true</span>
+                <span class="k">return</span> <span class="kc">true</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">shouldDrain</span> <span class="p">{</span> <span class="nf">drain</span><span class="p">()</span> <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">lock</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">downstream</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="kd">private</span> <span class="kd">func</span> <span class="nf">drain</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">step</span><span class="p">:</span> <span class="kt">Step</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span>
+                    <span class="k">guard</span> <span class="k">let</span> <span class="nv">downstream</span> <span class="k">else</span> <span class="p">{</span> <span class="n">isDraining</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="k">return</span> <span class="o">.</span><span class="n">stop</span> <span class="p">}</span>
+                    <span class="k">if</span> <span class="n">next</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">downstream</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">;</span> <span class="k">return</span> <span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="n">downstream</span><span class="p">)</span> <span class="p">}</span>
+                    <span class="k">guard</span> <span class="n">demand</span> <span class="o">&gt;</span> <span class="o">.</span><span class="k">none</span> <span class="k">else</span> <span class="p">{</span> <span class="n">isDraining</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="k">return</span> <span class="o">.</span><span class="n">stop</span> <span class="p">}</span>
+                    <span class="n">demand</span> <span class="o">-=</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">defer</span> <span class="p">{</span> <span class="n">next</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">next</span><span class="p">,</span> <span class="n">downstream</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">switch</span> <span class="n">step</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">stop</span><span class="p">:</span>
+                    <span class="k">return</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="k">let</span> <span class="nv">downstream</span><span class="p">):</span>
+                    <span class="n">downstream</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="k">let</span> <span class="nv">value</span><span class="p">,</span> <span class="k">let</span> <span class="nv">downstream</span><span class="p">):</span>
+                    <span class="k">let</span> <span class="nv">more</span> <span class="o">=</span> <span class="n">downstream</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>   <span class="c1">// called without holding the lock</span>
+                    <span class="k">if</span> <span class="n">more</span> <span class="o">&gt;</span> <span class="o">.</span><span class="k">none</span> <span class="p">{</span> <span class="n">lock</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">demand</span> <span class="o">+=</span> <span class="n">more</span> <span class="p">}</span> <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Four decisions in that code are the whole craft of writing a publisher:</p>
+
+<ol>
+  <li><strong>All mutable state lives in the subscription, behind a lock.</strong> <code class="language-plaintext highlighter-rouge">request(_:)</code> and <code class="language-plaintext highlighter-rouge">cancel()</code> can be called from any thread, and Combine’s own publishers are safe to use that way, so a hand-written one must be as well.</li>
+  <li><strong>The subscriber is never called while the lock is held.</strong> The subscriber may respond by calling <code class="language-plaintext highlighter-rouge">request(_:)</code> or <code class="language-plaintext highlighter-rouge">cancel()</code> on the same subscription, which would deadlock a non-recursive lock. Each step is decided under the lock, and the signal is sent after the lock is released.</li>
+  <li><strong>Releasing the subscriber is how the subscription ends.</strong> Setting <code class="language-plaintext highlighter-rouge">downstream</code> to <code class="language-plaintext highlighter-rouge">nil</code> on completion or cancellation breaks the reference cycle described earlier and turns every later <code class="language-plaintext highlighter-rouge">request(_:)</code> into a no-op.</li>
+  <li><strong>Only one loop delivers values at a time.</strong> The <code class="language-plaintext highlighter-rouge">isDraining</code> flag turns a reentrant <code class="language-plaintext highlighter-rouge">request(_:)</code> into a plain demand increment that the running loop picks up. The next section shows why that matters.</li>
+</ol>
+
+<p>It behaves like any built-in publisher, including under a <code class="language-plaintext highlighter-rouge">sink</code>, which requests unlimited demand:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">countdownValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">countdownFinished</span> <span class="o">=</span> <span class="kc">false</span>
+<span class="k">let</span> <span class="nv">countdownCancellable</span> <span class="o">=</span> <span class="kt">Countdown</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">countdownFinished</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">countdownValues</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">countdownValues</span> <span class="o">==</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">countdownFinished</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">batched</span> <span class="o">=</span> <span class="kt">EventRecorder</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">initialDemand</span><span class="p">:</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="kt">Countdown</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">batched</span><span class="p">)</span>
+<span class="n">batched</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">batched</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>                  <span class="c1">// ignored: the subscription is gone</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">batched</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"subscription"</span><span class="p">,</span> <span class="s">"request max(2)"</span><span class="p">,</span> <span class="s">"value 3"</span><span class="p">,</span> <span class="s">"value 2"</span><span class="p">,</span> <span class="s">"cancel"</span><span class="p">,</span> <span class="s">"request max(5)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h2 id="reentrancy-the-bug-every-hand-written-publisher-has-once">Reentrancy: the bug every hand-written publisher has once</h2>
+
+<p>A subscriber that wants values one at a time often requests the next one from inside <code class="language-plaintext highlighter-rouge">receive(_:)</code>. That call re-enters the subscription while the publisher is still inside its own call to <code class="language-plaintext highlighter-rouge">receive(_:)</code>. The following subscriber does exactly that, records how deeply its calls nest, and stops asking after a limit so a broken publisher cannot run forever:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">OneAtATime</span><span class="p">:</span> <span class="kt">Subscriber</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Input</span> <span class="o">=</span> <span class="kt">Int</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">subscription</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">depth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">maxDepth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">finished</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">subscription</span> <span class="o">=</span> <span class="n">subscription</span>
+        <span class="n">subscription</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="p">{</span>
+        <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">maxDepth</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">maxDepth</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span>
+        <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="n">limit</span> <span class="p">{</span> <span class="n">subscription</span><span class="p">?</span><span class="o">.</span><span class="nf">request</span><span class="p">(</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">}</span>   <span class="c1">// reentrant request</span>
+        <span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">finished</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="n">subscription</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Here is the publisher most people write first. It looks reasonable: add the demand, then loop while there is demand, decrementing the counter after each value is delivered:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">NaiveCountdown</span><span class="p">:</span> <span class="kt">Publisher</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Output</span> <span class="o">=</span> <span class="kt">Int</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+
+    <span class="k">let</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="kd">func</span> <span class="n">receive</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Subscriber</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">subscriber</span><span class="p">:</span> <span class="kt">S</span><span class="p">)</span> <span class="k">where</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">Int</span><span class="p">,</span> <span class="kt">S</span><span class="o">.</span><span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+        <span class="n">subscriber</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kt">Inner</span><span class="p">(</span><span class="nv">next</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="nv">downstream</span><span class="p">:</span> <span class="n">subscriber</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Inner</span><span class="o">&lt;</span><span class="kt">Downstream</span><span class="p">:</span> <span class="kt">Subscriber</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Subscription</span>
+    <span class="k">where</span> <span class="kt">Downstream</span><span class="o">.</span><span class="kt">Input</span> <span class="o">==</span> <span class="kt">Int</span><span class="p">,</span> <span class="kt">Downstream</span><span class="o">.</span><span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">next</span><span class="p">:</span> <span class="kt">Int</span>
+        <span class="k">var</span> <span class="nv">demand</span> <span class="o">=</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="o">.</span><span class="k">none</span>
+        <span class="k">var</span> <span class="nv">downstream</span><span class="p">:</span> <span class="kt">Downstream</span><span class="p">?</span>
+
+        <span class="nf">init</span><span class="p">(</span><span class="nv">next</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">downstream</span><span class="p">:</span> <span class="kt">Downstream</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">next</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">downstream</span> <span class="o">=</span> <span class="n">downstream</span>
+        <span class="p">}</span>
+
+        <span class="kd">func</span> <span class="nf">request</span><span class="p">(</span><span class="n">_</span> <span class="nv">additional</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">demand</span> <span class="o">+=</span> <span class="n">additional</span>
+            <span class="k">while</span> <span class="n">demand</span> <span class="o">&gt;</span> <span class="o">.</span><span class="k">none</span><span class="p">,</span> <span class="k">let</span> <span class="nv">downstream</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="n">next</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
+                    <span class="k">self</span><span class="o">.</span><span class="n">downstream</span> <span class="o">=</span> <span class="kc">nil</span>
+                    <span class="n">downstream</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="p">}</span>
+                <span class="n">demand</span> <span class="o">-=</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">demand</span> <span class="o">+=</span> <span class="n">downstream</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="n">next</span><span class="p">)</span>
+                <span class="n">next</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span> <span class="n">downstream</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Under <code class="language-plaintext highlighter-rouge">sink</code> it works perfectly, which is why the bug survives code review. Under a subscriber that requests from inside <code class="language-plaintext highlighter-rouge">receive(_:)</code>, the inner <code class="language-plaintext highlighter-rouge">request(_:)</code> starts a second loop before the outer loop has decremented <code class="language-plaintext highlighter-rouge">next</code>, so it sends the same value again, which triggers another reentrant request, and so on:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">naive</span> <span class="o">=</span> <span class="kt">OneAtATime</span><span class="p">(</span><span class="nv">limit</span><span class="p">:</span> <span class="mi">8</span><span class="p">)</span>
+<span class="kt">NaiveCountdown</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">naive</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naive</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>   <span class="c1">// the same value, eight times</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naive</span><span class="o">.</span><span class="n">maxDepth</span> <span class="o">==</span> <span class="mi">8</span><span class="p">)</span>                          <span class="c1">// each one nested inside the last</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">naive</span><span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Without the limit, the subscriber would keep asking, the recursion would never end, and the process would die of a stack overflow; that is what happened when the limit was removed. Even a version that decrements before calling the subscriber would nest one stack frame per value, which overflows on a long enough stream. Reactive Streams rule 3.3 forbids exactly this: <code class="language-plaintext highlighter-rouge">request</code> must place an upper bound on its recursion. <code class="language-plaintext highlighter-rouge">Countdown</code> meets it with the draining flag, and so do Combine’s own publishers:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">safe</span> <span class="o">=</span> <span class="kt">OneAtATime</span><span class="p">(</span><span class="nv">limit</span><span class="p">:</span> <span class="o">.</span><span class="n">max</span><span class="p">)</span>
+<span class="kt">Countdown</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">safe</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">safe</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">((</span><span class="mi">0</span><span class="o">...</span><span class="mi">1_000</span><span class="p">)</span><span class="o">.</span><span class="nf">reversed</span><span class="p">())</span> <span class="o">&amp;&amp;</span> <span class="n">safe</span><span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">safe</span><span class="o">.</span><span class="n">maxDepth</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>               <span class="c1">// 1,001 values, never nested</span>
+
+<span class="k">let</span> <span class="nv">sequenceSubscriber</span> <span class="o">=</span> <span class="kt">OneAtATime</span><span class="p">(</span><span class="nv">limit</span><span class="p">:</span> <span class="o">.</span><span class="n">max</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span><span class="o">...</span><span class="mi">1_000</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="n">sequenceSubscriber</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequenceSubscriber</span><span class="o">.</span><span class="n">maxDepth</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">sequenceSubscriber</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1_001</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="publishers-describe-work-subscriptions-do-it">Publishers describe work; subscriptions do it</h2>
+
+<p>Because the work lives in the subscription, nothing happens until somebody subscribes, and every subscriber gets an independent run. Two subscribers to the same <code class="language-plaintext highlighter-rouge">Countdown</code> each see the full sequence:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">Countdown</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">firstRun</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">secondRun</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">firstCancellable</span> <span class="o">=</span> <span class="n">shared</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">firstRun</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">secondCancellable</span> <span class="o">=</span> <span class="n">shared</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">secondRun</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstRun</span> <span class="o">==</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">secondRun</span> <span class="o">==</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>This is what is usually meant by a <strong>cold</strong> publisher: subscribing starts the work, so two subscribers cause the work twice. A <code class="language-plaintext highlighter-rouge">URLSession</code> data task publisher is cold in the same way, and two <code class="language-plaintext highlighter-rouge">sink</code>s on it send two requests; <a href="/combine-share-multicasting/">Managing Resources: <code class="language-plaintext highlighter-rouge">share</code> and Multicasting</a> is about making work happen once. A <strong>hot</strong> publisher, like a subject or a notification, produces values whether or not anyone is listening, and a late subscriber sees only what arrives after it subscribes.</p>
+
+<p>Two built-in publishers break the “nothing happens until you subscribe” expectation, and both catch people out. <code class="language-plaintext highlighter-rouge">Future</code> runs its closure when the future is <em>created</em>, not when it is subscribed to, and <code class="language-plaintext highlighter-rouge">Deferred</code> is the tool that makes it lazy:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">futureRuns</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">eager</span> <span class="o">=</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">promise</span> <span class="k">in</span>
+    <span class="n">futureRuns</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nf">promise</span><span class="p">(</span><span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">futureRuns</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                  <span class="c1">// ran with no subscriber at all</span>
+
+<span class="k">let</span> <span class="nv">lazy</span> <span class="o">=</span> <span class="kt">Deferred</span> <span class="p">{</span>
+    <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">promise</span> <span class="k">in</span>
+        <span class="n">futureRuns</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nf">promise</span><span class="p">(</span><span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">futureRuns</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                  <span class="c1">// nothing yet</span>
+<span class="k">let</span> <span class="nv">lazyCancellable</span> <span class="o">=</span> <span class="kd">lazy</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">futureRuns</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>                  <span class="c1">// ran on subscription</span>
+</code></pre></div></div>
+
+<p>A <code class="language-plaintext highlighter-rouge">Future</code> also runs only once and replays its single result to every subscriber, so it is the one built-in publisher that is neither purely cold nor purely hot. The second surprise is less well known. <code class="language-plaintext highlighter-rouge">Publishers.Sequence</code> overloads <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">filter</code>, <code class="language-plaintext highlighter-rouge">compactMap</code>, and several other operators to return another <code class="language-plaintext highlighter-rouge">Publishers.Sequence</code>, which means the transform runs over the entire sequence <em>when the operator is applied</em>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">transformCalls</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">doubled</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">value</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+    <span class="n">transformCalls</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">transformCalls</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>              <span class="c1">// all three ran before anyone subscribed</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">doubled</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Publishers</span><span class="o">.</span><span class="kt">Sequence</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="kt">Never</span><span class="o">&gt;.</span><span class="k">self</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">doubledFirst</span> <span class="o">=</span> <span class="n">doubled</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">doubledSecond</span> <span class="o">=</span> <span class="n">doubled</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">transformCalls</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>              <span class="c1">// and never again, however many subscribers</span>
+</code></pre></div></div>
+
+<p>For a three-element array that is harmless and even efficient. For a transform with side effects, or one that should run per subscriber, it is wrong. For an infinite sequence such as <code class="language-plaintext highlighter-rouge">(1...).publisher.map { $0 * 2 }</code>, it never returns, because the overload tries to build the whole mapped array. Inserting any non-sequence operator first, such as <code class="language-plaintext highlighter-rouge">handleEvents()</code>, restores lazy, per-subscriber evaluation, as does mapping a <code class="language-plaintext highlighter-rouge">lazy</code> sequence before turning it into a publisher.</p>
+
+<h2 id="signals-must-be-serial">Signals must be serial</h2>
+
+<p>The serial-signals rule says that a publisher must not call <code class="language-plaintext highlighter-rouge">receive(_:)</code> on the same subscriber from two threads at once, so a subscriber never needs its own lock just to protect itself from its upstream. That rule matters most for subjects, because anyone holding a subject can call <code class="language-plaintext highlighter-rouge">send(_:)</code> from any thread. To see whether Combine enforces it, this test sends 16,000 values from eight threads at once and tracks how many deliveries are ever inside the subscriber’s closure at the same time:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">OverlapGauge</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">inside</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">peakValue</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">countValue</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">var</span> <span class="nv">peak</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">peakValue</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">countValue</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="n">inside</span><span class="o">.</span><span class="nf">wrappingAdd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span><span class="o">.</span><span class="n">newValue</span>
+        <span class="n">peakValue</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="n">now</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+        <span class="n">countValue</span><span class="o">.</span><span class="nf">wrappingAdd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+        <span class="nf">usleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>                        <span class="c1">// widen the window for an overlap</span>
+        <span class="n">inside</span><span class="o">.</span><span class="nf">wrappingSubtract</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">measureConcurrentSends</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">OverlapGauge</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">gauge</span> <span class="o">=</span> <span class="kt">OverlapGauge</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">subject</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">cancellable</span> <span class="o">=</span> <span class="n">subject</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">value</span> <span class="k">in</span> <span class="n">value</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">}</span>
+        <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">gauge</span><span class="o">.</span><span class="nf">record</span><span class="p">()</span> <span class="p">}</span>
+
+    <span class="c1">// PassthroughSubject is not annotated Sendable, although its send(_:) is thread-safe.</span>
+    <span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">sharedSubject</span> <span class="o">=</span> <span class="n">subject</span>
+    <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">concurrentPerform</span><span class="p">(</span><span class="nv">iterations</span><span class="p">:</span> <span class="mi">8</span><span class="p">)</span> <span class="p">{</span> <span class="n">thread</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2_000</span> <span class="p">{</span> <span class="n">sharedSubject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">thread</span> <span class="o">*</span> <span class="mi">10_000</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">cancellable</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">gauge</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">gauge</span> <span class="o">=</span> <span class="nf">measureConcurrentSends</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">gauge</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">16_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">gauge</span><span class="o">.</span><span class="n">peak</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                  <span class="c1">// never two deliveries at once</span>
+</code></pre></div></div>
+
+<p>The peak was 1 on every run: the subject serializes delivery to each subscriber, so values sent concurrently arrive one at a time, in whatever order the threads won the race. The same held through <code class="language-plaintext highlighter-rouge">merge</code>, through <code class="language-plaintext highlighter-rouge">receive(on:)</code> to a serial or a concurrent queue, and for <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code>. A publisher you write yourself has to provide the same guarantee, which <code class="language-plaintext highlighter-rouge">Countdown</code> does by delivering from a single drain loop.</p>
+
+<p>That test also shows two things about Combine under Swift 6 that later articles return to. First, Combine is compiled in Swift 5 language mode, and its interface marks only <code class="language-plaintext highlighter-rouge">Subscribers.Demand</code> and <code class="language-plaintext highlighter-rouge">Subscribers.Completion</code> as <code class="language-plaintext highlighter-rouge">Sendable</code>; subjects, <code class="language-plaintext highlighter-rouge">AnyCancellable</code>, and subscriptions are not, which is why the test has to tell the compiler that sharing the subject is safe. Second, the closures are marked <code class="language-plaintext highlighter-rouge">@Sendable</code> and the test lives in a <code class="language-plaintext highlighter-rouge">nonisolated</code> function on purpose. A closure written in main-actor code without that annotation is inferred to be main-actor isolated, and Swift 6 inserts a check that crashes the process when Combine calls it from a background thread. The same pipeline with plain closures, run from top-level code, stopped with <code class="language-plaintext highlighter-rouge">EXC_BREAKPOINT</code> inside <code class="language-plaintext highlighter-rouge">_swift_task_checkIsolatedSwift</code> on the first background <code class="language-plaintext highlighter-rouge">send</code>. <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> explains when that happens and how to avoid it.</p>
+
+<h2 id="operator-types-opaque-types-and-type-erasure">Operator types, opaque types, and type erasure</h2>
+
+<p>Each operator is a struct that wraps the publisher before it, so the type of a pipeline spells out its whole shape:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">pipeline</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">isMultiple</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">*</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">pipeline</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="o">==</span> <span class="s">"Map&lt;Filter&lt;HandleEvents&lt;Sequence&lt;ClosedRange&lt;Int&gt;, Never&gt;&gt;&gt;, Int&gt;"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>That nested type is how Combine avoids dynamic dispatch between operators, but it is not something to put in an API. There are two ways to hide it. <code class="language-plaintext highlighter-rouge">eraseToAnyPublisher()</code> wraps the pipeline in <code class="language-plaintext highlighter-rouge">AnyPublisher&lt;Output, Failure&gt;</code>, a concrete type that hides everything except the output and failure types and can be stored in a property or returned from a protocol requirement. Since Swift 5.7, <code class="language-plaintext highlighter-rouge">Publisher</code> also declares <code class="language-plaintext highlighter-rouge">Output</code> and <code class="language-plaintext highlighter-rouge">Failure</code> as primary associated types, so a function can return an opaque <code class="language-plaintext highlighter-rouge">some Publisher&lt;Int, Never&gt;</code> and keep the concrete type, and its optimizations, without exposing it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">evenSquares</span><span class="p">(</span><span class="n">upTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+        <span class="o">.</span><span class="nf">handleEvents</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">isMultiple</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">*</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">evenSquaresErased</span><span class="p">(</span><span class="n">upTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nf">evenSquares</span><span class="p">(</span><span class="nv">upTo</span><span class="p">:</span> <span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">squares</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">squaresCancellable</span> <span class="o">=</span> <span class="nf">evenSquaresErased</span><span class="p">(</span><span class="nv">upTo</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">squares</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">squares</span> <span class="o">==</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">36</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Use <code class="language-plaintext highlighter-rouge">some Publisher</code> when every path returns the same pipeline, and <code class="language-plaintext highlighter-rouge">AnyPublisher</code> when the type has to be stored or when different branches return different pipelines. An existential <code class="language-plaintext highlighter-rouge">any Publisher&lt;Int, Never&gt;</code> also compiles, and you can <code class="language-plaintext highlighter-rouge">sink</code> on it, but every operator is unavailable: <code class="language-plaintext highlighter-rouge">map</code> on an existential fails with “member ‘map’ cannot be used on value of type ‘any Publisher&lt;Int, Never&gt;’”, because each operator returns a type built from <code class="language-plaintext highlighter-rouge">Self</code>. That makes it rarely what you want.</p>
+
+<p>The lifecycle of a single subscription, from the point of view of the publisher’s bookkeeping, fits in one diagram:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; Subscribed: subscription received
+    Subscribed --&gt; Emitting: request of n greater than 0
+    Emitting --&gt; Waiting: outstanding demand reaches 0
+    Waiting --&gt; Emitting: new request, or demand returned from receive
+    Emitting --&gt; Finished: source exhausted or failed
+    Waiting --&gt; Finished: completion needs no demand
+    Subscribed --&gt; Cancelled: cancel
+    Emitting --&gt; Cancelled: cancel
+    Waiting --&gt; Cancelled: cancel
+    Finished --&gt; [*]: subscriber released
+    Cancelled --&gt; [*]: subscriber released
+</code></pre>
+
+<p>Keep the cancellables alive until the end of the file so their subscriptions are not torn down early:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">countdownCancellable</span><span class="p">,</span> <span class="n">firstCancellable</span><span class="p">,</span> <span class="n">secondCancellable</span><span class="p">,</span> <span class="n">lazyCancellable</span><span class="p">,</span>
+                      <span class="n">doubledFirst</span><span class="p">,</span> <span class="n">doubledSecond</span><span class="p">,</span> <span class="n">squaresCancellable</span><span class="p">,</span> <span class="n">eager</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>A publisher describes work and creates one subscription per subscriber; the subscription holds the state, the demand, and a strong reference to the subscriber, released on completion or cancellation.</li>
+  <li>Values may never exceed cumulative demand, \(N(t) \le D(t)\). Demand saturates at <code class="language-plaintext highlighter-rouge">.unlimited</code>, never goes negative, and must never be requested as <code class="language-plaintext highlighter-rouge">.none</code>; a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> traps if you do.</li>
+  <li>Measured: a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> drops values sent without demand, a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> keeps only the latest, and <code class="language-plaintext highlighter-rouge">Empty</code> completes without any demand.</li>
+  <li>Never call a subscriber while holding a lock, and bound reentrancy with a draining flag. The naive loop delivered the same value eight times at nesting depth eight; the draining version delivered 1,001 values at depth one.</li>
+  <li><code class="language-plaintext highlighter-rouge">Future</code> runs on creation and <code class="language-plaintext highlighter-rouge">Deferred</code> makes it lazy. Operators applied to a sequence publisher run over the whole sequence immediately, once, and never return for an infinite one.</li>
+  <li>Subjects serialized 16,000 concurrent sends to a peak of one delivery at a time. In Swift 6, a plain closure written on the main actor crashes when Combine calls it from another thread.</li>
+  <li>Return <code class="language-plaintext highlighter-rouge">some Publisher&lt;Output, Failure&gt;</code> to hide a pipeline’s type, and <code class="language-plaintext highlighter-rouge">AnyPublisher</code> when it must be stored or vary by branch.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">Publishers.Interval</code>, a publisher that emits <code class="language-plaintext highlighter-rouge">0, 1, 2, ...</code> on a <code class="language-plaintext highlighter-rouge">DispatchQueue</code> every <code class="language-plaintext highlighter-rouge">n</code> milliseconds and honors demand: when outstanding demand is zero, it should stop its timer rather than drop ticks, and resume when demand arrives. Test it with the <code class="language-plaintext highlighter-rouge">EventRecorder</code> by requesting <code class="language-plaintext highlighter-rouge">.max(3)</code>, waiting long enough for ten ticks, and asserting that exactly three values arrived; then request two more and assert that the values continue from 3 rather than skipping ahead. Finally, call <code class="language-plaintext highlighter-rouge">cancel()</code> from inside <code class="language-plaintext highlighter-rouge">receive(_:)</code> and verify with a <code class="language-plaintext highlighter-rouge">deinit</code> print that the subscription releases its subscriber and its timer.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/722/">Introducing Combine</a> and <a href="https://developer.apple.com/videos/play/wwdc2019/721/">Combine in Practice</a>, WWDC19.</li>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher"><code class="language-plaintext highlighter-rouge">Publisher</code></a>, <a href="https://developer.apple.com/documentation/combine/subscriber"><code class="language-plaintext highlighter-rouge">Subscriber</code></a>, and <a href="https://developer.apple.com/documentation/combine/subscribers/demand"><code class="language-plaintext highlighter-rouge">Subscribers.Demand</code></a>.</li>
+  <li>The <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/master/README.md">Reactive Streams specification</a>, whose numbered rules Combine’s contract follows closely.</li>
+  <li><a href="https://github.com/OpenCombine/OpenCombine">OpenCombine</a>, an open-source reimplementation of Combine whose subscriptions are a readable reference for how the built-in operators handle locking and demand.</li>
+</ul>
+
+<p>Next: <a href="/combine-sink-assign/"><code class="language-plaintext highlighter-rouge">sink</code> and <code class="language-plaintext highlighter-rouge">assign</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Publishers%2C+Subscribers%2C+and+Subscriptions%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-publishers-subscribers-subscriptions%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/&title=Publishers%2C+Subscribers%2C+and+Subscriptions%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/&title=Publishers%2C+Subscribers%2C+and+Subscriptions%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Publishers, Subscribers, and Subscriptions%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-publishers-subscribers-subscriptions/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Reactive+Programming">Reactive Programming</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Unstructured and Detached Tasks in Swift: When to Use Each" href="/swift-unstructured-detached-tasks/"> <p>Previous post</p> Unstructured and Detached Tasks in Swift: When to Use Each </a> </div> <div id="next-post"> <a alt="Cancellation Handlers and Reliable Resource Cleanup in Swift" href="/swift-cancellation-handlers-cleanup/"> <p>Next post</p> Cancellation Handlers and Reliable Resource Cleanup in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

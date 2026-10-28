@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Finding Data Races in Swift with Thread Sanitizer | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Finding Data Races in Swift with Thread Sanitizer" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Swift 6 proves the absence of data races at compile time, for code it can check. Every real codebase also contains code it cannot: classes marked @unchecked Sendable, globals marked nonisolated(unsafe), modules still in Swift 5 mode, @preconcurrency imports, Objective-C and C, and anything built on unsafe pointers. Those escape hatches exist for good reasons, and each one is a place where a data race can still hide. Thread Sanitizer (TSan) checks the other way around: at run time, for the code paths a test actually executes. It instruments every memory access, tracks which accesses are ordered by synchronization, and reports any two conflicting accesses that are not. This article runs TSan on races that compile cleanly in Swift 6 mode, shows how to read its reports, measures its overhead, and describes how to make it a routine part of testing." /> <meta property="og:description" content="Swift 6 proves the absence of data races at compile time, for code it can check. Every real codebase also contains code it cannot: classes marked @unchecked Sendable, globals marked nonisolated(unsafe), modules still in Swift 5 mode, @preconcurrency imports, Objective-C and C, and anything built on unsafe pointers. Those escape hatches exist for good reasons, and each one is a place where a data race can still hide. Thread Sanitizer (TSan) checks the other way around: at run time, for the code paths a test actually executes. It instruments every memory access, tracks which accesses are ordered by synchronization, and reports any two conflicting accesses that are not. This article runs TSan on races that compile cleanly in Swift 6 mode, shows how to read its reports, measures its overhead, and describes how to make it a routine part of testing." /> <link rel="canonical" href="https://swiftbydeya.com/swift-thread-sanitizer/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-thread-sanitizer/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-01T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Finding Data Races in Swift with Thread Sanitizer" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-01T00:00:00+03:00","datePublished":"2026-09-01T00:00:00+03:00","description":"Swift 6 proves the absence of data races at compile time, for code it can check. Every real codebase also contains code it cannot: classes marked @unchecked Sendable, globals marked nonisolated(unsafe), modules still in Swift 5 mode, @preconcurrency imports, Objective-C and C, and anything built on unsafe pointers. Those escape hatches exist for good reasons, and each one is a place where a data race can still hide. Thread Sanitizer (TSan) checks the other way around: at run time, for the code paths a test actually executes. It instruments every memory access, tracks which accesses are ordered by synchronization, and reports any two conflicting accesses that are not. This article runs TSan on races that compile cleanly in Swift 6 mode, shows how to read its reports, measures its overhead, and describes how to make it a routine part of testing.","headline":"Finding Data Races in Swift with Thread Sanitizer","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-thread-sanitizer/"},"url":"https://swiftbydeya.com/swift-thread-sanitizer/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Finding Data Races in Swift with Thread Sanitizer"> <meta name="twitter:description" content="Swift 6 proves the absence of data races at compile time, for code it can check. Every real codebase also contains code it cannot: classes marked @unchecked ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Finding Data Races in Swift with Thread Sanitizer"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Finding Data Races in Swift with Thread Sanitizer</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-01T00:00:00+03:00">September 1, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Swift 6 proves the absence of data races at compile time, for code it can check. Every real codebase also contains code it cannot: classes marked <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code>, globals marked <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code>, modules still in Swift 5 mode, <code class="language-plaintext highlighter-rouge">@preconcurrency</code> imports, Objective-C and C, and anything built on unsafe pointers. Those escape hatches exist for good reasons, and each one is a place where a data race can still hide.</p>
+
+<p>Thread Sanitizer (TSan) checks the other way around: at run time, for the code paths a test actually executes. It instruments every memory access, tracks which accesses are ordered by synchronization, and reports any two conflicting accesses that are not. This article runs TSan on races that compile cleanly in Swift 6 mode, shows how to read its reports, measures its overhead, and describes how to make it a routine part of testing.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain and run on macOS 26 with <code class="language-plaintext highlighter-rouge">-sanitize=thread</code>. The reports quoted below are real output from those runs, trimmed for width. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="what-tsan-detects-and-how">What TSan detects, and how</h2>
+
+<p>A <strong>data race</strong> is two accesses to the same memory location, from different threads, at least one of them a write, with no <em>happens-before</em> ordering between them. Happens-before is the ordering created by synchronization: unlocking a mutex happens before the next lock of it, resuming a continuation happens before the resumed code runs, a task’s creation happens before its first instruction.</p>
+
+<p>TSan tracks happens-before with <strong>vector clocks</strong>. Each thread \(t\) keeps a vector \(V_t\) with one counter per thread. A thread increments its own entry as it runs; synchronization operations merge vectors, taking the element-wise maximum. An access \(a\) by thread \(t\) happens before an access \(b\) by thread \(u\) exactly when</p>
+
+\[V_a[t] \le V_b[t],\]
+
+<p>that is, when \(u\) had, by the time of \(b\), observed thread \(t\)’s progress up to \(a\) through some chain of synchronization. TSan stores the clock of recent accesses in shadow memory next to each location. When a new access arrives, it compares clocks; if neither access happens before the other and at least one is a write, it reports a race.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Unsynchronized writes race, while writes ordered by a lock do not
+    participant A as Task A
+    participant M as Memory: hits
+    participant B as Task B
+    Note over A,B: Without synchronization
+    A-&gt;&gt;M: write hits
+    B-&gt;&gt;M: write hits, no happens-before edge from A, TSan reports a race
+    Note over A,B: With a Mutex
+    A-&gt;&gt;M: lock, write hits, unlock
+    Note over A,B: unlock happens before the next lock
+    B-&gt;&gt;M: lock, write hits, unlock, ordered after A, no report
+</code></pre>
+
+<p>Two properties follow from this design:</p>
+
+<ul>
+  <li><strong>TSan reports races that happen in the run, not races that could happen.</strong> If a test never executes the racy path, or never runs it on two threads, TSan says nothing. Coverage and concurrency in tests determine what it can find.</li>
+  <li><strong>TSan does not need the race to cause a wrong result.</strong> It reports the unsynchronized pair even when the timing happened to work out. That is why it finds bugs that stress testing alone misses.</li>
+</ul>
+
+<p>Swift’s concurrency runtime is annotated for TSan, so task creation, <code class="language-plaintext highlighter-rouge">await</code>, actor hops, and continuations all establish happens-before. Correctly isolated Swift concurrency code produces no reports.</p>
+
+<h2 id="enabling-it">Enabling it</h2>
+
+<ul>
+  <li><strong>Xcode:</strong> Edit Scheme, then Run or Test, then Diagnostics, then enable Thread Sanitizer. It applies to the scheme’s builds and test runs.</li>
+  <li><strong>SwiftPM:</strong> <code class="language-plaintext highlighter-rouge">swift build --sanitize=thread</code>, <code class="language-plaintext highlighter-rouge">swift test --sanitize=thread</code>.</li>
+  <li><strong>swiftc:</strong> <code class="language-plaintext highlighter-rouge">swiftc -sanitize=thread</code>.</li>
+</ul>
+
+<p>TSan runs on macOS and on iOS, tvOS, and watchOS <strong>simulators</strong>, not on physical devices. It cannot be combined with Address Sanitizer in the same build. Debug builds give the most readable reports; optimized builds find races that only appear at speed. Running both, periodically, is ideal.</p>
+
+<p>On the test machine, outside Xcode, TSan’s default symbolizer stalled when the first report was printed. Setting <code class="language-plaintext highlighter-rouge">TSAN_OPTIONS="external_symbolizer_path="</code> made it fall back to its built-in symbolization, which prints function names without line numbers. Xcode symbolizes reports fully and was not affected.</p>
+
+<h2 id="a-race-that-compiles-cleanly">A race that compiles cleanly</h2>
+
+<p>This program compiles in Swift 6 mode without a warning. Both of its races are behind escape hatches that tell the compiler “trust me”:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="c1">/// Claims to be Sendable, but nothing protects `storage`.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SessionCache</span><span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">storage</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="p">[</span><span class="n">key</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">var</span> <span class="nv">hits</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">hammer</span><span class="p">(</span><span class="n">_</span> <span class="nv">cache</span><span class="p">:</span> <span class="kt">SessionCache</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">worker</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="n">request</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="p">{</span>
+                    <span class="n">cache</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"key-</span><span class="se">\(</span><span class="p">(</span><span class="n">worker</span> <span class="o">*</span> <span class="mi">200</span> <span class="o">+</span> <span class="n">request</span><span class="p">)</span> <span class="o">%</span> <span class="mi">50</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                    <span class="n">hits</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cache</span> <span class="o">=</span> <span class="kt">SessionCache</span><span class="p">()</span>
+<span class="k">await</span> <span class="nf">hammer</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"entries:"</span><span class="p">,</span> <span class="n">cache</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="s">"hits:"</span><span class="p">,</span> <span class="n">hits</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Without TSan, the program usually prints something plausible and occasionally crashes inside <code class="language-plaintext highlighter-rouge">Dictionary</code>, because concurrent writes can corrupt its storage. On one run it printed <code class="language-plaintext highlighter-rouge">hits: 740</code>: 60 of 800 increments were lost, because <code class="language-plaintext highlighter-rouge">hits += 1</code> is a read and a write, and two threads interleaved them.</p>
+
+<p>Under TSan, the first report was:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>WARNING: ThreadSanitizer: Swift access race (pid=65781)
+  Modifying access of Swift variable at 0x000109803870 by thread T3:
+    #0 race.SessionCache.record(Swift.String) -&gt; ()
+    #1 (1) suspend resume partial function for closure #1 () async -&gt; () in
+       closure #1 (inout Swift.TaskGroup&lt;()&gt;) async -&gt; () in race.hammer(race.SessionCache) async -&gt; ()
+    #2 swift::runJobInEstablishedExecutorContext(swift::Job*)
+
+  Previous modifying access of Swift variable at 0x000109803870 by thread T1:
+    #0 race.SessionCache.record(Swift.String) -&gt; ()
+    #1 (1) suspend resume partial function for closure #1 () async -&gt; () in
+       closure #1 (inout Swift.TaskGroup&lt;()&gt;) async -&gt; () in race.hammer(race.SessionCache) async -&gt; ()
+    #2 swift::runJobInEstablishedExecutorContext(swift::Job*)
+
+  Location is heap block of size 24 at 0x000109803860 allocated by main thread:
+    #0 malloc
+    #2 async_Main
+
+  Thread T3 (tid=21157131, running) is a GCD worker thread
+  Thread T1 (tid=21157129, running) is a GCD worker thread
+
+SUMMARY: ThreadSanitizer: Swift access race in race.SessionCache.record(Swift.String) -&gt; ()
+</code></pre></div></div>
+
+<p>In total the run produced seven warnings, for the dictionary and for the <code class="language-plaintext highlighter-rouge">hits</code> global, and the process exited with a failure status.</p>
+
+<h2 id="reading-a-report">Reading a report</h2>
+
+<p>Every TSan report has the same parts, and each answers a specific question:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Part</th>
+      <th>Question it answers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>First line: “Swift access race” or “data race”</td>
+      <td>What kind of conflict. A <em>Swift access race</em> means two overlapping Swift accesses, such as two mutations of a stored property; a <em>data race</em> is the underlying memory-level conflict.</td>
+    </tr>
+    <tr>
+      <td>First stack</td>
+      <td>Which code made the access that was just detected</td>
+    </tr>
+    <tr>
+      <td>“Previous … access” stack</td>
+      <td>Which code made the earlier, conflicting access</td>
+    </tr>
+    <tr>
+      <td>“Location is …”</td>
+      <td>What memory it was: a heap block and where it was allocated, or a named global such as <code class="language-plaintext highlighter-rouge">'r2.hits : Swift.Int'</code></td>
+    </tr>
+    <tr>
+      <td>Thread descriptions</td>
+      <td>Which threads were involved. In async code these are usually GCD worker threads of the cooperative pool</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For async code, the frames are partial functions: the pieces of an <code class="language-plaintext highlighter-rouge">async</code> function between suspension points, as the <a href="/swift-async-await-suspension/">async/await article</a> describes. “suspend resume partial function for closure #1 … in hammer” means “the body of the first child task in <code class="language-plaintext highlighter-rouge">hammer</code>, after a suspension point.” The thread numbers carry little information in async code, because a task can run on a different thread after every <code class="language-plaintext highlighter-rouge">await</code>. What matters is that the two stacks show two <em>tasks</em> touching the same memory without isolation between them.</p>
+
+<p>The fix follows from the location. The heap block allocated in <code class="language-plaintext highlighter-rouge">async_Main</code> of size 24 is the <code class="language-plaintext highlighter-rouge">SessionCache</code> instance; the variable inside it is <code class="language-plaintext highlighter-rouge">storage</code>. The global is <code class="language-plaintext highlighter-rouge">hits</code>.</p>
+
+<h2 id="fixing-it-and-confirming-the-fix">Fixing it, and confirming the fix</h2>
+
+<p>Both races go away when the state gets real protection:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Sendable because its state is protected, so no @unchecked is needed.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SessionCache</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">storage</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([:])</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">key</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">hits</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">hammer</span><span class="p">(</span><span class="n">_</span> <span class="nv">cache</span><span class="p">:</span> <span class="kt">SessionCache</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">worker</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="n">request</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="p">{</span>
+                    <span class="n">cache</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"key-</span><span class="se">\(</span><span class="p">(</span><span class="n">worker</span> <span class="o">*</span> <span class="mi">200</span> <span class="o">+</span> <span class="n">request</span><span class="p">)</span> <span class="o">%</span> <span class="mi">50</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                    <span class="n">hits</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cache</span> <span class="o">=</span> <span class="kt">SessionCache</span><span class="p">()</span>
+<span class="k">await</span> <span class="nf">hammer</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">50</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">hits</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">800</span><span class="p">,</span> <span class="s">"No increment was lost"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Run under TSan, this version produced no warnings and exited normally, with all 800 increments counted. Removing <code class="language-plaintext highlighter-rouge">@unchecked</code> from the class was part of the fix, not a side effect: with the state in a <code class="language-plaintext highlighter-rouge">Mutex</code>, the compiler verifies the <code class="language-plaintext highlighter-rouge">Sendable</code> conformance, so the next edit that adds an unprotected <code class="language-plaintext highlighter-rouge">var</code> will not compile.</p>
+
+<p>The same program written with an actor instead of a <code class="language-plaintext highlighter-rouge">Mutex</code>, eight tasks each making 1,000 calls to an actor’s <code class="language-plaintext highlighter-rouge">increment()</code>, also ran without a single report and produced the exact count of 8,000. That is TSan confirming that the runtime’s actor and task synchronization establish the happens-before edges it needs.</p>
+
+<h2 id="where-tsan-earns-its-keep-in-swift-6-code">Where TSan earns its keep in Swift 6 code</h2>
+
+<p>Swift 6’s static checking means TSan finds fewer races than it did in Swift 5 code, and finds them in predictable places. Focus test runs under TSan on code that contains:</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> types.</strong> Each is a claim about synchronization the compiler did not verify. TSan verifies it for the paths your tests exercise.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code> declarations.</strong> Same claim, applied to a variable.</li>
+  <li><strong>Modules in Swift 5 mode</strong> and <strong><code class="language-plaintext highlighter-rouge">@preconcurrency</code> imports</strong>, where diagnostics are downgraded or suppressed.</li>
+  <li><strong>Objective-C, C, and C++ code</strong>, including callbacks from C libraries into Swift.</li>
+  <li><strong>Unsafe pointers</strong> and manually managed memory shared between threads.</li>
+  <li><strong>Code that hands closures to GCD or other non-Swift-concurrency APIs</strong>, where the isolation inference rules described in the <a href="/swift-threads-dispatch-queues-tasks/">threads article</a> apply.</li>
+</ul>
+
+<p>TSan does not find logic races, such as the stale results and reentrancy bugs earlier in this series, because those involve properly synchronized accesses in the wrong <em>order</em>. For those, use the controlled interleaving techniques from the <a href="/swift-testing-controlled-interleavings/">testing article</a>.</p>
+
+<h2 id="what-it-costs">What it costs</h2>
+
+<p>TSan instruments every memory access and keeps shadow state for every location. For the race-free actor version of the workload above, 8,000 actor calls across eight tasks, on the test machine:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Build</th>
+      <th>Wall time</th>
+      <th>Peak memory</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Without TSan</td>
+      <td>0.01 s</td>
+      <td>6.5 MB</td>
+    </tr>
+    <tr>
+      <td>With TSan</td>
+      <td>2.1 s</td>
+      <td>57 MB</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This workload is a near worst case: almost nothing but synchronization, which TSan instruments heavily, plus its fixed start-up cost. LLVM’s documentation describes typical overhead as a slowdown of about 5 to 15 times and memory usage 5 to 10 times higher. Either way, TSan is a testing tool, not something to leave enabled in everyday development builds of a large app.</p>
+
+<h2 id="making-it-routine">Making it routine</h2>
+
+<ul>
+  <li><strong>Run the test suite under TSan regularly</strong>, nightly or on every merge to the main branch, not only when someone suspects a race. Races found long after they were introduced are much harder to fix.</li>
+  <li><strong>Write tests that create concurrency.</strong> TSan can only report races that happen. A test that calls <code class="language-plaintext highlighter-rouge">record</code> from one task proves nothing; the test above calls it from four at once, many times. Stress loops sized as in the <a href="/swift-continuation-ownership/">continuation ownership article</a> work well here.</li>
+  <li><strong>Treat every report as a bug.</strong> Do not suppress reports in your own code. Suppression files exist for third-party code you cannot fix, and each entry should name the issue tracking the fix upstream.</li>
+  <li><strong>Fail the build on reports.</strong> Set <code class="language-plaintext highlighter-rouge">TSAN_OPTIONS=halt_on_error=1</code> in CI to stop at the first report, which keeps logs short and makes failures unambiguous.</li>
+  <li><strong>Rerun with an optimized build</strong> occasionally. Some races only manifest when code runs fast enough for the accesses to overlap.</li>
+</ul>
+
+<h2 id="tsan-and-exclusivity-enforcement">TSan and exclusivity enforcement</h2>
+
+<p>Swift also checks one related property without any sanitizer: <strong>exclusive access</strong>. Swift requires that a variable not be modified while another access to it is in progress, and the runtime enforces this for class properties, globals, and escaping closure captures in both debug and release builds. A violation stops the program with “Simultaneous accesses to …, but modification requires exclusive access.” Exclusivity checking is aimed at overlapping accesses within one thread, such as passing the same property as two <code class="language-plaintext highlighter-rouge">inout</code> arguments. It is not a race detector. When two threads conflict it may catch the overlap or may not, depending on timing; TSan catches it reliably whenever the two accesses execute without synchronization.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Swift 6 proves race freedom for checked code. TSan finds races at run time in the code behind escape hatches: <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code>, <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code>, Swift 5 mode modules, <code class="language-plaintext highlighter-rouge">@preconcurrency</code>, and C or Objective-C.</li>
+  <li>TSan uses vector clocks to detect conflicting accesses without happens-before ordering. It reports races that happen in a run, even if the result happened to be correct.</li>
+  <li>Enable it in the scheme’s Diagnostics, or with <code class="language-plaintext highlighter-rouge">--sanitize=thread</code>. It runs on macOS and simulators, not on devices.</li>
+  <li>Reports show two stacks, the memory location, and the threads. In async code, frames are partial functions and threads matter less than tasks.</li>
+  <li>On the test machine, a cleanly compiling program produced seven reports and lost 60 of 800 increments; the <code class="language-plaintext highlighter-rouge">Mutex</code> and actor versions produced none.</li>
+  <li>Overhead is large, here 200 times slower and 9 times the memory on a synchronization-heavy workload, so run TSan in tests and CI, not in everyday builds.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a small <code class="language-plaintext highlighter-rouge">ImageCache</code> class backed by <code class="language-plaintext highlighter-rouge">NSCache</code> and a plain <code class="language-plaintext highlighter-rouge">[URL: Date]</code> dictionary for access times, mark it <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code>, and use it from a task group that loads and evicts images concurrently. Run the tests under TSan and fix each report it finds. Then decide, for each piece of state, whether a <code class="language-plaintext highlighter-rouge">Mutex</code>, an actor, or <code class="language-plaintext highlighter-rouge">NSCache</code>’s own thread safety is the right protection, and remove the <code class="language-plaintext highlighter-rouge">@unchecked</code>.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/xcode/diagnosing-memory-thread-and-crash-issues-early">Diagnosing memory, thread, and crash issues early</a> in Apple’s Xcode documentation.</li>
+  <li>The <a href="https://clang.llvm.org/docs/ThreadSanitizer.html">ThreadSanitizer</a> documentation from the LLVM project, including supported options.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0176-enforce-exclusive-access-to-memory.md">SE-0176: Enforce Exclusive Access to Memory</a>.</li>
+  <li><a href="/swift-sendable/">Sendable in Swift</a>, on when <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> is justified.</li>
+</ul>
+
+<p>Previous: <a href="/swift-deadlocks-blocking-waits/">Avoiding Deadlocks and Blocking Waits</a>. Next: <a href="/swift-profiling-tasks-main-actor/">Profiling Task Lifetimes and Main-Actor Contention</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-thread-sanitizer/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Finding+Data+Races+in+Swift+with+Thread+Sanitizer%20https%3A%2F%2Fswiftbydeya.com%2Fswift-thread-sanitizer%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-thread-sanitizer/&title=Finding+Data+Races+in+Swift+with+Thread+Sanitizer%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-thread-sanitizer/&title=Finding+Data+Races+in+Swift+with+Thread+Sanitizer%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-thread-sanitizer/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Finding Data Races in Swift with Thread Sanitizer%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-thread-sanitizer/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Data+Races">Data Races</a></li>
+    
+    <li><a href="/tag/#Debugging">Debugging</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Thread+Sanitizer">Thread Sanitizer</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Profiling Task Lifetimes and Main-Actor Contention in Swift" href="/swift-profiling-tasks-main-actor/"> <p>Previous post</p> Profiling Task Lifetimes and Main-Actor Contention in Swift </a> </div> <div id="next-post"> <a alt="Avoiding Deadlocks and Blocking Waits in Swift Concurrency" href="/swift-deadlocks-blocking-waits/"> <p>Next post</p> Avoiding Deadlocks and Blocking Waits in Swift Concurrency </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

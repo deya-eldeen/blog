@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Background Transfers and App Relaunch | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Background Transfers and App Relaunch" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="An iOS app gets a few seconds of execution after the user leaves it, and then it is suspended. A 600 MB podcast download or a batch of photo uploads does not fit in a few seconds. For that, URLSession offers background sessions: the app hands transfers to a system daemon, nsurlsessiond, which performs them whether the app is running, suspended, or terminated, and wakes the app when they finish. The price is a different programming model. A background session accepts only some kinds of tasks, reports results only through a delegate, outlives the process that created it, and delivers events to a process that may not have existed when the transfer started. This article measures those rules on macOS, where a command-line tool can use background sessions too, including a transfer that keeps going after its process exits and is picked up by a new one. It then covers the app side on iOS: relaunch, the completion handler, mapping tasks back to app state, and the scheduling decisions the system makes on the user’s behalf." /> <meta property="og:description" content="An iOS app gets a few seconds of execution after the user leaves it, and then it is suspended. A 600 MB podcast download or a batch of photo uploads does not fit in a few seconds. For that, URLSession offers background sessions: the app hands transfers to a system daemon, nsurlsessiond, which performs them whether the app is running, suspended, or terminated, and wakes the app when they finish. The price is a different programming model. A background session accepts only some kinds of tasks, reports results only through a delegate, outlives the process that created it, and delivers events to a process that may not have existed when the transfer started. This article measures those rules on macOS, where a command-line tool can use background sessions too, including a transfer that keeps going after its process exits and is picked up by a new one. It then covers the app side on iOS: relaunch, the completion handler, mapping tasks back to app state, and the scheduling decisions the system makes on the user’s behalf." /> <link rel="canonical" href="https://swiftbydeya.com/swift-background-transfers/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-background-transfers/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-08T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Background Transfers and App Relaunch" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-08T00:00:00+03:00","datePublished":"2026-10-08T00:00:00+03:00","description":"An iOS app gets a few seconds of execution after the user leaves it, and then it is suspended. A 600 MB podcast download or a batch of photo uploads does not fit in a few seconds. For that, URLSession offers background sessions: the app hands transfers to a system daemon, nsurlsessiond, which performs them whether the app is running, suspended, or terminated, and wakes the app when they finish. The price is a different programming model. A background session accepts only some kinds of tasks, reports results only through a delegate, outlives the process that created it, and delivers events to a process that may not have existed when the transfer started. This article measures those rules on macOS, where a command-line tool can use background sessions too, including a transfer that keeps going after its process exits and is picked up by a new one. It then covers the app side on iOS: relaunch, the completion handler, mapping tasks back to app state, and the scheduling decisions the system makes on the user’s behalf.","headline":"Background Transfers and App Relaunch","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-background-transfers/"},"url":"https://swiftbydeya.com/swift-background-transfers/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Background Transfers and App Relaunch"> <meta name="twitter:description" content="An iOS app gets a few seconds of execution after the user leaves it, and then it is suspended. A 600 MB podcast download or a batch of photo uploads does not..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Background Transfers and App Relaunch"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Background Transfers and App Relaunch</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-08T00:00:00+03:00">October 8, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>An iOS app gets a few seconds of execution after the user leaves it, and then it is suspended. A 600 MB podcast download or a batch of photo uploads does not fit in a few seconds. For that, <code class="language-plaintext highlighter-rouge">URLSession</code> offers <strong>background sessions</strong>: the app hands transfers to a system daemon, <code class="language-plaintext highlighter-rouge">nsurlsessiond</code>, which performs them whether the app is running, suspended, or terminated, and wakes the app when they finish.</p>
+
+<p>The price is a different programming model. A background session accepts only some kinds of tasks, reports results only through a delegate, outlives the process that created it, and delivers events to a process that may not have existed when the transfer started. This article measures those rules on macOS, where a command-line tool can use background sessions too, including a transfer that keeps going after its process exits and is picked up by a new one. It then covers the app side on iOS: relaunch, the completion handler, mapping tasks back to app state, and the scheduling decisions the system makes on the user’s behalf.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain from Xcode 27.1. The in-process examples ran on macOS 26 against <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the unmarked blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The relaunch experiment uses two processes and is run from the shell as shown. The iOS app code was compiled against the iOS 26 SDK.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="who-owns-a-background-transfer">Who owns a background transfer</h2>
+
+<p>In an ordinary session, the app’s process performs the transfer: its sockets, its memory, its lifetime. In a background session, the app’s process only <em>describes</em> the transfer. The daemon performs it and keeps the results until the app collects them:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A background download that completes while the app is suspended, followed by relaunch
+    participant App
+    participant Daemon as nsurlsessiond
+    participant Server
+    App-&gt;&gt;Daemon: downloadTask(with:).resume() on background session "downloads"
+    App-&gt;&gt;App: user leaves, app suspended, later terminated
+    Daemon-&gt;&gt;Server: GET /episodes/412.mp3
+    Server--&gt;&gt;Daemon: 200, body (minutes)
+    Daemon-&gt;&gt;App: relaunch in background
+    App-&gt;&gt;App: application(_:handleEventsForBackgroundURLSession:completionHandler:) stores handler
+    App-&gt;&gt;Daemon: URLSession(configuration: .background("downloads"), delegate:)
+    Daemon--&gt;&gt;App: didFinishDownloadingTo, didCompleteWithError
+    Daemon--&gt;&gt;App: urlSessionDidFinishEvents(forBackgroundURLSession:)
+    App-&gt;&gt;App: call stored completion handler: system may suspend the app again
+</code></pre>
+
+<p>Everything in the model follows from that split. The daemon cannot call a closure in a process that no longer exists, so results go to a delegate that the next process provides. It cannot read a <code class="language-plaintext highlighter-rouge">Data</code> value that lived in the app’s memory, so uploads must come from files. And the session is identified by a string the app chooses, because that string is the only thing a relaunched process can use to say “I am the owner of those transfers.”</p>
+
+<h2 id="what-a-background-session-accepts">What a background session accepts</h2>
+
+<p>Background sessions are available to command-line tools on macOS, which makes their rules easy to measure. A session is created with an identifier and a delegate. A download from the local server completes through the delegate, and its temporary file is in the daemon’s directory, not the process’s:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BackgroundDelegate</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionDownloadDelegate</span><span class="p">,</span> <span class="kt">URLSessionDataDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">finished</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">completedTasks</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">expectedTasks</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">expecting</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="n">expectedTasks</span> <span class="o">=</span> <span class="n">count</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didFinishDownloadingTo</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">size</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">attributesOfItem</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">path</span><span class="p">)[</span><span class="o">.</span><span class="n">size</span><span class="p">]</span> <span class="k">as?</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">??</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"downloaded </span><span class="se">\(</span><span class="n">downloadTask</span><span class="o">.</span><span class="n">taskDescription</span> <span class="p">??</span> <span class="s">"?"</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">size</span><span class="se">)</span><span class="s"> bytes at </span><span class="se">\(</span><span class="n">location</span><span class="o">.</span><span class="n">path</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">dataTask</span><span class="p">:</span> <span class="kt">URLSessionDataTask</span><span class="p">,</span> <span class="n">didReceive</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"received </span><span class="se">\(</span><span class="n">dataTask</span><span class="o">.</span><span class="n">taskDescription</span> <span class="p">??</span> <span class="s">"?"</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">data</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> bytes"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didCompleteWithError</span> <span class="nv">error</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"completed </span><span class="se">\(</span><span class="n">task</span><span class="o">.</span><span class="n">taskDescription</span> <span class="p">??</span> <span class="s">"?"</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">error</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"ok"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">done</span> <span class="o">=</span> <span class="n">completedTasks</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">count</span> <span class="k">in</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="k">return</span> <span class="n">count</span> <span class="o">==</span> <span class="n">expectedTasks</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">done</span> <span class="p">{</span> <span class="n">finished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">();</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> bytes"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="nf">background</span><span class="p">(</span><span class="nv">withIdentifier</span><span class="p">:</span> <span class="s">"com.example.library.transfers"</span><span class="p">)</span>
+<span class="n">configuration</span><span class="o">.</span><span class="n">sessionSendsLaunchEvents</span> <span class="o">=</span> <span class="kc">true</span>
+<span class="k">let</span> <span class="nv">delegate</span> <span class="o">=</span> <span class="kt">BackgroundDelegate</span><span class="p">(</span><span class="nv">expecting</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">background</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">delegate</span><span class="p">,</span> <span class="nv">delegateQueue</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">uploadFile</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"upload-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">.bin"</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">)</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">uploadFile</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">uploadRequest</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"uploads"</span><span class="p">))</span>
+<span class="n">uploadRequest</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+
+<span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+    <span class="n">delegate</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">continuation</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">download</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="nf">downloadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"episodes/412"</span><span class="p">))</span>
+    <span class="n">download</span><span class="o">.</span><span class="n">taskDescription</span> <span class="o">=</span> <span class="s">"episode-412"</span>
+    <span class="n">download</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">upload</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="nf">uploadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">uploadRequest</span><span class="p">,</span> <span class="nv">fromFile</span><span class="p">:</span> <span class="n">uploadFile</span><span class="p">)</span>
+    <span class="n">upload</span><span class="o">.</span><span class="n">taskDescription</span> <span class="o">=</span> <span class="s">"photo-upload-7"</span>
+    <span class="n">upload</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="nf">dataTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"status"</span><span class="p">))</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">taskDescription</span> <span class="o">=</span> <span class="s">"status-check"</span>
+    <span class="n">data</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="n">delegate</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="n">events</span><span class="o">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">contains</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"downloaded episode-412"</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"com.apple.nsurlsessiond/Downloads"</span><span class="p">)</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"received photo-upload-7 24 bytes"</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">events</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"completed photo-upload-7 ok"</span><span class="p">))</span>  <span class="c1">// "POST /uploads 1000 bytes"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"completed status-check ok"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">contains</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s">"POST"</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1_000</span> <span class="p">})</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">uploadFile</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The download’s temporary file was in <code class="language-plaintext highlighter-rouge">~/Library/Caches/com.apple.nsurlsessiond/Downloads/&lt;process name&gt;/</code>, owned by the daemon. The upload from a file and the data task both completed while the process was running. Two other calls, which work on ordinary sessions, are not allowed. Each terminates the process with an Objective-C exception that Swift cannot catch, so they are shown here rather than run:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Each of these crashed the test process on macOS 26 with NSGenericException:</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">background</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+<span class="c1">// "Completion handler blocks are not supported in background sessions. Use a delegate instead."</span>
+
+<span class="n">background</span><span class="o">.</span><span class="nf">uploadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">))</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="c1">// "Upload tasks from NSData are not supported in background sessions."</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>On a background session</th>
+      <th>Allowed</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">downloadTask(with:)</code>, <code class="language-plaintext highlighter-rouge">downloadTask(withResumeData:)</code></td>
+      <td>Yes</td>
+      <td>Continue while the app is suspended or terminated</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">uploadTask(with:fromFile:)</code></td>
+      <td>Yes</td>
+      <td>The daemon reads the file; it must stay in place until the upload completes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">uploadTask(with:from: Data)</code>, stream bodies</td>
+      <td><strong>Crash</strong></td>
+      <td>The daemon cannot read the app’s memory</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dataTask(with:)</code></td>
+      <td>Only while the app runs</td>
+      <td>Not continued while the app is suspended</td>
+    </tr>
+    <tr>
+      <td>Any <code class="language-plaintext highlighter-rouge">async</code> method, or completion-handler task</td>
+      <td><strong>Crash</strong></td>
+      <td>Results are delivered only to the session delegate</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <code class="language-plaintext highlighter-rouge">async</code> restriction is the one most likely to surprise a Swift 6 codebase, where every other networking call is an <code class="language-plaintext highlighter-rouge">await</code>. The delegate is not optional plumbing here: it is the only channel through which results can reach a process that did not exist when the transfer started.</p>
+
+<h2 id="a-transfer-that-outlives-its-process">A transfer that outlives its process</h2>
+
+<p>The decisive property is that the transfer continues when the process that started it is gone. The tool below takes a mode argument. In <code class="language-plaintext highlighter-rouge">start</code> mode it begins a download of a 2 MB file, from a server that sends 50 KB every 250 ms, waits two seconds, and exits. In <code class="language-plaintext highlighter-rouge">resume</code> mode, run afterwards as a new process, it creates a session with the <strong>same identifier</strong>, lists the tasks the daemon still holds for it, and waits for their events:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// bgtool.swift — compile with: swiftc -swift-version 6 bgtool.swift -o bgtool</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Relaunched</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionDownloadDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">done</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didFinishDownloadingTo</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">size</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">attributesOfItem</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">path</span><span class="p">)[</span><span class="o">.</span><span class="n">size</span><span class="p">]</span> <span class="k">as?</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">??</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"finished"</span><span class="p">,</span> <span class="n">downloadTask</span><span class="o">.</span><span class="n">taskIdentifier</span><span class="p">,</span> <span class="n">downloadTask</span><span class="o">.</span><span class="n">taskDescription</span> <span class="p">??</span> <span class="s">"-"</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didCompleteWithError</span> <span class="nv">error</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?)</span> <span class="p">{</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"complete"</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">taskIdentifier</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"nil"</span><span class="p">)</span>
+        <span class="n">done</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">();</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="nf">background</span><span class="p">(</span><span class="nv">withIdentifier</span><span class="p">:</span> <span class="s">"com.example.library.relaunch"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">delegate</span> <span class="o">=</span> <span class="kt">Relaunched</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">session</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">delegate</span><span class="p">,</span> <span class="nv">delegateQueue</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="kt">CommandLine</span><span class="o">.</span><span class="n">arguments</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">"start"</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="nf">downloadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"http://127.0.0.1:8765/audiobook"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">taskDescription</span> <span class="o">=</span> <span class="s">"audiobook-42"</span>
+    <span class="n">task</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"start process exiting"</span><span class="p">)</span>
+    <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">allTasks</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"relaunch sees:"</span><span class="p">,</span> <span class="n">tasks</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">taskIdentifier</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">taskDescription</span> <span class="p">??</span> <span class="s">"-"</span><span class="se">)</span><span class="s"> received=</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">countOfBytesReceived</span><span class="se">)</span><span class="s">"</span> <span class="p">})</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span> <span class="n">delegate</span><span class="o">.</span><span class="n">done</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">continuation</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The server is a slow Python script on port 8765, so that it outlives both Swift processes. Running the two modes one after the other:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./bgtool start
+start process exiting
+$ ./bgtool resume
+relaunch sees: ["1 audiobook-42 received=650000"]
+finished 1 audiobook-42 2000000
+complete 1 nil
+</code></pre></div></div>
+
+<p>The first process exited after receiving about 400 KB. When the second one connected a second later, the daemon had kept downloading and held 650 KB; the task kept its identifier and its <code class="language-plaintext highlighter-rouge">taskDescription</code>. The second process then received the finished 2 MB file through its own delegate, and the server’s log showed a single request with no <code class="language-plaintext highlighter-rouge">Range</code> header: the transfer was never interrupted, only its owner was replaced.</p>
+
+<p>On iOS the same thing happens without anyone running the second process: the system launches the app in the background when the daemon has events for it.</p>
+
+<h2 id="the-app-side-on-ios">The app side on iOS</h2>
+
+<p>When a background session’s tasks finish while the app is not running, and the configuration’s <code class="language-plaintext highlighter-rouge">sessionSendsLaunchEvents</code> is <code class="language-plaintext highlighter-rouge">true</code> (the default), the system launches the app in the background and calls the app delegate with the session’s identifier and a completion handler. The app must recreate the session with that identifier, let the delegate process the events, and call the completion handler when they are done, which tells the system it may suspend the app again and update its snapshot. A SwiftUI app receives the same event through the <code class="language-plaintext highlighter-rouge">backgroundTask(.urlSession(_:))</code> scene modifier.</p>
+
+<p>The pieces, compiled against the iOS 26 SDK:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">SwiftUI</span>
+<span class="kd">import</span> <span class="kt">UIKit</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TransferService</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionDownloadDelegate</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="kt">TransferService</span><span class="p">()</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">identifier</span> <span class="o">=</span> <span class="s">"com.example.library.downloads"</span>
+
+    <span class="c1">// Set by the app delegate when the system relaunches the app for this session.</span>
+    <span class="kd">@MainActor</span> <span class="k">var</span> <span class="nv">pendingCompletionHandler</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="c1">// Created eagerly at launch, so events for tasks started in a previous process are delivered.</span>
+    <span class="kd">lazy</span> <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">configuration</span> <span class="o">=</span> <span class="kt">URLSessionConfiguration</span><span class="o">.</span><span class="nf">background</span><span class="p">(</span><span class="nv">withIdentifier</span><span class="p">:</span> <span class="k">Self</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">isDiscretionary</span> <span class="o">=</span> <span class="kc">false</span>            <span class="c1">// user-initiated: start as soon as possible</span>
+        <span class="n">configuration</span><span class="o">.</span><span class="n">sessionSendsLaunchEvents</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">return</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="n">configuration</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="k">self</span><span class="p">,</span> <span class="nv">delegateQueue</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}()</span>
+
+    <span class="kd">func</span> <span class="nf">download</span><span class="p">(</span><span class="nv">episode</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">from</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="nf">downloadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">taskDescription</span> <span class="o">=</span> <span class="s">"episode-</span><span class="se">\(</span><span class="n">episode</span><span class="se">)</span><span class="s">"</span>      <span class="c1">// the key back into the app's own records</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">countOfBytesClientExpectsToReceive</span> <span class="o">=</span> <span class="mi">600_000_000</span>
+        <span class="n">task</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didFinishDownloadingTo</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">episode</span> <span class="o">=</span> <span class="n">downloadTask</span><span class="o">.</span><span class="n">taskDescription</span><span class="p">,</span>
+              <span class="p">(</span><span class="n">downloadTask</span><span class="o">.</span><span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span><span class="p">)?</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="kt">URL</span><span class="o">.</span><span class="n">applicationSupportDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">episode</span><span class="se">)</span><span class="s">.mp3"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">moveItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>  <span class="c1">// before returning</span>
+        <span class="c1">// Record completion in the app's database, keyed by `episode`.</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didCompleteWithError</span> <span class="nv">error</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="o">=</span> <span class="n">error</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">,</span> <span class="k">let</span> <span class="nv">resumeData</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">downloadTaskResumeData</span> <span class="p">{</span>
+            <span class="c1">// Persist resumeData with the episode record, and retry later with downloadTask(withResumeData:).</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">resumeData</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSessionDidFinishEvents</span><span class="p">(</span><span class="n">forBackgroundURLSession</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+            <span class="nf">pendingCompletionHandler</span><span class="p">?()</span>
+            <span class="n">pendingCompletionHandler</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">AppDelegate</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">UIApplicationDelegate</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">application</span><span class="p">(</span><span class="n">_</span> <span class="nv">application</span><span class="p">:</span> <span class="kt">UIApplication</span><span class="p">,</span> <span class="n">didFinishLaunchingWithOptions</span> <span class="nv">launchOptions</span><span class="p">:</span> <span class="p">[</span><span class="kt">UIApplication</span><span class="o">.</span><span class="kt">LaunchOptionsKey</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="kt">TransferService</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="n">session</span>   <span class="c1">// reconnect to the daemon on every launch</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">application</span><span class="p">(</span><span class="n">_</span> <span class="nv">application</span><span class="p">:</span> <span class="kt">UIApplication</span><span class="p">,</span> <span class="n">handleEventsForBackgroundURLSession</span> <span class="nv">identifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+                     <span class="nv">completionHandler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">identifier</span> <span class="o">==</span> <span class="kt">TransferService</span><span class="o">.</span><span class="n">identifier</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">completionHandler</span><span class="p">()</span> <span class="p">}</span>
+        <span class="kt">TransferService</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="n">pendingCompletionHandler</span> <span class="o">=</span> <span class="n">completionHandler</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="kt">TransferService</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="n">session</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@main</span>
+<span class="kd">struct</span> <span class="kt">LibraryApp</span><span class="p">:</span> <span class="kt">App</span> <span class="p">{</span>
+    <span class="kd">@UIApplicationDelegateAdaptor</span><span class="p">(</span><span class="kt">AppDelegate</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="k">var</span> <span class="nv">appDelegate</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Scene</span> <span class="p">{</span>
+        <span class="kt">WindowGroup</span> <span class="p">{</span> <span class="kt">Text</span><span class="p">(</span><span class="s">"Library"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The rules embedded in that code, in the order they matter:</p>
+
+<ol>
+  <li><strong>Recreate the session at every launch</strong>, not only in the relaunch callback. A user who opens the app while transfers are pending needs the delegate connected, or the events wait.</li>
+  <li><strong>One session object per identifier per process.</strong> Creating a second session with an identifier that is already in use is an error that the system logs and that leaves the second session unable to receive events. A singleton owning the session is the simplest way to guarantee it.</li>
+  <li><strong>Map tasks back to app state through stable data.</strong> <code class="language-plaintext highlighter-rouge">taskDescription</code> survived the process change in the measurement above, and so did <code class="language-plaintext highlighter-rouge">taskIdentifier</code>, but the identifier is meaningful only within that session. A string such as <code class="language-plaintext highlighter-rouge">episode-412</code>, or a UUID stored in the app’s database, connects a delegate callback to the record it belongs to.</li>
+  <li><strong>Move the file before <code class="language-plaintext highlighter-rouge">didFinishDownloadingTo</code> returns</strong>, exactly as in <a href="/swift-download-progress-resume/">Download Progress, Resuming, and Temporary Files</a>. In a background relaunch, the app has only a short time to do so.</li>
+  <li><strong>Call the completion handler</strong> on the main thread after <code class="language-plaintext highlighter-rouge">urlSessionDidFinishEvents(forBackgroundURLSession:)</code>. Not calling it costs the app background execution time, and the system takes that into account the next time.</li>
+</ol>
+
+<h2 id="the-system-decides-when">The system decides when</h2>
+
+<p>Background transfers are scheduled by the system with the battery, the network, and the user’s habits in mind. The app influences that scheduling but does not control it:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">isDiscretionary = true</code></td>
+      <td>The system may wait for Wi-Fi and power. Transfers started while the app is in the background are treated as discretionary regardless.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">earliestBeginDate</code> on a task</td>
+      <td>The transfer will not start before this date, useful for scheduled prefetching.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">countOfBytesClientExpectsToSend</code> / <code class="language-plaintext highlighter-rouge">ToReceive</code></td>
+      <td>Size estimates the scheduler uses to pick a good moment.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">allowsExpensiveNetworkAccess</code>, <code class="language-plaintext highlighter-rouge">allowsConstrainedNetworkAccess</code></td>
+      <td>As for ordinary sessions; respect Low Data Mode for optional content.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">timeoutIntervalForResource</code></td>
+      <td>How long the system keeps trying; the default is one week.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two consequences shape the product. First, a background download is not a fast download: it is a <em>reliable</em> one. A user waiting for an episode to start playing should get an ordinary session, or <code class="language-plaintext highlighter-rouge">isDiscretionary = false</code> with the transfer started while the app is in the foreground. Second, the system throttles how often an app is relaunched for background session events, so an app that queues hundreds of small transfers, each producing its own completion event, will see them delayed. Batch small items into fewer, larger transfers.</p>
+
+<p>And one rule overrides everything: if the user force-quits the app from the app switcher, the system cancels its background transfers and does not relaunch it for them. The next time the app starts, those tasks complete with an error, which is another reason to keep resume data and the app’s own record of what was in progress.</p>
+
+<h2 id="testing-background-transfers">Testing background transfers</h2>
+
+<p>Background behavior is hard to exercise from unit tests, but each part can be checked:</p>
+
+<ul>
+  <li><strong>Delegate logic</strong> runs the same in an ordinary session. Test it with <code class="language-plaintext highlighter-rouge">LocalServer</code> or a <code class="language-plaintext highlighter-rouge">URLProtocol</code> stub (<a href="/swift-urlprotocol-fixtures/">Isolating HTTP Fixtures with <code class="language-plaintext highlighter-rouge">URLProtocol</code></a>); note that custom protocol classes are not supported in background sessions, so the stub must use an ordinary configuration.</li>
+  <li><strong>The process boundary</strong> can be tested on macOS exactly as the <code class="language-plaintext highlighter-rouge">bgtool</code> experiment does: start, exit, reattach.</li>
+  <li><strong>Relaunch on iOS</strong> is tested on a device: start a transfer, background the app, and stop it from Xcode’s debugger with “Debug › Detach”, or terminate it with a memory warning simulation rather than a force-quit, which would cancel the transfer. Xcode can then attach to the app when the system relaunches it.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Background sessions hand transfers to <code class="language-plaintext highlighter-rouge">nsurlsessiond</code>, which continues them while the app is suspended or terminated and relaunches the app with the results.</li>
+  <li>Measured on macOS 26: downloads, file uploads, and (while running) data tasks work; <code class="language-plaintext highlighter-rouge">async</code> methods and uploads from <code class="language-plaintext highlighter-rouge">Data</code> crash with uncatchable exceptions. Use a delegate and files.</li>
+  <li>Measured: a download continued after its process exited, and a new process with the same session identifier saw the task, its <code class="language-plaintext highlighter-rouge">taskDescription</code>, and 650 KB already received, then received the complete file.</li>
+  <li>On iOS, recreate the session at every launch, store the completion handler from <code class="language-plaintext highlighter-rouge">handleEventsForBackgroundURLSession</code>, and call it after <code class="language-plaintext highlighter-rouge">urlSessionDidFinishEvents</code>.</li>
+  <li>Map tasks to app records with <code class="language-plaintext highlighter-rouge">taskDescription</code>, move files before the delegate method returns, and keep resume data for failures.</li>
+  <li>The system schedules background transfers for reliability, not speed, throttles relaunches, and cancels everything on force-quit.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Extend <code class="language-plaintext highlighter-rouge">bgtool</code> with an <code class="language-plaintext highlighter-rouge">upload</code> mode that uploads a 5 MB file to the Python server, and a <code class="language-plaintext highlighter-rouge">status</code> mode that prints <code class="language-plaintext highlighter-rouge">countOfBytesSent</code> for every pending task. Start an upload, exit, run <code class="language-plaintext highlighter-rouge">status</code> twice a second apart, and confirm the counter advances while no process of yours is running. Then delete the source file while the upload is in progress and record what error the next process receives, and decide how an app should present that to a user who removed the photo they were uploading.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/downloading-files-in-the-background">Downloading files in the background</a> and <a href="https://developer.apple.com/documentation/uikit/uiapplicationdelegate/application(_:handleeventsforbackgroundurlsession:completionhandler:)"><code class="language-plaintext highlighter-rouge">application(_:handleEventsForBackgroundURLSession:completionHandler:)</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/707/">Advances in App Background Execution</a>, WWDC19, on how the system schedules background work, including background URL sessions.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10006/">Build robust and resumable file transfers</a>, WWDC23.</li>
+</ul>
+
+<p>Previous: <a href="/swift-download-progress-resume/">Download Progress, Resuming, and Temporary Files</a>. Next: <a href="/swift-websockets-reconnection/">WebSockets: Connection State and Reconnection</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-background-transfers/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Background+Transfers+and+App+Relaunch%20https%3A%2F%2Fswiftbydeya.com%2Fswift-background-transfers%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-background-transfers/&title=Background+Transfers+and+App+Relaunch%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-background-transfers/&title=Background+Transfers+and+App+Relaunch%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-background-transfers/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Background Transfers and App Relaunch%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-background-transfers/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Background">Background</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#URLSession">URLSession</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="WebSockets: Connection State and Reconnection" href="/swift-websockets-reconnection/"> <p>Previous post</p> WebSockets: Connection State and Reconnection </a> </div> <div id="next-post"> <a alt="Download Progress, Resuming, and Temporary Files" href="/swift-download-progress-resume/"> <p>Next post</p> Download Progress, Resuming, and Temporary Files </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

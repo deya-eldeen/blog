@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Task Groups in Swift: Fan-Out, Aggregation, and Early Exit | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="async let handles a fixed number of concurrent operations known when you write the code. A task group handles everything else: a number of children known only at run time, results consumed in the order they finish, a cap on how many run at once, and the ability to stop early once you have what you need. Task groups are structured. Their children cannot outlive the group, cancellation reaches all of them, and the group waits for every child before it returns. Within that structure, the group’s body decides almost everything else, including when errors surface and whether a failure stops the siblings, and the defaults are not always what people expect. This article builds the common shapes, fan-out, ordered aggregation, bounded concurrency, racing, and timeouts, and measures the error behaviors that matter." /> <meta property="og:description" content="async let handles a fixed number of concurrent operations known when you write the code. A task group handles everything else: a number of children known only at run time, results consumed in the order they finish, a cap on how many run at once, and the ability to stop early once you have what you need. Task groups are structured. Their children cannot outlive the group, cancellation reaches all of them, and the group waits for every child before it returns. Within that structure, the group’s body decides almost everything else, including when errors surface and whether a failure stops the siblings, and the defaults are not always what people expect. This article builds the common shapes, fan-out, ordered aggregation, bounded concurrency, racing, and timeouts, and measures the error behaviors that matter." /> <link rel="canonical" href="https://swiftbydeya.com/swift-task-groups/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-task-groups/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-23T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-23T00:00:00+03:00","datePublished":"2026-06-23T00:00:00+03:00","description":"async let handles a fixed number of concurrent operations known when you write the code. A task group handles everything else: a number of children known only at run time, results consumed in the order they finish, a cap on how many run at once, and the ability to stop early once you have what you need. Task groups are structured. Their children cannot outlive the group, cancellation reaches all of them, and the group waits for every child before it returns. Within that structure, the group’s body decides almost everything else, including when errors surface and whether a failure stops the siblings, and the defaults are not always what people expect. This article builds the common shapes, fan-out, ordered aggregation, bounded concurrency, racing, and timeouts, and measures the error behaviors that matter.","headline":"Task Groups in Swift: Fan-Out, Aggregation, and Early Exit","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-task-groups/"},"url":"https://swiftbydeya.com/swift-task-groups/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit"> <meta name="twitter:description" content="async let handles a fixed number of concurrent operations known when you write the code. A task group handles everything else: a number of children known onl..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Task Groups in Swift: Fan-Out, Aggregation, and Early Exit</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-23T00:00:00+03:00">June 23, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p><code class="language-plaintext highlighter-rouge">async let</code> handles a fixed number of concurrent operations known when you write the code. A task group handles everything else: a number of children known only at run time, results consumed in the order they finish, a cap on how many run at once, and the ability to stop early once you have what you need.</p>
+
+<p>Task groups are structured. Their children cannot outlive the group, cancellation reaches all of them, and the group waits for every child before it returns. Within that structure, the group’s body decides almost everything else, including when errors surface and whether a failure stops the siblings, and the defaults are not always what people expect. This article builds the common shapes, fan-out, ordered aggregation, bounded concurrency, racing, and timeouts, and measures the error behaviors that matter.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. Timings in the text come from that machine. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="the-four-group-types">The four group types</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>Children return</th>
+      <th>Child errors</th>
+      <th>Typical use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withTaskGroup</code></td>
+      <td>A value</td>
+      <td>Not allowed</td>
+      <td>Fan-out of non-throwing work</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withThrowingTaskGroup</code></td>
+      <td>A value</td>
+      <td>Surfaced when the body consumes that child</td>
+      <td>Fan-out that can fail</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withDiscardingTaskGroup</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Void</code>, discarded</td>
+      <td>Not allowed</td>
+      <td>Many side-effecting children, such as event handlers</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withThrowingDiscardingTaskGroup</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Void</code>, discarded</td>
+      <td>First error cancels the group and is rethrown</td>
+      <td>Long-running servers and listeners</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The discarding variants arrived in Swift 5.9 (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0381-task-group-discard-results.md">SE-0381</a>). Since Swift 6.1, the child result type can be inferred from the first <code class="language-plaintext highlighter-rouge">addTask</code> call (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0442-allow-taskgroup-childtaskresult-type-to-be-inferred.md">SE-0442</a>), so <code class="language-plaintext highlighter-rouge">of: Int.self</code> is optional.</p>
+
+<h2 id="fan-out-and-aggregation">Fan-out and aggregation</h2>
+
+<p>The examples load “photos” whose latency depends on the identifier, so completion order differs from request order:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">Photo</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">PhotoError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">corrupt</span><span class="p">(</span><span class="kt">Int</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// Latency is 25 ms times a value that cycles 2, 3, 4, 1, so identifier 4 finishes first.</span>
+<span class="kd">func</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">failing</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Photo</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">25</span> <span class="o">*</span> <span class="p">((</span><span class="n">id</span> <span class="o">%</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">failing</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PhotoError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">Photo</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">,</span> <span class="nv">bytes</span><span class="p">:</span> <span class="n">id</span> <span class="o">*</span> <span class="mi">1_000</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The basic shape adds one child per input and consumes results as they arrive:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">fetchAll</span><span class="p">(</span><span class="n">_</span> <span class="nv">ids</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">photos</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">Photo</span><span class="p">],</span> <span class="nv">completionOrder</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Photo</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">id</span> <span class="k">in</span> <span class="n">ids</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">photos</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">Photo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+        <span class="k">var</span> <span class="nv">completionOrder</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">photo</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+            <span class="n">photos</span><span class="p">[</span><span class="n">photo</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">photo</span>
+            <span class="n">completionOrder</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">photo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">photos</span><span class="p">,</span> <span class="n">completionOrder</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">fanOut</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchAll</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">fanOut</span><span class="o">.</span><span class="n">photos</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">fanOut</span><span class="o">.</span><span class="n">completionOrder</span> <span class="o">==</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s">"Results arrive in completion order, not request order"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The body is ordinary sequential code that runs in the <em>parent’s</em> isolation, not in any child. Mutating <code class="language-plaintext highlighter-rouge">photos</code> and <code class="language-plaintext highlighter-rouge">completionOrder</code> there needs no lock and no actor: the children only <em>return</em> values, and the body is the only code that combines them. Keep it that way. A child that writes into shared state instead of returning a value reintroduces exactly the coordination problem the group was meant to remove.</p>
+
+<h2 id="preserving-input-order">Preserving input order</h2>
+
+<p>When the output must line up with the input, such as rows in a table or pages in a document, return the index with each result and place it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">fetchInOrder</span><span class="p">(</span><span class="n">_</span> <span class="nv">ids</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Photo</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Photo</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">id</span><span class="p">)</span> <span class="k">in</span> <span class="n">ids</span><span class="o">.</span><span class="nf">enumerated</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">))</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">slots</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Photo</span><span class="p">?](</span><span class="nv">repeating</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">ids</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">for</span> <span class="k">try</span> <span class="nf">await</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">photo</span><span class="p">)</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+            <span class="n">slots</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">photo</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">slots</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">!</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ordered</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchInOrder</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ordered</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The force unwrap is justified: the loop only ends normally after every child has returned, and every child fills exactly one distinct slot. If the group throws, the function never reaches the <code class="language-plaintext highlighter-rouge">map</code>.</p>
+
+<h2 id="bounded-concurrency-with-a-sliding-window">Bounded concurrency with a sliding window</h2>
+
+<p>Adding one child per input is fine for four photos. For four thousand, it starts four thousand network requests at once, which defeats HTTP connection limits, server rate limits, and memory budgets. Cap the number of children in flight, and add a new child whenever one finishes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Records the peak number of children running at once.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ConcurrencyGauge</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">counts</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">((</span><span class="nv">current</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">peak</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="kd">func</span> <span class="nf">enter</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">counts</span> <span class="k">in</span>
+            <span class="n">counts</span><span class="o">.</span><span class="n">current</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">counts</span><span class="o">.</span><span class="n">peak</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">peak</span><span class="p">,</span> <span class="n">counts</span><span class="o">.</span><span class="n">current</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">leave</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">current</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">peak</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">peak</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">fetchBounded</span><span class="p">(</span><span class="n">_</span> <span class="nv">ids</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="nv">maxConcurrent</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">gauge</span><span class="p">:</span> <span class="kt">ConcurrencyGauge</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Photo</span><span class="p">]</span> <span class="p">{</span>
+    <span class="nf">precondition</span><span class="p">(</span><span class="n">maxConcurrent</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Photo</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">slots</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Photo</span><span class="p">?](</span><span class="nv">repeating</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">ids</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">nextIndex</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="kd">func</span> <span class="nf">addNext</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">nextIndex</span> <span class="o">&lt;</span> <span class="n">ids</span><span class="o">.</span><span class="n">count</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="n">nextIndex</span>
+            <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">nextIndex</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="n">gauge</span><span class="o">.</span><span class="nf">enter</span><span class="p">()</span>
+                <span class="k">defer</span> <span class="p">{</span> <span class="n">gauge</span><span class="o">.</span><span class="nf">leave</span><span class="p">()</span> <span class="p">}</span>
+                <span class="nf">return</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">))</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">maxConcurrent</span><span class="p">,</span> <span class="n">ids</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nf">addNext</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="k">let</span> <span class="p">(</span><span class="nv">index</span><span class="p">,</span> <span class="nv">photo</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">slots</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">photo</span>
+            <span class="nf">addNext</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">slots</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">!</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">gauge</span> <span class="o">=</span> <span class="kt">ConcurrencyGauge</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">bounded</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchBounded</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">24</span><span class="p">),</span> <span class="nv">maxConcurrent</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">gauge</span><span class="p">:</span> <span class="n">gauge</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bounded</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">24</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">gauge</span><span class="o">.</span><span class="n">peak</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s">"Never more than three requests in flight"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The window starts <code class="language-plaintext highlighter-rouge">maxConcurrent</code> children, then adds exactly one for each result it consumes, so the number in flight never exceeds the limit. The <code class="language-plaintext highlighter-rouge">addNext</code> helper captures <code class="language-plaintext highlighter-rouge">group</code>, which is allowed because it is a local function used only inside the body. The group itself can never escape the body.</p>
+
+<h3 id="why-a-sliding-window-beats-batching">Why a sliding window beats batching</h3>
+
+<p>A tempting alternative is to process items in batches of \(k\): start \(k\), wait for all of them, start the next \(k\). Each batch takes as long as its slowest member, so a single slow item stalls \(k - 1\) idle slots:</p>
+
+\[T_{\text{batches}} = \sum_{b} \max_{i \in b} t_i, \qquad T_{\text{window}} \le \frac{1}{k}\sum_i t_i + \max_i t_i .\]
+
+<p>The window bound is Graham’s classic result for greedy list scheduling: the window is never idle while work remains, so it finishes within one longest task of the perfect division of work. With eight items whose durations are 100, 10, 10, 10, 100, 10, 10, 10 ms and \(k = 4\), batching takes 200 ms; the window takes about 110 ms.</p>
+
+<pre><code class="language-mermaid">gantt
+    accTitle: Batching waits for each batch's slowest item while a sliding window keeps every slot busy
+    dateFormat x
+    axisFormat %L ms
+    section Batches of four
+    Item 0, 100 ms   :b0, 0, 100
+    Items 1 to 3     :b1, 0, 10
+    Idle until batch ends :crit, b1i, 10, 100
+    Item 4, 100 ms   :b4, 100, 200
+    Items 5 to 7     :b5, 100, 110
+    Idle until batch ends :crit, b5i, 110, 200
+    section Sliding window of four
+    Item 0, 100 ms   :w0, 0, 100
+    Items 1 to 3     :w1, 0, 10
+    Item 4, 100 ms   :w4, 10, 110
+    Items 5 and 6    :w5, 10, 20
+    Item 7           :w7, 20, 30
+</code></pre>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">simulatedWork</span><span class="p">(</span><span class="n">_</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">duration</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">durations</span><span class="p">:</span> <span class="p">[</span><span class="kt">Duration</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">runBatched</span><span class="p">(</span><span class="n">_</span> <span class="nv">durations</span><span class="p">:</span> <span class="p">[</span><span class="kt">Duration</span><span class="p">],</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="k">in</span> <span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">durations</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="n">batchSize</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">batch</span> <span class="o">=</span> <span class="n">durations</span><span class="p">[</span><span class="n">start</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">batchSize</span><span class="p">,</span> <span class="n">durations</span><span class="o">.</span><span class="n">count</span><span class="p">)]</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+            <span class="k">for</span> <span class="n">duration</span> <span class="k">in</span> <span class="n">batch</span> <span class="p">{</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">simulatedWork</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">waitForAll</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">runWindowed</span><span class="p">(</span><span class="n">_</span> <span class="nv">durations</span><span class="p">:</span> <span class="p">[</span><span class="kt">Duration</span><span class="p">],</span> <span class="nv">window</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">iterator</span> <span class="o">=</span> <span class="n">durations</span><span class="o">.</span><span class="nf">makeIterator</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">window</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">duration</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">simulatedWork</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">duration</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="p">{</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">simulatedWork</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">batchStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">try</span> <span class="k">await</span> <span class="nf">runBatched</span><span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">batchedTime</span> <span class="o">=</span> <span class="n">batchStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">windowStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">try</span> <span class="k">await</span> <span class="nf">runWindowed</span><span class="p">(</span><span class="n">durations</span><span class="p">,</span> <span class="nv">window</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">windowedTime</span> <span class="o">=</span> <span class="n">windowStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">batchedTime</span> <span class="o">&gt;=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">windowedTime</span> <span class="o">&lt;</span> <span class="n">batchedTime</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"batched:"</span><span class="p">,</span> <span class="n">batchedTime</span><span class="p">,</span> <span class="s">"windowed:"</span><span class="p">,</span> <span class="n">windowedTime</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Measured: about 0.22 seconds batched and 0.12 seconds windowed, each including a few milliseconds of scheduling overhead over the ideal 200 and 110 ms. To choose \(k\), use Little’s law from the <a href="/swift-concurrency-vs-parallelism/">concurrency vs. parallelism article</a>: sustaining throughput \(\lambda\) with per-item latency \(W\) needs about \(k = \lambda W\) in flight.</p>
+
+<h2 id="early-exit-the-first-good-answer-wins">Early exit: the first good answer wins</h2>
+
+<p>Some problems need only one result: the fastest mirror, the first cache tier that has the key, the first of several equivalent servers to respond. Start all candidates, take the first success, and cancel the rest:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Mirror</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">latency</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="k">let</span> <span class="nv">fails</span><span class="p">:</span> <span class="kt">Bool</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">MirrorError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">unavailable</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">noMirrorSucceeded</span>
+<span class="p">}</span>
+
+<span class="c1">/// A thread-safe list of names. `Mutex` is noncopyable, so share it through a class.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">NameLog</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">names</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">all</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">download</span><span class="p">(</span><span class="n">from</span> <span class="nv">mirror</span><span class="p">:</span> <span class="kt">Mirror</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="kt">NameLog</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">mirror</span><span class="o">.</span><span class="n">latency</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="n">cancelled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">mirror</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">throw</span> <span class="n">error</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">mirror</span><span class="o">.</span><span class="n">fails</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">MirrorError</span><span class="o">.</span><span class="nf">unavailable</span><span class="p">(</span><span class="n">mirror</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="s">"payload from </span><span class="se">\(</span><span class="n">mirror</span><span class="o">.</span><span class="n">name</span><span class="se">)</span><span class="s">"</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">fastestSuccess</span><span class="p">(</span><span class="n">from</span> <span class="nv">mirrors</span><span class="p">:</span> <span class="p">[</span><span class="kt">Mirror</span><span class="p">],</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="kt">NameLog</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">mirror</span> <span class="k">in</span> <span class="n">mirrors</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="c1">// Convert a mirror's failure into nil so one bad mirror does not end the race.</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">mirror</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="n">cancelled</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="n">result</span> <span class="p">{</span>
+                <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">payload</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">throw</span> <span class="kt">MirrorError</span><span class="o">.</span><span class="n">noMirrorSucceeded</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cancelledMirrors</span> <span class="o">=</span> <span class="kt">NameLog</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">mirrors</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="kt">Mirror</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"eu"</span><span class="p">,</span> <span class="nv">latency</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">),</span> <span class="nv">fails</span><span class="p">:</span> <span class="kc">false</span><span class="p">),</span>
+    <span class="kt">Mirror</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"us"</span><span class="p">,</span> <span class="nv">latency</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="nv">fails</span><span class="p">:</span> <span class="kc">true</span><span class="p">),</span>
+    <span class="kt">Mirror</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"ap"</span><span class="p">,</span> <span class="nv">latency</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="nv">fails</span><span class="p">:</span> <span class="kc">false</span><span class="p">),</span>
+    <span class="kt">Mirror</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"sa"</span><span class="p">,</span> <span class="nv">latency</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">),</span> <span class="nv">fails</span><span class="p">:</span> <span class="kc">false</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="k">let</span> <span class="nv">raceStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fastestSuccess</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">mirrors</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="n">cancelledMirrors</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">raceTime</span> <span class="o">=</span> <span class="n">raceStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">payload</span> <span class="o">==</span> <span class="s">"payload from ap"</span><span class="p">,</span> <span class="s">"The fastest mirror failed, so the next fastest wins"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">cancelledMirrors</span><span class="o">.</span><span class="n">all</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"eu"</span><span class="p">,</span> <span class="s">"sa"</span><span class="p">],</span> <span class="s">"The slower mirrors were cancelled"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">raceTime</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">us</code> answered first but failed, so the loop kept waiting. <code class="language-plaintext highlighter-rouge">ap</code> succeeded at about 30 ms. <code class="language-plaintext highlighter-rouge">cancelAll()</code> then cancelled <code class="language-plaintext highlighter-rouge">eu</code> and <code class="language-plaintext highlighter-rouge">sa</code>, and returning from the body waited for them to acknowledge, which they did immediately because <code class="language-plaintext highlighter-rouge">Task.sleep</code> responds to cancellation. The whole race took about 30 ms instead of the 500 ms the slowest mirror would have needed.</p>
+
+<p>The explicit <code class="language-plaintext highlighter-rouge">cancelAll()</code> matters for clarity more than for correctness. Returning from the body would cancel remaining children anyway, but only <em>after</em> the group has waited for them to stop. Calling <code class="language-plaintext highlighter-rouge">cancelAll()</code> states the intent where it happens.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: The first successful mirror wins and the group cancels the remaining mirrors
+    participant Body as Group body
+    participant US as us mirror
+    participant AP as ap mirror
+    participant EU as eu mirror
+    participant SA as sa mirror
+    US--&gt;&gt;Body: nil at 10 ms, failure ignored
+    AP--&gt;&gt;Body: payload at 30 ms
+    Body-&gt;&gt;EU: cancelAll
+    Body-&gt;&gt;SA: cancelAll
+    EU--&gt;&gt;Body: CancellationError
+    SA--&gt;&gt;Body: CancellationError
+    Body--&gt;&gt;Body: return payload
+</code></pre>
+
+<h2 id="timeouts-as-a-race">Timeouts as a race</h2>
+
+<p>A timeout is a race between the operation and a clock. A standard <code class="language-plaintext highlighter-rouge">withDeadline</code> function has been accepted for a future release (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0526-deadline.md">SE-0526</a>), but it is not part of the Swift 6.4 toolchain used here. Until it ships, a throwing group expresses a timeout directly:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TimeoutError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="kd">func</span> <span class="n">withTimeout</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">_</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span>
+    <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span>
+<span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">T</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">operation</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">limit</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="kt">TimeoutError</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span><span class="o">!</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">quick</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withTimeout</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">quick</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withTimeout</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span> <span class="p">}</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A 100 ms fetch cannot finish within 20 ms"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">TimeoutError</span> <span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Whichever child finishes first, successfully or by throwing, decides the outcome; the <code class="language-plaintext highlighter-rouge">defer</code> cancels the other. The force unwrap is safe because the group has two children, so the first <code class="language-plaintext highlighter-rouge">next()</code> cannot return <code class="language-plaintext highlighter-rouge">nil</code>.</p>
+
+<p>This helper inherits the structured guarantee, and its limitation: <strong>a timeout can only be as prompt as the operation’s response to cancellation.</strong> If <code class="language-plaintext highlighter-rouge">operation</code> ignores cancellation, the timeout child throws on time, but the group must still wait for the operation to finish before <code class="language-plaintext highlighter-rouge">withTimeout</code> can return. Timeouts in Swift are cooperative for the same reason cancellation is.</p>
+
+<h2 id="when-errors-actually-surface">When errors actually surface</h2>
+
+<p>Error behavior in throwing groups depends entirely on how the body consumes children. Three facts, each verified on the test toolchain, are worth knowing precisely.</p>
+
+<p><strong>Errors reach the caller only through the body.</strong> <code class="language-plaintext highlighter-rouge">withThrowingTaskGroup</code> is declared <code class="language-plaintext highlighter-rouge">rethrows</code>: it can throw only what its body throws. A body that never consumes a failed child returns normally, and the child’s error is discarded.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">ignoredFailure</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PhotoError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">7</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ignoredFailure</span> <span class="o">==</span> <span class="mi">7</span><span class="p">,</span> <span class="s">"The child's error was never consumed, so it vanished"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The compiler even agrees that this call cannot throw: no <code class="language-plaintext highlighter-rouge">try</code> is needed, because the body does not throw.</p>
+
+<p><strong><code class="language-plaintext highlighter-rouge">next()</code> and <code class="language-plaintext highlighter-rouge">for try await</code> fail fast; <code class="language-plaintext highlighter-rouge">waitForAll()</code> does not.</strong> Consuming with <code class="language-plaintext highlighter-rouge">next()</code> rethrows a child’s error as soon as that child is consumed, and leaving the body then cancels the rest. <code class="language-plaintext highlighter-rouge">waitForAll()</code> on a throwing group waits for <em>every</em> child to finish, then rethrows the first error. In the <a href="/swift-structured-concurrency/">structured concurrency article</a>, the same failing group took 0.03 seconds with <code class="language-plaintext highlighter-rouge">for try await</code> and 1.04 seconds with <code class="language-plaintext highlighter-rouge">waitForAll()</code>.</p>
+
+<p><strong>Discarding groups fail fast by design.</strong> In a throwing discarding group, the first child error cancels the group immediately and is rethrown once the other children finish:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">discardStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withThrowingDiscardingTaskGroup</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+            <span class="k">throw</span> <span class="kt">PhotoError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The discarding group must rethrow the child's error"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">PhotoError</span><span class="o">.</span><span class="nf">corrupt</span><span class="p">(</span><span class="k">let</span> <span class="nv">id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">id</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">discardStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Measured: 0.02 seconds, with the two-second sibling cancelled. That makes discarding groups the right shape for long-running supervisors, such as one child per accepted connection or per observed event stream, where any failure should bring the whole unit down.</p>
+
+<p>Discarding groups also solve a resource problem. A regular group keeps each completed child’s result until the body consumes it. A loop that adds children forever and never calls <code class="language-plaintext highlighter-rouge">next()</code>, for example a server accepting connections, accumulates completed children without bound. A discarding group releases each child as soon as it finishes.</p>
+
+<h2 id="partial-failure-as-data">Partial failure as data</h2>
+
+<p>When failures should be collected rather than fatal, as in a batch import that reports which files failed, make each child return a <code class="language-plaintext highlighter-rouge">Result</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">importAll</span><span class="p">(</span><span class="n">_</span> <span class="nv">ids</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="nv">failing</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">imported</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">],</span> <span class="nv">failed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Photo</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">id</span> <span class="k">in</span> <span class="n">ids</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">do</span> <span class="p">{</span>
+                    <span class="nf">return</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="nf">fetchPhoto</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">,</span> <span class="nv">failing</span><span class="p">:</span> <span class="n">failing</span><span class="p">)))</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                    <span class="nf">return</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">imported</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">var</span> <span class="nv">failed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="nf">await</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">success</span><span class="p">:</span> <span class="n">imported</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">failure</span><span class="p">:</span> <span class="n">failed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">imported</span><span class="o">.</span><span class="nf">sorted</span><span class="p">(),</span> <span class="n">failed</span><span class="o">.</span><span class="nf">sorted</span><span class="p">())</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">report</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">importAll</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">8</span><span class="p">),</span> <span class="nv">failing</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">imported</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">failed</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The group type is now non-throwing, which documents the policy: no child can end the import early. As with <code class="language-plaintext highlighter-rouge">async let</code>, decide what cancellation should mean. Here a cancelled parent produces a report in which every unfinished photo appears as failed, which may or may not be what a caller expects.</p>
+
+<h2 id="not-adding-work-after-cancellation">Not adding work after cancellation</h2>
+
+<p>A group whose parent has been cancelled will still accept new children; they simply start in a cancelled state. Long-running loops that add children should stop adding:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">afterCancellation</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Bool</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">accepted</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">addTaskUnlessCancelled</span> <span class="p">{</span> <span class="kc">true</span> <span class="p">}</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">startedCancelled</span><span class="p">:</span> <span class="p">[</span><span class="kt">Bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+        <span class="n">startedCancelled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">accepted</span><span class="p">,</span> <span class="n">startedCancelled</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterCancellation</span><span class="o">.</span><span class="mi">0</span> <span class="o">==</span> <span class="kc">false</span><span class="p">,</span> <span class="s">"addTaskUnlessCancelled refuses to add to a cancelled group"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterCancellation</span><span class="o">.</span><span class="mi">1</span> <span class="o">==</span> <span class="p">[</span><span class="kc">true</span><span class="p">],</span> <span class="s">"addTask still adds a child, which starts already cancelled"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">addTaskUnlessCancelled</code> returns <code class="language-plaintext highlighter-rouge">false</code> and adds nothing. In a sliding window or a producer loop, use it and stop the loop when it fails, rather than starting work that will immediately be cancelled.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Task groups handle dynamic fan-out with structured lifetimes; the body runs in the parent’s isolation and is the only place results should be combined.</li>
+  <li>Results arrive in completion order. Return an index to preserve input order.</li>
+  <li>Bound concurrency with a sliding window: it stays within one longest task of the ideal, while batches pay for each batch’s slowest member.</li>
+  <li>For races and timeouts, take the first result and <code class="language-plaintext highlighter-rouge">cancelAll()</code>. Promptness depends on how quickly the losers respond to cancellation.</li>
+  <li><code class="language-plaintext highlighter-rouge">withThrowingTaskGroup</code> rethrows only what the body throws. Unconsumed child errors vanish; <code class="language-plaintext highlighter-rouge">waitForAll()</code> waits for every child before rethrowing; <code class="language-plaintext highlighter-rouge">next()</code> fails fast.</li>
+  <li>Throwing discarding groups fail fast and release finished children, which suits supervisors and servers.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">Result</code> children to make partial failure explicit, and <code class="language-plaintext highlighter-rouge">addTaskUnlessCancelled</code> to stop adding work after cancellation.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">func crawl(from root: URL, maxConcurrent: Int, maxPages: Int) async throws -&gt; Set&lt;URL&gt;</code> against a simulated link graph, where each fetched page returns new links to visit. The work list grows while the group runs, so the sliding window must add children discovered by earlier children, deduplicate URLs in the body, stop adding once <code class="language-plaintext highlighter-rouge">maxPages</code> is reached, and still return only after every in-flight child finishes. Verify the concurrency bound with <code class="language-plaintext highlighter-rouge">ConcurrencyGauge</code> and the page limit with a graph that has more reachable pages than the limit.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>, section “Task groups.”</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0381-task-group-discard-results.md">SE-0381: DiscardingTaskGroups</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0442-allow-taskgroup-childtaskresult-type-to-be-inferred.md">SE-0442: Allow TaskGroup’s ChildTaskResult type to be inferred</a>.</li>
+  <li><a href="/swift-parallel-mapreduce/">Parallel Algorithms and MapReduce in Swift</a>, which applies the sliding window to CPU-bound partitions.</li>
+</ul>
+
+<p>Previous: <a href="/swift-task-lifetime-ownership/">Creating Tasks and Choosing Their Lifetime Owner</a>. Next: <a href="/swift-cooperative-cancellation/">Cooperative Cancellation and Cancellation Checks</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-task-groups/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Task+Groups+in+Swift%3A+Fan-Out%2C+Aggregation%2C+and+Early+Exit%20https%3A%2F%2Fswiftbydeya.com%2Fswift-task-groups%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-task-groups/&title=Task+Groups+in+Swift%3A+Fan-Out%2C+Aggregation%2C+and+Early+Exit%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-task-groups/&title=Task+Groups+in+Swift%3A+Fan-Out%2C+Aggregation%2C+and+Early+Exit%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-task-groups/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Task Groups in Swift: Fan-Out, Aggregation, and Early Exit%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-task-groups/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Structured+Concurrency">Structured Concurrency</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Task+Groups">Task Groups</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Cooperative Cancellation and Cancellation Checks in Swift" href="/swift-cooperative-cancellation/"> <p>Previous post</p> Cooperative Cancellation and Cancellation Checks in Swift </a> </div> <div id="next-post"> <a alt="Creating Tasks and Choosing Their Lifetime Owner in Swift" href="/swift-task-lifetime-ownership/"> <p>Next post</p> Creating Tasks and Choosing Their Lifetime Owner in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

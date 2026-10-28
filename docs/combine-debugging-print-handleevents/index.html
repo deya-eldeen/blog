@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Debugging Pipelines with print and handleEvents | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Debugging Pipelines with print and handleEvents" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A Combine pipeline is hard to step through. The operators are generic structs inside a system framework, the work happens in subscriptions you never see, and the interesting events, a subscription that was cancelled, a demand that never arrived, a completion that came too early, leave no trace in your own code. Breakpoints in a sink closure tell you only that a value did arrive. When it does not, you need to see the signals themselves. Combine has three operators for that. print(_:to:) logs every signal that passes through it, including the subscription, each request for demand, and cancellation. handleEvents runs your closures on the same signals, so you can log, count, or assert on them. breakpoint and breakpointOnError stop in the debugger when a condition is met. This article reads print’s output in detail, uses it to diagnose the five common reasons a sink never fires, builds a logging operator on os.Logger that keeps values private, and covers reading the Swift 6 isolation crash that the rest of this series keeps running into." /> <meta property="og:description" content="A Combine pipeline is hard to step through. The operators are generic structs inside a system framework, the work happens in subscriptions you never see, and the interesting events, a subscription that was cancelled, a demand that never arrived, a completion that came too early, leave no trace in your own code. Breakpoints in a sink closure tell you only that a value did arrive. When it does not, you need to see the signals themselves. Combine has three operators for that. print(_:to:) logs every signal that passes through it, including the subscription, each request for demand, and cancellation. handleEvents runs your closures on the same signals, so you can log, count, or assert on them. breakpoint and breakpointOnError stop in the debugger when a condition is met. This article reads print’s output in detail, uses it to diagnose the five common reasons a sink never fires, builds a logging operator on os.Logger that keeps values private, and covers reading the Swift 6 isolation crash that the rest of this series keeps running into." /> <link rel="canonical" href="https://swiftbydeya.com/combine-debugging-print-handleevents/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-debugging-print-handleevents/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-10T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Debugging Pipelines with print and handleEvents" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-10T00:00:00+03:00","datePublished":"2026-08-10T00:00:00+03:00","description":"A Combine pipeline is hard to step through. The operators are generic structs inside a system framework, the work happens in subscriptions you never see, and the interesting events, a subscription that was cancelled, a demand that never arrived, a completion that came too early, leave no trace in your own code. Breakpoints in a sink closure tell you only that a value did arrive. When it does not, you need to see the signals themselves. Combine has three operators for that. print(_:to:) logs every signal that passes through it, including the subscription, each request for demand, and cancellation. handleEvents runs your closures on the same signals, so you can log, count, or assert on them. breakpoint and breakpointOnError stop in the debugger when a condition is met. This article reads print’s output in detail, uses it to diagnose the five common reasons a sink never fires, builds a logging operator on os.Logger that keeps values private, and covers reading the Swift 6 isolation crash that the rest of this series keeps running into.","headline":"Debugging Pipelines with print and handleEvents","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-debugging-print-handleevents/"},"url":"https://swiftbydeya.com/combine-debugging-print-handleevents/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Debugging Pipelines with print and handleEvents"> <meta name="twitter:description" content="A Combine pipeline is hard to step through. The operators are generic structs inside a system framework, the work happens in subscriptions you never see, and..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Debugging Pipelines with print and handleEvents"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Debugging Pipelines with print and handleEvents</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-10T00:00:00+03:00">August 10, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A Combine pipeline is hard to step through. The operators are generic structs inside a system framework, the work happens in subscriptions you never see, and the interesting events, a subscription that was cancelled, a demand that never arrived, a completion that came too early, leave no trace in your own code. Breakpoints in a <code class="language-plaintext highlighter-rouge">sink</code> closure tell you only that a value did arrive. When it does not, you need to see the signals themselves.</p>
+
+<p>Combine has three operators for that. <code class="language-plaintext highlighter-rouge">print(_:to:)</code> logs every signal that passes through it, including the subscription, each request for demand, and cancellation. <code class="language-plaintext highlighter-rouge">handleEvents</code> runs your closures on the same signals, so you can log, count, or assert on them. <code class="language-plaintext highlighter-rouge">breakpoint</code> and <code class="language-plaintext highlighter-rouge">breakpointOnError</code> stop in the debugger when a condition is met. This article reads <code class="language-plaintext highlighter-rouge">print</code>’s output in detail, uses it to diagnose the five common reasons a <code class="language-plaintext highlighter-rouge">sink</code> never fires, builds a logging operator on <code class="language-plaintext highlighter-rouge">os.Logger</code> that keeps values private, and covers reading the Swift 6 isolation crash that the rest of this series keeps running into.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<h2 id="reading-print">Reading <code class="language-plaintext highlighter-rouge">print</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">print(_:to:)</code> logs each signal with an optional prefix. By default it writes to standard output; passing a <code class="language-plaintext highlighter-rouge">TextOutputStream</code> captures it, which is what the examples here do so they can assert on the log:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SignalTranscript</span><span class="p">:</span> <span class="kt">TextOutputStream</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">string</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="n">string</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">String</span><span class="o">.</span><span class="kd">init</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">UploadError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">rejected</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">uploads</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">UploadError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">uploadTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">uploadHandle</span><span class="p">:</span> <span class="kt">AnyCancellable</span><span class="p">?</span> <span class="o">=</span> <span class="n">uploads</span>
+    <span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"upload"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">uploadTranscript</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span> <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span>
+<span class="n">uploads</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">uploadHandle</span> <span class="o">=</span> <span class="kc">nil</span>                               <span class="c1">// release the subscription</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">uploadTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"upload: receive subscription: (PassthroughSubject)"</span><span class="p">,</span>
+    <span class="s">"upload: request unlimited"</span><span class="p">,</span>
+    <span class="s">"upload: receive value: (1)"</span><span class="p">,</span>
+    <span class="s">"upload: receive cancel"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>Each line names one signal, and the vocabulary is small:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Line</th>
+      <th>Signal</th>
+      <th>Direction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">receive subscription: (X)</code></td>
+      <td>the upstream handed over subscription <code class="language-plaintext highlighter-rouge">X</code></td>
+      <td>downstream</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">request unlimited</code>, <code class="language-plaintext highlighter-rouge">request max: (n)</code></td>
+      <td>the downstream asked for more values</td>
+      <td>upstream</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">request max: (n) (synchronous)</code></td>
+      <td>demand returned from <code class="language-plaintext highlighter-rouge">receive(_:)</code> rather than requested</td>
+      <td>upstream</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">receive value: (v)</code></td>
+      <td>a value</td>
+      <td>downstream</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">receive finished</code>, <code class="language-plaintext highlighter-rouge">receive error: (e)</code></td>
+      <td>the completion</td>
+      <td>downstream</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">receive cancel</code></td>
+      <td>the downstream cancelled</td>
+      <td>upstream</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A failure shows the error, and a subscriber that requests in small amounts shows each request. Placing <code class="language-plaintext highlighter-rouge">print</code> at more than one point shows how operators transform demand: here a <code class="language-plaintext highlighter-rouge">filter</code> asks the source for one more value, marked <code class="language-plaintext highlighter-rouge">(synchronous)</code>, each time it drops one, and <code class="language-plaintext highlighter-rouge">prefix</code> cancels the source once it has what it needs, so the source never sees a completion:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">stagesTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">stagesHandle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"source"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">stagesTranscript</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">isMultiple</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"filtered"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">stagesTranscript</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">stagesTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"source: receive subscription: (1...6)"</span><span class="p">,</span>
+    <span class="s">"filtered: receive subscription: (Print)"</span><span class="p">,</span>
+    <span class="s">"filtered: request unlimited"</span><span class="p">,</span>
+    <span class="s">"source: request unlimited"</span><span class="p">,</span>
+    <span class="s">"source: receive value: (1)"</span><span class="p">,</span>
+    <span class="s">"source: request max: (1) (synchronous)"</span><span class="p">,</span>
+    <span class="s">"source: receive value: (2)"</span><span class="p">,</span>
+    <span class="s">"filtered: receive value: (2)"</span><span class="p">,</span>
+    <span class="s">"source: receive value: (3)"</span><span class="p">,</span>
+    <span class="s">"source: request max: (1) (synchronous)"</span><span class="p">,</span>
+    <span class="s">"source: receive value: (4)"</span><span class="p">,</span>
+    <span class="s">"filtered: receive value: (4)"</span><span class="p">,</span>
+    <span class="s">"filtered: receive cancel"</span><span class="p">,</span>
+    <span class="s">"source: receive cancel"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>Two details in that log are easy to misread. The subscription lines appear in upstream order, source first, because subscriptions are handed down from the top. And the <code class="language-plaintext highlighter-rouge">(synchronous)</code> requests are the <code class="language-plaintext highlighter-rouge">filter</code> returning extra demand from <code class="language-plaintext highlighter-rouge">receive(_:)</code>, the accounting <a href="/combine-filter-removeduplicates-compactmap/">Filtering</a> describes, not a separate call. With <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers:)</code>, the same technique shows the limit at work:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">flatMapTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">flatMapHandle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"outer"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">flatMapTranscript</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">flatMap</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span> <span class="kt">Just</span><span class="p">(</span><span class="nv">$0</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">flatMapTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"outer: receive subscription: (1...3)"</span><span class="p">,</span>
+    <span class="s">"outer: request max: (1)"</span><span class="p">,</span>
+    <span class="s">"outer: receive value: (1)"</span><span class="p">,</span>
+    <span class="s">"outer: request max: (1)"</span><span class="p">,</span>
+    <span class="s">"outer: receive value: (2)"</span><span class="p">,</span>
+    <span class="s">"outer: request max: (1)"</span><span class="p">,</span>
+    <span class="s">"outer: receive value: (3)"</span><span class="p">,</span>
+    <span class="s">"outer: request max: (1)"</span><span class="p">,</span>
+    <span class="s">"outer: receive finished"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>One request per value, each sent after the previous inner publisher finished: the concurrency limit is visible as demand.</p>
+
+<p><code class="language-plaintext highlighter-rouge">print</code> writes values with <code class="language-plaintext highlighter-rouge">String(describing:)</code>, to standard output, in every build configuration. A pipeline that carries tokens, emails, or message bodies writes them to the device console in release builds if a <code class="language-plaintext highlighter-rouge">print</code> is left in. Treat it like a breakpoint: add it while debugging and remove it before committing, or use the logging operator below.</p>
+
+<h2 id="why-a-sink-never-fires">Why a <code class="language-plaintext highlighter-rouge">sink</code> never fires</h2>
+
+<p>When a subscriber receives nothing, a <code class="language-plaintext highlighter-rouge">print</code> directly above it narrows the cause to one of five patterns, each with a distinctive log.</p>
+
+<p><strong>The subscription was cancelled at once</strong>, because nothing stored the cancellable. The log shows a subscription and a request immediately followed by a cancel:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">discardedSource</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">discardedTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">discardedSource</span><span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"discarded"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">discardedTranscript</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="n">discardedSource</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">discardedTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"discarded: receive subscription: (PassthroughSubject)"</span><span class="p">,</span>
+    <span class="s">"discarded: request unlimited"</span><span class="p">,</span>
+    <span class="s">"discarded: receive cancel"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p><strong>The upstream had already finished.</strong> A subject that has completed hands a new subscriber the completion immediately:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">finishedSource</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="n">finishedSource</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">finishedTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">finishedHandle</span> <span class="o">=</span> <span class="n">finishedSource</span><span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"finished"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">finishedTranscript</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="n">finishedSource</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">finishedTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="s">"finished: receive subscription: (Empty)"</span><span class="p">,</span>       <span class="c1">// not the subject: a stand-in that is already done</span>
+    <span class="s">"finished: request unlimited"</span><span class="p">,</span>
+    <span class="s">"finished: receive finished"</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The subscription line gives it away: a finished subject does not hand out a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> subscription but an <code class="language-plaintext highlighter-rouge">Empty</code> one, which completes as soon as it is asked for values.</p>
+
+<p><strong>An earlier failure ended the stream.</strong> A <code class="language-plaintext highlighter-rouge">receive error</code> line, often from a <code class="language-plaintext highlighter-rouge">catch</code> placed too far out, as in <a href="/combine-error-handling-catch-retry/">Error Handling</a>, and nothing afterwards.</p>
+
+<p><strong>Nobody asked for values.</strong> A custom subscriber or a <code class="language-plaintext highlighter-rouge">.values</code> bridge that has not requested demand produces a subscription line with no request line after it; a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> then drops every value:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SilentSubscriber</span><span class="p">:</span> <span class="kt">Subscriber</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Input</span> <span class="o">=</span> <span class="kt">Int</span>
+    <span class="kd">typealias</span> <span class="kt">Failure</span> <span class="o">=</span> <span class="kt">Never</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">subscription</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Subscription</span><span class="p">)</span> <span class="p">{}</span>          <span class="c1">// forgot to request</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span> <span class="p">{</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Completion</span><span class="o">&lt;</span><span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">undemandedSource</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">undemandedTranscript</span> <span class="o">=</span> <span class="kt">SignalTranscript</span><span class="p">()</span>
+<span class="n">undemandedSource</span><span class="o">.</span><span class="nf">print</span><span class="p">(</span><span class="s">"undemanded"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">undemandedTranscript</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="kt">SilentSubscriber</span><span class="p">())</span>
+<span class="n">undemandedSource</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">undemandedTranscript</span><span class="o">.</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span><span class="s">"undemanded: receive subscription: (PassthroughSubject)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><strong>The operator is waiting for a completion that never comes.</strong> <code class="language-plaintext highlighter-rouge">last()</code>, <code class="language-plaintext highlighter-rouge">collect()</code>, and <code class="language-plaintext highlighter-rouge">reduce</code> on a subject show values arriving <em>above</em> them and nothing below, as <a href="/combine-first-last-collect/">Sequence Operators</a> measured. Two <code class="language-plaintext highlighter-rouge">print</code>s, one on each side of the operator, make the gap obvious.</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    A[sink never fires: add print above it] --&gt; B{What does the log show?}
+    B --&gt;|subscription, request, cancel| C[The cancellable was not stored]
+    B --&gt;|receive finished or error at once| D[The upstream had already completed or failed]
+    B --&gt;|subscription, no request| E[Nobody requested demand]
+    B --&gt;|values above an operator, nothing below| F[The operator waits for completion]
+    B --&gt;|nothing at all| G[The pipeline was never subscribed]
+</code></pre>
+
+<h2 id="handleevents-hooks-you-can-assert-on"><code class="language-plaintext highlighter-rouge">handleEvents</code>: hooks you can assert on</h2>
+
+<p><code class="language-plaintext highlighter-rouge">handleEvents</code> takes optional closures for each signal: <code class="language-plaintext highlighter-rouge">receiveSubscription</code>, <code class="language-plaintext highlighter-rouge">receiveOutput</code>, <code class="language-plaintext highlighter-rouge">receiveCompletion</code>, <code class="language-plaintext highlighter-rouge">receiveCancel</code>, and <code class="language-plaintext highlighter-rouge">receiveRequest</code>. It passes every signal through unchanged, so it can be inserted anywhere. It runs its closure <em>before</em> forwarding the signal, which means a closure on <code class="language-plaintext highlighter-rouge">receiveOutput</code> sees a value before anything downstream does:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">orderLog</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">orderHandle</span> <span class="o">=</span> <span class="kt">Just</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="n">orderLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"handleEvents saw </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">orderLog</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"sink got </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">orderLog</span> <span class="o">==</span> <span class="p">[</span><span class="s">"handleEvents saw 7"</span><span class="p">,</span> <span class="s">"sink got 7"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Its most useful debugging role is counting things that should not happen more than once, such as subscriptions to an expensive upstream. A test that asserts on the count catches a duplicate request long before a user notices:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">subscriptionCount</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">expensive</span> <span class="o">=</span> <span class="kt">Deferred</span> <span class="p">{</span> <span class="kt">Just</span><span class="p">(</span><span class="s">"profile"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveSubscription</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">subscriptionCount</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">})</span>
+
+<span class="k">let</span> <span class="nv">viewA</span> <span class="o">=</span> <span class="n">expensive</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">viewB</span> <span class="o">=</span> <span class="n">expensive</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">subscriptionCount</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>                   <span class="c1">// two views, two subscriptions: share it</span>
+
+<span class="n">subscriptionCount</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">sharedExpensive</span> <span class="o">=</span> <span class="n">expensive</span><span class="o">.</span><span class="nf">share</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">sharedA</span> <span class="o">=</span> <span class="n">sharedExpensive</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">sharedB</span> <span class="o">=</span> <span class="n">sharedExpensive</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">subscriptionCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The second count is 1, though as <a href="/combine-share-multicasting/">Managing Resources</a> explained, with this synchronous upstream <code class="language-plaintext highlighter-rouge">sharedB</code> received only the completion. A count is a fact about subscriptions, not about who saw the value.</p>
+
+<h2 id="a-logging-operator-that-keeps-values-private">A logging operator that keeps values private</h2>
+
+<p>For diagnostics that should stay in the code, such as which pipeline subscribed, when it was cancelled, and what demand it carried, <code class="language-plaintext highlighter-rouge">os.Logger</code> is the right destination: it is cheap when the level is disabled, it is collected in sysdiagnoses, and it redacts dynamic values unless you mark them public. A <code class="language-plaintext highlighter-rouge">handleEvents</code>-based operator gives every pipeline the same log format:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="n">os</span>
+
+<span class="kd">extension</span> <span class="kt">Publisher</span> <span class="p">{</span>
+    <span class="c1">/// Logs every signal at debug level. Values are private; structure is public.</span>
+    <span class="kd">func</span> <span class="nf">log</span><span class="p">(</span><span class="n">_</span> <span class="nv">label</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">to</span> <span class="nv">logger</span><span class="p">:</span> <span class="kt">Logger</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Publishers</span><span class="o">.</span><span class="kt">HandleEvents</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="nf">handleEvents</span><span class="p">(</span>
+            <span class="nv">receiveSubscription</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">logger</span><span class="o">.</span><span class="nf">debug</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">: subscribed"</span><span class="p">)</span> <span class="p">},</span>
+            <span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span> <span class="n">logger</span><span class="o">.</span><span class="nf">debug</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">: value </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">describing</span><span class="p">:</span> <span class="n">value</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">},</span>
+            <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">completion</span> <span class="k">in</span>
+                <span class="n">logger</span><span class="o">.</span><span class="nf">debug</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">describing</span><span class="p">:</span> <span class="n">completion</span><span class="p">),</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+            <span class="p">},</span>
+            <span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">logger</span><span class="o">.</span><span class="nf">debug</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">: cancelled"</span><span class="p">)</span> <span class="p">},</span>
+            <span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="n">demand</span> <span class="k">in</span>
+                <span class="n">logger</span><span class="o">.</span><span class="nf">debug</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">: request </span><span class="se">\(</span><span class="kt">String</span><span class="p">(</span><span class="nv">describing</span><span class="p">:</span> <span class="n">demand</span><span class="p">),</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">pipelineLogger</span> <span class="o">=</span> <span class="kt">Logger</span><span class="p">(</span><span class="nv">subsystem</span><span class="p">:</span> <span class="s">"com.example.combine-debug"</span><span class="p">,</span> <span class="nv">category</span><span class="p">:</span> <span class="s">"pipeline"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">tokenHandle</span> <span class="o">=</span> <span class="p">[</span><span class="s">"token-123"</span><span class="p">,</span> <span class="s">"token-456"</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">log</span><span class="p">(</span><span class="s">"tokens"</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">pipelineLogger</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Running this code while streaming the log with <code class="language-plaintext highlighter-rouge">log stream --level debug --predicate 'subsystem == "com.example.combine-debug"'</code> showed the structure and hid the values:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[com.example.combine-debug:pipeline] tokens: subscribed
+[com.example.combine-debug:pipeline] tokens: request unlimited
+[com.example.combine-debug:pipeline] tokens: value &lt;private&gt;
+[com.example.combine-debug:pipeline] tokens: value &lt;private&gt;
+[com.example.combine-debug:pipeline] tokens: finished
+</code></pre></div></div>
+
+<p>Debug-level messages are not persisted by default, so <code class="language-plaintext highlighter-rouge">log show</code> after the fact found nothing; streaming while reproducing, or Console with debug messages enabled, is how to read them. The completion is marked public because it is a structural fact; an error’s description can contain user data, so for errors with payloads, log a type or a code instead. The networking roadmap’s <a href="/swift-redacting-network-logs/">Redacting Sensitive Data from Network Logs</a> measured how <code class="language-plaintext highlighter-rouge">os.Logger</code> treats static strings, which it does <em>not</em> redact, and why secrets must never be part of a format string.</p>
+
+<h2 id="breakpoint-and-breakpointonerror"><code class="language-plaintext highlighter-rouge">breakpoint</code> and <code class="language-plaintext highlighter-rouge">breakpointOnError</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">breakpoint(receiveSubscription:receiveOutput:receiveCompletion:)</code> raises <code class="language-plaintext highlighter-rouge">SIGTRAP</code> when one of its closures returns <code class="language-plaintext highlighter-rouge">true</code>, and <code class="language-plaintext highlighter-rouge">breakpointOnError()</code> does so on any failure. Under the debugger, execution stops at the signal with the pipeline’s frames on the stack. Without a debugger, <code class="language-plaintext highlighter-rouge">SIGTRAP</code> terminates the process: a test program using <code class="language-plaintext highlighter-rouge">breakpointOnError()</code> exited with status 133 at the first failure. Under <code class="language-plaintext highlighter-rouge">lldb</code>, the stop looked like this:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>* thread #1, queue = 'com.apple.main-thread', stop reason = signal SIGTRAP
+  * frame #0: libsystem_kernel.dylib`__pthread_kill + 8
+    frame #1: libsystem_pthread.dylib`pthread_kill + 296
+    frame #2: libsystem_c.dylib`raise + 32
+    frame #3: Combine`Publishers.Breakpoint.Inner.receive(completion:) + 88
+    frame #4: Combine`PassthroughSubject.Conduit.finish(completion:) + 800
+</code></pre></div></div>
+
+<p>Frames further down show the code that sent the failure, which is usually what you want to find. Because they terminate the process outside a debugger, these operators must never reach a build that runs anywhere else; wrap them in <code class="language-plaintext highlighter-rouge">#if DEBUG</code>, or better, add them only while investigating:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">investigated</span> <span class="o">=</span> <span class="n">uploads</span>
+    <span class="o">.</span><span class="nf">breakpoint</span><span class="p">(</span><span class="nv">receiveOutput</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;</span> <span class="mi">1_000</span> <span class="p">})</span>   <span class="c1">// stop on a suspicious value</span>
+    <span class="o">.</span><span class="nf">breakpointOnError</span><span class="p">()</span>                          <span class="c1">// and on any failure</span>
+</code></pre></div></div>
+
+<h2 id="reading-the-swift-6-isolation-crash">Reading the Swift 6 isolation crash</h2>
+
+<p>The crash this series meets most often looks like this in a backtrace:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>* thread #6, queue = 'com.apple.NSURLSession-delegate', stop reason = EXC_BREAKPOINT
+    frame #0: libdispatch.dylib`_dispatch_assert_queue_fail + 120
+    frame #1: libdispatch.dylib`dispatch_assert_queue$V2.cold.1 + 116
+    frame #2: libdispatch.dylib`dispatch_assert_queue + 108
+    frame #3: libswift_Concurrency.dylib`_swift_task_checkIsolatedSwift + 48
+    frame #4: libswift_Concurrency.dylib`swift_task_isCurrentExecutorWithFlagsImpl(...) + 356
+    frame #5: MyApp`closure #1 in ProfileModel.load(from:) + 124
+    frame #6: Combine`Publishers.Map.Inner.receive(_:) + 168
+</code></pre></div></div>
+
+<p>Three facts identify it. The thread is not the main thread; here it is <code class="language-plaintext highlighter-rouge">URLSession</code>’s delegate queue. Frames 0 to 4 are the run-time isolation check that Swift 6 inserts into closures it infers to be main-actor isolated. Frame 5 names the closure, by position, <code class="language-plaintext highlighter-rouge">closure #1</code>, inside the method that created it, and frame 6 names the operator that called it. The fix is always to make that closure run after a <code class="language-plaintext highlighter-rouge">receive(on: DispatchQueue.main)</code>, or to make it nonisolated, as <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> sets out. A <code class="language-plaintext highlighter-rouge">print</code> placed just above the named operator confirms which values arrive on which thread when the crash is intermittent.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">stagesHandle</span><span class="p">,</span> <span class="n">flatMapHandle</span><span class="p">,</span> <span class="n">finishedHandle</span><span class="p">,</span> <span class="n">orderHandle</span><span class="p">,</span> <span class="n">viewA</span><span class="p">,</span> <span class="n">viewB</span><span class="p">,</span>
+                      <span class="n">sharedA</span><span class="p">,</span> <span class="n">sharedB</span><span class="p">,</span> <span class="n">tokenHandle</span><span class="p">))</span> <span class="p">{}</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">uploadHandle</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">print</code> logs subscriptions, requests, values, completions, and cancellations; demand returned from <code class="language-plaintext highlighter-rouge">receive(_:)</code> is marked <code class="language-plaintext highlighter-rouge">(synchronous)</code>. It writes values in plain text in every build, so do not leave it in.</li>
+  <li>Prints at several stages show how operators transform demand: <code class="language-plaintext highlighter-rouge">filter</code> requested one more per drop, <code class="language-plaintext highlighter-rouge">prefix</code> cancelled its source, and <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers: .max(1))</code> requested one value at a time.</li>
+  <li>A silent <code class="language-plaintext highlighter-rouge">sink</code> has five common causes with distinct logs: an unstored cancellable, a completed upstream, an earlier failure, missing demand, and an operator waiting for completion.</li>
+  <li><code class="language-plaintext highlighter-rouge">handleEvents</code> runs before the signal is forwarded and is the tool for counting subscriptions in tests.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">Logger</code>-based operator logged the structure of a pipeline and showed values as <code class="language-plaintext highlighter-rouge">&lt;private&gt;</code>; debug messages appear in <code class="language-plaintext highlighter-rouge">log stream</code>, not in <code class="language-plaintext highlighter-rouge">log show</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">breakpoint</code> and <code class="language-plaintext highlighter-rouge">breakpointOnError</code> stop in the debugger and terminate the process without one: exit status 133.</li>
+  <li>An isolation crash names the closure as <code class="language-plaintext highlighter-rouge">closure #N in Type.method</code> above the operator that called it; move that closure after <code class="language-plaintext highlighter-rouge">receive(on:)</code> or make it nonisolated.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">trace(_:)</code> operator that records every signal, with the thread it arrived on and the time since subscription measured by an injected scheduler, into a <code class="language-plaintext highlighter-rouge">Sendable</code> recorder, and returns the upstream unchanged. Use it to write a test that fails with a readable message, listing the full signal history, when a pipeline delivers a value on the wrong thread or subscribes to its upstream more than once. Then add a <code class="language-plaintext highlighter-rouge">#if DEBUG</code> assertion mode that calls <code class="language-plaintext highlighter-rouge">assertionFailure</code> with that history instead of recording silently, and check that the release build compiles it away.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/print(_:to:)"><code class="language-plaintext highlighter-rouge">print(_:to:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/handleevents(receivesubscription:receiveoutput:receivecompletion:receivecancel:receiverequest:)"><code class="language-plaintext highlighter-rouge">handleEvents(receiveSubscription:receiveOutput:receiveCompletion:receiveCancel:receiveRequest:)</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/breakpointonerror()"><code class="language-plaintext highlighter-rouge">breakpointOnError()</code></a>.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/os/logger">Logger</a> documentation, and the article <a href="https://developer.apple.com/documentation/os/generating-log-messages-from-your-code">Generating Log Messages from Your Code</a>.</li>
+  <li>The site’s <a href="/lldb-survival-guide/">LLDB Survival Guide</a>, for working with the stops that <code class="language-plaintext highlighter-rouge">breakpoint</code> produces.</li>
+</ul>
+
+<p>Previous: <a href="/combine-share-multicasting/">Managing Resources: <code class="language-plaintext highlighter-rouge">share</code> and Multicasting</a>. Next: <a href="/combine-testing-publishers/">Testing Publishers</a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-debugging-print-handleevents/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Debugging+Pipelines+with+print+and+handleEvents%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-debugging-print-handleevents%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-debugging-print-handleevents/&title=Debugging+Pipelines+with+print+and+handleEvents%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-debugging-print-handleevents/&title=Debugging+Pipelines+with+print+and+handleEvents%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-debugging-print-handleevents/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Debugging Pipelines with print and handleEvents%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-debugging-print-handleevents/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Debugging">Debugging</a></li>
+    
+    <li><a href="/tag/#Logging">Logging</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Buffering, Backpressure, and Stream Termination in Swift" href="/swift-stream-backpressure/"> <p>Previous post</p> Buffering, Backpressure, and Stream Termination in Swift </a> </div> <div id="next-post"> <a alt="Managing Resources: share and Multicasting" href="/combine-share-multicasting/"> <p>Next post</p> Managing Resources: share and Multicasting </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

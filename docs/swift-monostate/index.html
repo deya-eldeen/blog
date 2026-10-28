@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Monostate in Swift: Separate Instances with One Shared State | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Monostate in Swift: Separate Instances with One Shared State" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Monostate allows several object instances while their operations all use one shared state. It differs from Singleton’s one shared object identity: two monostate objects can be distinct references yet observe the same preferences. That can make a legacy instance-based interface convenient, but it can also hide global coupling behind code that looks independently constructed." /> <meta property="og:description" content="Monostate allows several object instances while their operations all use one shared state. It differs from Singleton’s one shared object identity: two monostate objects can be distinct references yet observe the same preferences. That can make a legacy instance-based interface convenient, but it can also hide global coupling behind code that looks independently constructed." /> <link rel="canonical" href="https://swiftbydeya.com/swift-monostate/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-monostate/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-08-08T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Monostate in Swift: Separate Instances with One Shared State" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-08-08T00:00:00+03:00","datePublished":"2023-08-08T00:00:00+03:00","description":"Monostate allows several object instances while their operations all use one shared state. It differs from Singleton’s one shared object identity: two monostate objects can be distinct references yet observe the same preferences. That can make a legacy instance-based interface convenient, but it can also hide global coupling behind code that looks independently constructed.","headline":"Monostate in Swift: Separate Instances with One Shared State","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-monostate/"},"url":"https://swiftbydeya.com/swift-monostate/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Monostate in Swift: Separate Instances with One Shared State"> <meta name="twitter:description" content="Monostate allows several object instances while their operations all use one shared state. It differs from Singleton’s one shared object identity: two monost..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Monostate in Swift: Separate Instances with One Shared State"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Monostate in Swift: Separate Instances with One Shared State</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-08-08T00:00:00+03:00">August 8, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Monostate allows several object instances while their operations all use one shared state. It differs from Singleton’s one shared object identity: two monostate objects can be distinct references yet observe the same preferences.</p>
+
+<p>That can make a legacy instance-based interface convenient, but it can also hide global coupling behind code that looks independently constructed.</p>
+
+<!--more-->
+
+<p>The Swift 5.7 example isolates the shared preferences to the main actor, available since Swift 5.5. Isolation prevents unsynchronized access; it does not make the state local to each instance.</p>
+
+<h2 id="separate-instance-identity-from-storage-identity">Separate instance identity from storage identity</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">PreferenceSnapshot</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">theme</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">fontPercent</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">AppPreferences</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">storedTheme</span> <span class="o">=</span> <span class="s">"light"</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">storedFontPercent</span> <span class="o">=</span> <span class="mi">100</span>
+
+    <span class="k">var</span> <span class="nv">theme</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">Self</span><span class="o">.</span><span class="n">storedTheme</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span> <span class="k">Self</span><span class="o">.</span><span class="n">storedTheme</span> <span class="o">=</span> <span class="n">newValue</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">fontPercent</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">get</span> <span class="p">{</span> <span class="k">Self</span><span class="o">.</span><span class="n">storedFontPercent</span> <span class="p">}</span>
+        <span class="k">set</span> <span class="p">{</span>
+            <span class="nf">precondition</span><span class="p">((</span><span class="mi">75</span><span class="o">...</span><span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">newValue</span><span class="p">))</span>
+            <span class="k">Self</span><span class="o">.</span><span class="n">storedFontPercent</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">snapshot</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">PreferenceSnapshot</span> <span class="p">{</span>
+        <span class="kt">PreferenceSnapshot</span><span class="p">(</span><span class="nv">theme</span><span class="p">:</span> <span class="n">theme</span><span class="p">,</span> <span class="nv">fontPercent</span><span class="p">:</span> <span class="n">fontPercent</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">await</span> <span class="kt">MainActor</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="kt">AppPreferences</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="kt">AppPreferences</span><span class="p">()</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">first</span> <span class="o">!==</span> <span class="n">second</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">original</span> <span class="o">=</span> <span class="n">first</span><span class="o">.</span><span class="nf">snapshot</span><span class="p">()</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">first</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">original</span><span class="o">.</span><span class="n">theme</span><span class="p">;</span> <span class="n">first</span><span class="o">.</span><span class="n">fontPercent</span> <span class="o">=</span> <span class="n">original</span><span class="o">.</span><span class="n">fontPercent</span> <span class="p">}</span>
+    <span class="n">first</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="s">"dark"</span>
+    <span class="n">first</span><span class="o">.</span><span class="n">fontPercent</span> <span class="o">=</span> <span class="mi">125</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">second</span><span class="o">.</span><span class="nf">snapshot</span><span class="p">()</span> <span class="o">==</span> <span class="kt">PreferenceSnapshot</span><span class="p">(</span><span class="nv">theme</span><span class="p">:</span> <span class="s">"dark"</span><span class="p">,</span> <span class="nv">fontPercent</span><span class="p">:</span> <span class="mi">125</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The computed instance properties forward to static storage. Constructing <code class="language-plaintext highlighter-rouge">second</code> does not create new preferences. The defer restores this demonstration’s prior state, but process-global reset is not a scalable isolation strategy for a parallel test suite.</p>
+
+<p>A real preference model should validate supported theme identifiers as well as font range. Strings keep the example compact; a domain enum would avoid unsupported theme names internally.</p>
+
+<h2 id="main-actor-isolation-and-global-scope-solve-different-problems">Main-actor isolation and global scope solve different problems</h2>
+
+<p>Actor isolation controls when mutable state is accessed. Monostate controls which callers observe the same state. Every instance above still belongs to the same process-wide preference scope.</p>
+
+<p>Two windows cannot select independent themes merely by constructing two wrappers. Two test cases cannot obtain independent stores by calling the initializer twice.</p>
+
+<p>If the intended policy is truly one application-wide appearance, that sharing may be appropriate. If the policy becomes account-, scene-, or document-specific, static storage is the wrong lifetime even though every access is race-free.</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Monostate shares storage across distinct object identities
+    A[Preferences instance A] --&gt; Shared[One static preference state]
+    B[Preferences instance B] --&gt; Shared
+    C[Preferences instance C] --&gt; Shared
+</code></pre>
+
+<p>A Singleton diagram instead points callers to one object instance. The distinction matters to identity comparisons, construction expectations, and test setup.</p>
+
+<h2 id="do-not-let-construction-reset-global-state">Do not let construction reset global state</h2>
+
+<p>An initializer that assigns default values into the static fields would change every existing instance whenever a new wrapper is created. A screen constructing its preferences could then unexpectedly reset another screen’s choices.</p>
+
+<p>Initialize shared storage once at its owner and make reset an explicit operation if the product needs it. Document which scope reset affects and whether active consumers receive a change event.</p>
+
+<p>Persistence is separate again. Static fields disappear when the process ends. A wrapper around a persistent store needs loading, migration, error handling, and a coherent update policy rather than assuming that the monostate pattern provides durability.</p>
+
+<h2 id="prefer-an-explicit-shared-store-when-scope-may-vary">Prefer an explicit shared store when scope may vary</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ThemeStore</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">theme</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">theme</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">theme</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ThemePresenter</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">ThemeStore</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">store</span><span class="p">:</span> <span class="kt">ThemeStore</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">store</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">select</span><span class="p">(</span><span class="n">_</span> <span class="nv">theme</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">store</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">theme</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">await</span> <span class="kt">MainActor</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">accountA</span> <span class="o">=</span> <span class="kt">ThemeStore</span><span class="p">(</span><span class="nv">theme</span><span class="p">:</span> <span class="s">"light"</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">accountB</span> <span class="o">=</span> <span class="kt">ThemeStore</span><span class="p">(</span><span class="nv">theme</span><span class="p">:</span> <span class="s">"dark"</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="kt">ThemePresenter</span><span class="p">(</span><span class="nv">store</span><span class="p">:</span> <span class="n">accountA</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="kt">ThemePresenter</span><span class="p">(</span><span class="nv">store</span><span class="p">:</span> <span class="n">accountB</span><span class="p">)</span>
+    <span class="n">first</span><span class="o">.</span><span class="nf">select</span><span class="p">(</span><span class="s">"sepia"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">second</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">theme</span> <span class="o">==</span> <span class="s">"dark"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Assembly can still pass the same store to several presenters when sharing is desired. Different scopes can receive different stores without changing presenter implementation.</p>
+
+<p>This alternative makes the sharing relationship visible in construction. Monostate may remain useful as a compatibility adapter for an API that must look instance-based, but new feature logic need not inherit that hidden global choice.</p>
+
+<h2 id="subclassing-can-make-static-state-expectations-surprising">Subclassing can make static-state expectations surprising</h2>
+
+<p>Swift stored type properties belong to a declared type; they are not automatically independent storage per subclass. A wrapper hierarchy can therefore share state more broadly than a caller expects.</p>
+
+<p>The example is final to avoid implying subclass-specific preference scopes. If the product needs distinct families of state, construct distinct owners rather than encoding scope in inheritance and hoping static lookup creates separate storage.</p>
+
+<p>Likewise, generic static-storage behavior and language restrictions should be checked before using a type parameter as an implicit scope key. An explicit dictionary keyed by a validated scope ID is easier to inspect when runtime scopes are the real requirement.</p>
+
+<h2 id="test-the-misleading-independence-directly">Test the misleading independence directly</h2>
+
+<p>Construct two instances, mutate through one, and verify the other observes the change. That is a positive test of the pattern, not an accidental failure.</p>
+
+<p>Then test the consumer through an explicit store abstraction so ordinary feature tests remain independent. Keep a small integration test for the monostate adapter’s shared behavior.</p>
+
+<p>If updates notify observers, verify the event describes one committed shared state and is delivered under the documented isolation. Broadcasting from a setter before all related fields are updated can expose a partially changed snapshot.</p>
+
+<h2 id="source-compatibility-can-hide-a-migration-trap">Source compatibility can hide a migration trap</h2>
+
+<p>Monostate sometimes appears when a library already lets callers construct a preferences object, but its implementation changes to shared backing storage. Existing call sites continue to compile. Their behavior can still change substantially: two previously independent objects now observe one another’s writes.</p>
+
+<p>That change should be treated as a semantic API change. Tests that create a fresh instance to obtain clean state no longer have isolation. A preview that constructs two configurations side by side can show the same setting in both panels. A migration note needs to describe shared scope, not just say that the initializer remains available.</p>
+
+<p>Conversely, migrating away from monostate requires finding consumers that relied on this implicit communication. Giving each call site a new private store can stop settings from propagating. Introduce an explicitly shared store at the correct ownership boundary, then inject it into those consumers together.</p>
+
+<h2 id="isolation-and-scope-answer-different-questions">Isolation and scope answer different questions</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">@MainActor</code> annotation serializes access to the shared backing state in this example. It does not make that state appropriate for every user, document, or window. It also does not make a workflow atomic if the workflow later adds a suspension point between reading and writing.</p>
+
+<p>For example, a preference editor might read the current theme, await a confirmation dialog, and then write its edited result. Another operation can change the theme while the dialog is open. If overwriting that newer choice is undesirable, compare a version or revalidate at commit time. Shared storage plus isolation still needs a policy for edits that span time.</p>
+
+<h2 id="notifications-need-the-same-explicitness">Notifications need the same explicitness</h2>
+
+<p>Forwarding instance properties to static storage does not automatically notify every wrapper instance when the storage changes. Adding an observation mechanism to one wrapper can give the misleading appearance that all instances publish the same updates.</p>
+
+<p>Choose one observable owner for the shared state and let wrappers subscribe to that owner, or expose the owner directly. Include subscriber cleanup and initial-value behavior in the contract. Otherwise a view may read the latest value when it refreshes for an unrelated reason while failing to refresh at the moment the setting changes.</p>
+
+<p>Monostate can be useful behind a compatibility boundary, but it is an expensive surprise as a default application model. If consumers need distinct stores in tests or separate sessions in production, explicit state objects make those relationships visible. The alternative <code class="language-plaintext highlighter-rouge">ThemeStore</code> example demonstrates that the consuming presenter does not need to know whether the composition root shares or separates its store.</p>
+
+<h2 id="exercise-migrate-a-document-scoped-setting">Exercise: migrate a document-scoped setting</h2>
+
+<p>A text editor incorrectly stores its current document font in monostate. Replace it with a document-owned store, open two documents with different font settings, and verify edits remain independent. Keep application-wide defaults separate from each document’s current value.</p>
+
+<p>Compare <a href="/swift-singleton/">Singleton</a> and <a href="/swift-dependency-injection/">Dependency Injection</a> to describe identity, scope, and access as separate decisions.</p>
+
+<p>Return to the <a href="/swift-design-patterns/">Design Patterns roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-monostate/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Monostate+in+Swift%3A+Separate+Instances+with+One+Shared+State%20https%3A%2F%2Fswiftbydeya.com%2Fswift-monostate%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-monostate/&title=Monostate+in+Swift%3A+Separate+Instances+with+One+Shared+State%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-monostate/&title=Monostate+in+Swift%3A+Separate+Instances+with+One+Shared+State%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-monostate/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Monostate in Swift: Separate Instances with One Shared State%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-monostate/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Architecture">Architecture</a></li>
+    
+    <li><a href="/tag/#Design+Patterns">Design Patterns</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Constrained Protocol Extensions in Swift: Make the Requirement Visible" href="/swift-constrained-protocol-extensions/"> <p>Previous post</p> Constrained Protocol Extensions in Swift: Make the Requirement Visible </a> </div> <div id="next-post"> <a alt="Composition Over Inheritance in Swift" href="/swift-composition-over-inheritance/"> <p>Next post</p> Composition Over Inheritance in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

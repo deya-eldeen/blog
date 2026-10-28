@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Streaming Responses and Incremental Parsing | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Streaming Responses and Incremental Parsing" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Most responses are read whole: wait for the last byte, then decode. Some responses are worth reading while they arrive. A search that returns results as the server finds them, a log tail, a progress feed for a server-side job, or a language model generating text token by token all have the same shape: the first useful piece exists long before the last one, and a client that waits for the end throws away the head start. URLSession.bytes(for:) makes the bytes available as an AsyncSequence as soon as they arrive. Turning bytes into values is the hard part, because the network does not respect message boundaries: a JSON record, a UTF-8 character, or an event can be split anywhere. This article covers the three streaming formats an app is most likely to meet: newline-delimited JSON, Server-Sent Events, and a large JSON array parsed element by element. It measures the details that decide whether a streaming client works: when bytes are delivered, what AsyncBytes.lines does with empty lines, what happens when the consumer is slow, and what breaking out of the loop actually stops." /> <meta property="og:description" content="Most responses are read whole: wait for the last byte, then decode. Some responses are worth reading while they arrive. A search that returns results as the server finds them, a log tail, a progress feed for a server-side job, or a language model generating text token by token all have the same shape: the first useful piece exists long before the last one, and a client that waits for the end throws away the head start. URLSession.bytes(for:) makes the bytes available as an AsyncSequence as soon as they arrive. Turning bytes into values is the hard part, because the network does not respect message boundaries: a JSON record, a UTF-8 character, or an event can be split anywhere. This article covers the three streaming formats an app is most likely to meet: newline-delimited JSON, Server-Sent Events, and a large JSON array parsed element by element. It measures the details that decide whether a streaming client works: when bytes are delivered, what AsyncBytes.lines does with empty lines, what happens when the consumer is slow, and what breaking out of the loop actually stops." /> <link rel="canonical" href="https://swiftbydeya.com/swift-streaming-responses/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-streaming-responses/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-12T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Streaming Responses and Incremental Parsing" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-12T00:00:00+03:00","datePublished":"2026-10-12T00:00:00+03:00","description":"Most responses are read whole: wait for the last byte, then decode. Some responses are worth reading while they arrive. A search that returns results as the server finds them, a log tail, a progress feed for a server-side job, or a language model generating text token by token all have the same shape: the first useful piece exists long before the last one, and a client that waits for the end throws away the head start. URLSession.bytes(for:) makes the bytes available as an AsyncSequence as soon as they arrive. Turning bytes into values is the hard part, because the network does not respect message boundaries: a JSON record, a UTF-8 character, or an event can be split anywhere. This article covers the three streaming formats an app is most likely to meet: newline-delimited JSON, Server-Sent Events, and a large JSON array parsed element by element. It measures the details that decide whether a streaming client works: when bytes are delivered, what AsyncBytes.lines does with empty lines, what happens when the consumer is slow, and what breaking out of the loop actually stops.","headline":"Streaming Responses and Incremental Parsing","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-streaming-responses/"},"url":"https://swiftbydeya.com/swift-streaming-responses/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Streaming Responses and Incremental Parsing"> <meta name="twitter:description" content="Most responses are read whole: wait for the last byte, then decode. Some responses are worth reading while they arrive. A search that returns results as the ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Streaming Responses and Incremental Parsing"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Streaming Responses and Incremental Parsing</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-12T00:00:00+03:00">October 12, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Most responses are read whole: wait for the last byte, then decode. Some responses are worth reading while they arrive. A search that returns results as the server finds them, a log tail, a progress feed for a server-side job, or a language model generating text token by token all have the same shape: the first useful piece exists long before the last one, and a client that waits for the end throws away the head start.</p>
+
+<p><code class="language-plaintext highlighter-rouge">URLSession.bytes(for:)</code> makes the bytes available as an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> as soon as they arrive. Turning bytes into values is the hard part, because the network does not respect message boundaries: a JSON record, a UTF-8 character, or an event can be split anywhere. This article covers the three streaming formats an app is most likely to meet: newline-delimited JSON, Server-Sent Events, and a large JSON array parsed element by element. It measures the details that decide whether a streaming client works: when bytes are delivered, what <code class="language-plaintext highlighter-rouge">AsyncBytes.lines</code> does with empty lines, what happens when the consumer is slow, and what breaking out of the loop actually stops.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. <a href="/swift-asyncsequence/">Consuming Values with <code class="language-plaintext highlighter-rouge">AsyncSequence</code></a> covers the protocol itself.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="delivery-when-bytes-become-available">Delivery: when bytes become available</h2>
+
+<p>Two things stand between the server’s write and the client’s loop. One is the server’s own buffering, which is outside the client’s control. The other is <code class="language-plaintext highlighter-rouge">URLSession</code>’s content sniffing, measured in <a href="/swift-urlsession-async-await/">Requests and Responses with <code class="language-plaintext highlighter-rouge">async</code> and <code class="language-plaintext highlighter-rouge">await</code></a>: for a response with no <code class="language-plaintext highlighter-rouge">Content-Type</code> or with <code class="language-plaintext highlighter-rouge">text/plain</code>, delivery waits for 512 bytes or the end of the body. Streaming formats have registered media types that are not sniffed, <code class="language-plaintext highlighter-rouge">application/x-ndjson</code> and <code class="language-plaintext highlighter-rouge">text/event-stream</code>, and a streaming server must send them.</p>
+
+<p>The server below emits five records 100 ms apart, with chunked transfer encoding because the total length is unknown when it starts, which is what makes streaming possible over HTTP/1.1:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+<span class="kd">import</span> <span class="kt">Darwin</span>
+
+<span class="kd">struct</span> <span class="kt">Hit</span><span class="p">:</span> <span class="kt">Decodable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/search"</span><span class="p">:</span>
+        <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">5</span> <span class="p">{</span>
+            <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">)),</span> <span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">((</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":</span><span class="err">\</span><span class="s">#(index),"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Result</span> <span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span> <span class="o">+</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">))]</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"type"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"application/x-ndjson"</span><span class="p">)],</span>
+                            <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">,</span> <span class="nv">chunked</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">searchURL</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"search"</span><span class="p">),</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+    <span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"type"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">type</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">arrivals</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Duration</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">bytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nf">searchURL</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="n">type</span><span class="p">))</span>
+    <span class="k">var</span> <span class="nv">times</span><span class="p">:</span> <span class="p">[</span><span class="kt">Duration</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">line</span> <span class="k">in</span> <span class="n">bytes</span><span class="o">.</span><span class="n">lines</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Hit</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+        <span class="n">times</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">times</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">streamed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">arrivals</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"application/x-ndjson"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sniffed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">arrivals</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"text/plain"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"ndjson:"</span><span class="p">,</span> <span class="n">streamed</span><span class="p">,</span> <span class="s">"</span><span class="se">\n</span><span class="s">text/plain:"</span><span class="p">,</span> <span class="n">sniffed</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">streamed</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">5</span> <span class="o">&amp;&amp;</span> <span class="n">streamed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">250</span><span class="p">))</span>   <span class="c1">// the first result after ~100 ms</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sniffed</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">5</span> <span class="o">&amp;&amp;</span> <span class="n">sniffed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">450</span><span class="p">))</span>     <span class="c1">// held back until the body ended</span>
+</code></pre></div></div>
+
+<p>With the right type, the first result was decoded about 100 ms after the request started and the rest followed at 100 ms intervals. With <code class="language-plaintext highlighter-rouge">text/plain</code>, all five arrived together after half a second, because the five records add up to less than 512 bytes: a “streaming” endpoint that behaves exactly like a normal one, for a reason that is invisible in the client’s code.</p>
+
+<h2 id="bytes-are-not-characters">Bytes are not characters</h2>
+
+<p>The network splits data wherever it likes, including in the middle of a multi-byte UTF-8 character. Code that decodes each received chunk separately, which is easy to write with a data-task delegate that receives <code class="language-plaintext highlighter-rouge">Data</code> pieces, turns split characters into replacement characters:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="s">"Café ☕ résumé"</span>
+<span class="k">let</span> <span class="nv">bytes</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">split</span> <span class="o">=</span> <span class="n">bytes</span><span class="o">.</span><span class="nf">firstIndex</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="mh">0xE2</span><span class="p">)</span><span class="o">!</span> <span class="o">+</span> <span class="mi">1</span>   <span class="c1">// inside the three-byte encoding of ☕</span>
+<span class="k">let</span> <span class="nv">chunks</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Data</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="o">..&lt;</span><span class="n">split</span><span class="p">]),</span> <span class="kt">Data</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="n">split</span><span class="o">...</span><span class="p">])]</span>
+
+<span class="k">let</span> <span class="nv">perChunk</span> <span class="o">=</span> <span class="n">chunks</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">perChunk</span> <span class="o">!=</span> <span class="n">text</span> <span class="o">&amp;&amp;</span> <span class="n">perChunk</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"</span><span class="se">\u{FFFD}</span><span class="s">"</span><span class="p">))</span>   <span class="c1">// corrupted at the boundary</span>
+
+<span class="k">var</span> <span class="nv">assembled</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+<span class="n">chunks</span><span class="o">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="n">assembled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">assembled</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="n">text</span><span class="p">)</span>   <span class="c1">// decode only complete sequences</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncBytes</code> delivers one byte at a time, and its <code class="language-plaintext highlighter-rouge">.characters</code>, <code class="language-plaintext highlighter-rouge">.unicodeScalars</code>, and <code class="language-plaintext highlighter-rouge">.lines</code> views decode across chunk boundaries correctly, so this bug cannot happen with them. It reappears whenever code buffers bytes into its own chunks: decode at message boundaries, which for every format below is a newline or a delimiter that is a single ASCII byte, never at arbitrary chunk boundaries.</p>
+
+<h2 id="lines-drops-empty-lines"><code class="language-plaintext highlighter-rouge">lines</code> drops empty lines</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncBytes.lines</code> is the obvious way to read line-based formats. What it considers a line matters, so it is worth measuring with every kind of line ending and some empty lines:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">lineServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+    <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"text/event-stream"</span><span class="p">)],</span>
+                 <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"a</span><span class="se">\n\n</span><span class="s">b</span><span class="se">\r\n\r\n</span><span class="s">c</span><span class="se">\r</span><span class="s">d</span><span class="se">\n\n\n</span><span class="s">e"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))])</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">lineBytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">lineServer</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">lines</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">line</span> <span class="k">in</span> <span class="n">lineBytes</span><span class="o">.</span><span class="n">lines</span> <span class="p">{</span> <span class="n">lines</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lines</span> <span class="o">==</span> <span class="p">[</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">,</span> <span class="s">"d"</span><span class="p">,</span> <span class="s">"e"</span><span class="p">])</span>   <span class="c1">// every empty line is gone</span>
+</code></pre></div></div>
+
+<p>It accepts <code class="language-plaintext highlighter-rouge">\n</code>, <code class="language-plaintext highlighter-rouge">\r\n</code>, and a lone <code class="language-plaintext highlighter-rouge">\r</code> as line endings, which is generous and correct. It also <strong>skips every empty line</strong>. For newline-delimited JSON that is harmless, since empty lines carry nothing. For Server-Sent Events it is fatal: an empty line is the signal that an event is complete, and a parser built on <code class="language-plaintext highlighter-rouge">.lines</code> never sees it. The SSE parser below therefore splits lines itself.</p>
+
+<h2 id="server-sent-events">Server-Sent Events</h2>
+
+<p>Server-Sent Events, specified in the <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">HTML Standard</a>, are a simple, one-way streaming protocol over plain HTTP. The body is <code class="language-plaintext highlighter-rouge">text/event-stream</code>, a sequence of lines grouped into events by empty lines:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>: comments start with a colon and are ignored
+event: availability
+id: 41
+data: {"book":"b-7","copies":2}
+
+data: first line
+data: second line
+
+retry: 5000
+</code></pre></div></div>
+
+<p>Each line is <code class="language-plaintext highlighter-rouge">field: value</code>. <code class="language-plaintext highlighter-rouge">data</code> lines accumulate, joined with newlines; <code class="language-plaintext highlighter-rouge">event</code> sets the event’s type; <code class="language-plaintext highlighter-rouge">id</code> sets the last event ID that a reconnecting client sends back in a <code class="language-plaintext highlighter-rouge">Last-Event-ID</code> header; <code class="language-plaintext highlighter-rouge">retry</code> sets the reconnection delay in milliseconds. An empty line dispatches the event built so far. The rules have a few precise details, such as that a single space after the colon is removed but further spaces are kept, that a line without a colon is a field name with an empty value, and that an event with no data is not dispatched. The parser below follows them, and reads raw bytes so it can see empty lines:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ServerSentEvent</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">type</span> <span class="o">=</span> <span class="s">"message"</span>
+    <span class="k">var</span> <span class="nv">data</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="k">var</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">SSEParser</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">data</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">type</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">lastEventID</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">retry</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">line</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">previousWasCR</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="c1">/// Feeds one byte; returns an event when a blank line completes one.</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">feed</span><span class="p">(</span><span class="n">_</span> <span class="nv">byte</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">ServerSentEvent</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">previousWasCR</span> <span class="o">&amp;&amp;</span> <span class="n">byte</span> <span class="o">==</span> <span class="mh">0x0A</span> <span class="p">{</span> <span class="n">previousWasCR</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>  <span class="c1">// the LF of a CRLF</span>
+        <span class="n">previousWasCR</span> <span class="o">=</span> <span class="n">byte</span> <span class="o">==</span> <span class="mh">0x0D</span>
+        <span class="k">guard</span> <span class="n">byte</span> <span class="o">==</span> <span class="mh">0x0A</span> <span class="o">||</span> <span class="n">byte</span> <span class="o">==</span> <span class="mh">0x0D</span> <span class="k">else</span> <span class="p">{</span> <span class="n">line</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">);</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">line</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">(</span><span class="nv">keepingCapacity</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="nf">process</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">ServerSentEvent</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">dispatch</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">":"</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>  <span class="c1">// comment</span>
+        <span class="k">let</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">Substring</span>
+        <span class="k">var</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Substring</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">colon</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="nf">firstIndex</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">":"</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">field</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="o">..&lt;</span><span class="n">colon</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">text</span><span class="o">.</span><span class="nf">index</span><span class="p">(</span><span class="nv">after</span><span class="p">:</span> <span class="n">colon</span><span class="p">)</span><span class="o">...</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">" "</span><span class="p">)</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">()</span> <span class="p">}</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="s">""</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">switch</span> <span class="n">field</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="s">"data"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">case</span> <span class="s">"event"</span><span class="p">:</span> <span class="n">type</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s">"id"</span> <span class="k">where</span> <span class="o">!</span><span class="n">value</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"</span><span class="se">\0</span><span class="s">"</span><span class="p">):</span> <span class="n">lastEventID</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s">"retry"</span><span class="p">:</span> <span class="k">if</span> <span class="k">let</span> <span class="nv">milliseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span> <span class="n">retry</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">milliseconds</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">default</span><span class="p">:</span> <span class="k">break</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">dispatch</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">ServerSentEvent</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">data</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">();</span> <span class="n">type</span> <span class="o">=</span> <span class="s">""</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">data</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">ServerSentEvent</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="n">type</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">?</span> <span class="s">"message"</span> <span class="p">:</span> <span class="n">type</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">),</span> <span class="nv">id</span><span class="p">:</span> <span class="n">lastEventID</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">parse</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">ServerSentEvent</span><span class="p">],</span> <span class="nv">parser</span><span class="p">:</span> <span class="kt">SSEParser</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">parser</span> <span class="o">=</span> <span class="kt">SSEParser</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">ServerSentEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">byte</span> <span class="k">in</span> <span class="n">text</span><span class="o">.</span><span class="n">utf8</span> <span class="p">{</span> <span class="k">if</span> <span class="k">let</span> <span class="nv">event</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="nf">feed</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">{</span> <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">parser</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sample</span> <span class="o">=</span> <span class="s">": keep-alive</span><span class="se">\r\n</span><span class="s">event: availability</span><span class="se">\r\n</span><span class="s">id: 41</span><span class="se">\r\n</span><span class="s">data: {</span><span class="se">\"</span><span class="s">book</span><span class="se">\"</span><span class="s">:</span><span class="se">\"</span><span class="s">b-7</span><span class="se">\"</span><span class="s">}</span><span class="se">\r\n\r\n</span><span class="s">data: first line</span><span class="se">\n</span><span class="s">data:  second line</span><span class="se">\n\n</span><span class="s">retry: 5000</span><span class="se">\n\n</span><span class="s">data</span><span class="se">\n\n</span><span class="s">event: ignored</span><span class="se">\n\n</span><span class="s">"</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">sampleEvents</span><span class="p">,</span> <span class="nv">sampleParser</span><span class="p">)</span> <span class="o">=</span> <span class="nf">parse</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sampleEvents</span> <span class="o">==</span> <span class="p">[</span>
+    <span class="kt">ServerSentEvent</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"availability"</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="err">#</span><span class="s">"{"</span><span class="n">book</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="s">"41"</span><span class="p">),</span>
+    <span class="kt">ServerSentEvent</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"message"</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="s">"first line</span><span class="se">\n</span><span class="s"> second line"</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="s">"41"</span><span class="p">),</span>  <span class="c1">// one leading space removed</span>
+    <span class="kt">ServerSentEvent</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"message"</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="s">""</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="s">"41"</span><span class="p">),</span>                          <span class="c1">// "data" without a colon</span>
+<span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sampleParser</span><span class="o">.</span><span class="n">retry</span> <span class="o">==</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5000</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">sampleParser</span><span class="o">.</span><span class="n">lastEventID</span> <span class="o">==</span> <span class="s">"41"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The last event in the sample, <code class="language-plaintext highlighter-rouge">event: ignored</code> followed by a blank line, produced nothing, because it had no <code class="language-plaintext highlighter-rouge">data</code> field. The third event, a bare <code class="language-plaintext highlighter-rouge">data</code> line, is dispatched with empty data, which the specification treats as distinct from no data. Running the parser over a live stream is a loop over <code class="language-plaintext highlighter-rouge">AsyncBytes</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">sse</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">": connected</span><span class="se">\n\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))]</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Last-Event-ID"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"0"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">id</span> <span class="nf">in</span> <span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">...</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">)),</span>
+                   <span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"event: availability</span><span class="se">\n</span><span class="s">id: </span><span class="se">\(</span><span class="n">id</span><span class="se">)\n</span><span class="s">data: {</span><span class="se">\"</span><span class="s">copies</span><span class="se">\"</span><span class="s">:</span><span class="se">\(</span><span class="n">id</span><span class="se">)</span><span class="s">}</span><span class="se">\n\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))]</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"text/event-stream"</span><span class="p">),</span> <span class="p">(</span><span class="s">"Cache-Control"</span><span class="p">,</span> <span class="s">"no-store"</span><span class="p">)],</span>
+                        <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">,</span> <span class="nv">chunked</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">listen</span><span class="p">(</span><span class="nv">lastEventID</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">ServerSentEvent</span><span class="p">],</span> <span class="nv">firstAfter</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">sse</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"events"</span><span class="p">))</span>
+    <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"text/event-stream"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Accept"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">lastEventID</span> <span class="p">{</span> <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">lastEventID</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Last-Event-ID"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">bytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">parser</span> <span class="o">=</span> <span class="kt">SSEParser</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">ServerSentEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">firstAfter</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="n">zero</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">byte</span> <span class="k">in</span> <span class="n">bytes</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">event</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="nf">feed</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">events</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span> <span class="n">firstAfter</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span> <span class="p">}</span>
+            <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">firstAfter</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">firstConnection</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">listen</span><span class="p">(</span><span class="nv">lastEventID</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstConnection</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1"</span><span class="p">,</span> <span class="s">"2"</span><span class="p">,</span> <span class="s">"3"</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">firstConnection</span><span class="o">.</span><span class="n">firstAfter</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">resumed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">listen</span><span class="p">(</span><span class="nv">lastEventID</span><span class="p">:</span> <span class="n">firstConnection</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">last</span><span class="p">?</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resumed</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"4"</span><span class="p">,</span> <span class="s">"5"</span><span class="p">,</span> <span class="s">"6"</span><span class="p">])</span>  <span class="c1">// the server continued after the last seen event</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">Last-Event-ID</code> mechanism is what makes SSE recoverable where a raw WebSocket is not: the client tells the server where it stopped, and the server resumes from there. The reconnecting connection manager in <a href="/swift-websockets-reconnection/">WebSockets: Connection State and Reconnection</a> applies directly to SSE too, with <code class="language-plaintext highlighter-rouge">retry</code> from the stream as the backoff floor.</p>
+
+<h2 id="a-large-json-array-one-element-at-a-time">A large JSON array, one element at a time</h2>
+
+<p>APIs that were not designed for streaming still often return large arrays: <code class="language-plaintext highlighter-rouge">[{...}, {...}, ...]</code>, thousands of elements, several megabytes. <code class="language-plaintext highlighter-rouge">JSONDecoder</code> needs the whole document. A small scanner can find the boundaries of top-level elements while the bytes arrive, by tracking nesting depth and whether it is inside a string, so each element can be decoded as soon as it is complete:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ArrayElementScanner</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">depth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">inString</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">escaped</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">element</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1">/// Feeds one byte of a JSON array; returns the bytes of a complete top-level element.</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">feed</span><span class="p">(</span><span class="n">_</span> <span class="nv">byte</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Data</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">inString</span> <span class="p">{</span>
+            <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">escaped</span> <span class="p">{</span> <span class="n">escaped</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">byte</span> <span class="o">==</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"</span><span class="se">\\</span><span class="s">"</span><span class="p">)</span> <span class="p">{</span> <span class="n">escaped</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">byte</span> <span class="o">==</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"</span><span class="se">\"</span><span class="s">"</span><span class="p">)</span> <span class="p">{</span> <span class="n">inString</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="k">switch</span> <span class="n">byte</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"["</span><span class="p">),</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"{"</span><span class="p">):</span>
+            <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="p">{</span> <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">case</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"]"</span><span class="p">),</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"}"</span><span class="p">):</span>
+            <span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="p">{</span> <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">byte</span> <span class="o">==</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"}"</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">take</span><span class="p">()</span> <span class="p">}</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="k">return</span> <span class="n">element</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="nf">take</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">case</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">","</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="k">return</span> <span class="n">element</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="nf">take</span><span class="p">()</span> <span class="p">}</span>
+            <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span>
+        <span class="k">case</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">ascii</span><span class="p">:</span> <span class="s">"</span><span class="se">\"</span><span class="s">"</span><span class="p">):</span>
+            <span class="n">inString</span> <span class="o">=</span> <span class="kc">true</span>
+            <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span>
+        <span class="k">case</span> <span class="mh">0x20</span><span class="p">,</span> <span class="mh">0x0A</span><span class="p">,</span> <span class="mh">0x0D</span><span class="p">,</span> <span class="mh">0x09</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="p">{</span> <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">default</span><span class="p">:</span>
+            <span class="n">element</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">take</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">element</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">(</span><span class="nv">keepingCapacity</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kt">Data</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">tricky</span> <span class="o">=</span> <span class="err">#</span><span class="s">"[ {"</span><span class="n">id</span><span class="s">":1,"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Braces</span> <span class="p">{</span> <span class="n">and</span> <span class="p">]</span> <span class="k">in</span> <span class="n">a</span> <span class="n">string</span><span class="s">"}, {"</span><span class="n">id</span><span class="s">":2,"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Escaped</span> <span class="p">\</span><span class="s">" quote"</span><span class="p">}</span> <span class="p">,{</span><span class="s">"id"</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="s">"title"</span><span class="p">:</span><span class="s">"Ünïcode ☕"</span><span class="p">}</span> <span class="p">]</span><span class="s">"#
+var scanner = ArrayElementScanner()
+let elements = tricky.utf8.compactMap { scanner.feed($0) }
+let decodedHits = try elements.map { try JSONDecoder().decode(Hit.self, from: $0) }
+assert(decodedHits.map(</span><span class="err">\</span><span class="s">.id) == [1, 2, 3] &amp;&amp; decodedHits[0].title == "</span><span class="kt">Braces</span> <span class="p">{</span> <span class="n">and</span> <span class="p">]</span> <span class="k">in</span> <span class="n">a</span> <span class="n">string</span><span class="s">")
+assert(decodedHits[2].title == "</span><span class="kt">Ünïcode</span> <span class="err">☕</span><span class="s">")
+</span></code></pre></div></div>
+
+<p>The scanner handles braces and brackets inside strings, escaped quotes, and whitespace between elements. It returns an element when its closing <code class="language-plaintext highlighter-rouge">}</code> brings the depth back to the array level, and handles scalars such as numbers in an array at the following comma or <code class="language-plaintext highlighter-rouge">]</code>. It does not validate JSON; each element is validated when it is decoded, so a malformed element fails on its own, which is the lossy behavior from <a href="/swift-decoding-json-codable/">Decoding JSON with <code class="language-plaintext highlighter-rouge">Codable</code></a> for free.</p>
+
+<p>Against a server that sends a 2,000-element array in 50 pieces with a short pause between pieces, the first element is available long before the last byte:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">arrayServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">items</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">2_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":</span><span class="err">\</span><span class="s">#($0),"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Book</span> <span class="n">number</span> <span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">document</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">((</span><span class="s">"["</span> <span class="o">+</span> <span class="n">items</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">","</span><span class="p">)</span> <span class="o">+</span> <span class="s">"]"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">pieceSize</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">count</span> <span class="o">/</span> <span class="mi">50</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="k">in</span> <span class="nf">stride</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">document</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="n">pieceSize</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="n">document</span><span class="p">[</span><span class="n">start</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">pieceSize</span><span class="p">,</span> <span class="n">document</span><span class="o">.</span><span class="n">count</span><span class="p">)]),</span> <span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))]</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">)],</span> <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">,</span> <span class="nv">chunked</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">streamArray</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">firstAfter</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">total</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">bytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">arrayServer</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">scanner</span> <span class="o">=</span> <span class="kt">ArrayElementScanner</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">firstAfter</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="n">zero</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">byte</span> <span class="k">in</span> <span class="n">bytes</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">element</span> <span class="o">=</span> <span class="n">scanner</span><span class="o">.</span><span class="nf">feed</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">continue</span> <span class="p">}</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Hit</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">element</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span> <span class="n">firstAfter</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span> <span class="p">}</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">firstAfter</span><span class="p">,</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">streamedArray</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">streamArray</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"2,000 elements: first after </span><span class="se">\(</span><span class="n">streamedArray</span><span class="o">.</span><span class="n">firstAfter</span><span class="se">)</span><span class="s">, all after </span><span class="se">\(</span><span class="n">streamedArray</span><span class="o">.</span><span class="n">total</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">streamedArray</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">streamedArray</span><span class="o">.</span><span class="n">firstAfter</span> <span class="o">*</span> <span class="mi">5</span> <span class="o">&lt;</span> <span class="n">streamedArray</span><span class="o">.</span><span class="n">total</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The first book was ready a few milliseconds into a transfer that lasted more than half a second. A list screen can show its first rows immediately and keep appending, instead of showing a spinner for the full download.</p>
+
+<h2 id="slow-consumers-cancellation-and-cost">Slow consumers, cancellation, and cost</h2>
+
+<p>A streaming client is a pipeline, and three properties of the pipeline need checking: what happens when the consumer cannot keep up, what stops the transfer, and what each byte costs.</p>
+
+<p><strong>Backpressure.</strong> When the loop stops pulling bytes, <code class="language-plaintext highlighter-rouge">URLSession</code> does not keep reading the socket into memory without limit. With a server ready to send 100 MB and a consumer paused for two seconds after the first byte, the process’s physical footprint grew by about 5 MB in this measurement. Beyond that buffer, TCP flow control pushes back to the server. A slow consumer slows the transfer instead of exhausting memory.</p>
+
+<p><strong>Stopping.</strong> Breaking out of the <code class="language-plaintext highlighter-rouge">for try await</code> loop does <em>not</em> end the request. The <code class="language-plaintext highlighter-rouge">AsyncBytes</code> value still owns a running task, and the transfer continues until that value is released, at the end of the scope that holds it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">feed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">50</span> <span class="p">{</span> <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">((</span><span class="err">#</span><span class="s">"{"</span><span class="n">n</span><span class="s">":</span><span class="err">\</span><span class="s">#(index)}"</span><span class="err">#</span> <span class="o">+</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">)),</span> <span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))]</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/x-ndjson"</span><span class="p">)],</span> <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">,</span> <span class="nv">chunked</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">takeThree</span><span class="p">(</span><span class="nv">cancelling</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URLSessionTask</span><span class="o">.</span><span class="kt">State</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">bytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">feed</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">bytes</span><span class="o">.</span><span class="n">lines</span> <span class="p">{</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">cancelling</span> <span class="p">{</span> <span class="n">bytes</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">bytes</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">state</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">afterBreak</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">takeThree</span><span class="p">(</span><span class="nv">cancelling</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">afterCancel</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">takeThree</span><span class="p">(</span><span class="nv">cancelling</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterBreak</span> <span class="o">==</span> <span class="o">.</span><span class="n">running</span><span class="p">)</span>      <span class="c1">// the 5-second stream is still open</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterCancel</span> <span class="o">==</span> <span class="o">.</span><span class="n">completed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In a function that returns right after the loop, release comes soon. In a long-lived object that keeps the <code class="language-plaintext highlighter-rouge">AsyncBytes</code> around, or in a loop that breaks and then does more work, the connection stays open. Cancel <code class="language-plaintext highlighter-rouge">bytes.task</code> explicitly when you are done with a stream early; cancelling the enclosing Swift task works too, as <a href="/swift-urlsession-async-await/">Requests and Responses with <code class="language-plaintext highlighter-rouge">async</code> and <code class="language-plaintext highlighter-rouge">await</code></a> showed.</p>
+
+<p><strong>Cost per byte.</strong> Iterating <code class="language-plaintext highlighter-rouge">AsyncBytes</code> one byte at a time is cheap in an optimized build and expensive in a debug build, where each step of the async iterator is a real function call:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>50 MB over loopback</th>
+      <th><code class="language-plaintext highlighter-rouge">-O</code></th>
+      <th><code class="language-plaintext highlighter-rouge">-Onone</code> (debug)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">for try await byte in bytes</code></td>
+      <td>0.05 s (about 1 ns per byte)</td>
+      <td>4.15 s (about 83 ns per byte)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data(from:)</code></td>
+      <td>0.02 s</td>
+      <td>0.02 s</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For streams of a few hundred kilobytes the difference is invisible. For multi-megabyte streams, a debug build that takes seconds to parse is easy to mistake for a slow server, and a scanner that appends byte by byte into a buffer, like the one above, is where the time goes. Measure parsing performance in a release build, and for large streams consider handling bytes in batches through a data-task delegate, decoding only at the delimiters as described above.</p>
+
+<p>The throughput of a streaming pipeline is the minimum of its stages:</p>
+
+\[\text{throughput} = \min(\text{network}, \text{parser}, \text{consumer})\]
+
+<p>The 83 ns per byte of a debug build caps parsing at about 12 MB/s, below a good Wi-Fi link. The 1 ns of a release build, about 1 GB/s, does not limit any network a phone has.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Stream when the first useful value arrives long before the last byte. Use a non-sniffed media type: measured, five NDJSON records were usable from 100 ms as <code class="language-plaintext highlighter-rouge">application/x-ndjson</code> but only after the whole body as <code class="language-plaintext highlighter-rouge">text/plain</code>.</li>
+  <li>Decode UTF-8 only at message boundaries; per-chunk decoding corrupts characters split across chunks.</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncBytes.lines</code> accepts <code class="language-plaintext highlighter-rouge">\n</code>, <code class="language-plaintext highlighter-rouge">\r\n</code>, and <code class="language-plaintext highlighter-rouge">\r</code>, and silently drops empty lines. Fine for NDJSON, wrong for Server-Sent Events.</li>
+  <li>Parse SSE from bytes: accumulate <code class="language-plaintext highlighter-rouge">data</code> lines, dispatch on a blank line, track <code class="language-plaintext highlighter-rouge">id</code> for <code class="language-plaintext highlighter-rouge">Last-Event-ID</code> resumption and <code class="language-plaintext highlighter-rouge">retry</code> for backoff.</li>
+  <li>A small scanner that tracks depth and strings can hand out the elements of a large JSON array as they complete.</li>
+  <li>A paused consumer grew the footprint by only about 5 MB with 100 MB pending; breaking out of the loop does not end the transfer until <code class="language-plaintext highlighter-rouge">AsyncBytes</code> is released, so cancel <code class="language-plaintext highlighter-rouge">bytes.task</code>.</li>
+  <li>Per-byte iteration costs about 1 ns optimized and 83 ns in debug builds; measure parsers in release builds.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> adapter, <code class="language-plaintext highlighter-rouge">ServerSentEvents&lt;Base: AsyncSequence&gt; where Base.Element == UInt8</code>, that wraps <code class="language-plaintext highlighter-rouge">SSEParser</code>, and a <code class="language-plaintext highlighter-rouge">reconnecting</code> function that reconnects with the server-provided <code class="language-plaintext highlighter-rouge">retry</code> delay and the last <code class="language-plaintext highlighter-rouge">id</code> when the stream ends or fails. Test it against a server that closes the stream after three events each time. Assert that ten events arrive in order with no duplicates across four connections, and that the delay between connections matches a <code class="language-plaintext highlighter-rouge">retry: 200</code> sent in the stream.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>The HTML Standard’s <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">Server-sent events</a> section, including the parsing algorithm the parser follows.</li>
+  <li><a href="https://github.com/ndjson/ndjson-spec">NDJSON</a> and <a href="https://www.rfc-editor.org/rfc/rfc7464">RFC 7464: JSON Text Sequences</a>, two conventions for streaming JSON values.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/urlsession/asyncbytes"><code class="language-plaintext highlighter-rouge">URLSession.AsyncBytes</code></a> documentation.</li>
+</ul>
+
+<p>Previous: <a href="/swift-websockets-reconnection/">WebSockets: Connection State and Reconnection</a>. Next: <a href="/swift-urlprotocol-fixtures/">Isolating HTTP Fixtures with <code class="language-plaintext highlighter-rouge">URLProtocol</code></a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-streaming-responses/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Streaming+Responses+and+Incremental+Parsing%20https%3A%2F%2Fswiftbydeya.com%2Fswift-streaming-responses%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-streaming-responses/&title=Streaming+Responses+and+Incremental+Parsing%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-streaming-responses/&title=Streaming+Responses+and+Incremental+Parsing%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-streaming-responses/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Streaming Responses and Incremental Parsing%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-streaming-responses/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#AsyncSequence">AsyncSequence</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Streaming">Streaming</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Isolating HTTP Fixtures with URLProtocol" href="/swift-urlprotocol-fixtures/"> <p>Previous post</p> Isolating HTTP Fixtures with URLProtocol </a> </div> <div id="next-post"> <a alt="WebSockets: Connection State and Reconnection" href="/swift-websockets-reconnection/"> <p>Next post</p> WebSockets: Connection State and Reconnection </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

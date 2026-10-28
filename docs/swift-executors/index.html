@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Choosing an Executor in Swift Without Blocking the UI | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Choosing an Executor in Swift Without Blocking the UI" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Isolation decides which state code may touch. An executor decides where that code actually runs: on the main thread, on a thread of the cooperative pool, or on a thread you provide. Most Swift code never names an executor, because the defaults are good: the main actor runs on the main thread, other actors and non-isolated code run on the shared cooperative pool, and the runtime moves work between them at suspension points. The defaults stop being good in a few specific situations: work that must block a thread, libraries that insist on being called from one particular queue, and subsystems whose heavy work should not compete with everything else on the shared pool. Swift provides two ways to take control, custom actor executors and task executor preferences, and both are easy to misuse. This article maps the executors you already have, measures what happens when the defaults are abused, and shows when and how to replace them." /> <meta property="og:description" content="Isolation decides which state code may touch. An executor decides where that code actually runs: on the main thread, on a thread of the cooperative pool, or on a thread you provide. Most Swift code never names an executor, because the defaults are good: the main actor runs on the main thread, other actors and non-isolated code run on the shared cooperative pool, and the runtime moves work between them at suspension points. The defaults stop being good in a few specific situations: work that must block a thread, libraries that insist on being called from one particular queue, and subsystems whose heavy work should not compete with everything else on the shared pool. Swift provides two ways to take control, custom actor executors and task executor preferences, and both are easy to misuse. This article maps the executors you already have, measures what happens when the defaults are abused, and shows when and how to replace them." /> <link rel="canonical" href="https://swiftbydeya.com/swift-executors/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-executors/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-28T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Choosing an Executor in Swift Without Blocking the UI" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-28T00:00:00+03:00","datePublished":"2026-07-28T00:00:00+03:00","description":"Isolation decides which state code may touch. An executor decides where that code actually runs: on the main thread, on a thread of the cooperative pool, or on a thread you provide. Most Swift code never names an executor, because the defaults are good: the main actor runs on the main thread, other actors and non-isolated code run on the shared cooperative pool, and the runtime moves work between them at suspension points. The defaults stop being good in a few specific situations: work that must block a thread, libraries that insist on being called from one particular queue, and subsystems whose heavy work should not compete with everything else on the shared pool. Swift provides two ways to take control, custom actor executors and task executor preferences, and both are easy to misuse. This article maps the executors you already have, measures what happens when the defaults are abused, and shows when and how to replace them.","headline":"Choosing an Executor in Swift Without Blocking the UI","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-executors/"},"url":"https://swiftbydeya.com/swift-executors/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Choosing an Executor in Swift Without Blocking the UI"> <meta name="twitter:description" content="Isolation decides which state code may touch. An executor decides where that code actually runs: on the main thread, on a thread of the cooperative pool, or ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Choosing an Executor in Swift Without Blocking the UI"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Choosing an Executor in Swift Without Blocking the UI</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-28T00:00:00+03:00">July 28, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Isolation decides <em>which state</em> code may touch. An <strong>executor</strong> decides <em>where that code actually runs</em>: on the main thread, on a thread of the cooperative pool, or on a thread you provide. Most Swift code never names an executor, because the defaults are good: the main actor runs on the main thread, other actors and non-isolated code run on the shared cooperative pool, and the runtime moves work between them at suspension points.</p>
+
+<p>The defaults stop being good in a few specific situations: work that must block a thread, libraries that insist on being called from one particular queue, and subsystems whose heavy work should not compete with everything else on the shared pool. Swift provides two ways to take control, custom actor executors and task executor preferences, and both are easy to misuse. This article maps the executors you already have, measures what happens when the defaults are abused, and shows when and how to replace them.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26, on a 20-core Apple M1 Ultra. <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code> as an executor requires iOS 17, macOS 14, or later; task executors require iOS 18, macOS 15, or later. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">__dispatch_queue_get_label</code> is used only to observe which queue is running, and is Darwin-specific.</p>
+
+<h2 id="the-executors-you-already-have">The executors you already have</h2>
+
+<p>An executor is anything that can accept <em>jobs</em>, the pieces of a task between suspension points, and run them. Every job runs on some executor, chosen by the isolation of the code it contains:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Executor</th>
+      <th>Threads</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@MainActor</code> code</td>
+      <td>Main executor</td>
+      <td>The main thread only</td>
+    </tr>
+    <tr>
+      <td>Methods of a default actor</td>
+      <td>The actor’s own serial executor</td>
+      <td>Borrowed from the cooperative pool, one job at a time</td>
+    </tr>
+    <tr>
+      <td>Non-isolated <code class="language-plaintext highlighter-rouge">async</code> code, <code class="language-plaintext highlighter-rouge">@concurrent</code> code</td>
+      <td>Global concurrent executor</td>
+      <td>The cooperative pool, about one thread per core</td>
+    </tr>
+    <tr>
+      <td>Actor with a custom executor</td>
+      <td>Whatever that executor provides</td>
+      <td>Usually a serial dispatch queue or a dedicated thread</td>
+    </tr>
+    <tr>
+      <td>Non-isolated code inside <code class="language-plaintext highlighter-rouge">withTaskExecutorPreference</code></td>
+      <td>The preferred task executor</td>
+      <td>Whatever that executor provides</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre><code class="language-mermaid">flowchart TB
+    accTitle: Jobs reach threads through the main executor, actor executors, and the global concurrent executor
+    subgraph Jobs["Jobs, the pieces of tasks between suspension points"]
+        J1["@MainActor job"]
+        J2["default actor job"]
+        J3["nonisolated or @concurrent job"]
+        J4["custom-executor actor job"]
+    end
+    J1 --&gt; ME["Main executor"] --&gt; MT["Main thread"]
+    J2 --&gt; AE["Actor's serial executor"] --&gt; POOL["Cooperative pool, width about one thread per core"]
+    J3 --&gt; GE["Global concurrent executor"] --&gt; POOL
+    J4 --&gt; CE["Custom SerialExecutor, for example a DispatchSerialQueue"] --&gt; GT["Threads the executor owns"]
+</code></pre>
+
+<p>A default actor does not own a thread. It is a serial <em>discipline</em> layered over the pool: when it has work, it borrows a pool thread, runs jobs one at a time, and gives the thread back. That is why hopping from pool code into a default actor is cheap, about 100 ns per call in the <a href="/swift-actors/">actors article</a>, and why a default actor that blocks takes a pool thread with it.</p>
+
+<p>You can see which queue a job runs on by asking Dispatch for the current queue’s label:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">func</span> <span class="nf">currentQueueLabel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="kt">String</span><span class="p">(</span><span class="nv">cString</span><span class="p">:</span> <span class="nf">__dispatch_queue_get_label</span><span class="p">(</span><span class="kc">nil</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">labelFromGlobalExecutor</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="nf">currentQueueLabel</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">labelFromMainActor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="nf">currentQueueLabel</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">globalLabel</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">labelFromGlobalExecutor</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">mainLabel</span> <span class="o">=</span> <span class="nf">labelFromMainActor</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">mainLabel</span> <span class="o">==</span> <span class="s">"com.apple.main-thread"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"global concurrent executor runs on:"</span><span class="p">,</span> <span class="n">globalLabel</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine the global executor’s jobs ran on a queue labeled <code class="language-plaintext highlighter-rouge">com.apple.root.default-qos.cooperative</code>: the cooperative pool. The label changes with quality of service; it is a diagnostic, not an API.</p>
+
+<h2 id="the-rule-that-governs-everything-do-not-block-the-pool">The rule that governs everything: do not block the pool</h2>
+
+<p>The cooperative pool has a fixed width, and the runtime assumes every job either finishes or suspends quickly. A job that blocks its thread with <code class="language-plaintext highlighter-rouge">usleep</code>, a synchronous C library call, a semaphore, or a slow <code class="language-plaintext highlighter-rouge">read</code> takes one of a small number of threads out of service. The <a href="/swift-threads-dispatch-queues-tasks/">threads article</a> measured the consequence: 40 blocking tasks on a 20-core machine took two full rounds, and every other non-isolated task in the process waited behind them.</p>
+
+<p>Actors do not escape this rule. A blocking call inside a default actor’s method blocks the pool thread the actor borrowed. The experiment below starts 30 actors, each making one 100 ms blocking call, and meanwhile asks the <em>main actor</em> to sleep for 20 ms:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Stands in for a synchronous library call that blocks its thread.</span>
+<span class="kd">func</span> <span class="nf">blockingLibraryCall</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nf">usleep</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">DefaultActorClient</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">query</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="nf">blockingLibraryCall</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nf">currentQueueLabel</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">QueueBackedClient</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span><span class="p">:</span> <span class="kt">DispatchSerialQueue</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">queue</span> <span class="o">=</span> <span class="kt">DispatchSerialQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="n">label</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">nonisolated</span> <span class="k">var</span> <span class="nv">unownedExecutor</span><span class="p">:</span> <span class="kt">UnownedSerialExecutor</span> <span class="p">{</span>
+        <span class="n">queue</span><span class="o">.</span><span class="nf">asUnownedSerialExecutor</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">query</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="nf">blockingLibraryCall</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nf">currentQueueLabel</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// How long a 20 ms sleep on the main actor really takes while `queries` run.</span>
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">mainActorSleep</span><span class="p">(</span><span class="n">whileRunning</span> <span class="nv">queries</span><span class="p">:</span> <span class="p">[</span><span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">])</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Duration</span><span class="p">,</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">String</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">queries</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">query</span><span class="p">()</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">slept</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">labels</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">label</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+            <span class="n">labels</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">slept</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">defaultClients</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">30</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">DefaultActorClient</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">sleepWithDefaultActors</span><span class="p">,</span> <span class="nv">defaultLabels</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">mainActorSleep</span><span class="p">(</span><span class="nv">whileRunning</span><span class="p">:</span> <span class="n">defaultClients</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">client</span> <span class="k">in</span> <span class="p">{</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">query</span><span class="p">()</span> <span class="p">}</span> <span class="p">})</span>
+
+<span class="k">let</span> <span class="nv">queueClients</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">30</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">QueueBackedClient</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"client.</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">sleepWithQueueActors</span><span class="p">,</span> <span class="nv">queueLabels</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">mainActorSleep</span><span class="p">(</span><span class="nv">whileRunning</span><span class="p">:</span> <span class="n">queueClients</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">client</span> <span class="k">in</span> <span class="p">{</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">query</span><span class="p">()</span> <span class="p">}</span> <span class="p">})</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">sleepWithDefaultActors</span> <span class="o">&gt;=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span> <span class="s">"Blocking default actors delayed a main-actor wake-up"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sleepWithQueueActors</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span> <span class="s">"Blocking on the actors' own queues did not"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">defaultLabels</span> <span class="o">==</span> <span class="p">[</span><span class="s">"com.apple.root.default-qos.cooperative"</span><span class="p">],</span> <span class="s">"Default actors borrowed pool threads"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">queueLabels</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"client."</span><span class="p">)</span> <span class="p">},</span> <span class="s">"Each queue-backed actor ran on its own queue"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"20 ms main-actor sleep took"</span><span class="p">,</span> <span class="n">sleepWithDefaultActors</span><span class="p">,</span> <span class="s">"with default actors,"</span><span class="p">,</span> <span class="n">sleepWithQueueActors</span><span class="p">,</span> <span class="s">"with queue-backed actors"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine, the 20 ms sleep took about <strong>140 ms</strong> while 30 default actors blocked, and about 30 ms, the same as with no load at all, while 30 queue-backed actors blocked. With 60 blocking default actors, the same sleep took about 350 ms.</p>
+
+<p>The main thread was never blocked. The delay came from the pool. When a <code class="language-plaintext highlighter-rouge">Task.sleep</code> ends, the runtime enqueues the sleeping task on the global concurrent executor, and only from there does it hop back to the main actor. With every pool thread asleep inside <code class="language-plaintext highlighter-rouge">usleep</code>, nothing could run that hop until the first wave of blocking calls finished. <strong>Starving the cooperative pool makes the main actor late</strong>, even when the main thread is idle: animations driven by sleeps, debounce timers, and continuations resumed through the pool all wait.</p>
+
+<p>This experiment did not start out this way, and the false start is instructive. A first version measured how long an unrelated pool task took to <em>start</em>, timing it from the main actor right after a short sleep. It reported a few microseconds and appeared to show no starvation at all. The flaw was the sleep before the measurement: it had silently taken more than 100 ms, so the “start” timestamp was taken only after the first wave of blocking calls had released their threads. When measuring a scheduler, check that the measuring code does not depend on the thing being measured.</p>
+
+<p>Each default actor reported the cooperative pool’s label; each queue-backed actor reported its own queue. The blocking happened on 30 dispatch threads that GCD created for the purpose, and the pool stayed free.</p>
+
+<p>That is the main legitimate reason to give an actor a custom executor: <strong>the actor wraps something that blocks, and you would rather spend GCD threads than starve the pool.</strong> It is a trade-off, not a free lunch. Thirty blocked dispatch threads still cost memory, and GCD’s thread limit still applies. If many such actors exist, share a small number of queues among them, or redesign around an asynchronous API.</p>
+
+<h2 id="custom-actor-executors">Custom actor executors</h2>
+
+<p>A custom executor is declared by implementing <code class="language-plaintext highlighter-rouge">unownedExecutor</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0392-custom-actor-executors.md">SE-0392</a>), as <code class="language-plaintext highlighter-rouge">QueueBackedClient</code> does. <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code> conforms to <code class="language-plaintext highlighter-rouge">SerialExecutor</code> on iOS 17, macOS 14, and later, so the simplest custom executor is a serial queue the actor owns.</p>
+
+<p>The second reason to use one is interoperability with code that already lives on a queue. A legacy library may deliver callbacks on a queue you passed in, or require that all calls into it come from one queue. If the actor’s executor <em>is</em> that queue, then code running on the queue is, by definition, running on the actor. <code class="language-plaintext highlighter-rouge">assumeIsolated</code> lets that code touch the actor’s state synchronously, and checks the claim at run time:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">TileStore</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">DispatchSerialQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"tiles.serial"</span><span class="p">)</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">tiles</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">nonisolated</span> <span class="k">var</span> <span class="nv">unownedExecutor</span><span class="p">:</span> <span class="kt">UnownedSerialExecutor</span> <span class="p">{</span>
+        <span class="n">queue</span><span class="o">.</span><span class="nf">asUnownedSerialExecutor</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">store</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">dispatchPrecondition</span><span class="p">(</span><span class="nv">condition</span><span class="p">:</span> <span class="o">.</span><span class="nf">onQueue</span><span class="p">(</span><span class="n">queue</span><span class="p">))</span>     <span class="c1">// Isolated code runs on the queue.</span>
+        <span class="n">tiles</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">bytes</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// A legacy loader that calls back on whatever queue it is given.</span>
+<span class="kd">func</span> <span class="nf">legacyLoadTile</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">callbackQueue</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">callbackQueue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="nf">completion</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">count</span> <span class="o">*</span> <span class="mi">1_000</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">tileStore</span> <span class="o">=</span> <span class="kt">TileStore</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">callbackFinished</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="nf">legacyLoadTile</span><span class="p">(</span><span class="s">"ocean"</span><span class="p">,</span> <span class="nv">callbackQueue</span><span class="p">:</span> <span class="n">tileStore</span><span class="o">.</span><span class="n">queue</span><span class="p">)</span> <span class="p">{</span> <span class="n">bytes</span> <span class="k">in</span>
+    <span class="c1">// On the actor's queue, so on the actor: synchronous access, verified at run time.</span>
+    <span class="n">tileStore</span><span class="o">.</span><span class="n">assumeIsolated</span> <span class="p">{</span> <span class="n">store</span> <span class="k">in</span>
+        <span class="n">store</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="s">"ocean"</span><span class="p">,</span> <span class="nv">bytes</span><span class="p">:</span> <span class="n">bytes</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">callbackFinished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">while</span> <span class="o">!</span><span class="n">callbackFinished</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">oceanBytes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tileStore</span><span class="o">.</span><span class="n">tiles</span><span class="p">[</span><span class="s">"ocean"</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">oceanBytes</span> <span class="o">==</span> <span class="mi">5_000</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>No hop, no <code class="language-plaintext highlighter-rouge">Task</code>, no continuation: the callback arrives on the queue and works with actor state immediately. Swift 6.2 improved how the runtime verifies such claims for custom executors (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0471-SerialExecutor-isIsolated.md">SE-0471</a>), so <code class="language-plaintext highlighter-rouge">assumeIsolated</code> on a <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code>-backed actor recognizes code submitted directly to the queue.</p>
+
+<p>Custom executors have costs to weigh:</p>
+
+<ul>
+  <li><strong>Hops into the actor become thread switches.</strong> Calls from pool code into a queue-backed actor can no longer run on the caller’s thread. Each call costs a context switch, the main-actor-like cost the actors article measured at several microseconds.</li>
+  <li><strong>Priority and fairness change.</strong> A dispatch queue has its own quality of service and ordering rules, which may not match task priority.</li>
+  <li><strong>You own the executor’s correctness.</strong> A hand-written executor must run jobs serially, exactly once, and never drop one. Prefer <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code> unless you have a specific reason to build your own.</li>
+</ul>
+
+<h2 id="task-executor-preference">Task executor preference</h2>
+
+<p>Custom actor executors control where <em>isolated</em> code runs. Non-isolated code always ran on the global executor, until Swift 6.0 added <strong>task executor preference</strong> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0417-task-executor-preference.md">SE-0417</a>). Within <code class="language-plaintext highlighter-rouge">withTaskExecutorPreference(executor) { }</code>, or in a task created with <code class="language-plaintext highlighter-rouge">Task(executorPreference:)</code>, non-isolated code runs on the preferred executor instead of the shared pool. Child tasks inherit the preference; unstructured tasks do not.</p>
+
+<p>A task executor can be built from a concurrent dispatch queue:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs task jobs on a dedicated concurrent queue instead of the shared cooperative pool.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">QueueTaskExecutor</span><span class="p">:</span> <span class="kt">TaskExecutor</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span><span class="p">:</span> <span class="kt">DispatchQueue</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">queue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="o">.</span><span class="n">concurrent</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">enqueue</span><span class="p">(</span><span class="n">_</span> <span class="nv">job</span><span class="p">:</span> <span class="kd">consuming</span> <span class="kt">ExecutorJob</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">job</span> <span class="o">=</span> <span class="kt">UnownedJob</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+        <span class="n">queue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span>
+            <span class="n">job</span><span class="o">.</span><span class="nf">runSynchronously</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="k">self</span><span class="o">.</span><span class="nf">asUnownedTaskExecutor</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">labelOfNonisolatedWork</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="nf">currentQueueLabel</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ingestExecutor</span> <span class="o">=</span> <span class="kt">QueueTaskExecutor</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"ingest.pool"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">preferredLabels</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskExecutorPreference</span><span class="p">(</span><span class="n">ingestExecutor</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">child</span> <span class="o">=</span> <span class="nf">labelOfNonisolatedWork</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">direct</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">labelOfNonisolatedWork</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">grouped</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">String</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="nf">currentQueueLabel</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span><span class="o">!</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">unstructured</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="nf">currentQueueLabel</span><span class="p">()</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="p">[</span><span class="k">await</span> <span class="n">child</span><span class="p">,</span> <span class="n">direct</span><span class="p">,</span> <span class="n">grouped</span><span class="p">,</span> <span class="n">unstructured</span><span class="p">]</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="n">preferredLabels</span><span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"ingest.pool"</span><span class="p">,</span> <span class="s">"ingest.pool"</span><span class="p">,</span> <span class="s">"ingest.pool"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preferredLabels</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="s">"ingest.pool"</span><span class="p">,</span> <span class="s">"Unstructured tasks do not inherit the preference"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">pinnedTask</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">executorPreference</span><span class="p">:</span> <span class="n">ingestExecutor</span><span class="p">)</span> <span class="p">{</span> <span class="nf">currentQueueLabel</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">pinnedLabel</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pinnedTask</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pinnedLabel</span> <span class="o">==</span> <span class="s">"ingest.pool"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> is justified: the class’s only stored property is a <code class="language-plaintext highlighter-rouge">DispatchQueue</code>, which is thread-safe, and <code class="language-plaintext highlighter-rouge">TaskExecutor</code> requires <code class="language-plaintext highlighter-rouge">Sendable</code>.</p>
+
+<p>A preference is a preference, not an override. Actor-isolated code still runs on its actor’s executor, and main-actor code still runs on the main thread. The preference affects only code that would otherwise have gone to the global executor, and default actors, which borrow threads from the preferred executor instead of the pool.</p>
+
+<p>When is this worth it? When a subsystem does heavy non-isolated work that would otherwise compete with the whole app on the shared pool, such as a media ingest pipeline, a large import, or a server handling requests, and you want to control its parallelism and quality of service separately. It is also the clean way to run work that blocks: give the blocking subsystem an executor whose threads are allowed to block, and keep the cooperative pool clean.</p>
+
+<h2 id="sizing-an-executor-for-blocking-work">Sizing an executor for blocking work</h2>
+
+<p>A cooperative executor should have about as many threads as cores, because its jobs compute. An executor for jobs that block needs more, because blocked threads do no work. A classic estimate, from Brian Goetz’s <em>Java Concurrency in Practice</em>, sizes a pool from the target CPU utilization \(U\) and the ratio of waiting time \(W\) to computing time \(C\) per job:</p>
+
+\[N_{\text{threads}} = N_{\text{cores}} \times U \times \left(1 + \frac{W}{C}\right).\]
+
+<p>A job that computes for 2 ms and blocks on a database for 18 ms has \(W/C = 9\). To keep 4 cores 50% busy with such jobs, the executor needs about \(4 \times 0.5 \times 10 = 20\) threads. The same formula with \(W = 0\) gives the cooperative pool’s width. The blocking executor should be bounded: a serial queue, a concurrent queue behind a semaphore, or a fixed set of serial queues. An unbounded concurrent dispatch queue grows a thread per blocked job, which is the thread explosion the threads article measured.</p>
+
+<h2 id="keeping-the-main-executor-free">Keeping the main executor free</h2>
+
+<p>The main executor has one thread and a frame deadline. Every executor decision in app code should be checked against it:</p>
+
+<ul>
+  <li><strong>CPU work never belongs on the main executor.</strong> Move it with <code class="language-plaintext highlighter-rouge">@concurrent</code> functions, as the <a href="/swift-main-actor/">main actor article</a> measures with a heartbeat.</li>
+  <li><strong>Blocking work belongs on neither the main executor nor the pool.</strong> Use a queue-backed actor or a task executor whose threads may block.</li>
+  <li><strong>Hops cost the most on the main actor.</strong> About 6 µs per round trip in the actors article. Batch calls from the main actor to other actors.</li>
+  <li><strong>Do not give an actor the main queue as its executor</strong> to “make it run on the main thread.” That is what <code class="language-plaintext highlighter-rouge">@MainActor</code> is for, and it keeps the compiler’s isolation reasoning intact.</li>
+</ul>
+
+<h2 id="choosing">Choosing</h2>
+
+<pre><code class="language-mermaid">flowchart TD
+    accTitle: Choosing where code should execute
+    A{"Does it touch UI state?"}
+    A -- Yes --&gt; M["@MainActor, keep each job short"]
+    A -- No --&gt; B{"Does it protect mutable state?"}
+    B -- Yes --&gt; C{"Does it call blocking or queue-bound APIs?"}
+    C -- Yes --&gt; Q["Actor with a DispatchSerialQueue executor"]
+    C -- No --&gt; D["Default actor"]
+    B -- No --&gt; E{"Is it CPU-heavy?"}
+    E -- Yes --&gt; F["@concurrent function on the global executor"]
+    E -- No --&gt; G{"Does a whole subsystem need its own threads or must block?"}
+    G -- Yes --&gt; H["withTaskExecutorPreference with a bounded TaskExecutor"]
+    G -- No --&gt; I["Default: nonisolated or nonisolated(nonsending)"]
+</code></pre>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Executors run jobs. The main executor runs on the main thread; default actors and non-isolated code share the cooperative pool.</li>
+  <li>A default actor borrows pool threads, so blocking inside an actor starves the pool just as blocking in a task does. On the test machine, a 20 ms main-actor sleep took about 140 ms while 30 default actors blocked, because the wake-up passes through the pool.</li>
+  <li>A custom actor executor, typically a <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code>, moves an actor’s jobs onto threads it owns. Use it for blocking libraries and queue-bound APIs; <code class="language-plaintext highlighter-rouge">assumeIsolated</code> then works from callbacks on that queue.</li>
+  <li>Task executor preference moves non-isolated work, and its children, onto an executor you choose. Unstructured tasks do not inherit it.</li>
+  <li>Size blocking executors with \(N_{\text{cores}} \times U \times (1 + W/C)\), and bound them.</li>
+  <li>Protect the main executor: no CPU work, no blocking, few hops.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Wrap a simulated synchronous key-value store, where every <code class="language-plaintext highlighter-rouge">get</code> and <code class="language-plaintext highlighter-rouge">put</code> blocks for 5 ms, in three designs: a default actor, an actor backed by a <code class="language-plaintext highlighter-rouge">DispatchSerialQueue</code>, and a non-isolated client used inside <code class="language-plaintext highlighter-rouge">withTaskExecutorPreference</code> with a bounded executor of four threads. Drive each with 200 concurrent requests while a heartbeat task on the global executor measures its own scheduling delay. Report throughput and heartbeat delay for each, and explain the results using the pool width and the sizing formula.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0392-custom-actor-executors.md">SE-0392: Custom Actor Executors</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0417-task-executor-preference.md">SE-0417: Task Executor Preference</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0424-custom-isolation-checking-for-serialexecutor.md">SE-0424: Custom isolation checking for SerialExecutor</a> and <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0471-SerialExecutor-isIsolated.md">SE-0471</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10254/">Swift concurrency: Behind the scenes</a>, WWDC21, on the cooperative pool’s forward-progress contract.</li>
+</ul>
+
+<p>Previous: <a href="/swift-isolated-nonisolated/">Isolated and Nonisolated Methods</a>. Next: <a href="/swift-6-data-race-safety-migration/">Migrating to Swift 6 Data-Race Safety</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-executors/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Choosing+an+Executor+in+Swift+Without+Blocking+the+UI%20https%3A%2F%2Fswiftbydeya.com%2Fswift-executors%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-executors/&title=Choosing+an+Executor+in+Swift+Without+Blocking+the+UI%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-executors/&title=Choosing+an+Executor+in+Swift+Without+Blocking+the+UI%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-executors/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Choosing an Executor in Swift Without Blocking the UI%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-executors/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Actors">Actors</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Executors">Executors</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Key-Value Observing with Publishers" href="/combine-kvo-publishers/"> <p>Previous post</p> Key-Value Observing with Publishers </a> </div> <div id="next-post"> <a alt="Timers" href="/combine-timers/"> <p>Next post</p> Timers </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

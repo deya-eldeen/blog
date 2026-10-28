@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Redacting Sensitive Data from Network Logs | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Redacting Sensitive Data from Network Logs" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Network logs are the most useful diagnostic an app has and one of the easiest ways for it to leak what it was trusted with. A log line that prints a request prints its Authorization header. One that prints a URL prints the token in its query string and the email address in its path. One that prints a response body prints the new access token from a sign-in. Those lines end up in sysdiagnose archives users send to support, in crash reporter breadcrumbs, in third-party analytics, and in screenshots of the Xcode console pasted into chat. The fix is not to stop logging. It is to decide, in code, which parts of an exchange are safe to record, and to make everything else impossible to record by accident. This article measures what Apple’s unified logging redacts on its own, which turns out to be less than its defaults suggest. It then builds an allowlist-based redactor for URLs, headers, and bodies, and a test that proves no secret reaches a log by planting canary values and searching for them." /> <meta property="og:description" content="Network logs are the most useful diagnostic an app has and one of the easiest ways for it to leak what it was trusted with. A log line that prints a request prints its Authorization header. One that prints a URL prints the token in its query string and the email address in its path. One that prints a response body prints the new access token from a sign-in. Those lines end up in sysdiagnose archives users send to support, in crash reporter breadcrumbs, in third-party analytics, and in screenshots of the Xcode console pasted into chat. The fix is not to stop logging. It is to decide, in code, which parts of an exchange are safe to record, and to make everything else impossible to record by accident. This article measures what Apple’s unified logging redacts on its own, which turns out to be less than its defaults suggest. It then builds an allowlist-based redactor for URLs, headers, and bodies, and a test that proves no secret reaches a log by planting canary values and searching for them." /> <link rel="canonical" href="https://swiftbydeya.com/swift-redacting-network-logs/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-redacting-network-logs/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-28T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Redacting Sensitive Data from Network Logs" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-28T00:00:00+03:00","datePublished":"2026-09-28T00:00:00+03:00","description":"Network logs are the most useful diagnostic an app has and one of the easiest ways for it to leak what it was trusted with. A log line that prints a request prints its Authorization header. One that prints a URL prints the token in its query string and the email address in its path. One that prints a response body prints the new access token from a sign-in. Those lines end up in sysdiagnose archives users send to support, in crash reporter breadcrumbs, in third-party analytics, and in screenshots of the Xcode console pasted into chat. The fix is not to stop logging. It is to decide, in code, which parts of an exchange are safe to record, and to make everything else impossible to record by accident. This article measures what Apple’s unified logging redacts on its own, which turns out to be less than its defaults suggest. It then builds an allowlist-based redactor for URLs, headers, and bodies, and a test that proves no secret reaches a log by planting canary values and searching for them.","headline":"Redacting Sensitive Data from Network Logs","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-redacting-network-logs/"},"url":"https://swiftbydeya.com/swift-redacting-network-logs/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Redacting Sensitive Data from Network Logs"> <meta name="twitter:description" content="Network logs are the most useful diagnostic an app has and one of the easiest ways for it to leak what it was trusted with. A log line that prints a request ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Redacting Sensitive Data from Network Logs"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Redacting Sensitive Data from Network Logs</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-28T00:00:00+03:00">September 28, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Network logs are the most useful diagnostic an app has and one of the easiest ways for it to leak what it was trusted with. A log line that prints a request prints its <code class="language-plaintext highlighter-rouge">Authorization</code> header. One that prints a URL prints the token in its query string and the email address in its path. One that prints a response body prints the new access token from a sign-in. Those lines end up in sysdiagnose archives users send to support, in crash reporter breadcrumbs, in third-party analytics, and in screenshots of the Xcode console pasted into chat.</p>
+
+<p>The fix is not to stop logging. It is to decide, in code, which parts of an exchange are safe to record, and to make everything else impossible to record by accident. This article measures what Apple’s unified logging redacts on its own, which turns out to be less than its defaults suggest. It then builds an allowlist-based redactor for URLs, headers, and bodies, and a test that proves no secret reaches a log by planting <strong>canary</strong> values and searching for them.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="what-is-sensitive-in-an-exchange">What is sensitive in an exchange</h2>
+
+<p>Almost every part of an HTTP exchange can carry something that must not be logged. Listing them by location is more useful than listing them by kind, because a redactor works by location:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Location</th>
+      <th>Examples of sensitive content</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>URL userinfo</td>
+      <td><code class="language-plaintext highlighter-rouge">https://user:password@host/</code></td>
+    </tr>
+    <tr>
+      <td>URL path</td>
+      <td><code class="language-plaintext highlighter-rouge">/users/alice@example.com/loans</code>, <code class="language-plaintext highlighter-rouge">/reset/8f2c...e91</code> (a one-time token)</td>
+    </tr>
+    <tr>
+      <td>URL query</td>
+      <td><code class="language-plaintext highlighter-rouge">?access_token=...</code>, <code class="language-plaintext highlighter-rouge">?email=...</code>, <code class="language-plaintext highlighter-rouge">?lat=51.5072&amp;lon=-0.1276</code></td>
+    </tr>
+    <tr>
+      <td>Request headers</td>
+      <td><code class="language-plaintext highlighter-rouge">Authorization</code>, <code class="language-plaintext highlighter-rouge">Cookie</code>, <code class="language-plaintext highlighter-rouge">X-API-Key</code>, <code class="language-plaintext highlighter-rouge">Proxy-Authorization</code></td>
+    </tr>
+    <tr>
+      <td>Response headers</td>
+      <td><code class="language-plaintext highlighter-rouge">Set-Cookie</code>, <code class="language-plaintext highlighter-rouge">Location</code> with a signed URL</td>
+    </tr>
+    <tr>
+      <td>Request body</td>
+      <td>Passwords, addresses, payment details, free text</td>
+    </tr>
+    <tr>
+      <td>Response body</td>
+      <td>Access and refresh tokens, personal data, other users’ data</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two properties of this table shape the design. First, sensitive data appears in places that change with every API version: a new query parameter, a new header, a new body field. A <strong>denylist</strong> of known secrets is out of date the day a server adds <code class="language-plaintext highlighter-rouge">X-Session-Token</code>. An <strong>allowlist</strong> of fields known to be safe fails closed: a new field is redacted until someone decides it is safe. Second, the location of data matters as much as the value: an ID in a path is fine to log when it is a book ID and not fine when it is an email address.</p>
+
+<h2 id="what-unified-logging-redacts-by-itself">What unified logging redacts by itself</h2>
+
+<p><code class="language-plaintext highlighter-rouge">os.Logger</code> has a privacy system: each interpolated value can be marked <code class="language-plaintext highlighter-rouge">.public</code>, <code class="language-plaintext highlighter-rouge">.private</code>, <code class="language-plaintext highlighter-rouge">.private(mask: .hash)</code>, or <code class="language-plaintext highlighter-rouge">.sensitive</code>, and values marked private are replaced by <code class="language-plaintext highlighter-rouge">&lt;private&gt;</code> in the persisted log unless a debugger is attached or the device has a logging profile installed. Apple’s documentation says that dynamic strings are private by default. A small program logged the same kinds of values with and without explicit markers, and <code class="language-plaintext highlighter-rouge">log show</code> was used to read what was persisted:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>default, string literal:       default string: Bearer secret-123
+default, URL from a literal:   url default: https://api.example.com/x?token=abc
+default, runtime string:       dyn default: &lt;private&gt;
+default, runtime URL:          url dynamic: &lt;private&gt;
+default, dictionary, struct:   dict: &lt;private&gt;      custom: &lt;private&gt;
+default, integer:              int default: 42
+.public:                       public: Bearer secret-123
+.private, .sensitive:          private: &lt;private&gt;   sensitive: &lt;private&gt;
+.private(mask: .hash) twice:   hash: &lt;mask.hash: 'EG2YAW30mwpeACZehG5X7w=='&gt;  (identical both times)
+</code></pre></div></div>
+
+<p>Values computed at runtime were redacted by default, as documented. Values whose characters come straight from the app’s binary, a string literal or a <code class="language-plaintext highlighter-rouge">URL</code> created from one, were <strong>logged in the clear</strong> under the same default. The logging system treats text in the binary’s constant data as static, and static strings as public. That is a reasonable rule for log messages, which are literals, and a dangerous one for an API key or a token embedded in the source code as a constant, which is exactly where API keys tend to live.</p>
+
+<p>Three conclusions follow:</p>
+
+<ul>
+  <li><strong>Never rely on the default.</strong> Mark every interpolated value with an explicit privacy level, so that what reaches the log does not depend on where a string’s bytes happen to live.</li>
+  <li><strong>Redact before logging, not by logging.</strong> <code class="language-plaintext highlighter-rouge">&lt;private&gt;</code> protects the persisted log, but the Xcode console shows the full value, and so does any log forwarder that runs in your process, such as a crash reporter’s breadcrumb hook. Data that is never interpolated cannot leak through any of them.</li>
+  <li><strong>Integers are public by default.</strong> A user ID logged as an <code class="language-plaintext highlighter-rouge">Int</code> is in the clear.</li>
+</ul>
+
+<h3 id="hashing-is-pseudonymous-not-anonymous">Hashing is pseudonymous, not anonymous</h3>
+
+<p><code class="language-plaintext highlighter-rouge">.private(mask: .hash)</code> replaces the value with a hash, and the same value produced the same hash both times. That allows correlation (“these three failures were the same user”) without showing the value. It does not make the value unrecoverable when the space of possible values is small. A phone number has at most about \(10^{10}\) possibilities in a given country, and a modern GPU computes SHA-256 at more than \(10^{9}\) hashes per second, so trying every number takes:</p>
+
+\[\frac{10^{10}}{10^{9}\ \text{s}^{-1}} = 10\ \text{seconds}\]
+
+<p>Email addresses have more entropy, but a list of leaked addresses makes them just as easy to test. A salt known only to the device helps against someone holding only the log, which is the threat the system’s mask is designed for. Treat hashed identifiers in your own analytics and logs as personal data, which is also how privacy regulations such as the GDPR treat pseudonymous data.</p>
+
+<h2 id="an-allowlist-redactor">An allowlist redactor</h2>
+
+<p>The redactor below works on the three places that matter: the URL, the headers, and the body. For each, it keeps only what an allowlist names, and replaces everything else with a marker that says <em>something</em> was there, which is often what a diagnosis needs.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+<span class="kd">import</span> <span class="n">os</span>
+
+<span class="kd">struct</span> <span class="kt">Redactor</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">safeHeaders</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"accept"</span><span class="p">,</span> <span class="s">"accept-encoding"</span><span class="p">,</span> <span class="s">"accept-language"</span><span class="p">,</span> <span class="s">"cache-control"</span><span class="p">,</span> <span class="s">"content-encoding"</span><span class="p">,</span>
+                                    <span class="s">"content-length"</span><span class="p">,</span> <span class="s">"content-type"</span><span class="p">,</span> <span class="s">"date"</span><span class="p">,</span> <span class="s">"etag"</span><span class="p">,</span> <span class="s">"if-none-match"</span><span class="p">,</span> <span class="s">"last-modified"</span><span class="p">,</span>
+                                    <span class="s">"retry-after"</span><span class="p">,</span> <span class="s">"user-agent"</span><span class="p">,</span> <span class="s">"x-request-id"</span><span class="p">,</span> <span class="s">"age"</span><span class="p">,</span> <span class="s">"vary"</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">safeQueryItems</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"limit"</span><span class="p">,</span> <span class="s">"sort"</span><span class="p">,</span> <span class="s">"page"</span><span class="p">,</span> <span class="s">"include"</span><span class="p">,</span> <span class="s">"fields"</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">safeJSONKeys</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"id"</span><span class="p">,</span> <span class="s">"status"</span><span class="p">,</span> <span class="s">"error"</span><span class="p">,</span> <span class="s">"error_description"</span><span class="p">,</span> <span class="s">"type"</span><span class="p">,</span> <span class="s">"title"</span><span class="p">,</span> <span class="s">"code"</span><span class="p">,</span> <span class="s">"count"</span><span class="p">,</span> <span class="s">"next"</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">marker</span> <span class="o">=</span> <span class="s">"&lt;redacted&gt;"</span>
+
+    <span class="kd">func</span> <span class="nf">url</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">url</span><span class="p">,</span> <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"&lt;no url&gt;"</span> <span class="p">}</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">fragment</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">percentEncodedPath</span> <span class="o">=</span> <span class="n">components</span><span class="o">.</span><span class="n">percentEncodedPath</span>
+            <span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"/"</span><span class="p">,</span> <span class="nv">omittingEmptySubsequences</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">segment</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">$0</span><span class="p">))</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"/"</span><span class="p">)</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">percentEncodedQueryItems</span> <span class="o">=</span> <span class="n">components</span><span class="o">.</span><span class="n">percentEncodedQueryItems</span><span class="p">?</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+            <span class="n">safeQueryItems</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">())</span> <span class="p">?</span> <span class="nv">item</span> <span class="p">:</span> <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"REDACTED"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">components</span><span class="o">.</span><span class="n">string</span> <span class="p">??</span> <span class="s">"&lt;unprintable url&gt;"</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Path segments that look like personal data or secrets are replaced; route words and short IDs are kept.</span>
+    <span class="kd">func</span> <span class="nf">segment</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">decoded</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">removingPercentEncoding</span> <span class="p">??</span> <span class="n">raw</span>
+        <span class="k">if</span> <span class="n">decoded</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"@"</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="s">":email"</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">decoded</span><span class="o">.</span><span class="nf">wholeMatch</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="sr">/[0-9]{7,}/</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="k">return</span> <span class="s">":number"</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">decoded</span><span class="o">.</span><span class="nf">wholeMatch</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="sr">/[0-9a-fA-F-]{32,36}/</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="k">return</span> <span class="s">":uuid"</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">decoded</span><span class="o">.</span><span class="nf">wholeMatch</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="sr">/[A-Za-z0-9_\-\.=]{24,}/</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="k">return</span> <span class="s">":token"</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">raw</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">headers</span><span class="p">(</span><span class="n">_</span> <span class="nv">fields</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">name</span> <span class="k">in</span>
+            <span class="n">safeHeaders</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">())</span> <span class="p">?</span> <span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">fields</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">!</span><span class="se">)</span><span class="s">"</span> <span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">marker</span><span class="se">)</span><span class="s">"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">body</span><span class="p">(</span><span class="n">_</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">data</span><span class="p">,</span> <span class="o">!</span><span class="n">data</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"&lt;empty&gt;"</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="n">contentType</span><span class="p">?</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">()</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"json"</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span><span class="p">,</span>
+              <span class="k">let</span> <span class="nv">object</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="kt">JSONSerialization</span><span class="o">.</span><span class="nf">jsonObject</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">fragmentsAllowed</span><span class="p">])</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="s">"&lt;</span><span class="se">\(</span><span class="n">data</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> bytes </span><span class="se">\(</span><span class="n">contentType</span> <span class="p">??</span> <span class="s">"unknown type"</span><span class="se">)</span><span class="s">&gt;"</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">redacted</span> <span class="o">=</span> <span class="nf">redactJSON</span><span class="p">(</span><span class="n">object</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="kt">JSONSerialization</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">withJSONObject</span><span class="p">:</span> <span class="n">redacted</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">sortedKeys</span><span class="p">,</span> <span class="o">.</span><span class="n">fragmentsAllowed</span><span class="p">]))</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"&lt;json&gt;"</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">redactJSON</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Any</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Any</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">value</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="k">let</span> <span class="nv">object</span> <span class="k">as</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">object</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="nv">into</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]())</span> <span class="p">{</span> <span class="n">result</span><span class="p">,</span> <span class="n">pair</span> <span class="k">in</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">pair</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nf">redactJSON</span><span class="p">(</span><span class="n">pair</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="n">pair</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="k">case</span> <span class="k">let</span> <span class="nv">array</span> <span class="k">as</span> <span class="p">[</span><span class="kt">Any</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">redactJSON</span><span class="p">(</span><span class="nv">$0</span><span class="p">,</span> <span class="nv">key</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">default</span><span class="p">:</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">key</span><span class="p">,</span> <span class="n">safeJSONKeys</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">())</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">marker</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Each choice in it is a deliberate one:</p>
+
+<ul>
+  <li><strong>Userinfo and fragments are always removed.</strong> Neither has a diagnostic use worth the risk.</li>
+  <li><strong>Query values are replaced, names are kept.</strong> Knowing that a request had a <code class="language-plaintext highlighter-rouge">token</code> parameter is useful; its value never is.</li>
+  <li><strong>Path segments are classified by shape.</strong> Route words such as <code class="language-plaintext highlighter-rouge">books</code> and short IDs such as <code class="language-plaintext highlighter-rouge">b-7</code> are kept, because a log that says <code class="language-plaintext highlighter-rouge">GET /:x/:x/:x</code> is useless. Emails, long numbers, UUIDs, and long token-like strings are replaced by what they looked like. This is a heuristic, which is why the allowlists for headers, query items, and keys do the heavy lifting and the path rule is a backstop.</li>
+  <li><strong>JSON keeps its structure.</strong> Every key is printed, and values survive only under allowlisted keys, so a log shows <code class="language-plaintext highlighter-rouge">{"access_token":"&lt;redacted&gt;","expires_in":"&lt;redacted&gt;"}</code> and the shape of a failing response is still visible.</li>
+  <li><strong>Non-JSON bodies are summarized</strong> as a byte count and a type. Logging form bodies, multipart uploads, or images verbatim is never worth it.</li>
+</ul>
+
+<p>The redactor’s behavior on the URLs from the table above:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">redactor</span> <span class="o">=</span> <span class="kt">Redactor</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">url</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://alice:hunter2@api.example.com/users/alice@example.com/loans?limit=20&amp;token=abc#top"</span><span class="p">))</span>
+       <span class="o">==</span> <span class="s">"https://api.example.com/users/:email/loans?limit=20&amp;token=REDACTED"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">url</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.example.com/reset/8f2c4e9a1b3d4f5a6b7c8d9e0f1a2b3c"</span><span class="p">))</span>
+       <span class="o">==</span> <span class="s">"https://api.example.com/reset/:uuid"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">url</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.example.com/books/b-7/reviews?sort=-date"</span><span class="p">))</span>
+       <span class="o">==</span> <span class="s">"https://api.example.com/books/b-7/reviews?sort=-date"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">url</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.example.com/geo?lat=51.5072&amp;lon=-0.1276"</span><span class="p">))</span>
+       <span class="o">==</span> <span class="s">"https://api.example.com/geo?lat=REDACTED&amp;lon=REDACTED"</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">headers</span><span class="p">([</span><span class="s">"Authorization"</span><span class="p">:</span> <span class="s">"Bearer x"</span><span class="p">,</span> <span class="s">"Content-Type"</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">,</span> <span class="s">"X-Session"</span><span class="p">:</span> <span class="s">"s"</span><span class="p">])</span>
+       <span class="o">==</span> <span class="p">[</span><span class="s">"Authorization: &lt;redacted&gt;"</span><span class="p">,</span> <span class="s">"Content-Type: application/json"</span><span class="p">,</span> <span class="s">"X-Session: &lt;redacted&gt;"</span><span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">tokenBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">access_token</span><span class="s">":"</span><span class="n">eyJ</span><span class="o">.</span><span class="n">secret</span><span class="s">","</span><span class="n">expires_in</span><span class="s">":3600,"</span><span class="n">user</span><span class="s">":{"</span><span class="n">id</span><span class="s">":"</span><span class="n">u</span><span class="o">-</span><span class="mi">1</span><span class="s">","</span><span class="n">email</span><span class="s">":"</span><span class="n">a</span><span class="kd">@b</span><span class="o">.</span><span class="n">c</span><span class="s">"}}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">body</span><span class="p">(</span><span class="n">tokenBody</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">)</span>
+       <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">access_token</span><span class="s">":"</span><span class="o">&lt;</span><span class="n">redacted</span><span class="o">&gt;</span><span class="s">","</span><span class="n">expires_in</span><span class="s">":"</span><span class="o">&lt;</span><span class="n">redacted</span><span class="o">&gt;</span><span class="s">","</span><span class="n">user</span><span class="s">":{"</span><span class="n">email</span><span class="s">":"</span><span class="o">&lt;</span><span class="n">redacted</span><span class="o">&gt;</span><span class="s">","</span><span class="n">id</span><span class="s">":"</span><span class="n">u</span><span class="o">-</span><span class="mi">1</span><span class="s">"}}"</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">body</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"password=hunter2"</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">contentType</span><span class="p">:</span> <span class="s">"application/x-www-form-urlencoded"</span><span class="p">)</span>
+       <span class="o">==</span> <span class="s">"&lt;16 bytes application/x-www-form-urlencoded&gt;"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">expires_in</code> was redacted, which is harmless but shows the allowlist working as designed: nothing is logged that nobody decided to log. Adding it to <code class="language-plaintext highlighter-rouge">safeJSONKeys</code> is a one-line, reviewable change.</p>
+
+<h2 id="a-logging-transport-that-cannot-leak">A logging transport that cannot leak</h2>
+
+<p>The redactor is used in one place: a transport decorator, in the style of <a href="/swift-api-client-design/">Designing an API Client Around Consumer Needs</a>, that writes one line per exchange to a sink. The line is built <em>only</em> from redacted parts, so the sink can mark it <code class="language-plaintext highlighter-rouge">.public</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">LogSink</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">line</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">OSLogSink</span><span class="p">:</span> <span class="kt">LogSink</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">logger</span> <span class="o">=</span> <span class="kt">Logger</span><span class="p">(</span><span class="nv">subsystem</span><span class="p">:</span> <span class="s">"com.example.library"</span><span class="p">,</span> <span class="nv">category</span><span class="p">:</span> <span class="s">"network"</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">line</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">logger</span><span class="o">.</span><span class="nf">notice</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">line</span><span class="p">,</span> <span class="nv">privacy</span><span class="p">:</span> <span class="o">.</span><span class="kd">public</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>  <span class="c1">// already redacted; explicit, not default</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">MemorySink</span><span class="p">:</span> <span class="kt">LogSink</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">lines</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">_</span> <span class="nv">line</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">lines</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">all</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span> <span class="n">lines</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">RedactingLoggingTransport</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span>
+    <span class="k">let</span> <span class="nv">redactor</span><span class="p">:</span> <span class="kt">Redactor</span>
+    <span class="k">let</span> <span class="nv">sink</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">LogSink</span>
+    <span class="k">var</span> <span class="nv">logBodies</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">started</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">let</span> <span class="nv">requestID</span> <span class="o">=</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="n">requestID</span><span class="p">),</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"X-Request-ID"</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="p">??</span> <span class="s">"GET"</span>
+        <span class="k">let</span> <span class="nv">target</span> <span class="o">=</span> <span class="n">redactor</span><span class="o">.</span><span class="nf">url</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">sink</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="s">"→ </span><span class="se">\(</span><span class="n">requestID</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">method</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">target</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">headers</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">allHTTPHeaderFields</span> <span class="p">??</span> <span class="p">[:])</span><span class="se">)</span><span class="s">"</span>
+                   <span class="o">+</span> <span class="p">(</span><span class="n">logBodies</span> <span class="p">?</span> <span class="s">" body=</span><span class="se">\(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">body</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">httpBody</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">))</span><span class="se">)</span><span class="s">"</span> <span class="p">:</span> <span class="s">""</span><span class="p">))</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+            <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span>
+            <span class="k">let</span> <span class="nv">headers</span> <span class="o">=</span> <span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">allHeaderFields</span> <span class="k">as?</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">])</span> <span class="p">??</span> <span class="p">[:]</span>
+            <span class="n">sink</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="s">"← </span><span class="se">\(</span><span class="n">requestID</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">http</span><span class="o">.</span><span class="n">statusCode</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">data</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s">B </span><span class="se">\(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">started</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">headers</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span><span class="se">)</span><span class="s">"</span>
+                       <span class="o">+</span> <span class="p">(</span><span class="n">logBodies</span> <span class="p">?</span> <span class="s">" body=</span><span class="se">\(</span><span class="n">redactor</span><span class="o">.</span><span class="nf">body</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="n">http</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">))</span><span class="se">)</span><span class="s">"</span> <span class="p">:</span> <span class="s">""</span><span class="p">))</span>
+            <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">http</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+            <span class="n">sink</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="s">"← </span><span class="se">\(</span><span class="n">requestID</span><span class="se">)</span><span class="s"> URLError </span><span class="se">\(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">rawValue</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">started</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">error</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">X-Request-ID</code> header is the most valuable field in the line. It costs nothing, it is safe to log on both sides, and when the server logs it too, a support engineer can find the server’s full, access-controlled record of an exchange from the client’s redacted one. That division of labor is the right one: the server’s logs live in a system with access controls and retention policies, and the client’s logs end up on users’ devices and in support tickets.</p>
+
+<h2 id="proving-nothing-leaks-canary-tests">Proving nothing leaks: canary tests</h2>
+
+<p>A redactor is only as good as its tests, and tests that check for <em>known</em> secrets miss the new header nobody thought of. A <strong>canary test</strong> turns the question around. It plants unique, recognizable values in every place a secret could hide, runs real exchanges through the logging transport, and then searches every log line for any canary:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">canaries</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"CANARY</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span> <span class="o">+</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"-"</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">""</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">leakServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+                 <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">),</span>
+                           <span class="p">(</span><span class="s">"Set-Cookie"</span><span class="p">,</span> <span class="s">"session=</span><span class="se">\(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="se">)</span><span class="s">; HttpOnly"</span><span class="p">),</span>
+                           <span class="p">(</span><span class="s">"X-Debug-Token"</span><span class="p">,</span> <span class="n">canaries</span><span class="p">[</span><span class="mi">7</span><span class="p">])],</span>
+                 <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">access_token</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span><span class="s">","</span><span class="n">next</span><span class="s">":null}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))])</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sink</span> <span class="o">=</span> <span class="kt">MemorySink</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">transport</span> <span class="o">=</span> <span class="kt">RedactingLoggingTransport</span><span class="p">(</span><span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">),</span>
+                                          <span class="nv">redactor</span><span class="p">:</span> <span class="kt">Redactor</span><span class="p">(),</span> <span class="nv">sink</span><span class="p">:</span> <span class="n">sink</span><span class="p">,</span> <span class="nv">logBodies</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+
+<span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">leakServer</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"users/</span><span class="se">\(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="se">)</span><span class="s">@example.com/books"</span><span class="p">),</span>
+                               <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+<span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"limit"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"20"</span><span class="p">),</span> <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"session"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">canaries</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+<span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span><span class="p">)</span>
+<span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer </span><span class="se">\(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"theme=dark; sid=</span><span class="se">\(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Cookie"</span><span class="p">)</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"X-New-Secret-Header"</span><span class="p">)</span>  <span class="c1">// a header nobody listed</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+<span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">password</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span><span class="s">","</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">responseData</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">responseData</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">canaries</span><span class="p">[</span><span class="mi">8</span><span class="p">]))</span>
+
+<span class="k">let</span> <span class="nv">logged</span> <span class="o">=</span> <span class="n">sink</span><span class="o">.</span><span class="n">all</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">logged</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">leaks</span> <span class="o">=</span> <span class="n">canaries</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leaks</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">,</span> <span class="s">"leaked: </span><span class="se">\(</span><span class="n">leaks</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+
+<span class="c1">// The log is still useful:</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"POST"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"/users/:email/books?limit=20&amp;session=REDACTED"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"← "</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">" 200 "</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="err">#</span><span class="s">""</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">""</span><span class="err">#</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"X-Request-ID: "</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">sentRequestID</span> <span class="o">=</span> <span class="n">leakServer</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">last</span><span class="p">?</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"X-Request-ID"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sentRequestID</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">logged</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>  <span class="c1">// the same ID the server received</span>
+</code></pre></div></div>
+
+<p>The canary in <code class="language-plaintext highlighter-rouge">X-New-Secret-Header</code> is the point of the exercise: no one listed that header as sensitive, and it was redacted anyway because no one listed it as safe. The canaries are long, random, and prefixed, so a search for them cannot match anything by coincidence. The printed log:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>→ EAED0BEA POST http://127.0.0.1:50108/users/:email/books?limit=20&amp;session=REDACTED ["Authorization: &lt;redacted&gt;", "Content-Type: application/json", "Cookie: &lt;redacted&gt;", "X-New-Secret-Header: &lt;redacted&gt;", "X-Request-ID: EAED0BEA"] body={"id":"b-7","password":"&lt;redacted&gt;"}
+← EAED0BEA 200 60B 0.007372291 seconds ["Content-Length: 60", "Content-Type: application/json", "Set-Cookie: &lt;redacted&gt;", "X-Debug-Token: &lt;redacted&gt;"] body={"access_token":"&lt;redacted&gt;","id":"b-7","next":null}
+</code></pre></div></div>
+
+<p>Both lines are enough to diagnose most problems: which endpoint, which status, how long it took, how big the response was, what shape it had, and the ID to look up on the server. None of the nine planted values appear in them.</p>
+
+<p>Run the canary test in CI against the real transport configuration of the app, not a test-only one, and extend it whenever a new kind of request is added: a multipart upload, a WebSocket handshake, a background download. Each one is a new place for a secret to hide.</p>
+
+<h2 id="other-places-logs-come-from">Other places logs come from</h2>
+
+<p>The transport covers the app’s own logging. Several other sources print network data, and each needs its own decision:</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">print</code> and <code class="language-plaintext highlighter-rouge">debugPrint</code></strong> write to standard output, which on iOS is captured only under a debugger, but which <code class="language-plaintext highlighter-rouge">URLRequest</code>’s and <code class="language-plaintext highlighter-rouge">HTTPURLResponse</code>’s descriptions populate with full URLs and headers. Ban them in networking code with a lint rule.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">CFNETWORK_DIAGNOSTICS</code></strong> is an environment variable that makes the URL Loading System log its internals, including headers, at levels 1 to 3. It is invaluable for debugging and must never be set in a build that reaches users.</li>
+  <li><strong>Third-party SDKs</strong> that wrap <code class="language-plaintext highlighter-rouge">URLSession</code> or install their own <code class="language-plaintext highlighter-rouge">URLProtocol</code> may log requests themselves. Review their logging options; many have a “log request bodies” flag that defaults to on in debug builds.</li>
+  <li><strong>Crash reporters and analytics</strong> often record “breadcrumbs” of recent network activity automatically. Configure them to use the same redactor, or to record only the method, the path template, and the status.</li>
+  <li><strong>cURL exports</strong> in debugging tools are the most complete leak of all: a working command line with every credential included. If your app generates them for bug reports, build them from the redactor’s output so the command fails until someone adds credentials by hand.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Sensitive data appears in URLs (userinfo, path, query), headers, and bodies in both directions. Redact by location, with allowlists, so new fields fail closed.</li>
+  <li>Measured: <code class="language-plaintext highlighter-rouge">os.Logger</code> redacted runtime values by default, but logged strings from the binary, including a <code class="language-plaintext highlighter-rouge">URL</code> created from a literal, in the clear. Mark every interpolation explicitly, and redact before logging.</li>
+  <li><code class="language-plaintext highlighter-rouge">.private(mask: .hash)</code> gives stable hashes for correlation; low-entropy values such as phone numbers can be recovered by brute force in seconds, so treat them as personal data.</li>
+  <li>Keep route words and short IDs in paths, replace emails, long numbers, UUIDs, and tokens. Keep query names, drop values. Keep JSON structure, drop values under keys not allowlisted. Summarize non-JSON bodies.</li>
+  <li>Log one line per exchange from a transport decorator, with an <code class="language-plaintext highlighter-rouge">X-Request-ID</code> shared with the server.</li>
+  <li>Prove the redactor with canary tests that plant unique values in every location and search the log for them, including headers nobody listed.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a test that fails if the summary line for a JSON body exceeds 2 KB, truncating large arrays to their first three elements plus a count. Then add a canary test for redirects: have the server redirect to a URL with a canary in its query, and make sure the redirect’s <code class="language-plaintext highlighter-rouge">Location</code> header and the final URL are both redacted in the log.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/os/generating-log-messages-from-your-code">Generating Log Messages from Your Code</a> and <a href="https://developer.apple.com/documentation/os/oslogprivacy"><code class="language-plaintext highlighter-rouge">OSLogPrivacy</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2020/10168/">Explore logging in Swift</a>, WWDC20, which introduced <code class="language-plaintext highlighter-rouge">Logger</code> and its privacy options.</li>
+  <li>The <a href="https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html">OWASP Logging Cheat Sheet</a>, on what to exclude from logs.</li>
+</ul>
+
+<p>Previous: <a href="/swift-logout-in-flight-requests/">Handling Logout During an In-Flight Request</a>. Next: <a href="/swift-network-timeouts-cancellation/">Timeouts, Cancellation, and Request Lifetimes</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-redacting-network-logs/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Redacting+Sensitive+Data+from+Network+Logs%20https%3A%2F%2Fswiftbydeya.com%2Fswift-redacting-network-logs%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-redacting-network-logs/&title=Redacting+Sensitive+Data+from+Network+Logs%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-redacting-network-logs/&title=Redacting+Sensitive+Data+from+Network+Logs%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-redacting-network-logs/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Redacting Sensitive Data from Network Logs%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-redacting-network-logs/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Logging">Logging</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Privacy">Privacy</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Timeouts, Cancellation, and Request Lifetimes" href="/swift-network-timeouts-cancellation/"> <p>Previous post</p> Timeouts, Cancellation, and Request Lifetimes </a> </div> <div id="next-post"> <a alt="Handling Logout During an In-Flight Request" href="/swift-logout-in-flight-requests/"> <p>Next post</p> Handling Logout During an In-Flight Request </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Combine vs. async/await and AsyncSequence | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Combine vs. async/await and AsyncSequence" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Swift 5.5 gave the language its own model for values over time: async functions for one value, AsyncSequence for many, tasks for lifetime and cancellation, and actors for isolation. Combine solved most of the same problems two years earlier, as a library, and the two now overlap almost completely. A request is either a publisher or an async function. A stream of events is either a publisher or an AsyncSequence. A cancellable is either an AnyCancellable or a Task handle. The overlap hides differences that change how code behaves. Combine pushes values to subscribers; an AsyncSequence is pulled by its consumer, one next() at a time. Combine’s operators are a large built-in vocabulary; AsyncSequence’s are few, with the rest in a separate package. Combine has multicasting built in, while AsyncStream splits values between consumers. And the compiler checks the isolation of async code, while Combine code, as this series has measured repeatedly, compiles cleanly and crashes at run time. This article compares the two side by side, measures the differences that matter, implements the same feature both ways, and ends with how to choose." /> <meta property="og:description" content="Swift 5.5 gave the language its own model for values over time: async functions for one value, AsyncSequence for many, tasks for lifetime and cancellation, and actors for isolation. Combine solved most of the same problems two years earlier, as a library, and the two now overlap almost completely. A request is either a publisher or an async function. A stream of events is either a publisher or an AsyncSequence. A cancellable is either an AnyCancellable or a Task handle. The overlap hides differences that change how code behaves. Combine pushes values to subscribers; an AsyncSequence is pulled by its consumer, one next() at a time. Combine’s operators are a large built-in vocabulary; AsyncSequence’s are few, with the rest in a separate package. Combine has multicasting built in, while AsyncStream splits values between consumers. And the compiler checks the isolation of async code, while Combine code, as this series has measured repeatedly, compiles cleanly and crashes at run time. This article compares the two side by side, measures the differences that matter, implements the same feature both ways, and ends with how to choose." /> <link rel="canonical" href="https://swiftbydeya.com/combine-vs-async-await/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-vs-async-await/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-14T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Combine vs. async/await and AsyncSequence" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-14T00:00:00+03:00","datePublished":"2026-08-14T00:00:00+03:00","description":"Swift 5.5 gave the language its own model for values over time: async functions for one value, AsyncSequence for many, tasks for lifetime and cancellation, and actors for isolation. Combine solved most of the same problems two years earlier, as a library, and the two now overlap almost completely. A request is either a publisher or an async function. A stream of events is either a publisher or an AsyncSequence. A cancellable is either an AnyCancellable or a Task handle. The overlap hides differences that change how code behaves. Combine pushes values to subscribers; an AsyncSequence is pulled by its consumer, one next() at a time. Combine’s operators are a large built-in vocabulary; AsyncSequence’s are few, with the rest in a separate package. Combine has multicasting built in, while AsyncStream splits values between consumers. And the compiler checks the isolation of async code, while Combine code, as this series has measured repeatedly, compiles cleanly and crashes at run time. This article compares the two side by side, measures the differences that matter, implements the same feature both ways, and ends with how to choose.","headline":"Combine vs. async/await and AsyncSequence","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-vs-async-await/"},"url":"https://swiftbydeya.com/combine-vs-async-await/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Combine vs. async/await and AsyncSequence"> <meta name="twitter:description" content="Swift 5.5 gave the language its own model for values over time: async functions for one value, AsyncSequence for many, tasks for lifetime and cancellation, a..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Combine vs. async/await and AsyncSequence"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Combine vs. async/await and AsyncSequence</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-14T00:00:00+03:00">August 14, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Swift 5.5 gave the language its own model for values over time: <code class="language-plaintext highlighter-rouge">async</code> functions for one value, <code class="language-plaintext highlighter-rouge">AsyncSequence</code> for many, tasks for lifetime and cancellation, and actors for isolation. Combine solved most of the same problems two years earlier, as a library, and the two now overlap almost completely. A request is either a publisher or an <code class="language-plaintext highlighter-rouge">async</code> function. A stream of events is either a publisher or an <code class="language-plaintext highlighter-rouge">AsyncSequence</code>. A cancellable is either an <code class="language-plaintext highlighter-rouge">AnyCancellable</code> or a <code class="language-plaintext highlighter-rouge">Task</code> handle.</p>
+
+<p>The overlap hides differences that change how code behaves. Combine pushes values to subscribers; an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> is pulled by its consumer, one <code class="language-plaintext highlighter-rouge">next()</code> at a time. Combine’s operators are a large built-in vocabulary; <code class="language-plaintext highlighter-rouge">AsyncSequence</code>’s are few, with the rest in a separate package. Combine has multicasting built in, while <code class="language-plaintext highlighter-rouge">AsyncStream</code> splits values between consumers. And the compiler checks the isolation of <code class="language-plaintext highlighter-rouge">async</code> code, while Combine code, as this series has measured repeatedly, compiles cleanly and crashes at run time. This article compares the two side by side, measures the differences that matter, implements the same feature both ways, and ends with how to choose.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>; the file uses top-level <code class="language-plaintext highlighter-rouge">await</code>. The concurrency roadmap covers the language side in depth, starting with <a href="/swift-asyncsequence/"><code class="language-plaintext highlighter-rouge">AsyncSequence</code></a> and <a href="/swift-asyncstream/"><code class="language-plaintext highlighter-rouge">AsyncStream</code></a>.</p>
+
+<h2 id="push-and-pull">Push and pull</h2>
+
+<p>A Combine publisher delivers values by calling its subscriber. Demand lets a subscriber limit that, but most subscribers request unlimited demand, and sources such as subjects push whether or not anyone asked, dropping values when demand is zero, as <a href="/combine-subjects/">Subjects</a> measured. An <code class="language-plaintext highlighter-rouge">AsyncSequence</code> inverts the relationship: the consumer calls <code class="language-plaintext highlighter-rouge">next()</code> when it is ready, so a slow consumer slows down the sequence. When the producer is independent of the consumer, as with an <code class="language-plaintext highlighter-rouge">AsyncStream</code> fed from a callback, the stream’s <strong>buffering policy</strong> decides what happens to values the consumer has not asked for yet:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">func</span> <span class="nf">consumeSlowly</span><span class="p">(</span><span class="n">_</span> <span class="nv">stream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span>
+        <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>   <span class="c1">// a slow consumer</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">received</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">allValues</span><span class="p">,</span> <span class="nv">allContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">latestValues</span><span class="p">,</span> <span class="nv">latestContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">unboundedResult</span> <span class="o">=</span> <span class="nf">consumeSlowly</span><span class="p">(</span><span class="n">allValues</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">newestResult</span> <span class="o">=</span> <span class="nf">consumeSlowly</span><span class="p">(</span><span class="n">latestValues</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">5</span> <span class="p">{</span>
+    <span class="n">allContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">latestContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="n">allContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="n">latestContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">everything</span><span class="p">,</span> <span class="nv">newest</span><span class="p">)</span> <span class="o">=</span> <span class="nf">await</span> <span class="p">(</span><span class="n">unboundedResult</span><span class="p">,</span> <span class="n">newestResult</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">everything</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>          <span class="c1">// buffered until the consumer caught up</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">newest</span><span class="o">.</span><span class="n">first</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">newest</span><span class="o">.</span><span class="n">last</span> <span class="o">==</span> <span class="mi">5</span> <span class="o">&amp;&amp;</span> <span class="n">newest</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">)</span>   <span class="c1">// older values were replaced</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">.unbounded</code> is the event-stream policy: nothing is lost, and memory grows if the consumer never catches up. <code class="language-plaintext highlighter-rouge">.bufferingNewest(1)</code> is the state policy, the <code class="language-plaintext highlighter-rouge">AsyncStream</code> counterpart of a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> delivering only the latest value to a slow subscriber. Combine makes the same choice through which subject you pick and whether you add a <code class="language-plaintext highlighter-rouge">buffer</code> operator; <code class="language-plaintext highlighter-rouge">AsyncStream</code> makes it explicit at creation.</p>
+
+<h2 id="one-sequence-one-consumer">One sequence, one consumer</h2>
+
+<p>A publisher can have any number of subscribers, each receiving every value from a subject. An <code class="language-plaintext highlighter-rouge">AsyncStream</code> is designed for a single consumer. Iterating it from two tasks does not give both of them the values; it splits them:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="p">(</span><span class="nv">sharedStream</span><span class="p">,</span> <span class="nv">sharedContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="nf">makeStream</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">firstConsumer</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="k">for</span> <span class="k">await</span> <span class="n">v</span> <span class="k">in</span> <span class="n">sharedStream</span> <span class="p">{</span> <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">};</span> <span class="k">return</span> <span class="n">values</span> <span class="p">}()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">secondConsumer</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="k">for</span> <span class="k">await</span> <span class="n">v</span> <span class="k">in</span> <span class="n">sharedStream</span> <span class="p">{</span> <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">};</span> <span class="k">return</span> <span class="n">values</span> <span class="p">}()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10</span> <span class="p">{</span>
+    <span class="n">sharedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="n">sharedContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">firstValues</span><span class="p">,</span> <span class="nv">secondValues</span><span class="p">)</span> <span class="o">=</span> <span class="nf">await</span> <span class="p">(</span><span class="n">firstConsumer</span><span class="p">,</span> <span class="n">secondConsumer</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">firstValues</span><span class="p">)</span><span class="o">.</span><span class="nf">isDisjoint</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">secondValues</span><span class="p">))</span>            <span class="c1">// no value went to both</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">firstValues</span> <span class="o">+</span> <span class="n">secondValues</span><span class="p">)</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10</span><span class="p">))</span>       <span class="c1">// and none was lost</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"first consumer: </span><span class="se">\(</span><span class="n">firstValues</span><span class="se">)</span><span class="s">, second: </span><span class="se">\(</span><span class="n">secondValues</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The run printed <code class="language-plaintext highlighter-rouge">[0, 2, 4, 6, 8]</code> for one consumer and <code class="language-plaintext highlighter-rouge">[1, 3, 5, 7, 9]</code> for the other: each value went to whichever consumer was waiting. Broadcasting to several consumers needs a separate stream per consumer, a publisher, or the <code class="language-plaintext highlighter-rouge">share()</code> operator that the swift-async-algorithms package added in version 1.1. The standard library itself has no multicasting, which is one place where Combine’s built-in <a href="/combine-share-multicasting/"><code class="language-plaintext highlighter-rouge">share</code> and <code class="language-plaintext highlighter-rouge">multicast</code></a> remain simpler.</p>
+
+<h2 id="cancellation">Cancellation</h2>
+
+<p>Combine cancellation is immediate and structural: cancelling the <code class="language-plaintext highlighter-rouge">AnyCancellable</code> cancels every subscription up to the source, and releasing it does the same. Task cancellation is cooperative: <code class="language-plaintext highlighter-rouge">Task.cancel()</code> sets a flag, and suspension points such as <code class="language-plaintext highlighter-rouge">Task.sleep</code> and <code class="language-plaintext highlighter-rouge">AsyncStream.next()</code> check it. When a task iterates a publisher through <code class="language-plaintext highlighter-rouge">.values</code>, the two models connect: cancelling the task cancels the Combine subscription.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">liveUpdates</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">upstreamCancelled</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">observed</span> <span class="o">=</span> <span class="n">liveUpdates</span><span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">upstreamCancelled</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">})</span>
+<span class="k">let</span> <span class="nv">consumingTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">observed</span><span class="o">.</span><span class="n">values</span> <span class="p">{}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="n">consumingTask</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">upstreamCancelled</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span>      <span class="c1">// Task.cancel() reached the publisher</span>
+</code></pre></div></div>
+
+<p>The difference that bites is ownership. An <code class="language-plaintext highlighter-rouge">AnyCancellable</code> cancels when it is deallocated, so storing it in an object ties the work to the object’s lifetime. A <code class="language-plaintext highlighter-rouge">Task</code> does not cancel when its handle is dropped; it runs to completion unless something calls <code class="language-plaintext highlighter-rouge">cancel()</code>. <a href="/combine-anycancellable-memory/"><code class="language-plaintext highlighter-rouge">AnyCancellable</code> and Memory Management</a> shows a small extension that stores a task’s cancellation in a <code class="language-plaintext highlighter-rouge">Set&lt;AnyCancellable&gt;</code> to get Combine’s behavior, and the concurrency roadmap’s <a href="/swift-task-lifetime-ownership/">Task Lifetime and Ownership</a> explains why tasks work the way they do.</p>
+
+<h2 id="isolation-is-checked-for-one-and-not-the-other">Isolation is checked for one and not the other</h2>
+
+<p>The most important practical difference in Swift 6 is what the compiler can see. In <code class="language-plaintext highlighter-rouge">async</code> code, crossing from a background context into main-actor state is a compile-time error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile</span>
+<span class="kd">@MainActor</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Counter</span> <span class="p">{</span> <span class="k">var</span> <span class="nv">value</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">counter</span> <span class="o">=</span> <span class="kt">Counter</span><span class="p">()</span>
+<span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span>
+    <span class="n">counter</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="p">}</span>
+<span class="c1">// error: main actor-isolated property 'value' can not be mutated from a nonisolated context</span>
+</code></pre></div></div>
+
+<p>The equivalent Combine code compiles without a diagnostic and decides at run time. A closure written in main-actor code and called by Combine on a background thread stops the process in Swift 6’s isolation check, and an <code class="language-plaintext highlighter-rouge">assign</code> to a main-actor property from a background publisher races silently, as <a href="/combine-sink-assign/"><code class="language-plaintext highlighter-rouge">sink</code> and <code class="language-plaintext highlighter-rouge">assign</code></a> found with the Thread Sanitizer. Everything <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> says about where to put <code class="language-plaintext highlighter-rouge">receive(on:)</code> is knowledge that <code class="language-plaintext highlighter-rouge">async</code> code gets from the type checker for free. For new code, that alone is a strong argument.</p>
+
+<h2 id="the-same-feature-both-ways">The same feature, both ways</h2>
+
+<p>A debounced search that cancels superseded requests is a good test case, because it uses time, cancellation, and isolation. In Combine it is a pipeline:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CombineSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">query</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellables</span> <span class="o">=</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AnyCancellable</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">debounce</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">query</span>
+            <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">debounce</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">query</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">],</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="k">in</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kt">Just</span><span class="p">([</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">])</span>
+                    <span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>   <span class="c1">// simulated latency</span>
+                    <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="o">.</span><span class="nf">switchToLatest</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">cancellables</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>With <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code>, the same behavior is a method that cancels the previous task and starts a new one, which sleeps for the debounce interval and then searches. Cancellation does the work of <code class="language-plaintext highlighter-rouge">debounce</code> and <code class="language-plaintext highlighter-rouge">switchToLatest</code> at once: a keystroke during the sleep cancels it, and a keystroke during the request cancels that:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">AsyncSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">lastQuery</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">debounce</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">debounce</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">debounce</span> <span class="o">=</span> <span class="n">debounce</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">query</span> <span class="o">!=</span> <span class="n">lastQuery</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>        <span class="c1">// removeDuplicates</span>
+        <span class="n">lastQuery</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>                               <span class="c1">// switchToLatest</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">debounce</span><span class="p">)</span>     <span class="c1">// debounce</span>
+                <span class="n">requests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>   <span class="c1">// simulated latency</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">]</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="c1">// cancelled: a newer query replaced this one</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Driving both with the same keystrokes gives the same requests and results:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">combineModel</span> <span class="o">=</span> <span class="kt">CombineSearchModel</span><span class="p">(</span><span class="nv">debounce</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">asyncModel</span> <span class="o">=</span> <span class="kt">AsyncSearchModel</span><span class="p">(</span><span class="nv">debounce</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="p">[</span><span class="s">"s"</span><span class="p">,</span> <span class="s">"sw"</span><span class="p">,</span> <span class="s">"swi"</span><span class="p">,</span> <span class="s">"swift"</span><span class="p">]</span> <span class="p">{</span>
+    <span class="n">combineModel</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">asyncModel</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">combineModel</span><span class="o">.</span><span class="n">requests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift"</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">asyncModel</span><span class="o">.</span><span class="n">requests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">combineModel</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">asyncModel</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The Combine version is declarative, and each requirement is one named operator; adding <code class="language-plaintext highlighter-rouge">retry</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, or a <code class="language-plaintext highlighter-rouge">combineLatest</code> with a filter setting is a line each. The <code class="language-plaintext highlighter-rouge">async</code> version is imperative, has no operators to learn, and its isolation is checked: <code class="language-plaintext highlighter-rouge">requests.append</code> and <code class="language-plaintext highlighter-rouge">results =</code> are main-actor accesses the compiler has verified, whereas the Combine <code class="language-plaintext highlighter-rouge">map</code> and <code class="language-plaintext highlighter-rouge">sink</code> closures are main-actor closures that work only because every scheduler in the pipeline is the main queue. The <code class="language-plaintext highlighter-rouge">async</code> version’s time is harder to control in tests: the Combine pipeline takes a scheduler, while the <code class="language-plaintext highlighter-rouge">async</code> one would need an injected <code class="language-plaintext highlighter-rouge">Clock</code> to be tested without real sleeps.</p>
+
+<h2 id="operators">Operators</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncSequence</code> in the standard library has the <code class="language-plaintext highlighter-rouge">Sequence</code>-like operators: <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">filter</code>, <code class="language-plaintext highlighter-rouge">compactMap</code>, <code class="language-plaintext highlighter-rouge">flatMap</code>, <code class="language-plaintext highlighter-rouge">prefix</code>, <code class="language-plaintext highlighter-rouge">drop(while:)</code>, <code class="language-plaintext highlighter-rouge">first(where:)</code>, <code class="language-plaintext highlighter-rouge">contains</code>, <code class="language-plaintext highlighter-rouge">reduce</code>, and <code class="language-plaintext highlighter-rouge">min</code>/<code class="language-plaintext highlighter-rouge">max</code>. The time- and combination-based operators that make Combine pipelines short live in Apple’s <a href="https://github.com/apple/swift-async-algorithms">swift-async-algorithms</a> package:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Combine</th>
+      <th><code class="language-plaintext highlighter-rouge">AsyncSequence</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">filter</code>, <code class="language-plaintext highlighter-rouge">compactMap</code>, <code class="language-plaintext highlighter-rouge">prefix</code>, <code class="language-plaintext highlighter-rouge">first</code>, <code class="language-plaintext highlighter-rouge">reduce</code></td>
+      <td>standard library</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">flatMap</code> (concurrent)</td>
+      <td>none; <code class="language-plaintext highlighter-rouge">flatMap</code> on <code class="language-plaintext highlighter-rouge">AsyncSequence</code> is sequential, use a task group</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">scan</code></td>
+      <td>none; a <code class="language-plaintext highlighter-rouge">for await</code> loop with a variable</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">switchToLatest</code></td>
+      <td>task cancellation; async-algorithms has <code class="language-plaintext highlighter-rouge">flatMapLatest</code> on its main branch, not yet in a release as of 1.1.7</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">removeDuplicates</code></td>
+      <td>async-algorithms <code class="language-plaintext highlighter-rouge">removeDuplicates()</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code></td>
+      <td>async-algorithms <code class="language-plaintext highlighter-rouge">debounce(for:tolerance:clock:)</code>, and <code class="language-plaintext highlighter-rouge">_throttle(for:clock:reducing:)</code>, whose underscore marks it as not yet stable API</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">combineLatest</code>, <code class="language-plaintext highlighter-rouge">zip</code>, <code class="language-plaintext highlighter-rouge">merge</code></td>
+      <td>async-algorithms <code class="language-plaintext highlighter-rouge">combineLatest</code>, <code class="language-plaintext highlighter-rouge">zip</code>, <code class="language-plaintext highlighter-rouge">merge</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">collect(_:)</code>, <code class="language-plaintext highlighter-rouge">collect(.byTime)</code></td>
+      <td>async-algorithms <code class="language-plaintext highlighter-rouge">chunks(ofCount:)</code>, <code class="language-plaintext highlighter-rouge">chunked(by:)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">share</code>, <code class="language-plaintext highlighter-rouge">multicast</code></td>
+      <td>async-algorithms <code class="language-plaintext highlighter-rouge">share()</code>, since 1.1; nothing in the standard library</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PassthroughSubject</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AsyncStream</code> with its continuation, one consumer</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CurrentValueSubject</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AsyncStream</code> with <code class="language-plaintext highlighter-rouge">.bufferingNewest(1)</code>, or <code class="language-plaintext highlighter-rouge">Observations</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">receive(on:)</code></td>
+      <td>actor isolation: <code class="language-plaintext highlighter-rouge">await</code> a <code class="language-plaintext highlighter-rouge">@MainActor</code> function</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">retry</code>, <code class="language-plaintext highlighter-rouge">catch</code></td>
+      <td><code class="language-plaintext highlighter-rouge">do</code>/<code class="language-plaintext highlighter-rouge">catch</code> in a loop</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The table is the strongest argument for keeping Combine in a codebase that already uses it heavily: a pipeline with <code class="language-plaintext highlighter-rouge">combineLatest</code>, <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">share</code>, and <code class="language-plaintext highlighter-rouge">retry</code> is short in Combine, and in <code class="language-plaintext highlighter-rouge">async</code> code it needs a package dependency for three of the four and a hand-written loop for the fourth.</p>
+
+<h2 id="what-it-costs-per-value">What it costs per value</h2>
+
+<p>Sending a million integers through each mechanism, with the producer and consumer in nonisolated code and an optimized build, measured the per-value overhead:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">perValueCost</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">combine</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">,</span> <span class="nv">asyncStream</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">200_000</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+
+    <span class="k">var</span> <span class="nv">combineTotal</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">let</span> <span class="nv">subject</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">combineStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">combineTotal</span> <span class="o">&amp;+=</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span> <span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">combineCost</span> <span class="o">=</span> <span class="p">(</span><span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">combineStart</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+
+    <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">streamStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="nv">consumer</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span> <span class="n">total</span> <span class="o">&amp;+=</span> <span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">total</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+    <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">streamTotal</span> <span class="o">=</span> <span class="k">await</span> <span class="n">consumer</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">let</span> <span class="nv">streamCost</span> <span class="o">=</span> <span class="p">(</span><span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">streamStart</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span>
+
+    <span class="nf">precondition</span><span class="p">(</span><span class="n">combineTotal</span> <span class="o">==</span> <span class="n">streamTotal</span><span class="p">)</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">combineCost</span><span class="p">,</span> <span class="n">streamCost</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">costs</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">perValueCost</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"per value: Combine </span><span class="se">\(</span><span class="n">costs</span><span class="o">.</span><span class="n">combine</span><span class="se">)</span><span class="s">, AsyncStream </span><span class="se">\(</span><span class="n">costs</span><span class="o">.</span><span class="n">asyncStream</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">costs</span><span class="o">.</span><span class="n">asyncStream</span> <span class="o">&gt;</span> <span class="n">costs</span><span class="o">.</span><span class="n">combine</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Path</th>
+      <th>Time per value, optimized build</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PassthroughSubject.send</code> to a <code class="language-plaintext highlighter-rouge">sink</code></td>
+      <td>about 97 ns</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AsyncStream</code> yield, consumed concurrently by a <code class="language-plaintext highlighter-rouge">for await</code> task</td>
+      <td>about 1.9 µs</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AsyncStream</code> yield, consumed afterwards from the buffer</td>
+      <td>about 1.5 µs</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A subject call is a synchronous function call through a lock; an <code class="language-plaintext highlighter-rouge">AsyncStream</code> element involves a continuation resumption and a potential task switch. Twenty times the cost per value is irrelevant for UI events and search queries, which arrive at most hundreds of times a second, and noticeable for hundreds of thousands of values per second, such as sensor samples or parsed log lines. For those, process values in batches, or keep the hot loop synchronous.</p>
+
+<h2 id="choosing">Choosing</h2>
+
+<pre><code class="language-mermaid">flowchart TD
+    A[New code that produces values over time] --&gt; B{One value, or many?}
+    B --&gt;|One: a request, a computation| C["async function"]
+    B --&gt;|Many| D{Does it need multicasting, combineLatest,&lt;br/&gt;or time operators across several sources?}
+    D --&gt;|No| E["AsyncSequence: for await, checked isolation"]
+    D --&gt;|Yes| F{Is Combine already used for this area?}
+    F --&gt;|Yes| G[Combine pipeline, closures nonisolated before receive on main]
+    F --&gt;|No| H["AsyncSequence with swift-async-algorithms,&lt;br/&gt;or Combine at the edge bridged with .values"]
+</code></pre>
+
+<p>In existing Combine code, there is rarely a reason to rewrite a working pipeline. The useful migrations are at the edges: an <code class="language-plaintext highlighter-rouge">async</code> function that a pipeline calls, wrapped as a publisher, or a pipeline whose output an <code class="language-plaintext highlighter-rouge">async</code> caller consumes through <code class="language-plaintext highlighter-rouge">.values</code>. <a href="/combine-publisher-values-async/">Bridging Publishers to <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> with <code class="language-plaintext highlighter-rouge">.values</code></a> covers both directions and their traps, and <a href="/combine-vs-observation-swiftui/">Combine vs. the Observation Framework in SwiftUI</a> covers the place where most apps actually replace Combine: view state.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Combine pushes; <code class="language-plaintext highlighter-rouge">AsyncSequence</code> is pulled. An <code class="language-plaintext highlighter-rouge">AsyncStream</code>’s buffering policy decides what a slow consumer sees: everything with <code class="language-plaintext highlighter-rouge">.unbounded</code>, the latest with <code class="language-plaintext highlighter-rouge">.bufferingNewest(1)</code>.</li>
+  <li>An <code class="language-plaintext highlighter-rouge">AsyncStream</code> has one consumer: two tasks iterating one stream split the values, even and odd. Publishers multicast; async sequences need a stream per consumer.</li>
+  <li>Cancelling a task that iterates <code class="language-plaintext highlighter-rouge">.values</code> cancelled the Combine subscription. Dropping a <code class="language-plaintext highlighter-rouge">Task</code> handle does not cancel the task, while dropping an <code class="language-plaintext highlighter-rouge">AnyCancellable</code> cancels the subscription.</li>
+  <li>The compiler rejects main-actor access from a detached task; the same access from a Combine closure compiles and crashes or races at run time.</li>
+  <li>The same debounced search took one pipeline in Combine and one method with task replacement in <code class="language-plaintext highlighter-rouge">async</code> code, with identical requests and results.</li>
+  <li>Many Combine operators have no standard-library equivalent. swift-async-algorithms covers most of them, including <code class="language-plaintext highlighter-rouge">share()</code> since 1.1; concurrent <code class="language-plaintext highlighter-rouge">flatMap</code>, <code class="language-plaintext highlighter-rouge">scan</code>, and <code class="language-plaintext highlighter-rouge">retry</code> remain hand-written.</li>
+  <li>Per value, a subject cost about 97 ns and an <code class="language-plaintext highlighter-rouge">AsyncStream</code> 1.5 to 1.9 µs.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Rewrite <code class="language-plaintext highlighter-rouge">AsyncSearchModel</code> so its time is testable: inject a <code class="language-plaintext highlighter-rouge">Clock</code> and use <code class="language-plaintext highlighter-rouge">clock.sleep(for:)</code>, then write a manual test clock whose <code class="language-plaintext highlighter-rouge">sleep</code> suspends until the test advances it, using continuations. Test the debounce boundary at 299 and 300 ms, and the cancellation of a superseded request, as <a href="/combine-testing-publishers/">Testing Publishers</a> does for the Combine version. Compare the amount of test infrastructure each version needed, and note which bugs each test style can and cannot catch.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10058/">Meet AsyncSequence</a>, WWDC21, and <a href="https://developer.apple.com/videos/play/wwdc2022/110355/">Meet Swift Async Algorithms</a>, WWDC22.</li>
+  <li>Apple’s <a href="https://github.com/apple/swift-async-algorithms">swift-async-algorithms</a> package.</li>
+  <li>The concurrency roadmap’s <a href="/swift-stream-backpressure/">Stream Backpressure</a>, which measures <code class="language-plaintext highlighter-rouge">AsyncStream</code>’s buffering policies in depth.</li>
+</ul>
+
+<p>Previous: <a href="/combine-testing-publishers/">Testing Publishers</a>. Next: <a href="/combine-publisher-values-async/">Bridging Publishers to <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> with <code class="language-plaintext highlighter-rouge">.values</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-vs-async-await/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Combine+vs.+async%2Fawait+and+AsyncSequence%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-vs-async-await%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-vs-async-await/&title=Combine+vs.+async%2Fawait+and+AsyncSequence%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-vs-async-await/&title=Combine+vs.+async%2Fawait+and+AsyncSequence%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-vs-async-await/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Combine vs. async/await and AsyncSequence%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-vs-async-await/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#AsyncSequence">AsyncSequence</a></li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Bridging Publishers to async/await with .values" href="/combine-publisher-values-async/"> <p>Previous post</p> Bridging Publishers to async/await with .values </a> </div> <div id="next-post"> <a alt="Bridging Callback APIs with Checked Continuations in Swift" href="/swift-checked-continuations/"> <p>Next post</p> Bridging Callback APIs with Checked Continuations in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

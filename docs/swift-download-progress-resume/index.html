@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Download Progress, Resuming, and Temporary Files | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Download Progress, Resuming, and Temporary Files" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A large download has three needs that a small request does not. The user wants to see it progress. It must survive interruption, because a 400 MB audiobook over cellular will lose its connection at some point, and starting again from zero each time means it may never finish. And its result is a file, which lives somewhere with rules about how long it stays there. HTTP makes resuming possible with range requests: a client that has the first 300 MB asks for the rest, and a server that still has the same version of the file sends only the rest. URLSession wraps this in resume data. This article implements range support on the test server, measures exactly when URLSession can produce resume data and what it sends when it resumes, including two behaviors of the async download API that decide which API to use, and ends with progress reporting and an ETA estimate that does not jump around." /> <meta property="og:description" content="A large download has three needs that a small request does not. The user wants to see it progress. It must survive interruption, because a 400 MB audiobook over cellular will lose its connection at some point, and starting again from zero each time means it may never finish. And its result is a file, which lives somewhere with rules about how long it stays there. HTTP makes resuming possible with range requests: a client that has the first 300 MB asks for the rest, and a server that still has the same version of the file sends only the rest. URLSession wraps this in resume data. This article implements range support on the test server, measures exactly when URLSession can produce resume data and what it sends when it resumes, including two behaviors of the async download API that decide which API to use, and ends with progress reporting and an ETA estimate that does not jump around." /> <link rel="canonical" href="https://swiftbydeya.com/swift-download-progress-resume/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-download-progress-resume/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-07T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Download Progress, Resuming, and Temporary Files" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-07T00:00:00+03:00","datePublished":"2026-10-07T00:00:00+03:00","description":"A large download has three needs that a small request does not. The user wants to see it progress. It must survive interruption, because a 400 MB audiobook over cellular will lose its connection at some point, and starting again from zero each time means it may never finish. And its result is a file, which lives somewhere with rules about how long it stays there. HTTP makes resuming possible with range requests: a client that has the first 300 MB asks for the rest, and a server that still has the same version of the file sends only the rest. URLSession wraps this in resume data. This article implements range support on the test server, measures exactly when URLSession can produce resume data and what it sends when it resumes, including two behaviors of the async download API that decide which API to use, and ends with progress reporting and an ETA estimate that does not jump around.","headline":"Download Progress, Resuming, and Temporary Files","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-download-progress-resume/"},"url":"https://swiftbydeya.com/swift-download-progress-resume/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Download Progress, Resuming, and Temporary Files"> <meta name="twitter:description" content="A large download has three needs that a small request does not. The user wants to see it progress. It must survive interruption, because a 400 MB audiobook o..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Download Progress, Resuming, and Temporary Files"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Download Progress, Resuming, and Temporary Files</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-07T00:00:00+03:00">October 7, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A large download has three needs that a small request does not. The user wants to see it progress. It must survive interruption, because a 400 MB audiobook over cellular will lose its connection at some point, and starting again from zero each time means it may never finish. And its result is a file, which lives somewhere with rules about how long it stays there.</p>
+
+<p>HTTP makes resuming possible with <strong>range requests</strong>: a client that has the first 300 MB asks for the rest, and a server that still has the same version of the file sends only the rest. <code class="language-plaintext highlighter-rouge">URLSession</code> wraps this in <strong>resume data</strong>. This article implements range support on the test server, measures exactly when <code class="language-plaintext highlighter-rouge">URLSession</code> can produce resume data and what it sends when it resumes, including two behaviors of the <code class="language-plaintext highlighter-rouge">async</code> download API that decide which API to use, and ends with progress reporting and an ETA estimate that does not jump around.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="range-requests">Range requests</h2>
+
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110#section-14">RFC 9110 §14</a> defines the mechanism. A client sends <code class="language-plaintext highlighter-rouge">Range: bytes=500000-</code> to ask for everything from byte 500,000. A server that supports it answers <code class="language-plaintext highlighter-rouge">206 Partial Content</code> with a <code class="language-plaintext highlighter-rouge">Content-Range</code> header saying which bytes the body contains. A server that does not, or that chooses not to, answers <code class="language-plaintext highlighter-rouge">200</code> with the whole representation, which the client must then use from the start.</p>
+
+<p>Resuming safely needs one more piece: the client must know the bytes it already has belong to the <em>same version</em> of the file. Otherwise it would splice the first half of version 1 onto the second half of version 2. The <code class="language-plaintext highlighter-rouge">If-Range</code> header carries a validator, an <code class="language-plaintext highlighter-rouge">ETag</code> or a <code class="language-plaintext highlighter-rouge">Last-Modified</code> date, and means “send me the range if the representation still matches this; otherwise send me the whole new one”:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Resuming a download with a range request guarded by If-Range
+    participant C as URLSession
+    participant S as Server
+    C-&gt;&gt;S: GET /audiobook
+    S--&gt;&gt;C: 200, ETag "v1", Content-Length 2000000 (connection lost at 500000)
+    C-&gt;&gt;S: GET /audiobook, Range: bytes=500000-, If-Range: "v1"
+    alt ETag still "v1"
+        S--&gt;&gt;C: 206, Content-Range: bytes 500000-1999999/2000000
+    else file changed to "v2"
+        S--&gt;&gt;C: 200, ETag "v2", full body (client discards the partial file)
+    end
+</code></pre>
+
+<p>The test server implements exactly that. It serves 2 MB in 100 KB pieces with a 20 ms pause between them, so a download takes about 400 ms and can be interrupted. A flag makes it cut the connection at a chosen byte, and query parameters remove its validator or its range support:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">content</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">((</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">2_000_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">truncatingIfNeeded</span><span class="p">:</span> <span class="nv">$0</span> <span class="o">&amp;*</span> <span class="mi">13</span><span class="p">)</span> <span class="p">})</span>
+<span class="k">let</span> <span class="nv">currentETag</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">cutAt</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">etag</span> <span class="o">=</span> <span class="n">currentETag</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">sendsValidator</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"novalidator"</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span>
+    <span class="k">var</span> <span class="nv">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">status</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">range</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Range"</span><span class="p">),</span> <span class="n">range</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"bytes="</span><span class="p">),</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"norange"</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">ifRange</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"If-Range"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ifRange</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">||</span> <span class="n">ifRange</span> <span class="o">==</span> <span class="n">etag</span> <span class="p">{</span>           <span class="c1">// If-Range mismatch: send the whole new version</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">range</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"-"</span><span class="p">)</span><span class="o">.</span><span class="n">first</span> <span class="p">??</span> <span class="s">"0"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">0</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="mi">206</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="s">"application/octet-stream"</span><span class="p">),</span>
+                                                    <span class="p">(</span><span class="s">"Content-Length"</span><span class="p">,</span> <span class="s">"</span><span class="se">\(</span><span class="n">content</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">start</span><span class="se">)</span><span class="s">"</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">sendsValidator</span> <span class="p">{</span> <span class="n">headers</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="s">"ETag"</span><span class="p">,</span> <span class="n">etag</span><span class="p">))</span> <span class="p">}</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">206</span> <span class="p">{</span> <span class="n">headers</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="s">"Content-Range"</span><span class="p">,</span> <span class="s">"bytes </span><span class="se">\(</span><span class="n">start</span><span class="se">)</span><span class="s">-</span><span class="se">\(</span><span class="n">content</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="se">)</span><span class="s">/</span><span class="se">\(</span><span class="n">content</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s">"</span><span class="p">))</span> <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">pieces</span><span class="p">:</span> <span class="p">[</span><span class="kt">HTTPResponse</span><span class="o">.</span><span class="kt">Piece</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">limit</span> <span class="o">=</span> <span class="n">cutAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">cut</span> <span class="k">in</span> <span class="k">defer</span> <span class="p">{</span> <span class="n">cut</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">};</span> <span class="k">return</span> <span class="n">cut</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">offset</span> <span class="o">=</span> <span class="n">start</span>
+    <span class="k">while</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="n">content</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">end</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">offset</span> <span class="o">+</span> <span class="mi">100_000</span><span class="p">,</span> <span class="n">content</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">limit</span><span class="p">,</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="n">limit</span> <span class="p">{</span>
+            <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="n">content</span><span class="p">[</span><span class="n">offset</span><span class="o">..&lt;</span><span class="n">limit</span><span class="p">]),</span> <span class="o">.</span><span class="n">close</span><span class="p">]</span>   <span class="c1">// the connection dies mid-body</span>
+            <span class="k">break</span>
+        <span class="p">}</span>
+        <span class="n">pieces</span> <span class="o">+=</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="n">content</span><span class="p">[</span><span class="n">offset</span><span class="o">..&lt;</span><span class="n">end</span><span class="p">]),</span> <span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))]</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">end</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="n">headers</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="n">pieces</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="a-delegate-based-downloader">A delegate-based downloader</h2>
+
+<p><code class="language-plaintext highlighter-rouge">URLSession</code> has an <code class="language-plaintext highlighter-rouge">async</code> download API, and it is the right choice for small files. For large ones, the measurements later in this article show it lacks two things: it delivers no progress to a per-task delegate, and cancelling it produces no resume data. The full feature set is on <code class="language-plaintext highlighter-rouge">URLSessionDownloadTask</code> with a session delegate. The downloader below wraps one download at a time in <code class="language-plaintext highlighter-rouge">async</code> methods, so the rest of the code can still <code class="language-plaintext highlighter-rouge">await</code> it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Downloader</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionDownloadDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">Progress</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span> <span class="k">let</span> <span class="nv">written</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">;</span> <span class="k">let</span> <span class="nv">expected</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">;</span> <span class="k">let</span> <span class="nv">at</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span> <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">URL</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">?)</span><span class="o">&gt;</span><span class="p">((</span><span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">progress</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Progress</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">resumedAt</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Int64</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">lastTemporaryLocation</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">URL</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">destinationDirectory</span><span class="p">:</span> <span class="kt">URL</span>
+    <span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="o">!</span>  <span class="c1">// assigned once, in init</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">destination</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">destinationDirectory</span> <span class="o">=</span> <span class="n">destination</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">()</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="o">.</span><span class="n">ephemeral</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="k">self</span><span class="p">,</span> <span class="nv">delegateQueue</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">download</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="nf">downloadTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">url</span><span class="p">))</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">resume</span><span class="p">(</span><span class="n">from</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="nf">downloadTask</span><span class="p">(</span><span class="nv">withResumeData</span><span class="p">:</span> <span class="n">data</span><span class="p">))</span> <span class="p">}</span>
+
+    <span class="c1">/// Cancels the current download and returns resume data if the server allows resuming.</span>
+    <span class="kd">func</span> <span class="nf">pause</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Data</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span><span class="o">.</span><span class="n">task</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="nf">cancelByProducingResumeData</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="p">(</span><span class="n">continuation</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span> <span class="p">}</span>
+            <span class="n">task</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">finish</span><span class="p">(</span><span class="n">_</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">URL</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="p">)</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// MARK: URLSessionDownloadDelegate</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didFinishDownloadingTo</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">lastTemporaryLocation</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">location</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="p">(</span><span class="n">downloadTask</span><span class="o">.</span><span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span><span class="p">)?</span><span class="o">.</span><span class="n">statusCode</span> <span class="p">??</span> <span class="mi">0</span>
+        <span class="nf">guard</span> <span class="p">(</span><span class="mi">200</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">finish</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">badServerResponse</span><span class="p">)))</span> <span class="p">}</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="n">destinationDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="p">)</span>
+            <span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">moveItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>  <span class="c1">// must happen before returning</span>
+            <span class="nf">finish</span><span class="p">(</span><span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="n">destination</span><span class="p">))</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="nf">finish</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didWriteData</span> <span class="nv">bytesWritten</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span>
+                    <span class="nv">totalBytesWritten</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span> <span class="nv">totalBytesExpectedToWrite</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">progress</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Progress</span><span class="p">(</span><span class="nv">written</span><span class="p">:</span> <span class="n">totalBytesWritten</span><span class="p">,</span> <span class="nv">expected</span><span class="p">:</span> <span class="n">totalBytesExpectedToWrite</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didResumeAtOffset</span> <span class="nv">fileOffset</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span>
+                    <span class="nv">expectedTotalBytes</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">resumedAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">fileOffset</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didCompleteWithError</span> <span class="nv">error</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span> <span class="nf">finish</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The move in <code class="language-plaintext highlighter-rouge">didFinishDownloadingTo</code> is the most important line. The documentation says the file at <code class="language-plaintext highlighter-rouge">location</code> is removed when that delegate method returns, so the file must be moved, or opened, before then. The test below checks that it really is gone afterwards.</p>
+
+<h2 id="pausing-and-resuming">Pausing and resuming</h2>
+
+<p>The first test downloads for 150 ms, pauses with <code class="language-plaintext highlighter-rouge">cancelByProducingResumeData()</code>, and resumes. The server records what the resumed request asked for:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">downloads</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"downloads-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createDirectory</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">downloads</span><span class="p">,</span> <span class="nv">withIntermediateDirectories</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">downloader</span> <span class="o">=</span> <span class="kt">Downloader</span><span class="p">(</span><span class="nv">destination</span><span class="p">:</span> <span class="n">downloads</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">fileURL</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"audiobook"</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">let</span> <span class="nv">firstAttempt</span> <span class="o">=</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="n">fileURL</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">resumeData</span> <span class="o">=</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">pause</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">firstAttempt</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the download was paused"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resumeData</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"resume data: </span><span class="se">\(</span><span class="n">resumeData</span><span class="o">!.</span><span class="n">count</span><span class="se">)</span><span class="s"> bytes"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">beforeResume</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+<span class="k">let</span> <span class="nv">completed</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">resumeData</span><span class="o">!</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">resumeRequest</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="p">[</span><span class="n">beforeResume</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resumeRequest</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Range"</span><span class="p">)?</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"bytes="</span><span class="p">)</span> <span class="o">==</span> <span class="kc">true</span> <span class="o">&amp;&amp;</span> <span class="n">resumeRequest</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Range"</span><span class="p">)</span> <span class="o">!=</span> <span class="s">"bytes=0-"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">resumeRequest</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"If-Range"</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">completed</span><span class="p">))</span> <span class="o">==</span> <span class="n">content</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">offsets</span> <span class="o">=</span> <span class="n">downloader</span><span class="o">.</span><span class="n">resumedAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">offsets</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2_000_000</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"resumed with </span><span class="se">\(</span><span class="n">resumeRequest</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Range"</span><span class="p">)</span><span class="o">!</span><span class="se">)</span><span class="s"> at offset </span><span class="se">\(</span><span class="n">offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">temporary</span> <span class="o">=</span> <span class="n">downloader</span><span class="o">.</span><span class="n">lastTemporaryLocation</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">!</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">fileExists</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">temporary</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>  <span class="c1">// moved away before the method returned</span>
+</code></pre></div></div>
+
+<p>In this run the resume data was 7,325 bytes, and the resumed request carried <code class="language-plaintext highlighter-rouge">Range: bytes=581660-</code> and <code class="language-plaintext highlighter-rouge">If-Range: "v1"</code>: the session had received 581,660 bytes before the pause, kept them in its temporary file, and asked only for the remaining 1.4 MB. The offset is not a multiple of the server’s 100 KB pieces, because TCP delivers bytes in whatever segments the network produces. The delegate’s <code class="language-plaintext highlighter-rouge">didResumeAtOffset</code> reported the same offset, and the assembled file matched the original byte for byte.</p>
+
+<p>Resume data is an opaque blob. It is a property list that records, among other things, the URL, the validator, the byte count, and the path of the partial temporary file, but its format is private and has changed between OS versions. Store it as <code class="language-plaintext highlighter-rouge">Data</code>, do not parse it, and be prepared for it to stop working: if the system has purged the temporary file, resuming fails and the download must start again.</p>
+
+<h2 id="when-resume-data-exists">When resume data exists</h2>
+
+<p>Resume data is a promise that the session can continue safely, so it is produced only when continuing can be made safe. Varying the server’s behavior shows which conditions matter:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">pausedResumeData</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Data</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">attempt</span> <span class="o">=</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
+    <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">pause</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">attempt</span>
+    <span class="k">return</span> <span class="n">data</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">withoutValidator</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">pausedResumeData</span><span class="p">(</span><span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="n">fileURL</span><span class="o">.</span><span class="n">absoluteString</span> <span class="o">+</span> <span class="s">"?novalidator=1"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withoutValidator</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>          <span class="c1">// no ETag or Last-Modified: nothing to check a resume against</span>
+
+<span class="n">cutAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="mi">700_000</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">droppedResumeData</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="n">fileURL</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the connection was cut"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">networkConnectionLost</span><span class="p">)</span>
+    <span class="n">droppedResumeData</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">downloadTaskResumeData</span>   <span class="c1">// resume data arrives inside the error</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">droppedResumeData</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Situation</th>
+      <th>Resume data</th>
+      <th>Resumed request</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Paused with <code class="language-plaintext highlighter-rouge">cancelByProducingResumeData()</code>, <code class="language-plaintext highlighter-rouge">ETag</code> present</td>
+      <td>Yes, about 7 KB</td>
+      <td><code class="language-plaintext highlighter-rouge">Range: bytes=N-</code>, <code class="language-plaintext highlighter-rouge">If-Range</code> with the <code class="language-plaintext highlighter-rouge">ETag</code></td>
+    </tr>
+    <tr>
+      <td>Paused, no <code class="language-plaintext highlighter-rouge">ETag</code> or <code class="language-plaintext highlighter-rouge">Last-Modified</code></td>
+      <td><code class="language-plaintext highlighter-rouge">nil</code></td>
+      <td>(must restart)</td>
+    </tr>
+    <tr>
+      <td>Paused, server does not send <code class="language-plaintext highlighter-rouge">Accept-Ranges</code></td>
+      <td>Yes</td>
+      <td>Same as the first row; <code class="language-plaintext highlighter-rouge">Accept-Ranges</code> is not required</td>
+    </tr>
+    <tr>
+      <td>Connection lost mid-body</td>
+      <td>In <code class="language-plaintext highlighter-rouge">URLError.downloadTaskResumeData</code></td>
+      <td>Same as the first row</td>
+    </tr>
+    <tr>
+      <td>Plain <code class="language-plaintext highlighter-rouge">cancel()</code></td>
+      <td>None</td>
+      <td>(must restart)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The validator is the requirement. Without one, the session cannot ask the server whether its partial bytes are still the right ones, so it refuses to offer a resume. That puts the decision on the server: any endpoint that serves large files should send an <code class="language-plaintext highlighter-rouge">ETag</code>, which costs nothing and enables both resuming and <a href="/swift-http-caching-etag/">caching</a>. Note that <code class="language-plaintext highlighter-rouge">Accept-Ranges</code> is advisory: the session resumes optimistically and falls back to the full body if the server answers <code class="language-plaintext highlighter-rouge">200</code>.</p>
+
+<h3 id="the-file-changed-in-between">The file changed in between</h3>
+
+<p>If the file is replaced on the server between the interruption and the resume, <code class="language-plaintext highlighter-rouge">If-Range</code> no longer matches, and the server sends the whole new version. The session notices the <code class="language-plaintext highlighter-rouge">200</code>, discards its partial file, and starts at zero:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">currentETag</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="err">#</span><span class="s">""</span><span class="n">v2</span><span class="s">""</span><span class="err">#</span> <span class="p">}</span>     <span class="c1">// the server now has a new version</span>
+<span class="n">downloader</span><span class="o">.</span><span class="n">resumedAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">beforeChanged</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+<span class="k">let</span> <span class="nv">restarted</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">droppedResumeData</span><span class="o">!</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="p">[</span><span class="n">beforeChanged</span><span class="p">]</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"If-Range"</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">""</span><span class="n">v1</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>   <span class="c1">// asked for the old version's range</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">downloader</span><span class="o">.</span><span class="n">resumedAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">])</span>                      <span class="c1">// and started over</span>
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">restarted</span><span class="p">))</span> <span class="o">==</span> <span class="n">content</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">didResumeAtOffset</code> reported <code class="language-plaintext highlighter-rouge">0</code>, which is how an app can tell a real resume from a restart, for example to reset an ETA estimate.</p>
+
+<h2 id="the-async-api-simpler-with-two-gaps">The <code class="language-plaintext highlighter-rouge">async</code> API: simpler, with two gaps</h2>
+
+<p><code class="language-plaintext highlighter-rouge">session.download(from:)</code> returns the downloaded file’s URL and is the simplest way to fetch a file. Two measurements show what it gives up:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProgressProbe</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionDownloadDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">calls</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didFinishDownloadingTo</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">downloadTask</span><span class="p">:</span> <span class="kt">URLSessionDownloadTask</span><span class="p">,</span> <span class="n">didWriteData</span> <span class="nv">bytesWritten</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span>
+                    <span class="nv">totalBytesWritten</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span> <span class="nv">totalBytesExpectedToWrite</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">probe</span> <span class="o">=</span> <span class="kt">ProgressProbe</span><span class="p">()</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">asyncFile</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">fileURL</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">probe</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">calls</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>                    <span class="c1">// no download delegate callbacks at all</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">fileExists</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">asyncFile</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
+
+<span class="k">let</span> <span class="nv">asyncTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">fileURL</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
+<span class="n">asyncTask</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">asyncTask</span><span class="o">.</span><span class="n">value</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span> <span class="o">&amp;&amp;</span> <span class="n">error</span><span class="o">.</span><span class="n">downloadTaskResumeData</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>  <span class="c1">// cancelling discards progress</span>
+<span class="p">}</span>
+
+<span class="n">cutAt</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="mi">700_000</span> <span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">fileURL</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">data</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">downloadTaskResumeData</span> <span class="k">else</span> <span class="p">{</span> <span class="nf">fatalError</span><span class="p">(</span><span class="s">"a lost connection should yield resume data"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">resumedFile</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">resumeFrom</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">((</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">206</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">resumedFile</span><span class="p">))</span> <span class="o">==</span> <span class="n">content</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th><code class="language-plaintext highlighter-rouge">async</code> download API</th>
+      <th>Measured</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Per-task <code class="language-plaintext highlighter-rouge">delegate:</code> with <code class="language-plaintext highlighter-rouge">URLSessionDownloadDelegate</code> methods</td>
+      <td>No <code class="language-plaintext highlighter-rouge">didWriteData</code>, no <code class="language-plaintext highlighter-rouge">didFinishDownloadingTo</code></td>
+    </tr>
+    <tr>
+      <td>Cancelling the Swift task</td>
+      <td><code class="language-plaintext highlighter-rouge">URLError.cancelled</code>, no resume data</td>
+    </tr>
+    <tr>
+      <td>Connection lost</td>
+      <td>Resume data in the error; <code class="language-plaintext highlighter-rouge">download(resumeFrom:)</code> continues with <code class="language-plaintext highlighter-rouge">206</code></td>
+    </tr>
+    <tr>
+      <td>The returned file</td>
+      <td>Not deleted on return; move it promptly anyway</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <code class="language-plaintext highlighter-rouge">async</code> API is therefore good for files that download in a few seconds, and fine for resuming after network failures. For a pause button or a progress bar, use the delegate-based task.</p>
+
+<h2 id="progress-you-can-show">Progress you can show</h2>
+
+<p>The downloader recorded every <code class="language-plaintext highlighter-rouge">didWriteData</code> call. Download progress behaves differently from the upload progress measured in <a href="/swift-multipart-uploads/">Uploading Files and Multipart Form Data</a>, which arrived at most every 110 ms. Here the 2 MB download produced 20 callbacks in 0.53 seconds, one for each 100 KB piece the server sent, so the callbacks track the data as it arrives:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">downloader</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">progressStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">downloader</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="n">fileURL</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">samples</span> <span class="o">=</span> <span class="n">downloader</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">samples</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> progress callbacks in </span><span class="se">\(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">progressStart</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">samples</span><span class="o">.</span><span class="n">isEmpty</span> <span class="o">&amp;&amp;</span> <span class="n">samples</span><span class="o">.</span><span class="n">last</span><span class="p">?</span><span class="o">.</span><span class="n">written</span> <span class="o">==</span> <span class="mi">2_000_000</span> <span class="o">&amp;&amp;</span> <span class="n">samples</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">expected</span> <span class="o">==</span> <span class="mi">2_000_000</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">zip</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">samples</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">written</span> <span class="o">&lt;=</span> <span class="nv">$1</span><span class="o">.</span><span class="n">written</span> <span class="p">})</span>
+</code></pre></div></div>
+
+<p>The fraction complete is simply <code class="language-plaintext highlighter-rouge">written / expected</code>. The estimated time remaining is harder, because the instantaneous rate between two callbacks is noisy: one burst of 300 KB in 50 ms suggests 6 MB/s, the next stall suggests zero, and an ETA computed from either jumps between “2 seconds” and “an hour.” The standard remedy is an <strong>exponentially weighted moving average</strong> of the rate. Because callbacks arrive at irregular intervals, the weight of each new sample should depend on how much time it covers. With a time constant \(\tau\):</p>
+
+\[\alpha_i = 1 - e^{-\Delta t_i / \tau},
+\qquad
+\hat r_i = \alpha_i\, r_i + (1 - \alpha_i)\, \hat r_{i-1},
+\qquad
+\text{ETA} = \frac{\text{expected} - \text{written}}{\hat r_i}\]
+
+<p>A sample covering a long interval moves the estimate a lot, a sample covering a short one moves it a little, and \(\tau\) sets how quickly the estimate forgets: a few seconds is typical. The estimator below applies it to a synthetic sequence with a stall in the middle:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RateEstimator</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">timeConstant</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">?</span>   <span class="c1">// bytes per second</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">add</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">over</span> <span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">seconds</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">sample</span> <span class="o">=</span> <span class="n">bytes</span> <span class="o">/</span> <span class="n">seconds</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">rate</span> <span class="k">else</span> <span class="p">{</span> <span class="n">rate</span> <span class="o">=</span> <span class="n">sample</span><span class="p">;</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">alpha</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">seconds</span> <span class="o">/</span> <span class="n">timeConstant</span><span class="p">)</span>
+        <span class="n">rate</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">sample</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">previous</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">eta</span><span class="p">(</span><span class="nv">remaining</span><span class="p">:</span> <span class="kt">Double</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span><span class="p">?</span> <span class="p">{</span> <span class="n">rate</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">remaining</span> <span class="o">/</span> <span class="nv">$0</span> <span class="p">:</span> <span class="kc">nil</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">estimator</span> <span class="o">=</span> <span class="kt">RateEstimator</span><span class="p">(</span><span class="nv">timeConstant</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">naiveETAs</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">smoothETAs</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">remaining</span> <span class="o">=</span> <span class="mf">40_000_000.0</span>
+<span class="c1">// 1 MB/s steady, then one second with no data, then 1 MB/s again; a sample every 250 ms.</span>
+<span class="k">let</span> <span class="nv">chunks</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mf">250_000.0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">12</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="kt">Array</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mf">250_000.0</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">12</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">bytes</span> <span class="k">in</span> <span class="n">chunks</span> <span class="p">{</span>
+    <span class="n">remaining</span> <span class="o">-=</span> <span class="n">bytes</span>
+    <span class="n">estimator</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="n">bytes</span><span class="p">,</span> <span class="nv">over</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">smoothETAs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="nf">eta</span><span class="p">(</span><span class="nv">remaining</span><span class="p">:</span> <span class="n">remaining</span><span class="p">)</span> <span class="p">??</span> <span class="o">.</span><span class="n">infinity</span><span class="p">)</span>
+    <span class="n">naiveETAs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="n">remaining</span> <span class="o">/</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">/</span> <span class="mf">0.25</span><span class="p">)</span> <span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveETAs</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="o">.</span><span class="n">infinity</span><span class="p">))</span>                   <span class="c1">// the naive estimate jumped to "forever" during the stall</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">smoothETAs</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">isFinite</span> <span class="o">&amp;&amp;</span> <span class="nv">$0</span> <span class="o">&lt;</span> <span class="mi">60</span> <span class="p">})</span> <span class="c1">// the smoothed one stayed finite</span>
+<span class="k">let</span> <span class="nv">duringStall</span> <span class="o">=</span> <span class="n">smoothETAs</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"smoothed ETA before stall </span><span class="se">\(</span><span class="n">smoothETAs</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span><span class="se">)</span><span class="s">, at the end of the stall </span><span class="se">\(</span><span class="n">duringStall</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">duringStall</span> <span class="o">&gt;</span> <span class="n">smoothETAs</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">duringStall</span> <span class="o">&lt;</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">smoothETAs</span><span class="p">[</span><span class="mi">11</span><span class="p">])</span>  <span class="c1">// it rose, but did not explode</span>
+</code></pre></div></div>
+
+<p>During the one-second stall the naive estimate became infinite four times in a row. The smoothed one rose from 37 to 52 seconds, a factor of 1.4, and recovered as data resumed, which is what a person watching it expects. Reset the estimator when <code class="language-plaintext highlighter-rouge">didResumeAtOffset</code> reports a restart.</p>
+
+<h2 id="where-the-file-should-go">Where the file should go</h2>
+
+<p><code class="language-plaintext highlighter-rouge">didFinishDownloadingTo</code> hands over a file in a temporary location; the app decides where it lives next. On iOS the choice determines whether it is backed up and whether the system may delete it:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Directory</th>
+      <th>Backed up</th>
+      <th>May be purged by the system</th>
+      <th>Use for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">tmp</code></td>
+      <td>No</td>
+      <td>Yes, any time the app is not running</td>
+      <td>Files needed only briefly</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Library/Caches</code></td>
+      <td>No</td>
+      <td>Yes, when storage is low</td>
+      <td>Re-downloadable content: covers, previews</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Application Support</code></td>
+      <td>Yes, unless excluded</td>
+      <td>No</td>
+      <td>Content the user chose to keep offline</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Documents</code></td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>User-visible documents</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Downloaded content that can be fetched again, such as an audiobook the user can re-download, belongs in <code class="language-plaintext highlighter-rouge">Application Support</code> with <code class="language-plaintext highlighter-rouge">isExcludedFromBackup</code> set, so it neither fills the user’s iCloud backup nor disappears when the device runs low on space. Resume data, which is small, should be stored alongside the record of the download, together with the time it was produced, since it is only useful while its partial file survives.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">downloads</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Range requests resume a download: <code class="language-plaintext highlighter-rouge">Range: bytes=N-</code> gets <code class="language-plaintext highlighter-rouge">206 Partial Content</code>; <code class="language-plaintext highlighter-rouge">If-Range</code> with the <code class="language-plaintext highlighter-rouge">ETag</code> makes the server send the whole new version instead if the file changed.</li>
+  <li>Measured: pausing with <code class="language-plaintext highlighter-rouge">cancelByProducingResumeData()</code> gave about 7 KB of resume data, and resuming sent <code class="language-plaintext highlighter-rouge">Range: bytes=581660-</code>, exactly the bytes already received, with <code class="language-plaintext highlighter-rouge">If-Range: "v1"</code>. A changed <code class="language-plaintext highlighter-rouge">ETag</code> restarted the download at offset 0.</li>
+  <li>Resume data requires a validator (<code class="language-plaintext highlighter-rouge">ETag</code> or <code class="language-plaintext highlighter-rouge">Last-Modified</code>), not <code class="language-plaintext highlighter-rouge">Accept-Ranges</code>. A lost connection delivers it in <code class="language-plaintext highlighter-rouge">URLError.downloadTaskResumeData</code>.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">async</code> download API sends no download delegate callbacks and produces no resume data on cancellation. Use a delegate-based <code class="language-plaintext highlighter-rouge">URLSessionDownloadTask</code> for progress and pause.</li>
+  <li>The temporary file is deleted when <code class="language-plaintext highlighter-rouge">didFinishDownloadingTo</code> returns; move it first, and check the status code before keeping it.</li>
+  <li>Smooth the transfer rate with a time-weighted EWMA, \(\alpha = 1 - e^{-\Delta t/\tau}\), for an ETA that survives stalls.</li>
+  <li>Keep re-downloadable files in Application Support excluded from backup, or in Caches if losing them is fine.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">DownloadManager</code> actor that keeps several <code class="language-plaintext highlighter-rouge">Downloader</code>-style tasks keyed by URL, persists each one’s resume data and destination to a JSON file when paused or interrupted, and on launch offers to resume each one. Test it against the server by interrupting three downloads at different offsets with <code class="language-plaintext highlighter-rouge">cutAt</code>, recreating the manager from its file, resuming all three concurrently, and asserting that every file matches <code class="language-plaintext highlighter-rouge">content</code> and that each resumed request’s <code class="language-plaintext highlighter-rouge">Range</code> header matches the bytes that were already received.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc9110#section-14">RFC 9110 §14: Range Requests</a> and §13.1.5 on <code class="language-plaintext highlighter-rouge">If-Range</code>.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/pausing-and-resuming-downloads">Pausing and resuming downloads</a> and <a href="https://developer.apple.com/documentation/foundation/urlsessiondownloaddelegate/urlsession(_:downloadtask:didfinishdownloadingto:)"><code class="language-plaintext highlighter-rouge">urlSession(_:downloadTask:didFinishDownloadingTo:)</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10006/">Build robust and resumable file transfers</a>, WWDC23.</li>
+</ul>
+
+<p>Previous: <a href="/swift-multipart-uploads/">Uploading Files and Multipart Form Data</a>. Next: <a href="/swift-background-transfers/">Background Transfers and App Relaunch</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-download-progress-resume/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Download+Progress%2C+Resuming%2C+and+Temporary+Files%20https%3A%2F%2Fswiftbydeya.com%2Fswift-download-progress-resume%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-download-progress-resume/&title=Download+Progress%2C+Resuming%2C+and+Temporary+Files%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-download-progress-resume/&title=Download+Progress%2C+Resuming%2C+and+Temporary+Files%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-download-progress-resume/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Download Progress, Resuming, and Temporary Files%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-download-progress-resume/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Downloads">Downloads</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#URLSession">URLSession</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Background Transfers and App Relaunch" href="/swift-background-transfers/"> <p>Previous post</p> Background Transfers and App Relaunch </a> </div> <div id="next-post"> <a alt="Uploading Files and Multipart Form Data" href="/swift-multipart-uploads/"> <p>Next post</p> Uploading Files and Multipart Form Data </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

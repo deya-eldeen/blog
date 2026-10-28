@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Building Streams with AsyncStream and AsyncThrowingStream in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Building Streams with AsyncStream and AsyncThrowingStream in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Most event sources in an app were built before Swift concurrency: delegates that report location fixes, callbacks that fire for every download chunk, observers that receive notifications, timers that tick. AsyncStream and AsyncThrowingStream adapt them to AsyncSequence, so consumers can write for await event in events and get cancellation, structured lifetimes, and sequential processing for free. The adapter has two halves: a continuation that the producer pushes values into, and a stream that one consumer iterates. Getting the boundary right means deciding who finishes the stream, what happens when the consumer goes away, and what to do when there is more than one consumer. This article builds adapters for a callback API and a delegate API, shows the lifecycle rules with tests, and fixes the single-consumer limitation with a broadcaster." /> <meta property="og:description" content="Most event sources in an app were built before Swift concurrency: delegates that report location fixes, callbacks that fire for every download chunk, observers that receive notifications, timers that tick. AsyncStream and AsyncThrowingStream adapt them to AsyncSequence, so consumers can write for await event in events and get cancellation, structured lifetimes, and sequential processing for free. The adapter has two halves: a continuation that the producer pushes values into, and a stream that one consumer iterates. Getting the boundary right means deciding who finishes the stream, what happens when the consumer goes away, and what to do when there is more than one consumer. This article builds adapters for a callback API and a delegate API, shows the lifecycle rules with tests, and fixes the single-consumer limitation with a broadcaster." /> <link rel="canonical" href="https://swiftbydeya.com/swift-asyncstream/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-asyncstream/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-06T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Building Streams with AsyncStream and AsyncThrowingStream in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-06T00:00:00+03:00","datePublished":"2026-08-06T00:00:00+03:00","description":"Most event sources in an app were built before Swift concurrency: delegates that report location fixes, callbacks that fire for every download chunk, observers that receive notifications, timers that tick. AsyncStream and AsyncThrowingStream adapt them to AsyncSequence, so consumers can write for await event in events and get cancellation, structured lifetimes, and sequential processing for free. The adapter has two halves: a continuation that the producer pushes values into, and a stream that one consumer iterates. Getting the boundary right means deciding who finishes the stream, what happens when the consumer goes away, and what to do when there is more than one consumer. This article builds adapters for a callback API and a delegate API, shows the lifecycle rules with tests, and fixes the single-consumer limitation with a broadcaster.","headline":"Building Streams with AsyncStream and AsyncThrowingStream in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-asyncstream/"},"url":"https://swiftbydeya.com/swift-asyncstream/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Building Streams with AsyncStream and AsyncThrowingStream in Swift"> <meta name="twitter:description" content="Most event sources in an app were built before Swift concurrency: delegates that report location fixes, callbacks that fire for every download chunk, observe..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Building Streams with AsyncStream and AsyncThrowingStream in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Building Streams with AsyncStream and AsyncThrowingStream in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-06T00:00:00+03:00">August 6, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Most event sources in an app were built before Swift concurrency: delegates that report location fixes, callbacks that fire for every download chunk, observers that receive notifications, timers that tick. <code class="language-plaintext highlighter-rouge">AsyncStream</code> and <code class="language-plaintext highlighter-rouge">AsyncThrowingStream</code> adapt them to <code class="language-plaintext highlighter-rouge">AsyncSequence</code>, so consumers can write <code class="language-plaintext highlighter-rouge">for await event in events</code> and get cancellation, structured lifetimes, and sequential processing for free.</p>
+
+<p>The adapter has two halves: a <strong>continuation</strong> that the producer pushes values into, and a <strong>stream</strong> that one consumer iterates. Getting the boundary right means deciding who finishes the stream, what happens when the consumer goes away, and what to do when there is more than one consumer. This article builds adapters for a callback API and a delegate API, shows the lifecycle rules with tests, and fixes the single-consumer limitation with a broadcaster.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="the-two-halves">The two halves</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream.makeStream(of:bufferingPolicy:)</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0388-async-stream-factory.md">SE-0388</a>) returns both halves at once:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">numbers</span><span class="p">,</span> <span class="nv">numbersContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">producer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">5</span> <span class="p">{</span>
+        <span class="n">numbersContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="n">numbersContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">numbers</span> <span class="p">{</span>
+    <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">producer</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">received</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+</code></pre></div></div>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: A producer yields into a continuation, the stream buffers, and one consumer pulls
+    P["Producer: callbacks, delegate, or task"] -- "yield(value)" --&gt; C["Continuation, Sendable"]
+    P -- "finish()" --&gt; C
+    C --&gt; B[["Buffer, governed by bufferingPolicy"]]
+    B --&gt; I["Stream iterator"]
+    I -- "for await" --&gt; K["Single consumer"]
+    K -. "consumer task cancelled, or stream released" .-&gt; T["onTermination(.cancelled)"]
+    C -. "finish()" .-&gt; T2["onTermination(.finished)"]
+    T --&gt; P
+    T2 --&gt; P
+</code></pre>
+
+<p>The continuation is <code class="language-plaintext highlighter-rouge">Sendable</code>, so callbacks on any thread can call <code class="language-plaintext highlighter-rouge">yield</code> without further synchronization. <code class="language-plaintext highlighter-rouge">yield</code> never suspends: it hands the value to a waiting consumer or appends it to the stream’s buffer and returns immediately. That makes <code class="language-plaintext highlighter-rouge">AsyncStream</code> a <strong>push</strong> source, unlike the pull-based sequences of the <a href="/swift-asyncsequence/">previous article</a>. The buffer is the stream’s only defense against a producer that outpaces its consumer, and the <a href="/swift-stream-backpressure/">backpressure article</a> is about choosing its policy.</p>
+
+<p>There is also an older, closure-based initializer, <code class="language-plaintext highlighter-rouge">AsyncStream { continuation in ... }</code>, which runs the closure immediately with the continuation. It is convenient when all setup fits in one place; <code class="language-plaintext highlighter-rouge">makeStream</code> is clearer when the continuation must be stored in an object that outlives the setup code.</p>
+
+<h2 id="adapting-a-callback-api">Adapting a callback API</h2>
+
+<p>Here is a legacy ticker of the kind found in media players and sensor SDKs: you start it with a handler, it calls the handler repeatedly on a background queue, and you must stop it explicitly.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A callback-based API: calls `handler` every `interval` until stopped.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyTicker</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">timer</span><span class="p">:</span> <span class="kt">DispatchSourceTimer</span><span class="p">?</span>
+        <span class="k">var</span> <span class="nv">ticks</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"legacy.ticker"</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="kt">DispatchTimeInterval</span><span class="p">,</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">timer</span> <span class="o">=</span> <span class="kt">DispatchSource</span><span class="o">.</span><span class="nf">makeTimerSource</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="n">queue</span><span class="p">)</span>
+        <span class="n">timer</span><span class="o">.</span><span class="nf">schedule</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">interval</span><span class="p">,</span> <span class="nv">repeating</span><span class="p">:</span> <span class="n">interval</span><span class="p">)</span>
+        <span class="n">timer</span><span class="o">.</span><span class="n">setEventHandler</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">tick</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">ticks</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">ticks</span>
+            <span class="p">}</span>
+            <span class="nf">handler</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">timer</span> <span class="p">}</span>
+        <span class="n">timer</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stop</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">timer</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">isRunning</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">timer</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The adapter wires the handler to <code class="language-plaintext highlighter-rouge">yield</code> and wires stream termination to <code class="language-plaintext highlighter-rouge">stop()</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">LegacyTicker</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">ticks</span><span class="p">(</span><span class="n">every</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">DispatchTimeInterval</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="nf">stop</span><span class="p">()</span>       <span class="c1">// The consumer cancelled or the stream finished: stop producing.</span>
+        <span class="p">}</span>
+        <span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="n">interval</span><span class="p">)</span> <span class="p">{</span> <span class="n">tick</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">firstTicks</span><span class="p">(</span><span class="n">from</span> <span class="nv">ticker</span><span class="p">:</span> <span class="kt">LegacyTicker</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">ticks</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">tick</span> <span class="k">in</span> <span class="n">ticker</span><span class="o">.</span><span class="nf">ticks</span><span class="p">(</span><span class="nv">every</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ticks</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">count</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">ticks</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ticker</span> <span class="o">=</span> <span class="kt">LegacyTicker</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">threeTicks</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">firstTicks</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">ticker</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">threeTicks</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">ticker</span><span class="o">.</span><span class="n">isRunning</span><span class="p">,</span> <span class="s">"The stream was released, which terminated it and stopped the ticker"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>When <code class="language-plaintext highlighter-rouge">firstTicks</code> returned, the stream it created went out of scope. The stream terminated with <code class="language-plaintext highlighter-rouge">.cancelled</code>, <code class="language-plaintext highlighter-rouge">onTermination</code> ran, and the legacy timer stopped. The consumer never had to know the ticker existed. That chain, consumer leaves, stream terminates, producer stops, is the most important thing an adapter does. Without <code class="language-plaintext highlighter-rouge">onTermination</code>, the ticker would keep firing into a stream nobody reads, forever.</p>
+
+<p>Notice what triggered the termination: not the <code class="language-plaintext highlighter-rouge">break</code>, but the stream being <em>released</em>. The next section shows why that distinction matters.</p>
+
+<h2 id="adapting-a-delegate-api">Adapting a delegate API</h2>
+
+<p>Delegate-based APIs need one more piece: an object to <em>be</em> the delegate, which forwards each delegate call to the continuation. That object must stay alive for as long as the stream, so the stream’s termination handler is a natural place to retain it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Fix</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">latitude</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">longitude</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">PositioningError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">denied</span>
+<span class="p">}</span>
+
+<span class="kd">protocol</span> <span class="kt">PositioningDelegate</span><span class="p">:</span> <span class="kt">AnyObject</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">positioning</span><span class="p">(</span><span class="n">didUpdate</span> <span class="nv">fix</span><span class="p">:</span> <span class="kt">Fix</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">positioning</span><span class="p">(</span><span class="n">didFail</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">PositioningError</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// A delegate-based API that holds its delegate weakly, as most do.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyPositioning</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">delegateBox</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">(</span><span class="kd">any</span> <span class="kt">PositioningDelegate</span><span class="p">)?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">setDelegate</span><span class="p">(</span><span class="n">_</span> <span class="nv">delegate</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">PositioningDelegate</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">delegateBox</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">delegate</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">startUpdates</span><span class="p">(</span><span class="nv">fixes</span><span class="p">:</span> <span class="p">[</span><span class="kt">Fix</span><span class="p">],</span> <span class="n">thenFail</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">PositioningError</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">running</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">for</span> <span class="n">fix</span> <span class="k">in</span> <span class="n">fixes</span> <span class="p">{</span>
+                <span class="k">guard</span> <span class="n">running</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="n">delegateBox</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}?</span><span class="o">.</span><span class="nf">positioning</span><span class="p">(</span><span class="nv">didUpdate</span><span class="p">:</span> <span class="n">fix</span><span class="p">)</span>
+                <span class="nf">usleep</span><span class="p">(</span><span class="mi">2_000</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span>
+                <span class="n">delegateBox</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}?</span><span class="o">.</span><span class="nf">positioning</span><span class="p">(</span><span class="nv">didFail</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stopUpdates</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">running</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="n">delegateBox</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">isRunning</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">running</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Forwards delegate calls into a throwing stream's continuation.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PositioningStreamAdapter</span><span class="p">:</span> <span class="kt">PositioningDelegate</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">Fix</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;.</span><span class="kt">Continuation</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">Fix</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">continuation</span> <span class="o">=</span> <span class="n">continuation</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">positioning</span><span class="p">(</span><span class="n">didUpdate</span> <span class="nv">fix</span><span class="p">:</span> <span class="kt">Fix</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">fix</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">positioning</span><span class="p">(</span><span class="n">didFail</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">PositioningError</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">LegacyPositioning</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">fixes</span><span class="p">(</span><span class="n">_</span> <span class="nv">simulated</span><span class="p">:</span> <span class="p">[</span><span class="kt">Fix</span><span class="p">],</span> <span class="n">thenFail</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">PositioningError</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">Fix</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncThrowingStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Fix</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">throwing</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">adapter</span> <span class="o">=</span> <span class="kt">PositioningStreamAdapter</span><span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="n">continuation</span><span class="p">)</span>
+        <span class="nf">setDelegate</span><span class="p">(</span><span class="n">adapter</span><span class="p">)</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">adapter</span>          <span class="c1">// Keeps the delegate alive exactly as long as the stream.</span>
+            <span class="nf">stopUpdates</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="nf">startUpdates</span><span class="p">(</span><span class="nv">fixes</span><span class="p">:</span> <span class="n">simulated</span><span class="p">,</span> <span class="nv">thenFail</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">positioning</span> <span class="o">=</span> <span class="kt">LegacyPositioning</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">route</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Fix</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="mi">1</span><span class="p">),</span> <span class="kt">Fix</span><span class="p">(</span><span class="nv">latitude</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">longitude</span><span class="p">:</span> <span class="mi">2</span><span class="p">)]</span>
+<span class="k">var</span> <span class="nv">tracked</span><span class="p">:</span> <span class="p">[</span><span class="kt">Fix</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">fix</span> <span class="k">in</span> <span class="n">positioning</span><span class="o">.</span><span class="nf">fixes</span><span class="p">(</span><span class="n">route</span><span class="p">,</span> <span class="nv">thenFail</span><span class="p">:</span> <span class="o">.</span><span class="n">denied</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">fix</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The stream must end with the delegate's error"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">PositioningError</span><span class="o">.</span><span class="n">denied</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">tracked</span> <span class="o">==</span> <span class="n">route</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">positioning</span><span class="o">.</span><span class="n">isRunning</span><span class="p">,</span> <span class="s">"Finishing with an error ran onTermination, which stopped updates"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncThrowingStream</code> adds <code class="language-plaintext highlighter-rouge">finish(throwing:)</code>, which ends the stream with an error: the consumer receives every buffered element first, then the error from <code class="language-plaintext highlighter-rouge">for try await</code>. The delegate’s failure callback maps onto it directly.</p>
+
+<p>The ownership arrangement is worth copying. The legacy API holds its delegate weakly, so something else must keep the adapter alive. Capturing it in <code class="language-plaintext highlighter-rouge">onTermination</code> ties its lifetime to the stream’s: alive while anyone might read, released when the stream terminates. The <code class="language-plaintext highlighter-rouge">_ = adapter</code> line exists only to make the capture explicit.</p>
+
+<h2 id="the-lifecycle-rules-tested">The lifecycle rules, tested</h2>
+
+<p>A stream terminates exactly once, for one of two reasons, which <code class="language-plaintext highlighter-rouge">onTermination</code> receives:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.finished</code>: the producer called <code class="language-plaintext highlighter-rouge">finish()</code> or <code class="language-plaintext highlighter-rouge">finish(throwing:)</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">.cancelled</code>: the consumer’s task was cancelled, or the last reference to the stream and its iterator was released. A cancellation is noticed when the consumer is waiting in <code class="language-plaintext highlighter-rouge">next()</code> or next calls it; the <a href="/swift-stream-backpressure/">backpressure article</a> shows what that means for buffered values.</li>
+</ul>
+
+<p>After termination, <code class="language-plaintext highlighter-rouge">yield</code> returns <code class="language-plaintext highlighter-rouge">.terminated</code> and drops the value. Producers should treat that as a signal to stop:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">terminationReasons</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">finishedStream</span><span class="p">,</span> <span class="nv">finishedContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="n">finishedContinuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">reason</span> <span class="k">in</span>
+    <span class="n">terminationReasons</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">reason</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">finishedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">finishedContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">terminated</span> <span class="o">=</span> <span class="n">finishedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="p">{}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Yielding after finish reports termination"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">var</span> <span class="nv">afterFinish</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">finishedStream</span> <span class="p">{</span>
+    <span class="n">afterFinish</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterFinish</span> <span class="o">==</span> <span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="s">"Values buffered before finish() are still delivered"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">cancelledStream</span><span class="p">,</span> <span class="nv">cancelledContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="n">cancelledContinuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">reason</span> <span class="k">in</span>
+    <span class="n">terminationReasons</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">reason</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">cancelledConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">cancelledStream</span> <span class="p">{}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">cancelledConsumer</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">cancelledConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">terminated</span> <span class="o">=</span> <span class="n">cancelledContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Yielding after the consumer left reports termination"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">terminationReasons</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"finished"</span><span class="p">,</span> <span class="s">"cancelled"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Two rules are easy to get wrong because they differ from what many people expect.</p>
+
+<p><strong>Breaking out of a loop does not, by itself, terminate the stream.</strong> A stream terminates with <code class="language-plaintext highlighter-rouge">.cancelled</code> when the consuming task is cancelled, or when the last copy of the stream and its iterators is released. If the stream is still referenced, by a stored property, a variable in an enclosing scope, or top-level code, then leaving the loop leaves the stream alive and its producer running:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">stillRunning</span> <span class="o">=</span> <span class="kt">LegacyTicker</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">storedTicks</span> <span class="o">=</span> <span class="n">stillRunning</span><span class="o">.</span><span class="nf">ticks</span><span class="p">(</span><span class="nv">every</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>   <span class="c1">// Kept in a variable.</span>
+
+<span class="kd">func</span> <span class="nf">readTwo</span><span class="p">(</span><span class="n">from</span> <span class="nv">stream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span>
+        <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">values</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">twoTicks</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">readTwo</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">storedTicks</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">twoTicks</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">stillRunning</span><span class="o">.</span><span class="n">isRunning</span><span class="p">,</span> <span class="s">"The stream is still referenced, so it never terminated"</span><span class="p">)</span>
+<span class="n">stillRunning</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>On the test toolchain, a stream created inside a function terminated as soon as the function returned, while the same loop over a stored stream, or over a stream in top-level code, left the producer running indefinitely. If a stream must be stored, cancel the task that consumes it, or finish it from the producer side, rather than relying on <code class="language-plaintext highlighter-rouge">break</code>.</p>
+
+<p><strong>Releasing the continuation does not finish the stream.</strong> If a producer object holding the only continuation is deallocated without calling <code class="language-plaintext highlighter-rouge">finish()</code>, the consumer waits forever:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">streamWhoseProducerForgetsToFinish</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+    <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stream</span>        <span class="c1">// The continuation is released here; finish() is never called.</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">forgotten</span> <span class="o">=</span> <span class="nf">streamWhoseProducerForgetsToFinish</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">stuckConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">forgotten</span> <span class="p">{</span>
+        <span class="n">values</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">values</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="c1">// Still waiting after 100 ms; only cancellation ends the loop.</span>
+<span class="n">stuckConsumer</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">stuckValues</span> <span class="o">=</span> <span class="k">await</span> <span class="n">stuckConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">stuckValues</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>On the test toolchain, the consumer stayed suspended for as long as it was left, and only cancelling it ended the loop. Make finishing part of the producer’s teardown: call <code class="language-plaintext highlighter-rouge">finish()</code> from the producer’s <code class="language-plaintext highlighter-rouge">deinit</code> or <code class="language-plaintext highlighter-rouge">stop()</code> method, and from every error path.</p>
+
+<h2 id="one-stream-one-consumer">One stream, one consumer</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream</code> delivers each element once. If two tasks iterate the same stream, they compete for elements: each element goes to whichever consumer is waiting, and neither sees the whole sequence. On the test toolchain this did not crash, but it is almost never what the code intended.</p>
+
+<p>When several consumers need every event, give each its own stream. A broadcaster keeps one continuation per subscriber, removes it when that subscriber’s stream terminates, and yields each event to all of them:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Fans each event out to every current subscriber. Each subscriber gets its own stream.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Broadcaster</span><span class="o">&lt;</span><span class="kt">Event</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">subscribers</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Set</span><span class="o">&lt;</span><span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Event</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="o">&gt;&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">bufferingNewest</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Event</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Event</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="n">limit</span><span class="p">))</span>
+        <span class="n">subscribers</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">subscribers</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stream</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">Event</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">subscriber</span> <span class="k">in</span> <span class="n">subscribers</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span>
+            <span class="n">subscriber</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">finish</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">all</span> <span class="o">=</span> <span class="n">subscribers</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">all</span> <span class="k">in</span>
+            <span class="k">defer</span> <span class="p">{</span> <span class="n">all</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">all</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">subscriber</span> <span class="k">in</span> <span class="n">all</span> <span class="p">{</span>
+            <span class="n">subscriber</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">subscriberCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">subscribers</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="kt">Broadcaster</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">firstReader</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">event</span> <span class="k">in</span> <span class="n">events</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span> <span class="p">{</span> <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">seen</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">secondReader</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">event</span> <span class="k">in</span> <span class="n">events</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">seen</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>      <span class="c1">// This subscriber leaves early; its stream is released with the task.</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">seen</span>
+<span class="p">}</span>
+<span class="k">while</span> <span class="n">events</span><span class="o">.</span><span class="n">subscriberCount</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="n">events</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"login"</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">secondReader</span><span class="o">.</span><span class="n">value</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">subscriberCount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"The departed subscriber removed itself"</span><span class="p">)</span>
+<span class="n">events</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"purchase"</span><span class="p">)</span>
+<span class="n">events</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">firstSeen</span> <span class="o">=</span> <span class="k">await</span> <span class="n">firstReader</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">secondSeen</span> <span class="o">=</span> <span class="k">await</span> <span class="n">secondReader</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstSeen</span> <span class="o">==</span> <span class="p">[</span><span class="s">"login"</span><span class="p">,</span> <span class="s">"purchase"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">secondSeen</span> <span class="o">==</span> <span class="p">[</span><span class="s">"login"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Storing continuations in a <code class="language-plaintext highlighter-rouge">Set</code> relies on <code class="language-plaintext highlighter-rouge">AsyncStream.Continuation</code> being <code class="language-plaintext highlighter-rouge">Hashable</code>, added in Swift 6.2 (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0468-async-stream-continuation-hashable-conformance.md">SE-0468</a>); before that, the usual approach was a dictionary keyed by a UUID. Copying the set out of the lock before yielding keeps <code class="language-plaintext highlighter-rouge">yield</code> calls, which can resume consumers, outside the critical section.</p>
+
+<p>Each subscriber’s buffer is bounded at 16 newest events, so a slow subscriber drops old events instead of growing without limit. Choosing that policy deliberately is the subject of the <a href="/swift-stream-backpressure/">next article</a>.</p>
+
+<h2 id="pull-based-streams-with-unfolding">Pull-based streams with <code class="language-plaintext highlighter-rouge">unfolding</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream(unfolding:onCancel:)</code> builds a stream from a closure that produces the next element on demand. Unlike the continuation-based form, it is pull-based: the closure runs only when the consumer asks for an element, so there is no buffer to manage.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">idCounter</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">identifiers</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">unfolding</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">idCounter</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">counter</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+        <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">counter</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">next</span> <span class="o">&lt;=</span> <span class="mi">5</span> <span class="p">?</span> <span class="nv">next</span> <span class="p">:</span> <span class="kc">nil</span>
+<span class="p">})</span>
+
+<span class="k">var</span> <span class="nv">collectedIDs</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">id</span> <span class="k">in</span> <span class="n">identifiers</span> <span class="p">{</span>
+    <span class="n">collectedIDs</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">collectedIDs</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">idCounter</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">6</span><span class="p">,</span> <span class="s">"The closure ran once per element, plus once to end"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Use <code class="language-plaintext highlighter-rouge">unfolding</code> when the source can produce on request, such as reading from a queue or generating values. Use the continuation-based form when the source pushes on its own schedule, as callbacks and delegates do.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">AsyncStream.makeStream</code> returns a <code class="language-plaintext highlighter-rouge">Sendable</code> continuation for the producer and a stream for one consumer. <code class="language-plaintext highlighter-rouge">yield</code> never suspends.</li>
+  <li>Adapt callback and delegate APIs by yielding from the callback and stopping the producer in <code class="language-plaintext highlighter-rouge">onTermination</code>, which runs on both finishing and cancellation.</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncThrowingStream.finish(throwing:)</code> maps failure callbacks onto stream errors, after buffered elements are delivered.</li>
+  <li>After termination, <code class="language-plaintext highlighter-rouge">yield</code> returns <code class="language-plaintext highlighter-rouge">.terminated</code>; producers should stop.</li>
+  <li>A stream terminates when its consumer’s task is cancelled or its last reference is released, not when a loop breaks. Do not rely on <code class="language-plaintext highlighter-rouge">break</code> to stop a stored stream.</li>
+  <li>Releasing the continuation does not finish the stream. Always call <code class="language-plaintext highlighter-rouge">finish()</code> on every producer exit path.</li>
+  <li>A stream has one consumer; concurrent iterators split its elements. Broadcast by giving each subscriber its own stream.</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncStream(unfolding:)</code> is pull-based and needs no buffer.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Wrap <code class="language-plaintext highlighter-rouge">URLSession</code>’s delegate-based download progress into an <code class="language-plaintext highlighter-rouge">AsyncThrowingStream&lt;Progress, any Error&gt;</code> that yields fractional progress values and finishes with the downloaded file’s URL as a final event, or with an error. Retain the delegate through <code class="language-plaintext highlighter-rouge">onTermination</code>, cancel the download task when the consumer stops iterating, and test three cases with <code class="language-plaintext highlighter-rouge">URLProtocol</code> fixtures: normal completion, a server error, and a consumer that breaks out of the loop at 50%.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0314-async-stream.md">SE-0314: AsyncStream and AsyncThrowingStream</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0388-async-stream-factory.md">SE-0388: Convenience Async[Throwing]Stream.makeStream methods</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0468-async-stream-continuation-hashable-conformance.md">SE-0468: Hashable conformance for Async(Throwing)Stream.Continuation</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10058/">Meet AsyncSequence</a>, WWDC21.</li>
+</ul>
+
+<p>Previous: <a href="/swift-asyncsequence/">Consuming Values with <code class="language-plaintext highlighter-rouge">AsyncSequence</code></a>. Next: <a href="/swift-stream-backpressure/">Buffering, Backpressure, and Stream Termination</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-asyncstream/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Building+Streams+with+AsyncStream+and+AsyncThrowingStream+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-asyncstream%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-asyncstream/&title=Building+Streams+with+AsyncStream+and+AsyncThrowingStream+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-asyncstream/&title=Building+Streams+with+AsyncStream+and+AsyncThrowingStream+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-asyncstream/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Building Streams with AsyncStream and AsyncThrowingStream in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-asyncstream/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#AsyncSequence">AsyncSequence</a></li>
+    
+    <li><a href="/tag/#AsyncStream">AsyncStream</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Streams">Streams</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Managing Resources: share and Multicasting" href="/combine-share-multicasting/"> <p>Previous post</p> Managing Resources: share and Multicasting </a> </div> <div id="next-post"> <a alt="Schedulers: receive(on:) and subscribe(on:)" href="/combine-schedulers-receive-subscribe-on/"> <p>Next post</p> Schedulers: receive(on:) and subscribe(on:) </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

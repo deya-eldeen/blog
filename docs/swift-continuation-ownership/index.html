@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Continuation Ownership, Cancellation, and Double Resume in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Continuation Ownership, Cancellation, and Double Resume in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A continuation wrapper is easy to write when exactly one thing can finish the operation. It becomes hard as soon as two things can: a completion handler and a cancellation, a response and a timeout, a success callback and a failure callback that a buggy SDK sometimes calls both of. Each of those pairs is a race to resume the same continuation, and the loser either crashes the process with a double resume or, if the wrapper is defensive in the wrong way, leaves the task suspended forever. The way out is to treat a continuation as a resource with exactly one owner at any moment, and to make “who resumes” a single atomic decision. This article builds a small resolve-once primitive, uses it to make a cancellable legacy operation correct under three different cancellation contracts, adds timeouts, catalogs the bugs that cause double resumes and leaks, and shows how many stress-test iterations it takes to trust a fix." /> <meta property="og:description" content="A continuation wrapper is easy to write when exactly one thing can finish the operation. It becomes hard as soon as two things can: a completion handler and a cancellation, a response and a timeout, a success callback and a failure callback that a buggy SDK sometimes calls both of. Each of those pairs is a race to resume the same continuation, and the loser either crashes the process with a double resume or, if the wrapper is defensive in the wrong way, leaves the task suspended forever. The way out is to treat a continuation as a resource with exactly one owner at any moment, and to make “who resumes” a single atomic decision. This article builds a small resolve-once primitive, uses it to make a cancellable legacy operation correct under three different cancellation contracts, adds timeouts, catalogs the bugs that cause double resumes and leaks, and shows how many stress-test iterations it takes to trust a fix." /> <link rel="canonical" href="https://swiftbydeya.com/swift-continuation-ownership/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-continuation-ownership/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-18T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Continuation Ownership, Cancellation, and Double Resume in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-18T00:00:00+03:00","datePublished":"2026-08-18T00:00:00+03:00","description":"A continuation wrapper is easy to write when exactly one thing can finish the operation. It becomes hard as soon as two things can: a completion handler and a cancellation, a response and a timeout, a success callback and a failure callback that a buggy SDK sometimes calls both of. Each of those pairs is a race to resume the same continuation, and the loser either crashes the process with a double resume or, if the wrapper is defensive in the wrong way, leaves the task suspended forever. The way out is to treat a continuation as a resource with exactly one owner at any moment, and to make “who resumes” a single atomic decision. This article builds a small resolve-once primitive, uses it to make a cancellable legacy operation correct under three different cancellation contracts, adds timeouts, catalogs the bugs that cause double resumes and leaks, and shows how many stress-test iterations it takes to trust a fix.","headline":"Continuation Ownership, Cancellation, and Double Resume in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-continuation-ownership/"},"url":"https://swiftbydeya.com/swift-continuation-ownership/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Continuation Ownership, Cancellation, and Double Resume in Swift"> <meta name="twitter:description" content="A continuation wrapper is easy to write when exactly one thing can finish the operation. It becomes hard as soon as two things can: a completion handler and ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Continuation Ownership, Cancellation, and Double Resume in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Continuation Ownership, Cancellation, and Double Resume in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-18T00:00:00+03:00">August 18, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A continuation wrapper is easy to write when exactly one thing can finish the operation. It becomes hard as soon as two things can: a completion handler <em>and</em> a cancellation, a response <em>and</em> a timeout, a success callback <em>and</em> a failure callback that a buggy SDK sometimes calls both of. Each of those pairs is a race to resume the same continuation, and the loser either crashes the process with a double resume or, if the wrapper is defensive in the wrong way, leaves the task suspended forever.</p>
+
+<p>The way out is to treat a continuation as a resource with exactly one <strong>owner</strong> at any moment, and to make “who resumes” a single atomic decision. This article builds a small resolve-once primitive, uses it to make a cancellable legacy operation correct under three different cancellation contracts, adds timeouts, catalogs the bugs that cause double resumes and leaks, and shows how many stress-test iterations it takes to trust a fix.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="ownership-stated-precisely">Ownership, stated precisely</h2>
+
+<p>A continuation must be resumed exactly once. Restated as ownership:</p>
+
+<ol>
+  <li>When <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code>’s closure receives the continuation, <strong>the closure owns it.</strong></li>
+  <li>The closure may <strong>transfer</strong> ownership: to a completion handler it passes to an API, or into storage such as a property, a dictionary, or a queue.</li>
+  <li>Whoever owns it must eventually <strong>consume</strong> it by calling <code class="language-plaintext highlighter-rouge">resume</code>, after which nobody owns it.</li>
+  <li>Ownership must never be <strong>duplicated</strong>. Two parties that both believe they own the continuation will both resume it.</li>
+</ol>
+
+<p>Most bugs are rule 4 violations hiding in plain sight. Capturing a continuation in two closures duplicates ownership. So does storing it in a property <em>and</em> capturing it in a cancellation handler. The fix is never “resume carefully”; it is to put the continuation where exactly one party can take it out.</p>
+
+<h2 id="a-resolve-once-slot">A resolve-once slot</h2>
+
+<p>The primitive below holds the continuation and an optional early result under one lock. Any number of parties may call <code class="language-plaintext highlighter-rouge">resolve</code>; the first one wins and the rest are told they lost. It also handles the case where a resolver arrives <em>before</em> the continuation has been installed, which is what happens when a task is already cancelled on entry:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Owns a continuation until exactly one resolver resumes it. Later resolvers are ignored.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ResolveOnce</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">awaitingContinuation</span>
+        <span class="k">case</span> <span class="nf">installed</span><span class="p">(</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">resolvedEarly</span><span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="n">finished</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="o">.</span><span class="n">awaitingContinuation</span><span class="p">)</span>
+
+    <span class="c1">/// Installs the continuation. Returns false if a result already arrived, in which case</span>
+    <span class="c1">/// the continuation has been resumed with it and the caller must not start any work.</span>
+    <span class="kd">func</span> <span class="nf">install</span><span class="p">(</span><span class="n">_</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">early</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">state</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">awaitingContinuation</span><span class="p">:</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="nf">installed</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">nil</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">resolvedEarly</span><span class="p">(</span><span class="k">let</span> <span class="nv">result</span><span class="p">):</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="n">finished</span>
+                <span class="k">return</span> <span class="n">result</span>
+            <span class="k">case</span> <span class="o">.</span><span class="n">installed</span><span class="p">,</span> <span class="o">.</span><span class="nv">finished</span><span class="p">:</span>
+                <span class="nf">preconditionFailure</span><span class="p">(</span><span class="s">"install(_:) must be called exactly once"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">early</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">early</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">false</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Resolves with `result` if nobody has yet. Returns whether this call won.</span>
+    <span class="kd">@discardableResult</span>
+    <span class="kd">func</span> <span class="nf">resolve</span><span class="p">(</span><span class="n">_</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">winner</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">??</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">state</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">awaitingContinuation</span><span class="p">:</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="nf">resolvedEarly</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">some</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>                 <span class="c1">// Won; the continuation will be resumed on install.</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">installed</span><span class="p">(</span><span class="k">let</span> <span class="nv">continuation</span><span class="p">):</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="n">finished</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">some</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span>        <span class="c1">// Won; resume now, outside the lock.</span>
+            <span class="k">case</span> <span class="o">.</span><span class="n">resolvedEarly</span><span class="p">,</span> <span class="o">.</span><span class="nv">finished</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">nil</span>                        <span class="c1">// Lost.</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">winner</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="n">winner</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: A resolve-once slot accepts exactly one result, whichever party arrives first
+    [*] --&gt; AwaitingContinuation
+    AwaitingContinuation --&gt; Installed: install(continuation)
+    AwaitingContinuation --&gt; ResolvedEarly: resolve(result), wins
+    ResolvedEarly --&gt; Finished: install resumes immediately, returns false
+    Installed --&gt; Finished: resolve(result), wins and resumes
+    Finished --&gt; Finished: later resolve calls lose
+</code></pre>
+
+<p>Every transition happens inside <code class="language-plaintext highlighter-rouge">withLock</code>, so the operation, the cancellation handler, and a timeout can call into it from different threads at the same instant and exactly one will win. The continuation is always resumed <em>outside</em> the lock, because resuming may run code that tries to take the same lock.</p>
+
+<h2 id="a-legacy-operation-with-an-awkward-cancellation-contract">A legacy operation with an awkward cancellation contract</h2>
+
+<p>Real cancellable APIs disagree about what <code class="language-plaintext highlighter-rouge">cancel()</code> does. The fake below models the three contracts seen in practice:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">CancelContract</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="c1">/// cancel() makes the operation call its completion with an error, synchronously.</span>
+    <span class="k">case</span> <span class="n">completesWithError</span>
+    <span class="c1">/// cancel() suppresses the completion entirely.</span>
+    <span class="k">case</span> <span class="n">suppressesCompletion</span>
+    <span class="c1">/// cancel() is best effort: the completion may still run later, with a success.</span>
+    <span class="k">case</span> <span class="n">mayStillComplete</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">JobCancelled</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="c1">/// A cancellable callback-based job, standing in for an SDK.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyJob</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">completion</span><span class="p">:</span> <span class="p">(</span><span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+        <span class="k">var</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="kc">false</span>
+        <span class="k">var</span> <span class="nv">started</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+    <span class="k">let</span> <span class="nv">contract</span><span class="p">:</span> <span class="kt">CancelContract</span>
+    <span class="k">let</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="kt">CancelContract</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">contract</span> <span class="o">=</span> <span class="n">contract</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">wasStarted</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">started</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">completion</span> <span class="o">=</span> <span class="n">completion</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">nanoseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span> <span class="o">/</span> <span class="mi">1_000_000_000</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Int</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1_000_000_000</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">nanoseconds</span><span class="p">(</span><span class="n">nanoseconds</span><span class="p">))</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">completion</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="k">in</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">&amp;&amp;</span> <span class="n">contract</span> <span class="o">!=</span> <span class="o">.</span><span class="n">mayStillComplete</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+                <span class="k">defer</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">completion</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+                <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">completion</span>
+            <span class="p">}</span>
+            <span class="nf">completion</span><span class="p">?(</span><span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">completion</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="k">in</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">true</span>
+            <span class="k">guard</span> <span class="n">contract</span> <span class="o">==</span> <span class="o">.</span><span class="n">completesWithError</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+            <span class="k">defer</span> <span class="p">{</span> <span class="n">state</span><span class="o">.</span><span class="n">completion</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">completion</span>
+        <span class="p">}</span>
+        <span class="nf">completion</span><span class="p">?(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="kt">JobCancelled</span><span class="p">()))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Under <code class="language-plaintext highlighter-rouge">.completesWithError</code>, a naive wrapper that resumes from both the completion handler and the cancellation handler double-resumes. Under <code class="language-plaintext highlighter-rouge">.suppressesCompletion</code>, a wrapper that relies on the completion handler alone leaks. Under <code class="language-plaintext highlighter-rouge">.mayStillComplete</code>, either mistake can happen depending on timing. One wrapper built on <code class="language-plaintext highlighter-rouge">ResolveOnce</code> is correct under all three:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">job</span><span class="p">:</span> <span class="kt">LegacyJob</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">slot</span> <span class="o">=</span> <span class="kt">ResolveOnce</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="n">slot</span><span class="o">.</span><span class="nf">install</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>   <span class="c1">// Already cancelled: do not start.</span>
+            <span class="n">job</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
+                <span class="n">slot</span><span class="o">.</span><span class="nf">resolve</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">slot</span><span class="o">.</span><span class="nf">resolve</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="kt">CancellationError</span><span class="p">()))</span>            <span class="c1">// Claim the result first...</span>
+        <span class="n">job</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>                                           <span class="c1">// ...then tell the job to stop.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The order inside <code class="language-plaintext highlighter-rouge">onCancel</code> matters. Resolving <em>before</em> calling <code class="language-plaintext highlighter-rouge">job.cancel()</code> guarantees that cancellation is reported as <code class="language-plaintext highlighter-rouge">CancellationError</code>, the error Swift code expects, even under the contract where <code class="language-plaintext highlighter-rouge">cancel()</code> synchronously calls the completion with the SDK’s own error. That call then loses the race and is ignored.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">guard slot.install(continuation)</code> handles the timing the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a> calls “case 1”: if the task was already cancelled, the handler ran first, resolved the slot, and <code class="language-plaintext highlighter-rouge">install</code> resumes the continuation immediately and returns <code class="language-plaintext highlighter-rouge">false</code>, so the job is never started.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">outcome</span><span class="p">(</span><span class="n">of</span> <span class="nv">job</span><span class="p">:</span> <span class="kt">LegacyJob</span><span class="p">,</span> <span class="n">cancelAfter</span> <span class="nv">delay</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">?)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="n">job</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">delay</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">delay</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">switch</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">result</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="k">let</span> <span class="nv">value</span><span class="p">):</span> <span class="k">return</span> <span class="s">"value </span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">"</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">CancellationError</span><span class="p">):</span> <span class="n">_</span> <span class="o">=</span> <span class="n">error</span><span class="p">;</span> <span class="k">return</span> <span class="s">"cancelled"</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="k">return</span> <span class="s">"failed: </span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">contract</span> <span class="k">in</span> <span class="p">[</span><span class="kt">CancelContract</span><span class="o">.</span><span class="n">completesWithError</span><span class="p">,</span> <span class="o">.</span><span class="n">suppressesCompletion</span><span class="p">,</span> <span class="o">.</span><span class="n">mayStillComplete</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">completed</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">outcome</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="n">contract</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)),</span> <span class="nv">cancelAfter</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">outcome</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="n">contract</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)),</span> <span class="nv">cancelAfter</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">completed</span> <span class="o">==</span> <span class="s">"value 42"</span><span class="p">,</span> <span class="s">"</span><span class="se">\(</span><span class="n">contract</span><span class="se">)</span><span class="s">: completes normally"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">cancelled</span> <span class="o">==</span> <span class="s">"cancelled"</span><span class="p">,</span> <span class="s">"</span><span class="se">\(</span><span class="n">contract</span><span class="se">)</span><span class="s">: cancellation is reported as CancellationError"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">neverStarted</span> <span class="o">=</span> <span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="o">.</span><span class="n">suppressesCompletion</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">preCancelled</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="n">neverStarted</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">preCancelledValue</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">preCancelled</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preCancelledValue</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">neverStarted</span><span class="o">.</span><span class="n">wasStarted</span><span class="p">,</span> <span class="s">"A task cancelled on entry never starts the job"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Every contract completes normally when left alone and reports <code class="language-plaintext highlighter-rouge">CancellationError</code> when cancelled, within milliseconds rather than after the five-second job duration. For the <code class="language-plaintext highlighter-rouge">.mayStillComplete</code> contract, the job’s late success arrives five seconds later, finds the slot finished, and is discarded.</p>
+
+<h2 id="timeouts-are-just-another-resolver">Timeouts are just another resolver</h2>
+
+<p>Because <code class="language-plaintext highlighter-rouge">ResolveOnce</code> accepts any number of resolvers, a timeout is one more party racing to resolve:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">OperationTimedOut</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">job</span><span class="p">:</span> <span class="kt">LegacyJob</span><span class="p">,</span> <span class="nv">timeout</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">slot</span> <span class="o">=</span> <span class="kt">ResolveOnce</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">timer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">slot</span><span class="o">.</span><span class="nf">resolve</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="kt">OperationTimedOut</span><span class="p">()))</span> <span class="p">{</span>
+            <span class="n">job</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">timer</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withTaskCancellationHandler</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="n">slot</span><span class="o">.</span><span class="nf">install</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">job</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span> <span class="n">slot</span><span class="o">.</span><span class="nf">resolve</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="nv">onCancel</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">slot</span><span class="o">.</span><span class="nf">resolve</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="kt">CancellationError</span><span class="p">()))</span>
+        <span class="n">job</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="o">.</span><span class="n">mayStillComplete</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)),</span> <span class="nv">timeout</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A five-second job cannot beat a 20 ms timeout"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">OperationTimedOut</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">quickResult</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="o">.</span><span class="n">mayStillComplete</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)),</span> <span class="nv">timeout</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">quickResult</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The timer only cancels the job if <em>it</em> won the race, which keeps it from cancelling a job that already succeeded. The <code class="language-plaintext highlighter-rouge">defer</code> cancels the timer task on every exit, so a fast success does not leave a sleeping timer behind.</p>
+
+<p>Unlike the task-group timeout in the <a href="/swift-task-groups/">task groups article</a>, this one returns as soon as the timer fires, even if the job ignores <code class="language-plaintext highlighter-rouge">cancel()</code>. The task group version must wait for its children; a continuation-based wrapper has no child to wait for. That makes it the right shape for legacy operations that cannot be interrupted, at the cost of the job possibly continuing in the background after the caller has moved on.</p>
+
+<h2 id="a-catalog-of-double-resumes-and-leaks">A catalog of double resumes and leaks</h2>
+
+<p>Almost every continuation bug in practice is one of these:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Bug</th>
+      <th>Symptom</th>
+      <th>Fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Missing <code class="language-plaintext highlighter-rouge">return</code> after resuming on an error path</td>
+      <td>Double resume</td>
+      <td>Resume as the last statement, or <code class="language-plaintext highlighter-rouge">return</code> immediately after</td>
+    </tr>
+    <tr>
+      <td>Both success and failure callbacks fire</td>
+      <td>Double resume</td>
+      <td>Route both through a resolve-once slot</td>
+    </tr>
+    <tr>
+      <td>Completion races cancellation or timeout</td>
+      <td>Intermittent double resume</td>
+      <td>Make every resolver go through one slot</td>
+    </tr>
+    <tr>
+      <td>A newer request overwrites a stored continuation</td>
+      <td>Leak of the older one</td>
+      <td>Reject, join, or resume the older one before replacing it</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">cancel()</code> suppresses the completion</td>
+      <td>Leak on cancellation</td>
+      <td>Resolve from the cancellation handler</td>
+    </tr>
+    <tr>
+      <td>Early <code class="language-plaintext highlighter-rouge">guard ... else { return }</code> inside the closure</td>
+      <td>Leak</td>
+      <td>Resume with an error in the <code class="language-plaintext highlighter-rouge">else</code> branch</td>
+    </tr>
+    <tr>
+      <td>Delegate held weakly and deallocated mid-operation</td>
+      <td>Leak</td>
+      <td>Retain the delegate for the operation’s lifetime</td>
+    </tr>
+    <tr>
+      <td>Continuation resumed while holding a lock</td>
+      <td>Deadlock, not a crash</td>
+      <td>Take the continuation out under the lock, resume after</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The first row deserves an example, because it hides in code that looks finished:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">parse</span><span class="p">(</span><span class="n">_</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="nf">legacyParse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="p">{</span> <span class="n">text</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span>
+                <span class="c1">// Missing return: execution falls through.</span>
+            <span class="p">}</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">text</span> <span class="p">??</span> <span class="s">""</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// Fatal error: SWIFT TASK CONTINUATION MISUSE: parse(_:) tried to resume its continuation</span>
+<span class="c1">// more than once, returning ...</span>
+</code></pre></div></div>
+
+<p>Converting the <code class="language-plaintext highlighter-rouge">(T?, Error?)</code> callback pair into a <code class="language-plaintext highlighter-rouge">Result</code> first, then calling <code class="language-plaintext highlighter-rouge">resume(with:)</code> once, eliminates the whole class of bug.</p>
+
+<h2 id="how-much-stress-testing-is-enough">How much stress testing is enough?</h2>
+
+<p>Races between completion, cancellation, and timeout happen only for particular interleavings. A test that runs once tells you little. If a bug manifests in a fraction \(p\) of runs, then the probability that \(N\) independent runs all miss it is \((1 - p)^N\). To catch it with confidence \(c\), you need</p>
+
+\[N \ge \frac{\ln(1 - c)}{\ln(1 - p)} \approx \frac{-\ln(1 - c)}{p} .\]
+
+<p>A race that shows up once in a thousand runs, \(p = 0.001\), needs about 4,600 runs to be caught with 99% confidence. A race at \(p = 0.01\) needs about 460. Concurrency tests should therefore loop, with randomized timing, and run in optimized builds as well as debug ones, since timing changes between them.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A deterministic generator, so a failing stress run can be replayed.</span>
+<span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">stressCancellationRace</span><span class="p">(</span><span class="nv">iterations</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">completed</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">completed</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">let</span> <span class="nv">contracts</span><span class="p">:</span> <span class="p">[</span><span class="kt">CancelContract</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="n">completesWithError</span><span class="p">,</span> <span class="o">.</span><span class="n">suppressesCompletion</span><span class="p">,</span> <span class="o">.</span><span class="n">mayStillComplete</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">iterations</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">contract</span> <span class="o">=</span> <span class="n">contracts</span><span class="o">.</span><span class="nf">randomElement</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span><span class="o">!</span>
+        <span class="k">let</span> <span class="nv">jobTime</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="nf">microseconds</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">...</span><span class="mi">400</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">cancelTime</span> <span class="o">=</span> <span class="kt">Duration</span><span class="o">.</span><span class="nf">microseconds</span><span class="p">(</span><span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">...</span><span class="mi">400</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">))</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">run</span><span class="p">(</span><span class="kt">LegacyJob</span><span class="p">(</span><span class="nv">contract</span><span class="p">:</span> <span class="n">contract</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="n">jobTime</span><span class="p">))</span> <span class="p">}</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">cancelTime</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">switch</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">result</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">success</span><span class="p">:</span> <span class="n">completed</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">failure</span><span class="p">:</span> <span class="n">cancelled</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">completed</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">stress</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">stressCancellationRace</span><span class="p">(</span><span class="nv">iterations</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">,</span> <span class="nv">seed</span><span class="p">:</span> <span class="mi">2026</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">stress</span><span class="o">.</span><span class="n">completed</span> <span class="o">+</span> <span class="n">stress</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">==</span> <span class="mi">1_000</span><span class="p">,</span> <span class="s">"Every iteration finished exactly once, with no hang or trap"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">stress</span><span class="o">.</span><span class="n">completed</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">stress</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"Both sides of the race were exercised"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"stress: </span><span class="se">\(</span><span class="n">stress</span><span class="o">.</span><span class="n">completed</span><span class="se">)</span><span class="s"> completed, </span><span class="se">\(</span><span class="n">stress</span><span class="o">.</span><span class="n">cancelled</span><span class="se">)</span><span class="s"> cancelled"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The assertions are deliberately weak about <em>which</em> side wins, since that depends on timing. What they check is the invariant: every iteration ends, exactly once, as a success or an error. A double resume would trap; a leak would hang the loop. The seeded generator makes a failing run reproducible: rerun with the same seed to get the same sequence of contracts and delays, though not the same thread interleavings.</p>
+
+<p>On the test machine, 1,000 iterations took about one second, with between 6% and 30% of them completing before the cancellation arrived, depending on the run. Running the same loop with a naive wrapper, one that stores the continuation for the cancellation handler <em>and</em> captures it in the completion handler, trapped at iteration 7 with “SWIFT TASK CONTINUATION MISUSE: runNaive(_:) tried to resume its continuation more than once, throwing CancellationError()!”. That is the behavior the formula predicts for a race with a high \(p\): a bug that a single test run would probably have missed, found in a fraction of a second.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Treat a continuation as a resource with exactly one owner. Duplicated ownership, such as two closures or a property plus a handler, is the root of double resumes.</li>
+  <li>Route every party that can finish an operation, completion, cancellation, timeout, through one resolve-once slot under a lock, and resume outside the lock.</li>
+  <li>Handle a result that arrives before the continuation is installed, so pre-cancelled tasks never start work.</li>
+  <li>In cancellation handlers, claim the result before calling the legacy <code class="language-plaintext highlighter-rouge">cancel()</code>, so callers always see <code class="language-plaintext highlighter-rouge">CancellationError</code>.</li>
+  <li>A continuation-based timeout returns promptly even when the legacy operation cannot be interrupted.</li>
+  <li>Convert <code class="language-plaintext highlighter-rouge">(T?, Error?)</code> callbacks to <code class="language-plaintext highlighter-rouge">Result</code> and resume once; it removes the missing-<code class="language-plaintext highlighter-rouge">return</code> bug class.</li>
+  <li>Stress-test races in loops: catching a bug with probability \(p\) per run at confidence \(c\) needs about \(-\ln(1 - c)/p\) runs.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Extend the wrapper so that several callers can await the same <code class="language-plaintext highlighter-rouge">LegacyJob</code>: the first caller starts it, later callers join, and each caller can be cancelled independently. The job itself should be cancelled only when the last waiter leaves. Give each waiter its own <code class="language-plaintext highlighter-rouge">ResolveOnce</code>, keep the set of waiters in a <code class="language-plaintext highlighter-rouge">Mutex</code>, and write a stress test that randomly adds waiters, cancels some, and lets the job finish, checking that every waiter ends exactly once and that the job is cancelled if and only if every waiter was.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0300-continuation.md">SE-0300: Continuations for interfacing async tasks with synchronous code</a>, section “Checked continuations.”</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0528-noncopyable-continuation.md">SE-0528: <code class="language-plaintext highlighter-rouge">Continuation</code></a>, which enforces single ownership in the type system on iOS 27 and macOS 27.</li>
+  <li><a href="https://developer.apple.com/documentation/swift/withtaskcancellationhandler(operation:oncancel:isolation:)">withTaskCancellationHandler(operation:onCancel:isolation:)</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-checked-continuations/">Bridging Callback APIs with Checked Continuations</a>. Next: <a href="/swift-rejecting-stale-results/">Rejecting Stale Results After Request Replacement</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-continuation-ownership/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Continuation+Ownership%2C+Cancellation%2C+and+Double+Resume+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-continuation-ownership%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-continuation-ownership/&title=Continuation+Ownership%2C+Cancellation%2C+and+Double+Resume+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-continuation-ownership/&title=Continuation+Ownership%2C+Cancellation%2C+and+Double+Resume+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-continuation-ownership/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Continuation Ownership, Cancellation, and Double Resume in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-continuation-ownership/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Cancellation">Cancellation</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Continuations">Continuations</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Combine vs. the Observation Framework in SwiftUI" href="/combine-vs-observation-swiftui/"> <p>Previous post</p> Combine vs. the Observation Framework in SwiftUI </a> </div> <div id="next-post"> <a alt="Bridging Publishers to async/await with .values" href="/combine-publisher-values-async/"> <p>Next post</p> Bridging Publishers to async/await with .values </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

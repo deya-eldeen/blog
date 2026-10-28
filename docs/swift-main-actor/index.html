@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>The Main Actor and UI-Facing State in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="The Main Actor and UI-Facing State in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="UIKit, AppKit, and SwiftUI share one rule older than Swift itself: user interface state is touched only from the main thread. For most of Apple-platform history, that rule lived in documentation and in Main Thread Checker warnings at run time. In Swift concurrency it lives in the type system, as the main actor: a global actor whose executor is the main thread. Code isolated to it can update UI directly; code that is not must await to get there, and the compiler checks every crossing. This article treats the main actor as both a correctness tool and a performance budget. It shows how to structure view models so that state changes are synchronous and checked, how to keep heavy work off the main actor and measure that you did, how Swift 6.2’s default isolation changes app targets, and how to bridge the callbacks and delegates that still arrive from older APIs." /> <meta property="og:description" content="UIKit, AppKit, and SwiftUI share one rule older than Swift itself: user interface state is touched only from the main thread. For most of Apple-platform history, that rule lived in documentation and in Main Thread Checker warnings at run time. In Swift concurrency it lives in the type system, as the main actor: a global actor whose executor is the main thread. Code isolated to it can update UI directly; code that is not must await to get there, and the compiler checks every crossing. This article treats the main actor as both a correctness tool and a performance budget. It shows how to structure view models so that state changes are synchronous and checked, how to keep heavy work off the main actor and measure that you did, how Swift 6.2’s default isolation changes app targets, and how to bridge the callbacks and delegates that still arrive from older APIs." /> <link rel="canonical" href="https://swiftbydeya.com/swift-main-actor/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-main-actor/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-16T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="The Main Actor and UI-Facing State in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-16T00:00:00+03:00","datePublished":"2026-07-16T00:00:00+03:00","description":"UIKit, AppKit, and SwiftUI share one rule older than Swift itself: user interface state is touched only from the main thread. For most of Apple-platform history, that rule lived in documentation and in Main Thread Checker warnings at run time. In Swift concurrency it lives in the type system, as the main actor: a global actor whose executor is the main thread. Code isolated to it can update UI directly; code that is not must await to get there, and the compiler checks every crossing. This article treats the main actor as both a correctness tool and a performance budget. It shows how to structure view models so that state changes are synchronous and checked, how to keep heavy work off the main actor and measure that you did, how Swift 6.2’s default isolation changes app targets, and how to bridge the callbacks and delegates that still arrive from older APIs.","headline":"The Main Actor and UI-Facing State in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-main-actor/"},"url":"https://swiftbydeya.com/swift-main-actor/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="The Main Actor and UI-Facing State in Swift"> <meta name="twitter:description" content="UIKit, AppKit, and SwiftUI share one rule older than Swift itself: user interface state is touched only from the main thread. For most of Apple-platform hist..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="The Main Actor and UI-Facing State in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>The Main Actor and UI-Facing State in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-16T00:00:00+03:00">July 16, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>UIKit, AppKit, and SwiftUI share one rule older than Swift itself: user interface state is touched only from the main thread. For most of Apple-platform history, that rule lived in documentation and in Main Thread Checker warnings at run time. In Swift concurrency it lives in the type system, as the <strong>main actor</strong>: a global actor whose executor is the main thread. Code isolated to it can update UI directly; code that is not must <code class="language-plaintext highlighter-rouge">await</code> to get there, and the compiler checks every crossing.</p>
+
+<p>This article treats the main actor as both a correctness tool and a performance budget. It shows how to structure view models so that state changes are synchronous and checked, how to keep heavy work off the main actor and measure that you did, how Swift 6.2’s default isolation changes app targets, and how to bridge the callbacks and delegates that still arrive from older APIs.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Observations</code> requires iOS 26, macOS 26, or later.</p>
+
+<h2 id="what-the-main-actor-is">What the main actor is</h2>
+
+<p><code class="language-plaintext highlighter-rouge">MainActor</code> is a global actor, declared in the standard library as <code class="language-plaintext highlighter-rouge">@globalActor public final actor MainActor</code>. Its executor is the main dispatch queue, which runs on the main thread. Marking a declaration <code class="language-plaintext highlighter-rouge">@MainActor</code> isolates it there:</p>
+
+<ul>
+  <li>A <code class="language-plaintext highlighter-rouge">@MainActor</code> function always runs on the main thread, and calling it from elsewhere requires <code class="language-plaintext highlighter-rouge">await</code>.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">@MainActor</code> class or struct isolates all of its members, and the type is implicitly <code class="language-plaintext highlighter-rouge">Sendable</code>, because every access to its state is serialized on one thread.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">@MainActor</code> closure runs on the main actor wherever it is called from.</li>
+</ul>
+
+<p>The UI frameworks are annotated this way. <code class="language-plaintext highlighter-rouge">UIView</code>, <code class="language-plaintext highlighter-rouge">UIViewController</code>, <code class="language-plaintext highlighter-rouge">NSView</code>, and SwiftUI’s <code class="language-plaintext highlighter-rouge">View</code> protocol are main-actor-isolated, so code that conforms to them inherits the isolation. In a SwiftUI view, <code class="language-plaintext highlighter-rouge">body</code> and every method of the view run on the main actor without any annotation of your own.</p>
+
+<h2 id="the-frame-budget">The frame budget</h2>
+
+<p>The main thread draws frames. On a 60 Hz display it has about 16.7 ms per frame; on a 120 Hz ProMotion display, about 8.3 ms. Any single main-actor job that runs longer than one frame interval delays the next frame. A job of length \(T\) on a display with frame interval \(T_f\) causes roughly</p>
+
+\[\text{dropped frames} \approx \left\lceil \frac{T}{T_f} \right\rceil - 1\]
+
+<p>missed frames. An 80 ms JSON decode on the main actor drops about four frames at 60 Hz and about nine at 120 Hz: a visible stutter. The main actor is a serial executor with a hard real-time deadline, and the most useful mental model is that everything on it is spending from a budget of a few milliseconds per job.</p>
+
+<p>Because actors switch work only at suspension points, the length of a main-actor <em>job</em>, from one <code class="language-plaintext highlighter-rouge">await</code> to the next, is what matters. A long <code class="language-plaintext highlighter-rouge">async</code> function with many <code class="language-plaintext highlighter-rouge">await</code>s can be fine. A short synchronous loop that runs for 80 ms is not.</p>
+
+<h2 id="measuring-responsiveness">Measuring responsiveness</h2>
+
+<p>A heartbeat makes the budget measurable. It is a main-actor task that wakes every 2 ms and records how late it woke. If something occupies the main actor, the heartbeat cannot run, and its lateness reveals how long the main actor was blocked:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Observation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// Wakes on the main actor every `interval` and records the worst delay.</span>
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Heartbeat</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">worstLateness</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="n">zero</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+            <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">expected</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">interval</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">interval</span><span class="p">)</span>
+                <span class="n">worstLateness</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">worstLateness</span><span class="p">,</span> <span class="n">expected</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">))</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stop</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="n">task</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">task</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Stand-in for decoding a large payload: about 80 ms of CPU work.</span>
+<span class="kd">func</span> <span class="nf">decodeLargePayload</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">checksum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{</span>
+        <span class="n">checksum</span> <span class="o">&amp;+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">checksum</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">decodeOnMainActor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="nf">decodeLargePayload</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">decodeOffMainActor</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="nf">decodeLargePayload</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">worstLateness</span><span class="p">(</span><span class="nv">decodingOnMain</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">heartbeat</span> <span class="o">=</span> <span class="kt">Heartbeat</span><span class="p">()</span>
+    <span class="n">heartbeat</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">decodingOnMain</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="nf">decodeOnMainActor</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">decodeOffMainActor</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="k">await</span> <span class="n">heartbeat</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">heartbeat</span><span class="o">.</span><span class="n">worstLateness</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">blockedLateness</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">worstLateness</span><span class="p">(</span><span class="nv">decodingOnMain</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">freeLateness</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">worstLateness</span><span class="p">(</span><span class="nv">decodingOnMain</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">blockedLateness</span> <span class="o">&gt;=</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span> <span class="s">"Decoding on the main actor blocked it for most of 80 ms"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">freeLateness</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">40</span><span class="p">),</span> <span class="s">"Decoding off the main actor left it responsive"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"worst heartbeat delay, decoding on main:"</span><span class="p">,</span> <span class="n">blockedLateness</span><span class="p">,</span> <span class="s">"off main:"</span><span class="p">,</span> <span class="n">freeLateness</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine, the heartbeat was about 80 ms late when the decode ran on the main actor and a few milliseconds late when it ran in a <code class="language-plaintext highlighter-rouge">@concurrent</code> function. The calling code looks almost identical in both cases; the difference is one attribute on the function that does the work. Instruments’ Hangs and Animation Hitches instruments measure the same thing in a real app, as the <a href="/swift-profiling-tasks-main-actor/">profiling article</a> shows.</p>
+
+<h2 id="structuring-a-main-actor-view-model">Structuring a main-actor view model</h2>
+
+<p>The pattern that works best in Swift 6 puts <strong>state</strong> on the main actor and <strong>work</strong> off it. The view model is <code class="language-plaintext highlighter-rouge">@MainActor</code>, so every property assignment is a synchronous, checked operation. Services that do I/O or computation are non-isolated and <code class="language-plaintext highlighter-rouge">Sendable</code>, and the view model <code class="language-plaintext highlighter-rouge">await</code>s them:</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: UI state lives on the main actor while services do their work elsewhere
+    subgraph Main["Main actor"]
+        V["View"] -- "queryChanged(query)" --&gt; M["SearchModel: phase"]
+        M -- "observed changes" --&gt; V
+    end
+    subgraph Pool["Global concurrent executor"]
+        S["ArticleService.search, @concurrent"]
+    end
+    M -- "await search(query): a Sendable String goes out" --&gt; S
+    S -- "Sendable [Article] comes back" --&gt; M
+</code></pre>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Article</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="c1">/// Non-isolated and Sendable: callable from any isolation domain.</span>
+<span class="kd">protocol</span> <span class="kt">ArticleService</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Article</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">InMemoryArticleService</span><span class="p">:</span> <span class="kt">ArticleService</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">articles</span><span class="p">:</span> <span class="p">[</span><span class="kt">Article</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">latency</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="kd">@concurrent</span>
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Article</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">latency</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">articles</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="nf">localizedCaseInsensitiveContains</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">@Observable</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchModel</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Phase</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">idle</span>
+        <span class="k">case</span> <span class="nf">loading</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">loaded</span><span class="p">([</span><span class="kt">Article</span><span class="p">])</span>
+        <span class="k">case</span> <span class="nf">failed</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">phase</span><span class="p">:</span> <span class="kt">Phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">idle</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ArticleService</span>
+    <span class="kd">@ObservationIgnored</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">searchTask</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">ArticleService</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Called synchronously from the UI, for example on every keystroke.</span>
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">searchTask</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">query</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">idle</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="n">query</span><span class="p">)</span>
+        <span class="n">searchTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">results</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+                <span class="k">guard</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="nf">loaded</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">CancellationError</span> <span class="p">{</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="nf">failed</span><span class="p">(</span><span class="s">"Search failed"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">searchTask</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">service</span> <span class="o">=</span> <span class="kt">InMemoryArticleService</span><span class="p">(</span>
+    <span class="nv">articles</span><span class="p">:</span> <span class="p">[</span><span class="kt">Article</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Actors"</span><span class="p">),</span> <span class="kt">Article</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Main actor"</span><span class="p">),</span> <span class="kt">Article</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Tasks"</span><span class="p">)],</span>
+    <span class="nv">latency</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">let</span> <span class="nv">searchModel</span> <span class="o">=</span> <span class="kt">SearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="n">service</span><span class="p">)</span>
+<span class="n">searchModel</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"act"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">searchModel</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="o">.</span><span class="nf">loading</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="s">"act"</span><span class="p">),</span> <span class="s">"State changes synchronously, before any await"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">searchModel</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">searchModel</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="o">.</span><span class="nf">loaded</span><span class="p">([</span><span class="kt">Article</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Actors"</span><span class="p">),</span> <span class="kt">Article</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Main actor"</span><span class="p">)]))</span>
+</code></pre></div></div>
+
+<p>Several properties of this design are worth naming:</p>
+
+<ul>
+  <li><strong>State changes are synchronous.</strong> <code class="language-plaintext highlighter-rouge">phase = .loading(...)</code> takes effect before <code class="language-plaintext highlighter-rouge">queryChanged</code> returns, so the UI never shows a frame where the keystroke has been processed but the spinner has not appeared.</li>
+  <li><strong>The task inherits the main actor.</strong> <code class="language-plaintext highlighter-rouge">Task { }</code> created in a main-actor method is main-actor-isolated, so <code class="language-plaintext highlighter-rouge">phase = .loaded(results)</code> needs no hop and resumes on the main thread after the <code class="language-plaintext highlighter-rouge">await</code>.</li>
+  <li><strong>The work leaves the main actor because of the callee, not the caller.</strong> <code class="language-plaintext highlighter-rouge">search</code> is <code class="language-plaintext highlighter-rouge">@concurrent</code>, so it runs on the global executor no matter who calls it. If a future caller is a background importer instead of a view model, the work still runs off the main actor, and nobody has to remember to detach.</li>
+  <li><strong>Only <code class="language-plaintext highlighter-rouge">Sendable</code> values cross.</strong> The query string goes out, an array of <code class="language-plaintext highlighter-rouge">Article</code> values comes back. The view model itself never leaves the main actor.</li>
+</ul>
+
+<p>The <code class="language-plaintext highlighter-rouge">guard !Task.isCancelled</code> after the <code class="language-plaintext highlighter-rouge">await</code> matters. Cancellation is cooperative: a superseded search that has already finished its network call returns normally, and without the check it would overwrite the newer query’s state. The <a href="/swift-rejecting-stale-results/">stale results article</a> shows why even this check leaves a small window, and how a generation token closes it.</p>
+
+<h2 id="observing-main-actor-state-as-a-stream">Observing main-actor state as a stream</h2>
+
+<p><code class="language-plaintext highlighter-rouge">@Observable</code> view models drive SwiftUI views directly. Non-view code sometimes needs the same changes as a stream, for example to persist a setting whenever it changes or to log state transitions. Swift 6.2’s <code class="language-plaintext highlighter-rouge">Observations</code> type (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0475-observed.md">SE-0475</a>) turns an observation-tracked expression into an <code class="language-plaintext highlighter-rouge">AsyncSequence</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">@Observable</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PlaybackModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">position</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">recordPositions</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">playback</span> <span class="o">=</span> <span class="kt">PlaybackModel</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">positions</span> <span class="o">=</span> <span class="kt">Observations</span> <span class="p">{</span> <span class="n">playback</span><span class="o">.</span><span class="n">position</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">recorder</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">position</span> <span class="k">in</span> <span class="n">positions</span> <span class="p">{</span>
+            <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">position</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">seen</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+        <span class="n">playback</span><span class="o">.</span><span class="n">position</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="n">value</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">recordedPositions</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">recordPositions</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recordedPositions</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Observations</code> is <em>transactional</em>: it delivers values at suspension points of the code making the changes, so several synchronous changes made in one main-actor job arrive as a single, consistent value rather than a series of intermediate ones. That is the right semantic for UI state, where intermediate states were never rendered either. The changes above are separated by sleeps, so each one is delivered.</p>
+
+<h2 id="default-main-actor-isolation-in-swift-62">Default main-actor isolation in Swift 6.2</h2>
+
+<p>Most code in an app target touches UI or UI-facing state. Swift 6.2 lets a module make the main actor its default (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0466-control-default-actor-isolation.md">SE-0466</a>): every declaration without an explicit isolation is inferred <code class="language-plaintext highlighter-rouge">@MainActor</code>. In Xcode 26 and later, new app projects enable this through the “Default Actor Isolation” build setting; in SwiftPM it is a target setting:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Package.swift</span>
+<span class="o">.</span><span class="nf">executableTarget</span><span class="p">(</span>
+    <span class="nv">name</span><span class="p">:</span> <span class="s">"App"</span><span class="p">,</span>
+    <span class="nv">swiftSettings</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">defaultIsolation</span><span class="p">(</span><span class="kt">MainActor</span><span class="o">.</span><span class="k">self</span><span class="p">)]</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the command line the flag is <code class="language-plaintext highlighter-rouge">-default-isolation MainActor</code>. Under that default, a plain <code class="language-plaintext highlighter-rouge">final class Model { var count = 0 }</code> is main-actor-isolated with no annotation, and code that mutates it from the main actor compiles without any <code class="language-plaintext highlighter-rouge">await</code>.</p>
+
+<p>Default isolation removes most of the annotation noise from UI code, and most of the confusing errors that come from forgetting an annotation. It does not change what should run <em>off</em> the main actor. With main-actor isolation as the default, background work must opt out explicitly:</p>
+
+<ul>
+  <li>Mark CPU-heavy functions <code class="language-plaintext highlighter-rouge">@concurrent</code>, as <code class="language-plaintext highlighter-rouge">decodeOffMainActor</code> is above.</li>
+  <li>Mark types used only by background code, such as parsers, network clients, and persistence layers, <code class="language-plaintext highlighter-rouge">nonisolated</code>, so they can be used from any isolation domain.</li>
+  <li>Consider putting non-UI layers in their own modules, which keep the nonisolated default.</li>
+</ul>
+
+<p>The combination works well: UI code reads as if concurrency did not exist, and the places that leave the main actor are exactly the places that say so.</p>
+
+<h2 id="getting-onto-the-main-actor">Getting onto the main actor</h2>
+
+<p>From non-isolated code, there are three ways onto the main actor. Prefer them in this order:</p>
+
+<ol>
+  <li><strong>Call a <code class="language-plaintext highlighter-rouge">@MainActor</code> function with <code class="language-plaintext highlighter-rouge">await</code>.</strong> The isolation is part of the callee’s signature, so every caller gets it right.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">await MainActor.run { }</code></strong> for a one-off block. It is equivalent to calling a <code class="language-plaintext highlighter-rouge">@MainActor</code> closure, and it suspends the caller until the block has run.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">Task { @MainActor in }</code></strong> from synchronous non-isolated code, when there is nothing to await from. This creates an unstructured task that needs an owner like any other.</li>
+</ol>
+
+<p>Avoid <code class="language-plaintext highlighter-rouge">DispatchQueue.main.async</code> in code that uses Swift concurrency. It works, but the block it submits is outside the task tree: no cancellation, no priority propagation, no result, and, in Swift 6 mode, an isolation inference trap when closures inherit isolation they do not have at run time, as the <a href="/swift-threads-dispatch-queues-tasks/">threads article</a> demonstrates.</p>
+
+<h2 id="bridging-callbacks-that-are-already-on-the-main-thread">Bridging callbacks that are already on the main thread</h2>
+
+<p>Older APIs often call back on the main thread without saying so in their types: delegate methods, notification observers registered with <code class="language-plaintext highlighter-rouge">queue: .main</code>, completion handlers documented to run on the main queue. The compiler sees a non-isolated callback and refuses to let it touch main-actor state synchronously.</p>
+
+<p>When the API guarantees main-thread delivery, <code class="language-plaintext highlighter-rouge">MainActor.assumeIsolated</code> tells the compiler so, and checks it at run time:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyBridge</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">bridge</span> <span class="o">=</span> <span class="kt">LegacyBridge</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">delivered</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span>
+    <span class="c1">// A callback that an API documents as main-thread-only.</span>
+    <span class="kt">MainActor</span><span class="o">.</span><span class="n">assumeIsolated</span> <span class="p">{</span>
+        <span class="n">bridge</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="s">"legacy callback"</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">delivered</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">while</span> <span class="o">!</span><span class="n">delivered</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bridge</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"legacy callback"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">assumeIsolated</code> runs the closure synchronously, with no hop, after verifying that the current executor <em>is</em> the main actor. If the assumption is wrong, it stops the program with a precise error instead of allowing a data race. That makes it strictly better than an unchecked workaround: the claim is visible in the code, and testing exposes it if it is false.</p>
+
+<p>For whole conformances, Swift offers two tools. <code class="language-plaintext highlighter-rouge">@preconcurrency</code> on a protocol conformance, as in <code class="language-plaintext highlighter-rouge">extension Controller: @preconcurrency SomeDelegate</code>, accepts that the protocol predates concurrency annotations and inserts run-time isolation checks into each requirement. And Swift 6.2’s <strong>isolated conformances</strong> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0470-isolated-conformances.md">SE-0470</a>) let a main-actor type conform to a non-isolated protocol for use <em>on the main actor only</em>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">Describable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">describe</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Screen</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span> <span class="o">=</span> <span class="s">"Library"</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Screen</span><span class="p">:</span> <span class="kd">@MainActor</span> <span class="kt">Describable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">describe</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">title</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">describeScreen</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">screen</span> <span class="o">=</span> <span class="kt">Screen</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">describable</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Describable</span> <span class="o">=</span> <span class="n">screen</span>
+    <span class="k">return</span> <span class="n">describable</span><span class="o">.</span><span class="nf">describe</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">screenDescription</span> <span class="o">=</span> <span class="nf">describeScreen</span><span class="p">()</span>      <span class="c1">// Top-level code is already on the main actor.</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">screenDescription</span> <span class="o">==</span> <span class="s">"Library"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">@MainActor</code> in the conformance means the conformance itself is isolated: code on the main actor can use <code class="language-plaintext highlighter-rouge">Screen</code> as a <code class="language-plaintext highlighter-rouge">Describable</code>, and the compiler prevents passing that conformance to code that might call <code class="language-plaintext highlighter-rouge">describe()</code> from another thread. Before isolated conformances, the only options were to make the requirement <code class="language-plaintext highlighter-rouge">nonisolated</code>, which could not read <code class="language-plaintext highlighter-rouge">title</code>, or to give up the conformance.</p>
+
+<h2 id="pitfalls">Pitfalls</h2>
+
+<p><strong>Assuming <code class="language-plaintext highlighter-rouge">Task { }</code> leaves the main actor.</strong> In a main-actor context, <code class="language-plaintext highlighter-rouge">Task { }</code> runs on the main actor. Heavy work inside it blocks the UI exactly as if it ran inline. Offload the work, not the task.</p>
+
+<p><strong>Making a whole service <code class="language-plaintext highlighter-rouge">@MainActor</code> because one caller is UI.</strong> A network client, database, or image pipeline annotated <code class="language-plaintext highlighter-rouge">@MainActor</code> forces every caller onto the main thread and every job into the frame budget. Keep services non-isolated and <code class="language-plaintext highlighter-rouge">Sendable</code>, or give them their own actor.</p>
+
+<p><strong>Fine-grained hops in loops.</strong> Every <code class="language-plaintext highlighter-rouge">await</code> from the main actor into another actor and back costs a thread switch. The <a href="/swift-actors/">actors article</a> measured about 6 µs per round trip, so a loop of 10,000 small calls spends about 60 ms, four frames at 60 Hz, in switching alone. Move the loop to the other side of the boundary.</p>
+
+<p><strong><code class="language-plaintext highlighter-rouge">assumeIsolated</code> on an unverified claim.</strong> If an API’s callback queue is configurable or undocumented, <code class="language-plaintext highlighter-rouge">assumeIsolated</code> will eventually crash. Hop explicitly with <code class="language-plaintext highlighter-rouge">Task { @MainActor in }</code> instead, or configure the API to call back on the main queue.</p>
+
+<p><strong>Long synchronous work in <code class="language-plaintext highlighter-rouge">body</code> or view initializers.</strong> SwiftUI calls <code class="language-plaintext highlighter-rouge">body</code> frequently, on the main actor. Formatting, sorting, and filtering large collections there runs in every update. Compute derived values in the model, off the main actor if they are expensive.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>The main actor is a global actor whose executor is the main thread; UI frameworks are isolated to it.</li>
+  <li>Every main-actor job spends from a frame budget of about 8 to 17 ms. Jobs longer than one frame drop \(\lceil T / T_f \rceil - 1\) frames.</li>
+  <li>Keep state on the main actor and work off it: <code class="language-plaintext highlighter-rouge">@MainActor</code> view models, non-isolated <code class="language-plaintext highlighter-rouge">Sendable</code> services, <code class="language-plaintext highlighter-rouge">@concurrent</code> for heavy computation.</li>
+  <li>Measure responsiveness with a heartbeat locally and with Instruments in apps.</li>
+  <li>Swift 6.2 can make the main actor a module’s default isolation; background code then opts out with <code class="language-plaintext highlighter-rouge">@concurrent</code> and <code class="language-plaintext highlighter-rouge">nonisolated</code>.</li>
+  <li>Get onto the main actor through <code class="language-plaintext highlighter-rouge">@MainActor</code> functions first, <code class="language-plaintext highlighter-rouge">MainActor.run</code> second, and avoid <code class="language-plaintext highlighter-rouge">DispatchQueue.main.async</code> in concurrent code.</li>
+  <li>Bridge main-thread callbacks with <code class="language-plaintext highlighter-rouge">MainActor.assumeIsolated</code>, and conform main-actor types to non-isolated protocols with isolated conformances.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add a <code class="language-plaintext highlighter-rouge">thumbnails</code> feature to <code class="language-plaintext highlighter-rouge">SearchModel</code>: each loaded article gets an image that is decoded with a CPU-bound function taking about 15 ms. Implement it three ways: decoding inside the model’s main-actor task, decoding in a <code class="language-plaintext highlighter-rouge">@concurrent</code> function one image at a time, and decoding in a task group off the main actor with results applied in one main-actor update. Use <code class="language-plaintext highlighter-rouge">Heartbeat</code> to measure the worst main-actor delay for twenty articles in each version, and relate the results to the frame-budget formula.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0316-global-actors.md">SE-0316: Global actors</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0466-control-default-actor-isolation.md">SE-0466: Control default actor isolation inference</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0470-isolated-conformances.md">SE-0470: Global-actor isolated conformances</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0475-observed.md">SE-0475: Transactional Observation of Values</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2025/268/">Embracing Swift concurrency</a>, WWDC25.</li>
+</ul>
+
+<p>Previous: <a href="/swift-actor-reentrancy/">Actor Reentrancy Across Suspension Points</a>. Next: <a href="/swift-sendable/"><code class="language-plaintext highlighter-rouge">Sendable</code>: Moving Values Across Isolation Boundaries</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-main-actor/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=The+Main+Actor+and+UI-Facing+State+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-main-actor%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-main-actor/&title=The+Main+Actor+and+UI-Facing+State+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-main-actor/&title=The+Main+Actor+and+UI-Facing+State+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-main-actor/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=The Main Actor and UI-Facing State in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-main-actor/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#MainActor">MainActor</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#SwiftUI">SwiftUI</a></li>
+    
+    <li><a href="/tag/#UIKit">UIKit</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Combining: combineLatest, zip, and merge" href="/combine-combinelatest-zip-merge/"> <p>Previous post</p> Combining: combineLatest, zip, and merge </a> </div> <div id="next-post"> <a alt="Filtering: filter, removeDuplicates, and compactMap" href="/combine-filter-removeduplicates-compactmap/"> <p>Next post</p> Filtering: filter, removeDuplicates, and compactMap </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

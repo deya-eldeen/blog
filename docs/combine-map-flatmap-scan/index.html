@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Transforming: map, flatMap, and scan | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Transforming: map, flatMap, and scan" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Three operators do most of the transforming in Combine, and each answers a different question. map asks what each value should become. flatMap asks what work each value should start, where that work is itself a publisher, such as a request, a timer, or a database query. scan asks what the running state is after each value, carrying an accumulator from one value to the next. map holds few surprises. flatMap holds most of them: it runs its inner publishers concurrently, emits their values in the order they finish, completes only when everything has finished, and fails everything when one fails. Its maxPublishers parameter is a concurrency limit built from demand, and the wrong choice between it and switchToLatest is the classic search-field bug where an old response replaces a newer one. This article measures each of those behaviors, derives how long a batch of work takes under a concurrency limit, and uses scan to build a state machine and a smoothed throughput estimate." /> <meta property="og:description" content="Three operators do most of the transforming in Combine, and each answers a different question. map asks what each value should become. flatMap asks what work each value should start, where that work is itself a publisher, such as a request, a timer, or a database query. scan asks what the running state is after each value, carrying an accumulator from one value to the next. map holds few surprises. flatMap holds most of them: it runs its inner publishers concurrently, emits their values in the order they finish, completes only when everything has finished, and fails everything when one fails. Its maxPublishers parameter is a concurrency limit built from demand, and the wrong choice between it and switchToLatest is the classic search-field bug where an old response replaces a newer one. This article measures each of those behaviors, derives how long a batch of work takes under a concurrency limit, and uses scan to build a state machine and a smoothed throughput estimate." /> <link rel="canonical" href="https://swiftbydeya.com/combine-map-flatmap-scan/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-map-flatmap-scan/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Transforming: map, flatMap, and scan" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-13T00:00:00+03:00","datePublished":"2026-07-13T00:00:00+03:00","description":"Three operators do most of the transforming in Combine, and each answers a different question. map asks what each value should become. flatMap asks what work each value should start, where that work is itself a publisher, such as a request, a timer, or a database query. scan asks what the running state is after each value, carrying an accumulator from one value to the next. map holds few surprises. flatMap holds most of them: it runs its inner publishers concurrently, emits their values in the order they finish, completes only when everything has finished, and fails everything when one fails. Its maxPublishers parameter is a concurrency limit built from demand, and the wrong choice between it and switchToLatest is the classic search-field bug where an old response replaces a newer one. This article measures each of those behaviors, derives how long a batch of work takes under a concurrency limit, and uses scan to build a state machine and a smoothed throughput estimate.","headline":"Transforming: map, flatMap, and scan","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-map-flatmap-scan/"},"url":"https://swiftbydeya.com/combine-map-flatmap-scan/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Transforming: map, flatMap, and scan"> <meta name="twitter:description" content="Three operators do most of the transforming in Combine, and each answers a different question. map asks what each value should become. flatMap asks what work..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Transforming: map, flatMap, and scan"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Transforming: map, flatMap, and scan</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-13T00:00:00+03:00">July 13, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Three operators do most of the transforming in Combine, and each answers a different question. <code class="language-plaintext highlighter-rouge">map</code> asks what each value should become. <code class="language-plaintext highlighter-rouge">flatMap</code> asks what <em>work</em> each value should start, where that work is itself a publisher, such as a request, a timer, or a database query. <code class="language-plaintext highlighter-rouge">scan</code> asks what the running state is after each value, carrying an accumulator from one value to the next.</p>
+
+<p><code class="language-plaintext highlighter-rouge">map</code> holds few surprises. <code class="language-plaintext highlighter-rouge">flatMap</code> holds most of them: it runs its inner publishers concurrently, emits their values in the order they finish, completes only when everything has finished, and fails everything when one fails. Its <code class="language-plaintext highlighter-rouge">maxPublishers</code> parameter is a concurrency limit built from demand, and the wrong choice between it and <code class="language-plaintext highlighter-rouge">switchToLatest</code> is the classic search-field bug where an old response replaces a newer one. This article measures each of those behaviors, derives how long a batch of work takes under a concurrency limit, and uses <code class="language-plaintext highlighter-rouge">scan</code> to build a state machine and a smoothed throughput estimate.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The demand mechanism that <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers:)</code> relies on is explained in <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a>.</p>
+
+<h2 id="map-one-value-in-one-value-out"><code class="language-plaintext highlighter-rouge">map</code>: one value in, one value out</h2>
+
+<p><code class="language-plaintext highlighter-rouge">map</code> applies a function to each value and passes along completion unchanged. Its key-path overloads accept up to three key paths and produce a tuple for more than one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">Book</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">pages</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">year</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">books</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="kt">Book</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Dune"</span><span class="p">,</span> <span class="nv">pages</span><span class="p">:</span> <span class="mi">412</span><span class="p">,</span> <span class="nv">year</span><span class="p">:</span> <span class="mi">1965</span><span class="p">),</span>
+    <span class="kt">Book</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Emma"</span><span class="p">,</span> <span class="nv">pages</span><span class="p">:</span> <span class="mi">474</span><span class="p">,</span> <span class="nv">year</span><span class="p">:</span> <span class="mi">1815</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="k">var</span> <span class="nv">titles</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">titlesHandle</span> <span class="o">=</span> <span class="n">books</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">title</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">titles</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">titles</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Dune"</span><span class="p">,</span> <span class="s">"Emma"</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">summaries</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">summariesHandle</span> <span class="o">=</span> <span class="n">books</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="p">\</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">title</span><span class="p">,</span> <span class="n">year</span> <span class="k">in</span> <span class="s">"</span><span class="se">\(</span><span class="n">title</span><span class="se">)</span><span class="s"> (</span><span class="se">\(</span><span class="n">year</span><span class="se">)</span><span class="s">)"</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">summaries</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">summaries</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Dune (1965)"</span><span class="p">,</span> <span class="s">"Emma (1815)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The closure in <code class="language-plaintext highlighter-rouge">map</code> cannot throw. When a transformation can fail, such as parsing, <code class="language-plaintext highlighter-rouge">tryMap</code> is the throwing version. A thrown error terminates the stream with a failure, and because Swift cannot know which errors the closure throws, the failure type becomes <code class="language-plaintext highlighter-rouge">any Error</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ParseError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">notANumber</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">parsePrice</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Decimal</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="kt">Decimal</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="n">text</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">ParseError</span><span class="o">.</span><span class="nf">notANumber</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">value</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">prices</span> <span class="o">=</span> <span class="p">[</span><span class="s">"12.50"</span><span class="p">,</span> <span class="s">"abc"</span><span class="p">,</span> <span class="s">"3.00"</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">tryMap</span><span class="p">(</span><span class="n">parsePrice</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">erasedFailure</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Decimal</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="o">=</span> <span class="n">prices</span>   <span class="c1">// the failure type is now any Error</span>
+
+<span class="k">var</span> <span class="nv">parsed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Decimal</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">parseFailure</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?</span>
+<span class="k">let</span> <span class="nv">parseHandle</span> <span class="o">=</span> <span class="n">prices</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+    <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">)</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">{</span> <span class="n">parseFailure</span> <span class="o">=</span> <span class="n">error</span> <span class="p">}</span> <span class="p">},</span>
+    <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">parsed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parsed</span> <span class="o">==</span> <span class="p">[</span><span class="mf">12.5</span><span class="p">])</span>                       <span class="c1">// "3.00" never ran: the stream ended at "abc"</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parseFailure</span> <span class="k">as?</span> <span class="kt">ParseError</span> <span class="o">==</span> <span class="o">.</span><span class="nf">notANumber</span><span class="p">(</span><span class="s">"abc"</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Two consequences are visible. The failure stopped the stream, so values after the bad one were never processed; <a href="/combine-error-handling-catch-retry/">Error Handling: <code class="language-plaintext highlighter-rouge">catch</code>, <code class="language-plaintext highlighter-rouge">retry</code>, and <code class="language-plaintext highlighter-rouge">replaceError</code></a> shows how to keep a stream alive past a bad element. And the typed error was lost, so downstream code has to cast. <code class="language-plaintext highlighter-rouge">mapError</code> restores a concrete type at the point where you know what the possibilities are:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">typedPrices</span><span class="p">:</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">Decimal</span><span class="p">,</span> <span class="kt">ParseError</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[</span><span class="s">"7"</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">tryMap</span><span class="p">(</span><span class="n">parsePrice</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">mapError</span> <span class="p">{</span> <span class="nv">$0</span> <span class="k">as?</span> <span class="kt">ParseError</span> <span class="p">??</span> <span class="o">.</span><span class="nf">notANumber</span><span class="p">(</span><span class="s">"unknown"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">typedParsed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Decimal</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">typedHandle</span> <span class="o">=</span> <span class="n">typedPrices</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span> <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">typedParsed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">typedParsed</span> <span class="o">==</span> <span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h2 id="flatmap-each-value-starts-work"><code class="language-plaintext highlighter-rouge">flatMap</code>: each value starts work</h2>
+
+<p><code class="language-plaintext highlighter-rouge">flatMap</code> maps each value to a publisher, subscribes to it, and merges everything those inner publishers emit into one stream. That makes it the operator for “for each X, do asynchronous work Y”: for each search query, fetch results; for each selected photo, upload it; for each user ID, load a profile.</p>
+
+<h3 id="the-type-rules">The type rules</h3>
+
+<p>The inner publisher’s <code class="language-plaintext highlighter-rouge">Failure</code> must match the upstream’s. Since iOS 14 and macOS 11, <code class="language-plaintext highlighter-rouge">flatMap</code> has overloads that bridge the common mismatch involving <code class="language-plaintext highlighter-rouge">Never</code> by inserting <code class="language-plaintext highlighter-rouge">setFailureType(to:)</code> for you, either on the upstream or on the inner publisher, and the resulting types show it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">LoadError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">offline</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">neverUpstream</span> <span class="o">=</span> <span class="kt">Just</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Fail</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="o">.</span><span class="n">offline</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">neverUpstream</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="o">==</span> <span class="s">"FlatMap&lt;Fail&lt;Int, LoadError&gt;, SetFailureType&lt;Just&lt;Int&gt;, LoadError&gt;&gt;"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">neverInner</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">()</span><span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="kt">Just</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">neverInner</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="o">==</span> <span class="s">"FlatMap&lt;SetFailureType&lt;Just&lt;Int&gt;, LoadError&gt;, PassthroughSubject&lt;Int, LoadError&gt;&gt;"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Two different concrete failure types do not unify, and the diagnostic is unhelpfully generic:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile</span>
+<span class="kd">enum</span> <span class="kt">StorageError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">full</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">mismatched</span> <span class="o">=</span> <span class="kt">Fail</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="o">.</span><span class="n">offline</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Fail</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">StorageError</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="o">.</span><span class="n">full</span><span class="p">)</span> <span class="p">}</span>
+<span class="c1">// error: no exact matches in call to instance method 'flatMap'</span>
+</code></pre></div></div>
+
+<p>When you see “no exact matches” on a <code class="language-plaintext highlighter-rouge">flatMap</code>, compare the two failure types and add a <code class="language-plaintext highlighter-rouge">mapError</code> to one side.</p>
+
+<h3 id="completion-and-failure">Completion and failure</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">flatMap</code> finishes when its upstream has finished <em>and</em> every inner publisher has finished. If any inner publisher fails, the whole stream fails, and <code class="language-plaintext highlighter-rouge">flatMap</code> cancels the other inner publishers that are still running:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">flatMapEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">triggers</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">slowWork</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">completionHandle</span> <span class="o">=</span> <span class="n">triggers</span>
+    <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">slowWork</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">flatMapEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"completion"</span><span class="p">)</span> <span class="p">},</span>
+          <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">flatMapEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="n">triggers</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">triggers</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="n">flatMapEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"upstream finished"</span><span class="p">)</span>
+<span class="n">slowWork</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"late result"</span><span class="p">)</span>
+<span class="n">slowWork</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">flatMapEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"upstream finished"</span><span class="p">,</span> <span class="s">"value late result"</span><span class="p">,</span> <span class="s">"completion"</span><span class="p">])</span>
+
+<span class="k">var</span> <span class="nv">failureEvents</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">jobs</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">firstJob</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">secondJob</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">LoadError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">failureHandle</span> <span class="o">=</span> <span class="n">jobs</span>
+    <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="n">id</span> <span class="nf">in</span>
+        <span class="p">(</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">?</span> <span class="nv">firstJob</span> <span class="p">:</span> <span class="n">secondJob</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">failureEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"job </span><span class="se">\(</span><span class="n">id</span><span class="se">)</span><span class="s"> cancelled"</span><span class="p">)</span> <span class="p">})</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">completion</span> <span class="k">in</span>
+              <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">)</span> <span class="o">=</span> <span class="n">completion</span> <span class="p">{</span> <span class="n">failureEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"failed: </span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">failureEvents</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+<span class="n">jobs</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">jobs</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">firstJob</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"first result"</span><span class="p">)</span>
+<span class="n">secondJob</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">offline</span><span class="p">))</span>   <span class="c1">// one job fails...</span>
+<span class="n">firstJob</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"never delivered"</span><span class="p">)</span>                  <span class="c1">// ...and the other was cancelled</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">failureEvents</span> <span class="o">==</span> <span class="p">[</span><span class="s">"value first result"</span><span class="p">,</span> <span class="s">"job 1 cancelled"</span><span class="p">,</span> <span class="s">"failed: offline"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>That is usually not what a batch upload wants: one failed photo should not cancel the other nine. The fix is to handle failure inside the inner publisher, turning it into a value, for example with <code class="language-plaintext highlighter-rouge">.map(Result.success).catch { Just(.failure($0)) }</code>, so the outer stream never sees a failure at all. The error handling article develops that pattern.</p>
+
+<h3 id="concurrency-and-maxpublishers">Concurrency and <code class="language-plaintext highlighter-rouge">maxPublishers</code></h3>
+
+<p>By default <code class="language-plaintext highlighter-rouge">flatMap</code> requests unlimited values from its upstream and subscribes to an inner publisher for every one, so a burst of 500 upstream values starts 500 requests at once. <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers:)</code> limits that, and it does so with demand: it requests <code class="language-plaintext highlighter-rouge">k</code> values from upstream, and one more each time an inner publisher completes. The following experiment maps twelve values to simulated jobs that take 100, 80, or 60 ms, records the requests <code class="language-plaintext highlighter-rouge">flatMap</code> sends upstream and the peak number of jobs running at once, and times the whole batch.</p>
+
+<p>The jobs use <code class="language-plaintext highlighter-rouge">delay</code> on a <strong>serial</strong> queue. That choice matters: <code class="language-plaintext highlighter-rouge">delay</code> on a concurrent queue schedules each value and the completion as separate blocks, and the completion can run first. When the experiment was first run on <code class="language-plaintext highlighter-rouge">DispatchQueue.global()</code>, some batches finished with 10 or 11 of their 12 values, and a separate test found that <code class="language-plaintext highlighter-rouge">Just(i).delay(for: .milliseconds(1), scheduler: DispatchQueue.global())</code> lost its value to an early completion in between 1 and 21 of 2,000 attempts across ten runs, against none on a serial queue. <a href="/combine-debounce-throttle-delay/">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a> returns to this.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">jobQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"jobs"</span><span class="p">)</span>       <span class="c1">// serial: see the note above</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ConcurrencyGauge</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">peakValue</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">peak</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">peakValue</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">()</span> <span class="p">{</span> <span class="n">peakValue</span><span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="n">running</span><span class="o">.</span><span class="nf">wrappingAdd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span><span class="o">.</span><span class="n">newValue</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">finish</span><span class="p">()</span> <span class="p">{</span> <span class="n">running</span><span class="o">.</span><span class="nf">wrappingSubtract</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">storage</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Element</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">element</span><span class="p">:</span> <span class="kt">Element</span><span class="p">)</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">elements</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">]</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BatchResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">peak</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span>
+    <span class="k">let</span> <span class="nv">order</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">runBatch</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="kt">Subscribers</span><span class="o">.</span><span class="kt">Demand</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">BatchResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">gauge</span> <span class="o">=</span> <span class="kt">ConcurrencyGauge</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">order</span> <span class="o">=</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">requests</span> <span class="o">=</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">finished</span> <span class="o">=</span> <span class="kt">DispatchSemaphore</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+        <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">demand</span> <span class="k">in</span> <span class="n">requests</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">demand</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+        <span class="o">.</span><span class="nf">flatMap</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="n">maxPublishers</span><span class="p">)</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">job</span> <span class="k">in</span>
+            <span class="kt">Just</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="p">(</span><span class="n">job</span> <span class="o">%</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">20</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">jobQueue</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveSubscription</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">gauge</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span> <span class="p">},</span>
+                              <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">gauge</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span> <span class="p">})</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">finished</span><span class="o">.</span><span class="nf">signal</span><span class="p">()</span> <span class="p">},</span>
+              <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">job</span> <span class="k">in</span> <span class="n">order</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">job</span><span class="p">)</span> <span class="p">})</span>
+    <span class="n">finished</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+
+    <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="k">return</span> <span class="kt">BatchResult</span><span class="p">(</span><span class="nv">peak</span><span class="p">:</span> <span class="n">gauge</span><span class="o">.</span><span class="n">peak</span><span class="p">,</span>
+                       <span class="nv">seconds</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e18</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">elapsed</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">),</span>
+                       <span class="nv">order</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">elements</span><span class="p">,</span>
+                       <span class="nv">requests</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sequential</span> <span class="o">=</span> <span class="nf">runBatch</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">limited</span> <span class="o">=</span> <span class="nf">runBatch</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="o">.</span><span class="nf">max</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">unbounded</span> <span class="o">=</span> <span class="nf">runBatch</span><span class="p">(</span><span class="nv">maxPublishers</span><span class="p">:</span> <span class="o">.</span><span class="n">unlimited</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequential</span><span class="o">.</span><span class="n">peak</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">limited</span><span class="o">.</span><span class="n">peak</span> <span class="o">==</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="n">unbounded</span><span class="o">.</span><span class="n">peak</span> <span class="o">==</span> <span class="mi">12</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequential</span><span class="o">.</span><span class="n">order</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span><span class="p">))</span>             <span class="c1">// one at a time preserves order</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">limited</span><span class="o">.</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="kt">Set</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">limited</span><span class="o">.</span><span class="n">order</span> <span class="o">!=</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">limited</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">first</span> <span class="o">==</span> <span class="s">"max(3)"</span> <span class="o">&amp;&amp;</span> <span class="n">limited</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">()</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="s">"max(1)"</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unbounded</span><span class="o">.</span><span class="n">requests</span> <span class="o">==</span> <span class="p">[</span><span class="s">"unlimited"</span><span class="p">])</span>
+<span class="nf">print</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"k=1: %.3f s, k=3: %.3f s, unlimited: %.3f s"</span><span class="p">,</span>
+             <span class="n">sequential</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span> <span class="n">limited</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span> <span class="n">unbounded</span><span class="o">.</span><span class="n">seconds</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequential</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&gt;</span> <span class="mf">0.9</span> <span class="o">&amp;&amp;</span> <span class="n">unbounded</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A typical run printed:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><code class="language-plaintext highlighter-rouge">maxPublishers</code></th>
+      <th>Peak running</th>
+      <th>Time</th>
+      <th>Output order</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.max(1)</code></td>
+      <td>1</td>
+      <td>1.065 s</td>
+      <td><code class="language-plaintext highlighter-rouge">0, 1, 2, …, 11</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.max(3)</code></td>
+      <td>3</td>
+      <td>0.342 s</td>
+      <td><code class="language-plaintext highlighter-rouge">2, 1, 0, 4, 5, 3, 8, 7, 6, 10, 9, 11</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.max(4)</code></td>
+      <td>4</td>
+      <td>0.275 s</td>
+      <td><code class="language-plaintext highlighter-rouge">2, 1, 0, 3, 4, 5, 7, 6, 8, 9, 11, 10</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.unlimited</code></td>
+      <td>12</td>
+      <td>0.109 s</td>
+      <td><code class="language-plaintext highlighter-rouge">2, 5, 8, 11, 1, 4, 7, 10, 0, 3, 6, 9</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The request log confirms the mechanism: with <code class="language-plaintext highlighter-rouge">.max(3)</code>, the upstream received <code class="language-plaintext highlighter-rouge">max(3)</code> followed by nine <code class="language-plaintext highlighter-rouge">max(1)</code>s, one per completed job, ten requests in all. Output order is completion order, so the 60 ms jobs (2, 5, 8, 11) come out first whenever they run together. Only <code class="language-plaintext highlighter-rouge">.max(1)</code> preserves upstream order, because it never runs two jobs at once.</p>
+
+<h3 id="how-long-a-limited-batch-takes">How long a limited batch takes</h3>
+
+<p>The times follow from scheduling theory. <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers: .max(k))</code> behaves like a list scheduler with \(k\) workers: whenever a worker is free, it takes the next job in upstream order. For jobs with durations \(T_1, \ldots, T_n\), no schedule can beat either the total work divided among the workers or the longest single job, and Graham’s classic bound for list scheduling says a greedy scheduler is never worse than their sum:</p>
+
+\[\max\!\left(\frac{1}{k}\sum_{i=1}^{n} T_i,\; \max_i T_i\right) \;\le\; T_{\text{batch}} \;\le\; \frac{1}{k}\sum_{i=1}^{n} T_i + \max_i T_i .\]
+
+<p>Here the twelve jobs total \(4 \times (100 + 80 + 60) = 960\) ms and the longest is 100 ms. For \(k = 3\) the bounds are 320 ms and 420 ms, and the measured 342 ms falls between them; for \(k = 4\) they are 240 and 340 ms against a measured 275 ms. The bound is useful in practice because it needs only the total work and the slowest job. Going from \(k = 3\) to \(k = 12\) can at best cut the batch from 320 ms to 100 ms, while multiplying the number of simultaneous connections, decoders, or disk writers by four. For network requests, the networking roadmap’s <a href="/swift-urlsession-configuration/">Choosing a <code class="language-plaintext highlighter-rouge">URLSession</code> Configuration</a> explains why more than a handful per host rarely helps.</p>
+
+<h2 id="flatmap-or-switchtolatest"><code class="language-plaintext highlighter-rouge">flatMap</code> or <code class="language-plaintext highlighter-rouge">switchToLatest</code></h2>
+
+<p>A search field is the canonical stream where each value starts work: every query triggers a request. With <code class="language-plaintext highlighter-rouge">flatMap</code>, every request runs to completion and every response is delivered, in the order the responses arrive. With <code class="language-plaintext highlighter-rouge">map</code> followed by <code class="language-plaintext highlighter-rouge">switchToLatest</code>, each new query cancels the request for the previous one, and only the latest response is delivered. The experiment types three queries 20 ms apart, with server latencies chosen so that the first query is the slowest:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">searchQueue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"search"</span><span class="p">)</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">searchResults</span><span class="p">(</span><span class="k">for</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">latencyMilliseconds</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span>
+                               <span class="nv">cancelled</span><span class="p">:</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Just</span><span class="p">(</span><span class="s">"results for </span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">latencyMilliseconds</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">searchQueue</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="k">in</span> <span class="n">cancelled</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">})</span>
+        <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">typeQueries</span><span class="p">(</span><span class="nv">useSwitchToLatest</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">shown</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">],</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">queries</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="p">(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Int</span><span class="p">),</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">shown</span> <span class="o">=</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">cancelled</span> <span class="o">=</span> <span class="kt">SafeList</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+
+    <span class="k">let</span> <span class="nv">results</span><span class="p">:</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="o">=</span> <span class="n">useSwitchToLatest</span>
+        <span class="p">?</span> <span class="n">queries</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">query</span><span class="p">,</span> <span class="n">latency</span> <span class="k">in</span> <span class="nf">searchResults</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span> <span class="nv">latencyMilliseconds</span><span class="p">:</span> <span class="n">latency</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="n">cancelled</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">switchToLatest</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+        <span class="p">:</span> <span class="n">queries</span>
+            <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">query</span><span class="p">,</span> <span class="n">latency</span> <span class="k">in</span> <span class="nf">searchResults</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span> <span class="nv">latencyMilliseconds</span><span class="p">:</span> <span class="n">latency</span><span class="p">,</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="n">cancelled</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="k">in</span> <span class="n">shown</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">latency</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"s"</span><span class="p">,</span> <span class="mi">120</span><span class="p">),</span> <span class="p">(</span><span class="s">"sw"</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="p">(</span><span class="s">"swi"</span><span class="p">,</span> <span class="mi">60</span><span class="p">)]</span> <span class="p">{</span>
+        <span class="n">queries</span><span class="o">.</span><span class="nf">send</span><span class="p">((</span><span class="n">query</span><span class="p">,</span> <span class="n">latency</span><span class="p">))</span>
+        <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">forTimeInterval</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">forTimeInterval</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">shown</span><span class="o">.</span><span class="n">elements</span><span class="p">,</span> <span class="n">cancelled</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">withFlatMap</span> <span class="o">=</span> <span class="nf">typeQueries</span><span class="p">(</span><span class="nv">useSwitchToLatest</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withFlatMap</span><span class="o">.</span><span class="n">shown</span> <span class="o">==</span> <span class="p">[</span><span class="s">"results for sw"</span><span class="p">,</span> <span class="s">"results for swi"</span><span class="p">,</span> <span class="s">"results for s"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withFlatMap</span><span class="o">.</span><span class="n">cancelled</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">withSwitch</span> <span class="o">=</span> <span class="nf">typeQueries</span><span class="p">(</span><span class="nv">useSwitchToLatest</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withSwitch</span><span class="o">.</span><span class="n">shown</span> <span class="o">==</span> <span class="p">[</span><span class="s">"results for swi"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">withSwitch</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">==</span> <span class="p">[</span><span class="s">"s"</span><span class="p">,</span> <span class="s">"sw"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>With <code class="language-plaintext highlighter-rouge">flatMap</code>, the screen showed results for “sw”, then “swi”, and finally, 140 ms after the user started typing, the results for “s”, which replaced the correct ones and stayed. With <code class="language-plaintext highlighter-rouge">switchToLatest</code>, the two superseded requests were cancelled before they could deliver, and the only results shown were for the query in the field:</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant U as Search field
+    participant P as Pipeline
+    participant S as Server
+    U-&gt;&gt;P: "s" at 0 ms
+    P-&gt;&gt;S: request s (takes 120 ms)
+    U-&gt;&gt;P: "sw" at 20 ms
+    P-&gt;&gt;S: request sw (takes 30 ms)
+    Note over P: switchToLatest cancels s
+    U-&gt;&gt;P: "swi" at 40 ms
+    P-&gt;&gt;S: request swi (takes 60 ms)
+    Note over P: switchToLatest cancels sw
+    S--&gt;&gt;P: swi at 100 ms
+    P--&gt;&gt;U: show swi
+    Note over S,U: with flatMap: sw at 50 ms, swi at 100 ms, then s at 120 ms overwrites
+</code></pre>
+
+<p>The rule is simple to state: use <code class="language-plaintext highlighter-rouge">switchToLatest</code> when a new value makes the previous work irrelevant, such as a query, a selection, or a filter, and <code class="language-plaintext highlighter-rouge">flatMap</code> when every value’s work must finish, such as uploads, saves, or analytics events. In practice the search pipeline also needs <code class="language-plaintext highlighter-rouge">debounce</code> and <code class="language-plaintext highlighter-rouge">removeDuplicates</code> in front, which <a href="/combine-debounce-throttle-delay/">Time: <code class="language-plaintext highlighter-rouge">debounce</code>, <code class="language-plaintext highlighter-rouge">throttle</code>, and <code class="language-plaintext highlighter-rouge">delay</code></a> adds. The concurrency roadmap’s <a href="/swift-rejecting-stale-results/">Rejecting Stale Results After Request Replacement</a> solves the same problem with tasks.</p>
+
+<h2 id="scan-carrying-state-through-a-stream"><code class="language-plaintext highlighter-rouge">scan</code>: carrying state through a stream</h2>
+
+<p><code class="language-plaintext highlighter-rouge">scan</code> is <code class="language-plaintext highlighter-rouge">reduce</code> that emits every intermediate result. It takes an initial accumulator and a closure that combines the accumulator with each value; the result becomes both the output and the next accumulator. It does not emit the initial value itself:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">runningTotals</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">totalsHandle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="nf">scan</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">runningTotals</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningTotals</span> <span class="o">==</span> <span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">16</span><span class="p">])</span>          <span class="c1">// no 10: the seed is not emitted</span>
+</code></pre></div></div>
+
+<h3 id="a-state-machine-as-a-reducer">A state machine as a reducer</h3>
+
+<p>Because the closure sees the previous state and the new event, <code class="language-plaintext highlighter-rouge">scan</code> is a natural home for a state machine: the closure is a pure reducer, and the stream of states is its output. Here is a download whose events arrive from a delegate:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">TransferEvent</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">started</span><span class="p">(</span><span class="nv">totalBytes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">received</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">failed</span>
+    <span class="k">case</span> <span class="n">finished</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">TransferState</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Phase</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">case</span> <span class="n">idle</span><span class="p">,</span> <span class="n">running</span><span class="p">,</span> <span class="n">failed</span><span class="p">,</span> <span class="n">done</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">phase</span><span class="p">:</span> <span class="kt">Phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">idle</span>
+    <span class="k">var</span> <span class="nv">receivedBytes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">totalBytes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">fraction</span><span class="p">:</span> <span class="kt">Double</span> <span class="p">{</span> <span class="n">totalBytes</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">?</span> <span class="mi">0</span> <span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">receivedBytes</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">totalBytes</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">reduce</span><span class="p">(</span><span class="n">_</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">TransferState</span><span class="p">,</span> <span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">TransferEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">TransferState</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">state</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">phase</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="p">(</span><span class="o">.</span><span class="n">idle</span><span class="p">,</span> <span class="o">.</span><span class="nf">started</span><span class="p">(</span><span class="k">let</span> <span class="nv">total</span><span class="p">)),</span> <span class="p">(</span><span class="o">.</span><span class="n">failed</span><span class="p">,</span> <span class="o">.</span><span class="nf">started</span><span class="p">(</span><span class="k">let</span> <span class="nv">total</span><span class="p">)):</span>
+        <span class="n">next</span> <span class="o">=</span> <span class="kt">TransferState</span><span class="p">(</span><span class="nv">phase</span><span class="p">:</span> <span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="nv">receivedBytes</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">totalBytes</span><span class="p">:</span> <span class="n">total</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="nf">received</span><span class="p">(</span><span class="k">let</span> <span class="nv">bytes</span><span class="p">)):</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">receivedBytes</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">receivedBytes</span> <span class="o">+</span> <span class="n">bytes</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">totalBytes</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">failed</span><span class="p">):</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">failed</span>
+    <span class="k">case</span> <span class="p">(</span><span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">finished</span><span class="p">):</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">done</span>
+        <span class="n">next</span><span class="o">.</span><span class="n">receivedBytes</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">totalBytes</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">break</span>                                    <span class="c1">// ignore events that make no sense in this phase</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">next</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">transferEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">TransferEvent</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">phases</span><span class="p">:</span> <span class="p">[</span><span class="kt">TransferState</span><span class="o">.</span><span class="kt">Phase</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">fractions</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">transferHandle</span> <span class="o">=</span> <span class="n">transferEvents</span>
+    <span class="o">.</span><span class="nf">scan</span><span class="p">(</span><span class="kt">TransferState</span><span class="p">(),</span> <span class="n">reduce</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+        <span class="n">phases</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+        <span class="n">fractions</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">fraction</span><span class="p">)</span>
+    <span class="p">}</span>
+
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">received</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">10</span><span class="p">))</span>       <span class="c1">// ignored: not started</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">started</span><span class="p">(</span><span class="nv">totalBytes</span><span class="p">:</span> <span class="mi">200</span><span class="p">))</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">received</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">50</span><span class="p">))</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">received</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">100</span><span class="p">))</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">failed</span><span class="p">)</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">received</span><span class="p">(</span><span class="nv">bytes</span><span class="p">:</span> <span class="mi">50</span><span class="p">))</span>       <span class="c1">// ignored: failed</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">started</span><span class="p">(</span><span class="nv">totalBytes</span><span class="p">:</span> <span class="mi">200</span><span class="p">))</span>  <span class="c1">// retry from the beginning</span>
+<span class="n">transferEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">phases</span> <span class="o">==</span> <span class="p">[</span><span class="o">.</span><span class="n">idle</span><span class="p">,</span> <span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">failed</span><span class="p">,</span> <span class="o">.</span><span class="n">running</span><span class="p">,</span> <span class="o">.</span><span class="n">done</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">fractions</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The first <code class="language-plaintext highlighter-rouge">.received</code> produced an <code class="language-plaintext highlighter-rouge">.idle</code> state identical to the seed, which <code class="language-plaintext highlighter-rouge">scan</code> emitted because it does not compare, and <code class="language-plaintext highlighter-rouge">removeDuplicates()</code> dropped the second ignored event’s unchanged <code class="language-plaintext highlighter-rouge">.failed</code> state. The reducer is an ordinary function, so every transition can be tested without a pipeline, and the pipeline itself is three operators long. If the reducer can throw, for example to reject an impossible transition loudly, <code class="language-plaintext highlighter-rouge">tryScan</code> is the throwing version, with the same <code class="language-plaintext highlighter-rouge">any Error</code> caveat as <code class="language-plaintext highlighter-rouge">tryMap</code>.</p>
+
+<h3 id="a-smoothed-estimate">A smoothed estimate</h3>
+
+<p>Download speed samples are noisy, and showing them raw makes a “time remaining” label jump. An exponential moving average smooths them using only the previous estimate, which is exactly what <code class="language-plaintext highlighter-rouge">scan</code> carries. With smoothing factor \(\alpha\):</p>
+
+\[\bar{x}_1 = x_1, \qquad \bar{x}_n = \alpha\, x_n + (1 - \alpha)\, \bar{x}_{n-1}.\]
+
+<p>Unrolling the recurrence shows that the sample \(j\) steps in the past has weight \(\alpha(1-\alpha)^j\), so old samples fade geometrically. The number of samples after which a sample’s influence halves is</p>
+
+\[h = \frac{\ln 0.5}{\ln(1-\alpha)},\]
+
+<p>about 1.9 samples for \(\alpha = 0.3\) and 6.6 for \(\alpha = 0.1\). Choosing \(\alpha\) is choosing that half-life: a lower value is steadier and slower to react when the network really does change speed.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">throughputSamples</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">110</span><span class="p">,</span> <span class="mi">95</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">105</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>   <span class="c1">// KB/s, with two dips</span>
+<span class="k">let</span> <span class="nv">alpha</span> <span class="o">=</span> <span class="mf">0.3</span>
+<span class="k">var</span> <span class="nv">smoothed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">smoothingHandle</span> <span class="o">=</span> <span class="n">throughputSamples</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">scan</span><span class="p">(</span><span class="kc">nil</span> <span class="k">as</span> <span class="kt">Double</span><span class="p">?)</span> <span class="p">{</span> <span class="n">average</span><span class="p">,</span> <span class="n">sample</span> <span class="k">in</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">average</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">sample</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">sample</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">average</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">smoothed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">smoothed</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="n">throughputSamples</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">smoothed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">76</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">)</span>            <span class="c1">// 0.3 * 20 + 0.7 * 100</span>
+<span class="k">let</span> <span class="nv">rawSwing</span> <span class="o">=</span> <span class="n">throughputSamples</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span> <span class="o">-</span> <span class="n">throughputSamples</span><span class="o">.</span><span class="nf">min</span><span class="p">()</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">smoothedSwing</span> <span class="o">=</span> <span class="n">smoothed</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span><span class="o">!</span> <span class="o">-</span> <span class="n">smoothed</span><span class="o">.</span><span class="nf">min</span><span class="p">()</span><span class="o">!</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">smoothedSwing</span> <span class="o">&lt;</span> <span class="n">rawSwing</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>              <span class="c1">// the 95-point swings shrink to under half</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">/</span> <span class="nf">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.943</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.001</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The raw samples swing by 95 KB/s; the smoothed series stays within a band less than half as wide, while still moving toward a sustained change within a few samples. Seeding with <code class="language-plaintext highlighter-rouge">nil</code> and starting from the first real sample avoids the bias toward zero that an arbitrary seed would introduce.</p>
+
+<p>Keep the remaining subscriptions alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">titlesHandle</span><span class="p">,</span> <span class="n">summariesHandle</span><span class="p">,</span> <span class="n">parseHandle</span><span class="p">,</span> <span class="n">typedHandle</span><span class="p">,</span> <span class="n">erasedFailure</span><span class="p">,</span>
+                      <span class="n">completionHandle</span><span class="p">,</span> <span class="n">failureHandle</span><span class="p">,</span> <span class="n">totalsHandle</span><span class="p">,</span> <span class="n">transferHandle</span><span class="p">,</span>
+                      <span class="n">smoothingHandle</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">map</code> transforms values, including with up to three key paths. <code class="language-plaintext highlighter-rouge">tryMap</code> ends the stream at the first thrown error and erases the failure type to <code class="language-plaintext highlighter-rouge">any Error</code>; restore it with <code class="language-plaintext highlighter-rouge">mapError</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">flatMap</code> runs inner publishers concurrently and emits in completion order. It finishes when the upstream and every inner publisher finish, and one failing inner publisher cancels the rest and fails the stream.</li>
+  <li><code class="language-plaintext highlighter-rouge">flatMap(maxPublishers: .max(k))</code> limits concurrency through demand: measured as one <code class="language-plaintext highlighter-rouge">max(k)</code> request followed by <code class="language-plaintext highlighter-rouge">max(1)</code> per completed job, with a peak of exactly \(k\) running. Only <code class="language-plaintext highlighter-rouge">.max(1)</code> preserves order.</li>
+  <li>A batch under a limit of \(k\) takes between \(\max(\sum T_i / k, \max T_i)\) and \(\sum T_i / k + \max T_i\); the measured times fit those bounds.</li>
+  <li>For searches and selections, <code class="language-plaintext highlighter-rouge">map</code> plus <code class="language-plaintext highlighter-rouge">switchToLatest</code> cancelled both superseded requests and showed only the latest results, while <code class="language-plaintext highlighter-rouge">flatMap</code> finished on a stale response.</li>
+  <li><code class="language-plaintext highlighter-rouge">delay</code> on a concurrent queue lost values to an early completion in up to 1% of attempts; schedule it on a serial queue.</li>
+  <li><code class="language-plaintext highlighter-rouge">scan</code> emits every intermediate accumulator but not the seed. Use it with a pure reducer for state machines, and for an exponential moving average whose half-life is \(\ln 0.5 / \ln(1-\alpha)\) samples.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write an <code class="language-plaintext highlighter-rouge">uploadAll(_:)</code> function that takes an array of photo identifiers and returns a publisher of <code class="language-plaintext highlighter-rouge">(id, Result&lt;URL, UploadError&gt;)</code> pairs, using <code class="language-plaintext highlighter-rouge">flatMap(maxPublishers: .max(3))</code> and a simulated upload that fails for one identifier in five. Assert that a single failure does not cancel the others, that no more than three uploads ever run at once, and that the publisher finishes after every photo has a result. Then add a second publisher derived from the first with <code class="language-plaintext highlighter-rouge">scan</code> that emits <code class="language-plaintext highlighter-rouge">(completed, failed, total)</code> counts, and use the bound from this article to predict how long ten uploads with known durations will take before measuring it.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/flatmap(maxpublishers:_:)-3k7z5"><code class="language-plaintext highlighter-rouge">flatMap(maxPublishers:_:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/switchtolatest()-453ht"><code class="language-plaintext highlighter-rouge">switchToLatest()</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/scan(_:_:)"><code class="language-plaintext highlighter-rouge">scan(_:_:)</code></a>.</li>
+  <li>R. L. Graham, “Bounds for Certain Multiprocessing Anomalies”, <em>Bell System Technical Journal</em> 45 (1966), the origin of the list-scheduling bound used above.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2019/721/">Combine in Practice</a>, WWDC19, which builds a sign-up form with <code class="language-plaintext highlighter-rouge">flatMap</code> and <code class="language-plaintext highlighter-rouge">switchToLatest</code>.</li>
+</ul>
+
+<p>Previous: <a href="/combine-anycancellable-memory/"><code class="language-plaintext highlighter-rouge">AnyCancellable</code> and Memory Management</a>. Next: <a href="/combine-filter-removeduplicates-compactmap/">Filtering: <code class="language-plaintext highlighter-rouge">filter</code>, <code class="language-plaintext highlighter-rouge">removeDuplicates</code>, and <code class="language-plaintext highlighter-rouge">compactMap</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-map-flatmap-scan/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Transforming%3A+map%2C+flatMap%2C+and+scan%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-map-flatmap-scan%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-map-flatmap-scan/&title=Transforming%3A+map%2C+flatMap%2C+and+scan%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-map-flatmap-scan/&title=Transforming%3A+map%2C+flatMap%2C+and+scan%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-map-flatmap-scan/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Transforming: map, flatMap, and scan%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-map-flatmap-scan/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Functional+Programming">Functional Programming</a></li>
+    
+    <li><a href="/tag/#Operators">Operators</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points" href="/swift-actor-reentrancy/"> <p>Previous post</p> Actor Reentrancy in Swift: Keeping Invariants Across Suspension Points </a> </div> <div id="next-post"> <a alt="AnyCancellable and Memory Management" href="/combine-anycancellable-memory/"> <p>Next post</p> AnyCancellable and Memory Management </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

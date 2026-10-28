@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Profiling Task Lifetimes and Main-Actor Contention in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Profiling Task Lifetimes and Main-Actor Contention in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Concurrency problems that survive code review and testing usually show up as time: a screen that takes 300 ms longer to appear than it should, a scroll that hitches, a request that never finishes, a battery that drains because hundreds of tasks were alive when a dozen would do. Thread-based profiling tools struggle with all of them, because in Swift concurrency the interesting thing is not what a thread is doing, but what each task is doing, including the many tasks that are not on any thread at all. Instruments’ Swift Concurrency template records exactly that: every task’s state over time, what each one is waiting for, how long actors’ queues get, and where custom intervals begin and end. This article records real traces of a deliberately unhealthy program, reads the measurements that matter, and connects each pattern to its fix, from both Instruments and the command line." /> <meta property="og:description" content="Concurrency problems that survive code review and testing usually show up as time: a screen that takes 300 ms longer to appear than it should, a scroll that hitches, a request that never finishes, a battery that drains because hundreds of tasks were alive when a dozen would do. Thread-based profiling tools struggle with all of them, because in Swift concurrency the interesting thing is not what a thread is doing, but what each task is doing, including the many tasks that are not on any thread at all. Instruments’ Swift Concurrency template records exactly that: every task’s state over time, what each one is waiting for, how long actors’ queues get, and where custom intervals begin and end. This article records real traces of a deliberately unhealthy program, reads the measurements that matter, and connects each pattern to its fix, from both Instruments and the command line." /> <link rel="canonical" href="https://swiftbydeya.com/swift-profiling-tasks-main-actor/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-profiling-tasks-main-actor/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-03T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Profiling Task Lifetimes and Main-Actor Contention in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-03T00:00:00+03:00","datePublished":"2026-09-03T00:00:00+03:00","description":"Concurrency problems that survive code review and testing usually show up as time: a screen that takes 300 ms longer to appear than it should, a scroll that hitches, a request that never finishes, a battery that drains because hundreds of tasks were alive when a dozen would do. Thread-based profiling tools struggle with all of them, because in Swift concurrency the interesting thing is not what a thread is doing, but what each task is doing, including the many tasks that are not on any thread at all. Instruments’ Swift Concurrency template records exactly that: every task’s state over time, what each one is waiting for, how long actors’ queues get, and where custom intervals begin and end. This article records real traces of a deliberately unhealthy program, reads the measurements that matter, and connects each pattern to its fix, from both Instruments and the command line.","headline":"Profiling Task Lifetimes and Main-Actor Contention in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-profiling-tasks-main-actor/"},"url":"https://swiftbydeya.com/swift-profiling-tasks-main-actor/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Profiling Task Lifetimes and Main-Actor Contention in Swift"> <meta name="twitter:description" content="Concurrency problems that survive code review and testing usually show up as time: a screen that takes 300 ms longer to appear than it should, a scroll that ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Profiling Task Lifetimes and Main-Actor Contention in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Profiling Task Lifetimes and Main-Actor Contention in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-03T00:00:00+03:00">September 3, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Concurrency problems that survive code review and testing usually show up as <em>time</em>: a screen that takes 300 ms longer to appear than it should, a scroll that hitches, a request that never finishes, a battery that drains because hundreds of tasks were alive when a dozen would do. Thread-based profiling tools struggle with all of them, because in Swift concurrency the interesting thing is not what a thread is doing, but what each <em>task</em> is doing, including the many tasks that are not on any thread at all.</p>
+
+<p>Instruments’ <strong>Swift Concurrency</strong> template records exactly that: every task’s state over time, what each one is waiting for, how long actors’ queues get, and where custom intervals begin and end. This article records real traces of a deliberately unhealthy program, reads the measurements that matter, and connects each pattern to its fix, from both Instruments and the command line.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled with the Swift 6.4 toolchain and traced with <code class="language-plaintext highlighter-rouge">xctrace</code> from Xcode 27.1 on macOS 26. Numbers quoted below come from those traces. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<h2 id="what-the-template-records">What the template records</h2>
+
+<p>The Swift Concurrency template combines several instruments:</p>
+
+<ul>
+  <li><strong>Swift Tasks</strong> records each task’s creation, state changes, and end, along with its name, priority, the actor it is running on, and the task or continuation it is waiting for.</li>
+  <li><strong>Swift Actors</strong> records each actor’s queue of pending jobs over time.</li>
+  <li>A <strong>time profiler</strong> samples call stacks, attributed to tasks as well as threads.</li>
+  <li><strong>Points of Interest</strong> shows intervals and events emitted with <code class="language-plaintext highlighter-rouge">OSSignposter</code>.</li>
+</ul>
+
+<p>The task states are the vocabulary for everything that follows. As they appear in the trace:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>State</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Creating</td>
+      <td>Created, and has not yet started running</td>
+    </tr>
+    <tr>
+      <td>Enqueued</td>
+      <td>Ready to run, waiting for its executor or actor to pick it up</td>
+    </tr>
+    <tr>
+      <td>Running</td>
+      <td>Executing on a thread</td>
+    </tr>
+    <tr>
+      <td>Suspended</td>
+      <td>Paused at an <code class="language-plaintext highlighter-rouge">await</code>, not occupying a thread</td>
+    </tr>
+    <tr>
+      <td>Waiting</td>
+      <td>Suspended specifically waiting for another task, such as a child or a task’s <code class="language-plaintext highlighter-rouge">value</code></td>
+    </tr>
+    <tr>
+      <td>Continuation</td>
+      <td>Suspended in <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> or similar, waiting for <code class="language-plaintext highlighter-rouge">resume</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: Task states recorded by the Swift Tasks instrument
+    [*] --&gt; Creating
+    Creating --&gt; Running: executor picks it up
+    Running --&gt; Suspended: await that suspends
+    Running --&gt; Waiting: awaits another task
+    Running --&gt; Continuation: withCheckedContinuation
+    Suspended --&gt; Enqueued: awaited work completes
+    Waiting --&gt; Enqueued: awaited task finishes
+    Continuation --&gt; Enqueued: resume called
+    Enqueued --&gt; Running: executor or actor becomes free
+    Running --&gt; [*]: returns or throws
+</code></pre>
+
+<p>A healthy task spends its life mostly Running or Suspended on useful waits. Long stretches in Creating or Enqueued mean the task wanted to run and could not. A task that ends a trace in Continuation, and stayed there, is the signature of a leaked continuation.</p>
+
+<h2 id="recording-a-trace">Recording a trace</h2>
+
+<p>In Xcode, choose Product, then Profile, then the Swift Concurrency template, and record while exercising the feature under investigation. The same recording works from the command line, which makes it scriptable:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun xctrace record --template 'Swift Concurrency' --output run.trace --launch -- ./workload
+xcrun xctrace export --input run.trace --toc
+xcrun xctrace export --input run.trace \
+    --xpath '/trace-toc/run[@number="1"]/data/table[@schema="SwiftTaskStateTable"]'
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">--toc</code> export lists every table the trace contains; the Swift Concurrency ones include <code class="language-plaintext highlighter-rouge">SwiftTaskStateTable</code>, <code class="language-plaintext highlighter-rouge">SwiftActorQueueSize</code>, <code class="language-plaintext highlighter-rouge">SwiftTotalTaskCountAll</code>, and <code class="language-plaintext highlighter-rouge">SwiftParallelRunningTasks</code>. Each table exports as XML, one row per state interval, with repeated values compressed into <code class="language-plaintext highlighter-rouge">id</code> and <code class="language-plaintext highlighter-rouge">ref</code> attributes. A short script that resolves the references and sums durations per task and state turns a trace into numbers a CI job can compare between builds.</p>
+
+<h2 id="the-program-under-the-microscope">The program under the microscope</h2>
+
+<p>The workload contains four patterns worth finding, each in a named task. Names, set with <code class="language-plaintext highlighter-rouge">Task(name:)</code> and <code class="language-plaintext highlighter-rouge">addTask(name:)</code> in Swift 6.2 (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0469-task-names.md">SE-0469</a>), are what make a trace with hundreds of tasks readable:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">actor</span> <span class="kt">Store</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="kd">func</span> <span class="nf">add</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Model</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">value</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">busyWork</span><span class="p">(</span><span class="nv">milliseconds</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">deadline</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">milliseconds</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span> <span class="o">&lt;</span> <span class="n">deadline</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Pattern 1: a long synchronous job on the main actor.</span>
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">blockMainActor</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nf">busyWork</span><span class="p">(</span><span class="nv">milliseconds</span><span class="p">:</span> <span class="mi">300</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">renderThumbnail</span><span class="p">(</span><span class="n">_</span> <span class="nv">index</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="nf">busyWork</span><span class="p">(</span><span class="nv">milliseconds</span><span class="p">:</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">index</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="kt">Model</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">store</span> <span class="o">=</span> <span class="kt">Store</span><span class="p">()</span>
+
+<span class="c1">/// Pattern 2: a named fan-out of 40 children, created while the main actor is about to be busy.</span>
+<span class="k">let</span> <span class="nv">fanOut</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"thumbnail-fanout"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">40</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="nf">addTask</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"thumbnail-</span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">renderThumbnail</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">total</span> <span class="o">+=</span> <span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">total</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Pattern 3: thousands of fine-grained hops between the main actor and another actor.</span>
+<span class="k">let</span> <span class="nv">chatty</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"chatty-store-calls"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3_000</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">add</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">blockMainActor</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fanOut</span><span class="o">.</span><span class="n">value</span>
+<span class="k">await</span> <span class="n">chatty</span><span class="o">.</span><span class="n">value</span>
+
+<span class="c1">/// Pattern 4: a task whose continuation is never resumed.</span>
+<span class="k">let</span> <span class="nv">stuck</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"stuck-request"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">_</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">storedCount</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">count</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3_000</span> <span class="o">&amp;&amp;</span> <span class="n">storedCount</span> <span class="o">==</span> <span class="mi">3_000</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Running it prints a continuation misuse warning for the stuck task at exit, as the <a href="/swift-checked-continuations/">checked continuations article</a> describes. In a large app, that warning may never be seen; the trace shows the same problem visually.</p>
+
+<h2 id="reading-the-trace">Reading the trace</h2>
+
+<p>Summing the task-state table per task gave, for the run with a 300 ms main-actor block:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Task</th>
+      <th>Creating</th>
+      <th>Enqueued</th>
+      <th>Running</th>
+      <th>Notable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">thumbnail-fanout</code></td>
+      <td>300.3 ms</td>
+      <td> </td>
+      <td>9.7 ms</td>
+      <td>Its 40 children each ran about 5 ms</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">chatty-store-calls</code></td>
+      <td>308.7 ms</td>
+      <td>91.1 ms</td>
+      <td>215.5 ms</td>
+      <td>3,000 round trips to <code class="language-plaintext highlighter-rouge">Store</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">stuck-request</code></td>
+      <td>0.1 ms</td>
+      <td> </td>
+      <td>0.05 ms</td>
+      <td>310.5 ms in Continuation, until the process exited</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>With the main-actor block shortened to 120 ms in a second run, the Creating times of the first two tasks dropped to 120.3 and 131.9 ms. Each pattern points to a specific fix.</p>
+
+<h3 id="pattern-1-tasks-that-cannot-start">Pattern 1: tasks that cannot start</h3>
+
+<p><code class="language-plaintext highlighter-rouge">thumbnail-fanout</code> and <code class="language-plaintext highlighter-rouge">chatty-store-calls</code> spent 300 ms in Creating: created, ready, and unable to run. Both were created in top-level code, which is main-actor isolated, so both were main-actor tasks. <code class="language-plaintext highlighter-rouge">Task { }</code> inherits the main actor’s isolation, as the <a href="/swift-task-lifetime-ownership/">task lifetime article</a> shows, and the main actor was busy with a 300 ms synchronous job. The Creating time tracked the length of the block exactly: 300 ms in one run, 120 ms in the other.</p>
+
+<p>This is how <strong>main-actor contention</strong> looks in a trace: tasks waiting in Creating or Enqueued while the main thread’s lane shows one long Running interval. In an app, the same 300 ms is a frozen UI: about 18 dropped frames at 60 Hz, using the frame-budget formula from the <a href="/swift-main-actor/">main actor article</a>. The fix is to find the long main-actor job in the time profiler, usually by selecting the main thread during the stall, and move its computation to a <code class="language-plaintext highlighter-rouge">@concurrent</code> function.</p>
+
+<h3 id="pattern-2-fan-out-that-behaves">Pattern 2: fan-out that behaves</h3>
+
+<p>The 40 children of <code class="language-plaintext highlighter-rouge">thumbnail-fanout</code> each ran for about 5 ms and spent a millisecond or so suspended or waiting to start. The Swift Actors instrument showed the global concurrent executor’s queue peaking at 16 pending jobs while the 40 children were scheduled onto the 20-thread pool. That is a healthy shape: work queued briefly and drained at the rate the hardware allowed. A task group that adds thousands of children at once would show the queue size climbing much higher, and the total task count rising with it; that is the cue to use the sliding window from the <a href="/swift-task-groups/">task groups article</a>.</p>
+
+<h3 id="pattern-3-chatty-actor-calls">Pattern 3: chatty actor calls</h3>
+
+<p><code class="language-plaintext highlighter-rouge">chatty-store-calls</code> made 3,000 round trips: main actor to <code class="language-plaintext highlighter-rouge">Store</code>, then back. It accumulated 91 ms Enqueued, waiting for the main actor or the store to pick it up after each hop, and 215 ms Running. Two observations follow.</p>
+
+<p>First, the Enqueued time is pure scheduling overhead, spread across 6,000 executor switches. The <a href="/swift-actors/">actors article</a> measured those switches at about 6 µs per round trip without tracing. Batching the work into one call to <code class="language-plaintext highlighter-rouge">Store</code>, with one hop back to apply the result, removes almost all of it.</p>
+
+<p>Second, the Running time is inflated by the instrument itself: about 72 µs per iteration under tracing, an order of magnitude more than the same loop takes untraced. The Swift Tasks instrument records every state change, and this loop changes state constantly. <strong>Compare traces with traces</strong>, before and after a change under the same instrument, not traced timings with untraced ones.</p>
+
+<h3 id="pattern-4-a-task-that-never-finishes">Pattern 4: a task that never finishes</h3>
+
+<p><code class="language-plaintext highlighter-rouge">stuck-request</code> entered the Continuation state almost immediately and stayed there for the rest of the run. In the timeline, it is a lane that never ends. Selecting it shows its creation backtrace, which leads to the <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> call that never had a matching <code class="language-plaintext highlighter-rouge">resume</code>. The task’s name is what makes this findable among hundreds of short-lived tasks.</p>
+
+<p>The same lane appears for the deadlocks in the <a href="/swift-deadlocks-blocking-waits/">deadlocks article</a> that involve no blocked thread: a task suspended in Waiting on another task that is itself suspended. The task-state table’s “Waiting For” column records which task each one is waiting on, which turns a silent hang into a chain you can follow.</p>
+
+<h2 id="utilization-not-just-duration">Utilization, not just duration</h2>
+
+<p>A trace window also gives utilization directly. If the main thread is Running for \(T_{\text{busy}}\) out of a window \(T\), its utilization is</p>
+
+\[\rho = \frac{T_{\text{busy}}}{T}.\]
+
+<p>The waiting-time formula from the actors article, \(W_q = \frac{\rho}{1 - \rho}\,s\) for jobs of mean length \(s\), explains why a main actor that is busy “only” 70% of the time during a scroll still feels sluggish: each new job, such as a touch or an animation update, waits on average more than twice the length of a typical job before it starts. The goal for the main actor during interaction is not “under 100% busy” but “mostly idle.”</p>
+
+<p>For scrolling and animation in apps, Apple’s preferred metric is the <strong>hitch time ratio</strong>: milliseconds of hitches per second of animation. The Animation Hitches instrument and XCTest’s performance metrics report it; Apple’s guidance in <a href="https://developer.apple.com/videos/play/wwdc2020/10077/">Eliminate animation hitches with XCTest</a> treats under 5 ms/s as good, 5 to 10 ms/s as worth investigating, and above 10 ms/s as critical.</p>
+
+<h2 id="custom-intervals-with-ossignposter">Custom intervals with <code class="language-plaintext highlighter-rouge">OSSignposter</code></h2>
+
+<p>Task states show <em>how</em> tasks spent their time. Signposts show <em>what</em> they were doing in your app’s terms: “decode feed,” “apply search results,” “prefetch page 3.” An <code class="language-plaintext highlighter-rouge">OSSignposter</code> interval appears in the Points of Interest lane, aligned with the task lanes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="n">os</span>
+
+<span class="k">let</span> <span class="nv">signposter</span> <span class="o">=</span> <span class="kt">OSSignposter</span><span class="p">(</span><span class="nv">subsystem</span><span class="p">:</span> <span class="s">"com.example.feed"</span><span class="p">,</span> <span class="nv">category</span><span class="p">:</span> <span class="o">.</span><span class="n">pointsOfInterest</span><span class="p">)</span>
+
+<span class="kd">@concurrent</span>
+<span class="kd">func</span> <span class="nf">decodeFeed</span><span class="p">(</span><span class="nv">itemCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">interval</span> <span class="o">=</span> <span class="n">signposter</span><span class="o">.</span><span class="nf">beginInterval</span><span class="p">(</span><span class="s">"decode feed"</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="n">signposter</span><span class="o">.</span><span class="nf">makeSignpostID</span><span class="p">(),</span> <span class="s">"items: </span><span class="se">\(</span><span class="n">itemCount</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="p">{</span> <span class="n">signposter</span><span class="o">.</span><span class="nf">endInterval</span><span class="p">(</span><span class="s">"decode feed"</span><span class="p">,</span> <span class="n">interval</span><span class="p">)</span> <span class="p">}</span>
+    <span class="nf">busyWork</span><span class="p">(</span><span class="nv">milliseconds</span><span class="p">:</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">itemCount</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">batch</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">3</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">decodeFeed</span><span class="p">(</span><span class="nv">itemCount</span><span class="p">:</span> <span class="n">batch</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="n">signposter</span><span class="o">.</span><span class="nf">emitEvent</span><span class="p">(</span><span class="s">"feed ready"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Traced with the same template, this produced three “decode feed” intervals of 20.0 ms each, carrying their metadata, “items: 0”, “items: 10”, and “items: 20”, in the <code class="language-plaintext highlighter-rouge">OSSignpostIntervals</code> table. Signposts cost very little when no tool is recording, so they can stay in production code. They are the most effective way to connect a trace to a user-visible operation, and the natural boundaries for performance tests that measure an operation’s duration across builds.</p>
+
+<h2 id="tools-for-apps-on-devices">Tools for apps on devices</h2>
+
+<p>The traces above came from a command-line program on a Mac. On a device, add:</p>
+
+<ul>
+  <li><strong>Hangs</strong>, which flags main-thread unresponsiveness above a threshold. It watches an app’s main run loop, so it reports nothing for a command-line tool; in the recordings above its table stayed empty even with a 300 ms block.</li>
+  <li><strong>Animation Hitches</strong>, for frame-level timing during scrolling and transitions.</li>
+  <li><strong>Thread Performance Checker</strong>, enabled in a scheme’s Diagnostics, which flags priority inversions and main-thread work that is known to be slow, at run time while debugging.</li>
+  <li><strong>MetricKit</strong> hang and CPU diagnostics, which report what real users experienced in the field.</li>
+  <li>A <strong>main-actor heartbeat</strong>, as in the main actor article, for a cheap continuous measurement during tests.</li>
+</ul>
+
+<h2 id="a-workflow">A workflow</h2>
+
+<ol>
+  <li><strong>Name tasks</strong> that represent user-visible operations or long-lived work. Unnamed tasks appear only as numbers.</li>
+  <li><strong>Add signposts</strong> around operations whose duration matters to users.</li>
+  <li><strong>Record the scenario</strong>, not the whole app: one screen opening, one search, one scroll.</li>
+  <li><strong>Look for long Creating or Enqueued intervals</strong> on tasks that should start promptly. Find the job occupying their executor.</li>
+  <li><strong>Look for lanes that do not end</strong>: tasks in Continuation or Waiting at the end of the scenario.</li>
+  <li><strong>Check counts and queues</strong>: total live tasks and actor queue sizes during the scenario. Steady growth means unbounded fan-out or leaked tasks.</li>
+  <li><strong>Fix one thing and record again,</strong> comparing the same tables before and after.</li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>The Swift Concurrency template records task states, waits, actor queues, and signposts; <code class="language-plaintext highlighter-rouge">xctrace</code> records and exports the same data from the command line.</li>
+  <li>Long Creating or Enqueued intervals mean tasks could not run. In the traces above, two tasks waited 300 ms behind a 300 ms main-actor job, and 120 ms behind a 120 ms one.</li>
+  <li>Chatty cross-actor calls show up as Enqueued time spread across thousands of hops; batching removes it.</li>
+  <li>A lane that stays in Continuation is a leaked continuation; Waiting chains reveal async deadlocks.</li>
+  <li>The instrument adds overhead, about 72 µs per hop in the chatty loop, so compare traces with traces.</li>
+  <li>Main-actor utilization \(\rho\) predicts responsiveness through \(\rho / (1 - \rho)\); for animation, track the hitch time ratio.</li>
+  <li>Name tasks and add <code class="language-plaintext highlighter-rouge">OSSignposter</code> intervals so traces speak in terms of your app’s operations.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Take the search model from the <a href="/swift-rejecting-stale-results/">stale results article</a> and drive it with a scripted burst of typing in a test target. Record it with the Swift Concurrency template twice: once with debouncing disabled and once with an 80 ms quiet period. Add a signpost around each search request. From the exported tables, report the number of search tasks created, the number that reached Running, the total time spent in requests that were later superseded, and the main actor’s utilization during the burst, and explain the differences.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2022/110350/">Visualize and optimize Swift concurrency</a>, WWDC22, the introduction to the Swift Concurrency instruments.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10248/">Analyze hangs with Instruments</a>, WWDC23.</li>
+  <li><a href="https://developer.apple.com/documentation/os/recording-performance-data">Recording performance data</a> with <code class="language-plaintext highlighter-rouge">OSSignposter</code>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0469-task-names.md">SE-0469: Task Naming</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-thread-sanitizer/">Finding Data Races with Thread Sanitizer</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>, or continue with the next guide, <a href="/swift-networking/">Networking</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-profiling-tasks-main-actor/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Profiling+Task+Lifetimes+and+Main-Actor+Contention+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-profiling-tasks-main-actor%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-profiling-tasks-main-actor/&title=Profiling+Task+Lifetimes+and+Main-Actor+Contention+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-profiling-tasks-main-actor/&title=Profiling+Task+Lifetimes+and+Main-Actor+Contention+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-profiling-tasks-main-actor/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Profiling Task Lifetimes and Main-Actor Contention in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-profiling-tasks-main-actor/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Debugging">Debugging</a></li>
+    
+    <li><a href="/tag/#Instruments">Instruments</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="HTTP Methods, Status Codes, and Headers: What URLSession Puts on the Wire" href="/swift-http-methods-status-codes-headers/"> <p>Previous post</p> HTTP Methods, Status Codes, and Headers: What URLSession Puts on the Wire </a> </div> <div id="next-post"> <a alt="Finding Data Races in Swift with Thread Sanitizer" href="/swift-thread-sanitizer/"> <p>Next post</p> Finding Data Races in Swift with Thread Sanitizer </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

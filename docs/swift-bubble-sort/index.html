@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Bubble sort repeatedly swaps adjacent out-of-order elements. Its practical importance is limited, but it offers a clear connection between a local operation, a global ordering invariant, and an exact measure of disorder: inversions. A useful implementation should handle empty input, stop when a pass makes no changes, and avoid rescanning a suffix already known to be ordered." /> <meta property="og:description" content="Bubble sort repeatedly swaps adjacent out-of-order elements. Its practical importance is limited, but it offers a clear connection between a local operation, a global ordering invariant, and an exact measure of disorder: inversions. A useful implementation should handle empty input, stop when a pass makes no changes, and avoid rescanning a suffix already known to be ordered." /> <link rel="canonical" href="https://swiftbydeya.com/swift-bubble-sort/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-bubble-sort/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-08-31T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-08-31T00:00:00+03:00","datePublished":"2023-08-31T00:00:00+03:00","description":"Bubble sort repeatedly swaps adjacent out-of-order elements. Its practical importance is limited, but it offers a clear connection between a local operation, a global ordering invariant, and an exact measure of disorder: inversions. A useful implementation should handle empty input, stop when a pass makes no changes, and avoid rescanning a suffix already known to be ordered.","headline":"Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-bubble-sort/"},"url":"https://swiftbydeya.com/swift-bubble-sort/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant"> <meta name="twitter:description" content="Bubble sort repeatedly swaps adjacent out-of-order elements. Its practical importance is limited, but it offers a clear connection between a local operation,..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-08-31T00:00:00+03:00">August 31, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Bubble sort repeatedly swaps adjacent out-of-order elements. Its practical importance is limited, but it offers a clear connection between a local operation, a global ordering invariant, and an exact measure of disorder: inversions.</p>
+
+<p>A useful implementation should handle empty input, stop when a pass makes no changes, and avoid rescanning a suffix already known to be ordered.</p>
+
+<!--more-->
+
+<p>The code uses Swift 5.7 and a strict comparator. The function returns a sorted copy, so account for output storage separately from the algorithm’s constant local state.</p>
+
+<h2 id="a-pass-moves-a-large-element-toward-the-end">A pass moves a large element toward the end</h2>
+
+<p>For <code class="language-plaintext highlighter-rouge">[4, 1, 3, 2]</code>, the first pass compares neighbors:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>4 1 3 2  -&gt;  1 4 3 2  -&gt;  1 3 4 2  -&gt;  1 3 2 4
+</code></pre></div></div>
+
+<p>The largest element is now at the end. Repeating over the remaining prefix eventually fixes every position. No element jumps across another except through an adjacent swap.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="n">bubbleSorted</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="p">[</span><span class="kt">T</span><span class="p">],</span> <span class="n">by</span> <span class="nv">before</span><span class="p">:</span> <span class="p">(</span><span class="kt">T</span><span class="p">,</span> <span class="kt">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">T</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">values</span> <span class="o">=</span> <span class="n">input</span>
+    <span class="k">var</span> <span class="nv">upper</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">count</span>
+    <span class="k">while</span> <span class="n">upper</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">lastSwap</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">1</span><span class="o">..&lt;</span><span class="n">upper</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="nf">before</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">values</span><span class="p">[</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="p">{</span>
+                <span class="n">values</span><span class="o">.</span><span class="nf">swapAt</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">lastSwap</span> <span class="o">=</span> <span class="n">index</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">lastSwap</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">values</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cases</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+<span class="k">for</span> <span class="n">input</span> <span class="k">in</span> <span class="n">cases</span> <span class="p">{</span> <span class="nf">assert</span><span class="p">(</span><span class="nf">bubbleSorted</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="o">&lt;</span><span class="p">)</span> <span class="o">==</span> <span class="n">input</span><span class="o">.</span><span class="nf">sorted</span><span class="p">())</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">bubbleSorted</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="nv">by</span><span class="p">:</span> <span class="o">&gt;</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">upper &gt; 1</code> guard avoids invalid ranges for empty and singleton arrays. <code class="language-plaintext highlighter-rouge">lastSwap</code> is zero when no exchange occurs, terminating the algorithm immediately.</p>
+
+<h2 id="why-the-last-swap-boundary-is-valid">Why the last-swap boundary is valid</h2>
+
+<p>During a pass, the greatest element encountered so far travels right. After the last swap, all remaining adjacent pairs are already ordered and no larger displaced element remains to cross that suffix.</p>
+
+<p>Consequently, the suffix beginning at the last-swap boundary is settled relative to the unsorted prefix. The next pass only needs indices below that boundary.</p>
+
+<p>This is stronger than blindly reducing the upper bound by one. If a small disturbance occurs near the beginning of a mostly sorted array, the next scan can become much shorter.</p>
+
+<p>The proof still assumes a coherent strict ordering. A stateful comparator can invalidate the argument even if every individual swap seems sensible.</p>
+
+<h2 id="inversions-explain-the-swap-count">Inversions explain the swap count</h2>
+
+<p>An inversion is a pair of positions <code class="language-plaintext highlighter-rouge">i &lt; j</code> whose values are in the wrong relative order. Swapping an adjacent inverted pair removes exactly one inversion.</p>
+
+\[0\le I\le\frac{n(n-1)}{2}.\]
+
+<p>For a valid strict ordering, bubble sort performs exactly <code class="language-plaintext highlighter-rouge">I</code> adjacent swaps. Reversed distinct input has the maximum number of inversions, so its swap count is quadratic.</p>
+
+<p>That does not make comparison count equal to swap count. The algorithm also compares already ordered neighbors while discovering where disorder remains.</p>
+
+<h2 id="early-exit-changes-the-best-case">Early exit changes the best case</h2>
+
+<p>On sorted input, one pass makes <code class="language-plaintext highlighter-rouge">n - 1</code> comparisons and no swaps, giving linear time. Worst-case input still requires a triangular number of comparisons:</p>
+
+\[(n-1)+(n-2)+\cdots+1=\frac{n(n-1)}{2}.\]
+
+<p>The last-swap optimization improves some workloads but does not change that worst-case class. An implementation without early exit remains quadratic even on already sorted data.</p>
+
+<p>Auxiliary scalar state is constant. Returning a copy requires an array result of size <code class="language-plaintext highlighter-rouge">n</code>, and copy-on-write may defer its physical separation until the first mutation. It is misleading to describe the entire copy-returning API as using no extra storage.</p>
+
+<h2 id="stability-follows-from-strict-adjacent-swaps">Stability follows from strict adjacent swaps</h2>
+
+<p>Equal-key elements are never swapped directly, and adjacent swaps cannot reverse their relative order without crossing them. This makes the implementation stable.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Row</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">let</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">Int</span><span class="p">;</span> <span class="k">let</span> <span class="nv">label</span><span class="p">:</span> <span class="kt">String</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">rows</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Row</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">label</span><span class="p">:</span> <span class="s">"a"</span><span class="p">),</span> <span class="kt">Row</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">label</span><span class="p">:</span> <span class="s">"b"</span><span class="p">),</span> <span class="kt">Row</span><span class="p">(</span><span class="nv">key</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">label</span><span class="p">:</span> <span class="s">"c"</span><span class="p">)]</span>
+<span class="k">let</span> <span class="nv">orderedRows</span> <span class="o">=</span> <span class="nf">bubbleSorted</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">key</span> <span class="o">&lt;</span> <span class="nv">$1</span><span class="o">.</span><span class="n">key</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">orderedRows</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">label</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"b"</span><span class="p">,</span> <span class="s">"a"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Changing the comparison to “less than or equal” swaps equivalent values, destroys stability, and violates the strict-comparator contract. A harmless-looking operator change has a behavioral consequence.</p>
+
+<h2 id="small-tests-can-explore-every-arrangement">Small tests can explore every arrangement</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">a</span> <span class="k">in</span> <span class="mi">0</span><span class="o">...</span><span class="mi">2</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="k">in</span> <span class="mi">0</span><span class="o">...</span><span class="mi">2</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="k">in</span> <span class="mi">0</span><span class="o">...</span><span class="mi">2</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">input</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+            <span class="nf">assert</span><span class="p">(</span><span class="nf">bubbleSorted</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="nv">by</span><span class="p">:</span> <span class="o">&lt;</span><span class="p">)</span> <span class="o">==</span> <span class="n">input</span><span class="o">.</span><span class="nf">sorted</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This bounded domain covers duplicate-heavy triples and every relative arrangement of those keys. Larger generated arrays can extend coverage, while explicit empty and singleton cases protect range boundaries.</p>
+
+<p>When testing an implementation without a reference sort, check both ordering and multiset preservation. An ordered result that drops values is not a successful sort.</p>
+
+<h2 id="when-the-algorithm-is-useful">When the algorithm is useful</h2>
+
+<p>Bubble sort is suitable for tracing invariants and visualizing adjacent exchanges. It can also serve as a small reference implementation in educational tests.</p>
+
+<p>For nearly sorted arrays, insertion sort generally expresses the same adaptive opportunity with fewer moves. For general application sorting, use the standard library unless a measured requirement justifies a specialized implementation.</p>
+
+<p>Do not select bubble sort because it has two short loops or because one small benchmark ran quickly. Quadratic growth becomes decisive once the input limit changes.</p>
+
+<h2 id="an-inversion-counter-gives-an-independent-structural-check">An inversion counter gives an independent structural check</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">inversions</span><span class="p">(</span><span class="n">_</span> <span class="nv">values</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="k">in</span> <span class="n">values</span><span class="o">.</span><span class="n">indices</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="nf">in</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">..&lt;</span><span class="n">values</span><span class="o">.</span><span class="n">count</span> <span class="k">where</span> <span class="n">values</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">{</span> <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">total</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">inversions</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">inversions</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">inversions</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This quadratic helper is intentionally a small-input oracle. It expresses the mathematical definition directly, making it suitable for checking a swap-instrumented bubble sort without sharing the sorting loop’s boundary logic.</p>
+
+<p>For larger datasets, inversion counting can be integrated into merge sort: when a right item precedes a remaining left item, it crosses all unread left items. That improves counting to <code class="language-plaintext highlighter-rouge">O(n log n)</code> but introduces a more involved proof.</p>
+
+<h2 id="a-trace-is-a-view-of-an-algorithm-not-its-scheduler">A trace is a view of an algorithm, not its scheduler</h2>
+
+<p>An educational visualization should record exchange events and replay them at a chosen display pace. Sleeping inside the comparison or swap loop mixes presentation timing with algorithm execution and makes performance measurements meaningless.</p>
+
+<p>Keep a bounded trace or stream events under an explicit buffering policy; quadratic algorithms can emit quadratic events. An animation of a hundred thousand swaps can consume more memory in its trace than in the array being sorted.</p>
+
+<p>The same separation lets tests compare the final result without running a UI and lets a viewer pause replay without leaving the underlying array in a partially exposed shared state.</p>
+
+<h2 id="exercise-record-a-trace-without-changing-the-algorithm">Exercise: record a trace without changing the algorithm</h2>
+
+<p>Add an observer that receives the exchanged indices after each swap. Keep the observer outside the comparison rule. Verify the number of observed swaps equals an independently computed inversion count on small arrays.</p>
+
+<p>Then compare sorted and reversed inputs of increasing size. Count comparisons and swaps separately, and explain which optimization changes which count.</p>
+
+<p>Return to the <a href="/swift-data-structures-and-algorithms/">Data Structures and Algorithms roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-bubble-sort/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Bubble+Sort+in+Swift%3A+Inversions%2C+Early+Exit%2C+and+a+Correctness+Invariant%20https%3A%2F%2Fswiftbydeya.com%2Fswift-bubble-sort%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-bubble-sort/&title=Bubble+Sort+in+Swift%3A+Inversions%2C+Early+Exit%2C+and+a+Correctness+Invariant%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-bubble-sort/&title=Bubble+Sort+in+Swift%3A+Inversions%2C+Early+Exit%2C+and+a+Correctness+Invariant%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-bubble-sort/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Bubble Sort in Swift: Inversions, Early Exit, and a Correctness Invariant%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-bubble-sort/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Algorithms">Algorithms</a></li>
+    
+    <li><a href="/tag/#Data+Structures">Data Structures</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Delegation in Swift: One Object Reporting to Another" href="/swift-delegation/"> <p>Previous post</p> Delegation in Swift: One Object Reporting to Another </a> </div> <div id="next-post"> <a alt="The Value of Immutability in Swift: Stable Facts and Explicit Changes" href="/swift-immutability/"> <p>Next post</p> The Value of Immutability in Swift: Stable Facts and Explicit Changes </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

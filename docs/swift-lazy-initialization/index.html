@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Lazy initialization defers work until its result is needed. That can avoid expensive startup work, but it moves cost, failure, and resource acquisition into a later access. It does not make those concerns disappear. Swift’s lazy stored property is one useful mechanism. A failure-aware or concurrent lazy resource often needs an explicit state machine instead of an optional value and a hopeful nil check." /> <meta property="og:description" content="Lazy initialization defers work until its result is needed. That can avoid expensive startup work, but it moves cost, failure, and resource acquisition into a later access. It does not make those concerns disappear. Swift’s lazy stored property is one useful mechanism. A failure-aware or concurrent lazy resource often needs an explicit state machine instead of an optional value and a hopeful nil check." /> <link rel="canonical" href="https://swiftbydeya.com/swift-lazy-initialization/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-lazy-initialization/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2023-07-11T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2023-07-11T00:00:00+03:00","datePublished":"2023-07-11T00:00:00+03:00","description":"Lazy initialization defers work until its result is needed. That can avoid expensive startup work, but it moves cost, failure, and resource acquisition into a later access. It does not make those concerns disappear. Swift’s lazy stored property is one useful mechanism. A failure-aware or concurrent lazy resource often needs an explicit state machine instead of an optional value and a hopeful nil check.","headline":"Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-lazy-initialization/"},"url":"https://swiftbydeya.com/swift-lazy-initialization/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency"> <meta name="twitter:description" content="Lazy initialization defers work until its result is needed. That can avoid expensive startup work, but it moves cost, failure, and resource acquisition into ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2023-07-11T00:00:00+03:00">July 11, 2023</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Lazy initialization defers work until its result is needed. That can avoid expensive startup work, but it moves cost, failure, and resource acquisition into a later access. It does not make those concerns disappear.</p>
+
+<p>Swift’s <code class="language-plaintext highlighter-rouge">lazy</code> stored property is one useful mechanism. A failure-aware or concurrent lazy resource often needs an explicit state machine instead of an optional value and a hopeful nil check.</p>
+
+<!--more-->
+
+<p>These examples use Swift 5.7. The first two implementations require serialized access. The final sections explain the additional decisions needed when construction is asynchronous or shared across tasks.</p>
+
+<h2 id="a-stored-lazy-property-remembers-a-successful-value">A stored lazy property remembers a successful value</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">DocumentPreview</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">load</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span>
+    <span class="kd">lazy</span> <span class="k">var</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="nf">load</span><span class="p">()</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">load</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">load</span> <span class="o">=</span> <span class="n">load</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">previewBuilds</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">preview</span> <span class="o">=</span> <span class="kt">DocumentPreview</span> <span class="p">{</span>
+    <span class="n">previewBuilds</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="s">"Rendered document"</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previewBuilds</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preview</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">"Rendered document"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">preview</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">"Rendered document"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">previewBuilds</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Creating the owner does not render the preview. First access performs the calculation, and later accesses reuse the stored result.</p>
+
+<p>That result is a snapshot of the inputs observed during first access. If a captured document changes later, this property does not invalidate itself. Decide whether the preview is immutable for the owner’s lifetime, manually resettable, or keyed by a document version.</p>
+
+<p>A lazy property in a value type can require a mutable receiver because reading it may initialize storage. A class reference has different surface behavior, but still performs mutation internally.</p>
+
+<h2 id="failure-needs-a-policy-not-a-magic-default">Failure needs a policy, not a magic default</h2>
+
+<p>A throwing loader cannot simply be used as an ordinary throwing property getter with this <code class="language-plaintext highlighter-rouge">lazy</code> declaration. An explicit wrapper can retry failed initialization while remembering successful values:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">LazyFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">reentrantInitialization</span> <span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LazyValue</span><span class="o">&lt;</span><span class="kt">Value</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">uninitialized</span>
+        <span class="k">case</span> <span class="n">initializing</span>
+        <span class="k">case</span> <span class="nf">ready</span><span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">State</span> <span class="o">=</span> <span class="o">.</span><span class="n">uninitialized</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">make</span><span class="p">:</span> <span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">make</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">make</span> <span class="o">=</span> <span class="n">make</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">state</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">ready</span><span class="p">(</span><span class="n">value</span><span class="p">):</span> <span class="k">return</span> <span class="n">value</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">initializing</span><span class="p">:</span> <span class="k">throw</span> <span class="kt">LazyFailure</span><span class="o">.</span><span class="n">reentrantInitialization</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">uninitialized</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="n">initializing</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">built</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">make</span><span class="p">()</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="nf">ready</span><span class="p">(</span><span class="n">built</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">built</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="o">.</span><span class="n">uninitialized</span>
+                <span class="k">throw</span> <span class="n">error</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">PreviewFailure</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">unavailable</span> <span class="p">}</span>
+<span class="k">var</span> <span class="nv">attempts</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">retrying</span> <span class="o">=</span> <span class="kt">LazyValue</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="n">attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">attempts</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PreviewFailure</span><span class="o">.</span><span class="n">unavailable</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="s">"Ready"</span>
+<span class="p">}</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="n">retrying</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The first attempt must fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">PreviewFailure</span><span class="o">.</span><span class="n">unavailable</span> <span class="p">{}</span>
+<span class="k">let</span> <span class="nv">ready</span> <span class="o">=</span> <span class="k">try</span> <span class="n">retrying</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">readyAgain</span> <span class="o">=</span> <span class="k">try</span> <span class="n">retrying</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ready</span> <span class="o">==</span> <span class="s">"Ready"</span> <span class="o">&amp;&amp;</span> <span class="n">readyAgain</span> <span class="o">==</span> <span class="n">ready</span> <span class="o">&amp;&amp;</span> <span class="n">attempts</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The initializing state rejects recursive construction. Without it, a factory that calls back into the same lazy value can recurse indefinitely.</p>
+
+<p>A failed attempt returns to uninitialized. Caching the failure permanently would be another valid policy for immutable invalid configuration, but inappropriate for every transient resource failure. Name and test the chosen behavior.</p>
+
+<h2 id="optional-payloads-must-not-mean-uninitialized">Optional payloads must not mean uninitialized</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">optionalBuilds</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">optionalValue</span> <span class="o">=</span> <span class="kt">LazyValue</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">?</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="n">optionalBuilds</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">first</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="k">try</span> <span class="n">optionalValue</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">second</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="k">try</span> <span class="n">optionalValue</span><span class="o">.</span><span class="nf">value</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">first</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="n">second</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="n">optionalBuilds</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>An optional storage slot alone would conflate “not built” with “built successfully and returned nil.” The enum separates lifecycle state from the result’s own data model.</p>
+
+<p>The same issue appears with an empty collection, zero, or an unavailable cache entry. Use explicit states rather than domain values as undocumented initialization sentinels.</p>
+
+<h2 id="ordinary-lazy-properties-are-not-a-synchronization-primitive">Ordinary lazy properties are not a synchronization primitive</h2>
+
+<p>The Swift language guide explicitly distinguishes stored type-property one-time initialization from ordinary lazy instance properties accessed simultaneously. See <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/properties/">Properties</a>.</p>
+
+<p>The wrapper above also has no lock or actor isolation. Two unsynchronized callers can race on its state. Adding a lock only around the initial nil check is insufficient if construction occurs after releasing the lock and both callers start work.</p>
+
+<p>Holding a nonrecursive lock while invoking arbitrary factory code creates another risk: the factory may reenter or wait for work needing the same lock. Isolation and reentrancy need an intentional policy, not just a mutex added around a property.</p>
+
+<h2 id="async-initialization-needs-an-in-flight-state">Async initialization needs an in-flight state</h2>
+
+<p>Suppose two callers request a thumbnail before it has loaded. A state machine containing only “empty” and “ready” allows both callers to begin the same expensive operation. Store an in-flight task or an equivalent shared operation if duplicate work is unacceptable.</p>
+
+<p>That leads to another policy question: if one caller cancels, should the shared operation stop for every caller? Usually a caller abandoning its wait should not cancel work still needed by others. A resource-bound system may instead cancel when the last interested caller leaves. Both policies require tracking who owns the underlying task.</p>
+
+<p>Invalidation adds a second race. A load started for document version one may finish after the cache was cleared for version two. Recording an initialization generation lets the completion check whether it still belongs to the current state before publishing. Merely setting the stored value back to <code class="language-plaintext highlighter-rouge">nil</code> does not prevent an old result from filling it again.</p>
+
+<p>Failure cleanup needs the same identity check: an old failed waiter must not clear a newer in-flight task. Clear only the attempt that actually failed. For feature-scoped work, explicit async activation may communicate loading and cancellation better than a method named <code class="language-plaintext highlighter-rouge">value</code>.</p>
+
+<h2 id="deferred-cost-can-become-user-visible-latency">Deferred cost can become user-visible latency</h2>
+
+<p>Rendering during first scroll or first tap may feel worse than doing bounded work during a loading phase. Measure the interaction where cost moved, not merely faster owner initialization.</p>
+
+<p>A warmed cache can also make benchmarks misleading. Test cold access, repeated access, failure and retry, and invalidation after a version change separately.</p>
+
+<p>Retained lazy results can keep large graphs alive for the owner’s lifetime. A cache with eviction or weak storage has different semantics from memoizing one successful value forever.</p>
+
+<h2 id="a-lazy-value-also-retains-a-dependency-graph">A lazy value also retains a dependency graph</h2>
+
+<p>A deferred closure can capture everything needed to build its result. If it captures a large document or a view controller, those objects may remain alive even when the lazy value is never requested. Deferring computation can therefore reduce startup work while increasing retention.</p>
+
+<p>After successful initialization, a reusable lazy container can release its construction closure if it no longer needs to retry or invalidate the result. After a failed attempt, retaining the closure may be necessary for retry. Make that lifecycle choice explicit; otherwise a cached ten-byte result can keep an entire import graph reachable.</p>
+
+<p>Capturing <code class="language-plaintext highlighter-rouge">self</code> also deserves care. A class holding a closure that strongly captures the same class forms a cycle. Choosing a weak capture changes failure semantics because the owner may disappear before construction begins. Decide what that disappearance means rather than force-unwrapping a weak reference inside deferred work.</p>
+
+<h2 id="distinguish-absent-data-from-unfinished-work">Distinguish absent data from unfinished work</h2>
+
+<p>An optional result can be a legitimate completed result: for example, a document may have no embedded preview. The explicit state in <code class="language-plaintext highlighter-rouge">LazyValue</code> distinguishes “not attempted” from “attempted and found nothing.” Without that distinction, every access can repeat a successful absence lookup.</p>
+
+<p>For a failed lookup, choose retry behavior according to the failure. A transient file-access error may justify another attempt; an unsupported format may be stable until input changes. Permanently caching every failure and retrying every failure are both simplistic defaults. Tie reset and retry to the lifetime of the input and the operation’s error contract.</p>
+
+<h2 id="treat-construction-as-a-state-transition">Treat construction as a state transition</h2>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: Retryable lazy construction publishes only completed values
+    [*] --&gt; Uninitialized
+    Uninitialized --&gt; Initializing: first request
+    Initializing --&gt; Ready: construction succeeds
+    Initializing --&gt; Uninitialized: construction throws
+    Ready --&gt; Ready: return cached value
+    note right of Initializing
+        Reentrant access reports an error.
+        It cannot publish a partial value.
+    end note
+</code></pre>
+
+<p>A completed optional <code class="language-plaintext highlighter-rouge">nil</code> still belongs to <code class="language-plaintext highlighter-rouge">Ready</code>. Failure returns to <code class="language-plaintext highlighter-rouge">Uninitialized</code> according to this container’s retry policy.</p>
+
+<h2 id="exercise-add-explicit-invalidation">Exercise: add explicit invalidation</h2>
+
+<p>Add a generation counter and an invalidate operation to the serialized wrapper. Define whether an already returned reference value remains usable and what happens to a construction currently in progress. Test optional nil results, failed retries, recursive construction, and a factory that triggers invalidation.</p>
+
+<p>Compare that API with <a href="/swift-proxy/">Proxy</a>, which controls access through the same capability consumers already use.</p>
+
+<h2 id="language-and-api-reference">Language and API reference</h2>
+
+<p>The Swift language guide documents <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/properties/">lazy stored properties and stored type properties</a>, including their different initialization guarantees.</p>
+
+<p>Return to the <a href="/swift-design-patterns/">Design Patterns roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-lazy-initialization/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Lazy+Initialization+in+Swift%3A+Deferred+Work%2C+Failure%2C+and+Concurrency%20https%3A%2F%2Fswiftbydeya.com%2Fswift-lazy-initialization%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-lazy-initialization/&title=Lazy+Initialization+in+Swift%3A+Deferred+Work%2C+Failure%2C+and+Concurrency%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-lazy-initialization/&title=Lazy+Initialization+in+Swift%3A+Deferred+Work%2C+Failure%2C+and+Concurrency%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-lazy-initialization/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Lazy Initialization in Swift: Deferred Work, Failure, and Concurrency%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-lazy-initialization/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Architecture">Architecture</a></li>
+    
+    <li><a href="/tag/#Design+Patterns">Design Patterns</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Default Implementations in Swift Protocol Extensions" href="/swift-protocol-default-implementations/"> <p>Previous post</p> Default Implementations in Swift Protocol Extensions </a> </div> <div id="next-post"> <a alt="Parent and Child Classes in Swift: Inheritance vs. Ownership" href="/swift-parent-child-classes/"> <p>Next post</p> Parent and Child Classes in Swift: Inheritance vs. Ownership </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

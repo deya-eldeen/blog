@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Creating Tasks and Choosing Their Lifetime Owner in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Creating Tasks and Choosing Their Lifetime Owner in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Task { } is the most common way to start asynchronous work from synchronous code, and the easiest one to misuse. It returns immediately and keeps running regardless of what happens to the code that created it. Nothing cancels it when a screen closes. Nothing reports its error if nobody reads it. Nothing stops it from keeping its creator alive forever. Structured tasks get their lifetime from a scope. Unstructured tasks need an owner: some object or scope that holds the handle, decides when the work is no longer wanted, and cancels it. This article examines what Task { } inherits and what it does not, measures the leaks that appear when nobody owns a task, and builds the ownership patterns that cover most application code." /> <meta property="og:description" content="Task { } is the most common way to start asynchronous work from synchronous code, and the easiest one to misuse. It returns immediately and keeps running regardless of what happens to the code that created it. Nothing cancels it when a screen closes. Nothing reports its error if nobody reads it. Nothing stops it from keeping its creator alive forever. Structured tasks get their lifetime from a scope. Unstructured tasks need an owner: some object or scope that holds the handle, decides when the work is no longer wanted, and cancels it. This article examines what Task { } inherits and what it does not, measures the leaks that appear when nobody owns a task, and builds the ownership patterns that cover most application code." /> <link rel="canonical" href="https://swiftbydeya.com/swift-task-lifetime-ownership/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-task-lifetime-ownership/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-18T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Creating Tasks and Choosing Their Lifetime Owner in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-18T00:00:00+03:00","datePublished":"2026-06-18T00:00:00+03:00","description":"Task { } is the most common way to start asynchronous work from synchronous code, and the easiest one to misuse. It returns immediately and keeps running regardless of what happens to the code that created it. Nothing cancels it when a screen closes. Nothing reports its error if nobody reads it. Nothing stops it from keeping its creator alive forever. Structured tasks get their lifetime from a scope. Unstructured tasks need an owner: some object or scope that holds the handle, decides when the work is no longer wanted, and cancels it. This article examines what Task { } inherits and what it does not, measures the leaks that appear when nobody owns a task, and builds the ownership patterns that cover most application code.","headline":"Creating Tasks and Choosing Their Lifetime Owner in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-task-lifetime-ownership/"},"url":"https://swiftbydeya.com/swift-task-lifetime-ownership/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Creating Tasks and Choosing Their Lifetime Owner in Swift"> <meta name="twitter:description" content="Task { } is the most common way to start asynchronous work from synchronous code, and the easiest one to misuse. It returns immediately and keeps running reg..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Creating Tasks and Choosing Their Lifetime Owner in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Creating Tasks and Choosing Their Lifetime Owner in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-18T00:00:00+03:00">June 18, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p><code class="language-plaintext highlighter-rouge">Task { }</code> is the most common way to start asynchronous work from synchronous code, and the easiest one to misuse. It returns immediately and keeps running regardless of what happens to the code that created it. Nothing cancels it when a screen closes. Nothing reports its error if nobody reads it. Nothing stops it from keeping its creator alive forever.</p>
+
+<p>Structured tasks get their lifetime from a scope. Unstructured tasks need an <strong>owner</strong>: some object or scope that holds the handle, decides when the work is no longer wanted, and cancels it. This article examines what <code class="language-plaintext highlighter-rouge">Task { }</code> inherits and what it does not, measures the leaks that appear when nobody owns a task, and builds the ownership patterns that cover most application code.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Task.immediate</code>, from Swift 6.2, requires iOS 26, macOS 26, or later; <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="what-a-task-handle-is-and-what-it-is-not">What a task handle is, and what it is not</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Task.init</code> returns a <code class="language-plaintext highlighter-rouge">Task&lt;Success, Failure&gt;</code> handle. The handle lets you read the result, cancel the task, and check whether it has been cancelled. It does <strong>not</strong> control the task’s existence:</p>
+
+<ul>
+  <li>The task starts running as soon as it is created, whether or not anyone keeps the handle.</li>
+  <li>Releasing the last reference to the handle does not cancel the task.</li>
+  <li>An error thrown by the task is stored in the task. If nobody reads <code class="language-plaintext highlighter-rouge">value</code> or <code class="language-plaintext highlighter-rouge">result</code>, the error disappears.</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">UploadError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">reason</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">upload</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="k">throw</span> <span class="kt">UploadError</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="s">"quota exceeded"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">switch</span> <span class="k">await</span> <span class="n">upload</span><span class="o">.</span><span class="n">result</span> <span class="p">{</span>
+<span class="k">case</span> <span class="o">.</span><span class="nv">success</span><span class="p">:</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The upload was expected to fail"</span><span class="p">)</span>
+<span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">UploadError</span> <span class="o">==</span> <span class="kt">UploadError</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="s">"quota exceeded"</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">// The same failure with nobody listening: the program continues, and the error is gone.</span>
+<span class="n">_</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="kt">UploadError</span><span class="p">(</span><span class="nv">reason</span><span class="p">:</span> <span class="s">"nobody reads this"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Task.init</code> is marked <code class="language-plaintext highlighter-rouge">@discardableResult</code>, so older compilers accepted a bare <code class="language-plaintext highlighter-rouge">Task { throw ... }</code> silently. Swift 6.4 adds a warning for exactly this case (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0520-discardableresult-task-initializers.md">SE-0520</a>): an “unstructured throwing task … is not used, which may accidentally ignore errors thrown inside the task”. It applies only to tasks whose failure type is not <code class="language-plaintext highlighter-rouge">Never</code>, and <code class="language-plaintext highlighter-rouge">_ =</code> is how you tell the compiler the discard is deliberate. Either way, the second task’s failure is invisible at run time. When a task can fail, either something awaits its result, or the task body handles its own errors, typically by catching them and updating state or logging. “Thrown into the void” is never a policy.</p>
+
+<h2 id="what-task---inherits-from-its-context">What <code class="language-plaintext highlighter-rouge">Task { }</code> inherits from its context</h2>
+
+<p>An unstructured task created with <code class="language-plaintext highlighter-rouge">Task { }</code> copies three things from the place where it is written:</p>
+
+<ol>
+  <li><strong>Priority.</strong> The new task starts with the current task’s priority, or a priority derived from the current thread’s quality of service if there is no current task.</li>
+  <li><strong>Task-local values.</strong> Values bound with <code class="language-plaintext highlighter-rouge">@TaskLocal</code> are copied, as the <a href="/swift-structured-concurrency/">structured concurrency article</a> shows.</li>
+  <li><strong>Actor isolation, sometimes.</strong> If the surrounding code is isolated to a <em>global</em> actor, such as the main actor, the closure is isolated to that actor. If the surrounding code is an <em>actor instance</em> method, the closure is isolated to that actor only if it captures <code class="language-plaintext highlighter-rouge">self</code>.</li>
+</ol>
+
+<p>It does <strong>not</strong> inherit cancellation. It is not a child, and cancelling the creating task does not cancel it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">describe</span><span class="p">(</span><span class="n">_</span> <span class="nv">isolation</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Actor</span><span class="p">)?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="n">isolation</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"nonisolated"</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">Indexer</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">indexedCount</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="kd">func</span> <span class="nf">isolationOfNewTasks</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">withoutSelf</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">let</span> <span class="nv">withSelf</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="k">in</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">indexedCount</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">withoutSelf</span><span class="p">,</span> <span class="n">withSelf</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">isolationOfMainActorTask</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="kt">Task</span> <span class="p">{</span> <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">indexerIsolation</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Indexer</span><span class="p">()</span><span class="o">.</span><span class="nf">isolationOfNewTasks</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">indexerIsolation</span> <span class="o">==</span> <span class="p">[</span><span class="s">"nonisolated"</span><span class="p">,</span> <span class="s">"Indexer"</span><span class="p">])</span>
+<span class="k">let</span> <span class="nv">mainIsolation</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">isolationOfMainActorTask</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">mainIsolation</span> <span class="o">==</span> <span class="s">"MainActor"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The actor rule follows from what isolation means. To run on an actor instance, a closure needs a reference to that instance. A closure that never mentions <code class="language-plaintext highlighter-rouge">self</code> has nothing to be isolated to, so it runs on the global executor. That has a practical consequence: moving one line that mentions <code class="language-plaintext highlighter-rouge">self</code> into or out of a <code class="language-plaintext highlighter-rouge">Task</code> closure inside an actor changes where the entire closure runs.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Task.detached { }</code> inherits none of the three. It starts with no isolation, default priority unless you pass one, and no task-local values. The <a href="/swift-unstructured-detached-tasks/">unstructured and detached tasks article</a> compares the two.</p>
+
+<h2 id="starting-synchronously-with-taskimmediate">Starting synchronously with <code class="language-plaintext highlighter-rouge">Task.immediate</code></h2>
+
+<p>A regular <code class="language-plaintext highlighter-rouge">Task { }</code> created on the main actor is <em>enqueued</em>. Its body cannot start until the current main-actor job finishes. Swift 6.2 adds <code class="language-plaintext highlighter-rouge">Task.immediate</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0472-task-start-synchronously-on-caller-context.md">SE-0472</a>), which runs the body synchronously on the caller’s executor until its first real suspension, then continues like any other task.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">compareStartBehavior</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"before creating tasks"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">regular</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"regular task body"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">immediate</span> <span class="o">=</span> <span class="kt">Task</span><span class="o">.</span><span class="n">immediate</span> <span class="p">{</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"immediate task body"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"immediate task after suspension"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"after creating tasks"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">await</span> <span class="n">regular</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">await</span> <span class="n">immediate</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="n">log</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">startOrder</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">compareStartBehavior</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Array</span><span class="p">(</span><span class="n">startOrder</span><span class="o">.</span><span class="nf">prefix</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span><span class="s">"before creating tasks"</span><span class="p">,</span> <span class="s">"immediate task body"</span><span class="p">,</span> <span class="s">"after creating tasks"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">startOrder</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="s">"regular task body"</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The immediate task’s first segment ran before the creating function’s next line, even though the regular task was created first. This matters in UI code: a button handler can update state, for example showing a spinner, inside the task before the next frame renders, without a one-turn delay. Use <code class="language-plaintext highlighter-rouge">Task.immediate</code> when the first synchronous part of the work must happen <em>now</em>. It does not change ownership at all: the result is an ordinary unstructured task that still needs an owner.</p>
+
+<h2 id="the-cost-of-a-task-nobody-owns">The cost of a task nobody owns</h2>
+
+<p>An unowned task does not merely waste work. It frequently keeps objects alive. A task closure that refers to <code class="language-plaintext highlighter-rouge">self</code> captures it strongly, and the task holds that closure until it finishes. For finite work that is fine; the object lives a little longer. For a loop that never ends, such as observing a stream of notifications or polling a server, it is a leak.</p>
+
+<p>The experiment below creates three owners. Each starts a polling loop in a task stored on the owner and cancels it in <code class="language-plaintext highlighter-rouge">deinit</code>. The loops differ only in how they capture <code class="language-plaintext highlighter-rouge">self</code>.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">deallocated</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Poller</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">loop</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">ticks</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">startStrongCapture</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">ticks</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">startWeakCaptureUnwrappedOnce</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">ticks</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">startWeakCapturePerIteration</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+                <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">ticks</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">deinit</span> <span class="p">{</span>
+        <span class="n">loop</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">deallocated</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">strong</span><span class="p">:</span> <span class="kt">Poller</span><span class="p">?</span> <span class="o">=</span> <span class="kt">Poller</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"strong capture"</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">unwrappedOnce</span><span class="p">:</span> <span class="kt">Poller</span><span class="p">?</span> <span class="o">=</span> <span class="kt">Poller</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"weak, unwrapped once"</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">perIteration</span><span class="p">:</span> <span class="kt">Poller</span><span class="p">?</span> <span class="o">=</span> <span class="kt">Poller</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"weak, unwrapped per iteration"</span><span class="p">)</span>
+<span class="n">strong</span><span class="p">?</span><span class="o">.</span><span class="nf">startStrongCapture</span><span class="p">()</span>
+<span class="n">unwrappedOnce</span><span class="p">?</span><span class="o">.</span><span class="nf">startWeakCaptureUnwrappedOnce</span><span class="p">()</span>
+<span class="n">perIteration</span><span class="p">?</span><span class="o">.</span><span class="nf">startWeakCapturePerIteration</span><span class="p">()</span>
+
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>    <span class="c1">// Let every loop start and tick.</span>
+<span class="n">strong</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="n">unwrappedOnce</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="n">perIteration</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">deallocated</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"weak, unwrapped per iteration"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Only one of the three was deallocated:</p>
+
+<ul>
+  <li><strong>Strong capture.</strong> The task holds <code class="language-plaintext highlighter-rouge">self</code>; <code class="language-plaintext highlighter-rouge">self</code> holds the task; the loop never ends because <code class="language-plaintext highlighter-rouge">deinit</code>, which would cancel it, can never run. A classic cycle, made worse because the loop keeps doing work.</li>
+  <li><strong>Weak capture, unwrapped once.</strong> The <code class="language-plaintext highlighter-rouge">[weak self]</code> looks like a fix, but <code class="language-plaintext highlighter-rouge">guard let self</code> at the top creates a strong reference that lives for the rest of the closure, which is the entire infinite loop. The capture list did nothing.</li>
+  <li><strong>Weak capture, unwrapped per iteration.</strong> The strong reference exists only inside each iteration, and is released at every <code class="language-plaintext highlighter-rouge">Task.sleep</code>. When the last outside reference goes away, the next iteration finds <code class="language-plaintext highlighter-rouge">nil</code> and exits.</li>
+</ul>
+
+<p>The third pattern works, but it relies on the loop waking up to notice. A clearer design does not depend on capture semantics: give the owner an explicit <code class="language-plaintext highlighter-rouge">stop()</code> and call it from the code that ends the owner’s useful life, such as a view disappearing, a coordinator finishing, or a session logging out. <code class="language-plaintext highlighter-rouge">deinit</code> is a last line of defense, not a lifecycle event.</p>
+
+<p>The growth rate of such leaks follows from Little’s law. If an app creates leaked loops at rate \(\lambda\), say every time a screen opens, and each lives for time \(W\), then on average \(L = \lambda W\) are alive. With \(W\) unbounded, \(L(t) = \lambda t\) grows without limit: every visit to the screen adds a poller that never stops.</p>
+
+<h2 id="choosing-an-owner">Choosing an owner</h2>
+
+<p>Every unstructured task should have an answer to: <em>who cancels this, and when?</em> The answer is almost always one of a few shapes.</p>
+
+<pre><code class="language-mermaid">flowchart TD
+    accTitle: Choosing a lifetime owner for asynchronous work
+    Q1{"Does the work finish before the current function returns?"}
+    Q1 -- Yes --&gt; S["async let or a task group: the scope owns it"]
+    Q1 -- No --&gt; Q2{"Is the work tied to a SwiftUI view being on screen?"}
+    Q2 -- Yes --&gt; V[".task or .task(id:) modifier: the view owns it"]
+    Q2 -- No --&gt; Q3{"Does a newer request replace an older one?"}
+    Q3 -- Yes --&gt; R["Stored Task property, cancel the previous handle"]
+    Q3 -- No --&gt; Q4{"Can several requests for the same key share work?"}
+    Q4 -- Yes --&gt; K["Keyed registry of in-flight tasks"]
+    Q4 -- No --&gt; Q5{"Should it run for the whole session or app?"}
+    Q5 -- Yes --&gt; L["Long-lived service with explicit start and stop"]
+    Q5 -- No --&gt; D["Reconsider: if nobody would cancel it, who is it for?"]
+</code></pre>
+
+<p>The first two shapes are structured or framework-managed and need no extra code. The rest are patterns you implement. Here they are in turn.</p>
+
+<h2 id="owner-pattern-replace-the-previous-request">Owner pattern: replace the previous request</h2>
+
+<p>When a newer request makes the older one irrelevant, as with search-as-you-type, a refresh button, or loading the detail for a newly selected row, store the handle and cancel it before starting the next:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">DetailModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">detail</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">loadTask</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">select</span><span class="p">(</span><span class="nv">itemID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">loadTask</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">loadTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+                <span class="n">detail</span> <span class="o">=</span> <span class="s">"Detail for item </span><span class="se">\(</span><span class="n">itemID</span><span class="se">)</span><span class="s">"</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="c1">// Cancelled because a newer selection replaced this one.</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">waitForCurrentLoad</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">loadTask</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">detailModel</span> <span class="o">=</span> <span class="kt">DetailModel</span><span class="p">()</span>
+<span class="n">detailModel</span><span class="o">.</span><span class="nf">select</span><span class="p">(</span><span class="nv">itemID</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">detailModel</span><span class="o">.</span><span class="nf">select</span><span class="p">(</span><span class="nv">itemID</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">detailModel</span><span class="o">.</span><span class="nf">waitForCurrentLoad</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">detailModel</span><span class="o">.</span><span class="n">detail</span> <span class="o">==</span> <span class="s">"Detail for item 2"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Cancellation alone is not enough to make this pattern correct. Cancellation is cooperative, so a replaced task that has already passed its last cancellation check can still finish and overwrite newer state. The <a href="/swift-rejecting-stale-results/">stale results article</a> adds the generation check that closes that window.</p>
+
+<h2 id="owner-pattern-a-keyed-registry-of-in-flight-work">Owner pattern: a keyed registry of in-flight work</h2>
+
+<p>When several callers may ask for the same resource at the same time, such as thumbnails in a scrolling grid or a profile shown in several places, they should share one load. A registry keyed by resource holds the in-flight task, hands it to later callers, and removes it when it completes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ThumbnailLoader</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">Entry</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">UInt64</span>
+        <span class="k">let</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">inFlight</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="kt">Entry</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">nextToken</span><span class="p">:</span> <span class="kt">UInt64</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">rendersStarted</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="kd">func</span> <span class="nf">thumbnail</span><span class="p">(</span><span class="k">for</span> <span class="nv">photoID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">existing</span> <span class="o">=</span> <span class="n">inFlight</span><span class="p">[</span><span class="n">photoID</span><span class="p">]</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">existing</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">}</span>
+        <span class="n">nextToken</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">token</span> <span class="o">=</span> <span class="n">nextToken</span>
+        <span class="n">rendersStarted</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"thumbnail </span><span class="se">\(</span><span class="n">photoID</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="k">Self</span><span class="o">.</span><span class="nf">render</span><span class="p">(</span><span class="n">photoID</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">inFlight</span><span class="p">[</span><span class="n">photoID</span><span class="p">]</span> <span class="o">=</span> <span class="kt">Entry</span><span class="p">(</span><span class="nv">token</span><span class="p">:</span> <span class="n">token</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="n">task</span><span class="p">)</span>
+        <span class="k">defer</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">inFlight</span><span class="p">[</span><span class="n">photoID</span><span class="p">]?</span><span class="o">.</span><span class="n">token</span> <span class="o">==</span> <span class="n">token</span> <span class="p">{</span>
+                <span class="n">inFlight</span><span class="p">[</span><span class="n">photoID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">(</span><span class="nv">photoID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">inFlight</span><span class="o">.</span><span class="nf">removeValue</span><span class="p">(</span><span class="nv">forKey</span><span class="p">:</span> <span class="n">photoID</span><span class="p">)?</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">inFlightCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">inFlight</span><span class="o">.</span><span class="n">count</span>
+    <span class="p">}</span>
+
+    <span class="kd">@concurrent</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">render</span><span class="p">(</span><span class="n">_</span> <span class="nv">photoID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s">"thumbnail-</span><span class="se">\(</span><span class="n">photoID</span><span class="se">)</span><span class="s">"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">thumbnails</span> <span class="o">=</span> <span class="kt">ThumbnailLoader</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">firstRequest</span> <span class="o">=</span> <span class="n">thumbnails</span><span class="o">.</span><span class="nf">thumbnail</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">secondRequest</span> <span class="o">=</span> <span class="n">thumbnails</span><span class="o">.</span><span class="nf">thumbnail</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">sharedResults</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="p">[</span><span class="n">firstRequest</span><span class="p">,</span> <span class="n">secondRequest</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sharedResults</span> <span class="o">==</span> <span class="p">[</span><span class="s">"thumbnail-7"</span><span class="p">,</span> <span class="s">"thumbnail-7"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">thumbnails</span><span class="o">.</span><span class="n">rendersStarted</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">"Concurrent requests for one key share one render"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">thumbnails</span><span class="o">.</span><span class="n">inFlightCount</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"Completed work leaves the registry"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Three details make the registry correct:</p>
+
+<ul>
+  <li><strong>The check and the insertion happen without an <code class="language-plaintext highlighter-rouge">await</code> in between.</strong> Both run on the main actor in one synchronous stretch, so two callers cannot both see an empty slot and both start a render.</li>
+  <li><strong>Removal is guarded by a token.</strong> If the entry is cancelled and replaced by a newer request while an older caller is still waiting, the older caller’s <code class="language-plaintext highlighter-rouge">defer</code> must not remove the newer entry. Comparing tokens makes removal idempotent and specific.</li>
+  <li><strong>The shared task is unstructured, deliberately.</strong> If it were a child of the first caller, cancelling that caller would cancel the render for everyone. Ownership belongs to the registry, which is why only <code class="language-plaintext highlighter-rouge">cancel(photoID:)</code> cancels it.</li>
+</ul>
+
+<p>The task is also given a name with <code class="language-plaintext highlighter-rouge">Task(name:)</code>, another Swift 6.2 addition (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0469-task-names.md">SE-0469</a>). Names appear in debugger and Instruments output, which makes it far easier to find “the thumbnail task that never finished” among hundreds of anonymous tasks. Creating a named task works on earlier systems; reading <code class="language-plaintext highlighter-rouge">Task.name</code> back requires the iOS 26 and macOS 26 runtime.</p>
+
+<h2 id="owner-pattern-a-long-lived-service-with-explicit-start-and-stop">Owner pattern: a long-lived service with explicit start and stop</h2>
+
+<p>Some work should run for as long as a session or the app runs: syncing, observing system notifications, keeping a WebSocket alive. Give it an owner whose lifecycle is explicit and idempotent:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SyncService</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">loop</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">syncCount</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">var</span> <span class="nv">isRunning</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="n">loop</span> <span class="o">!=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">loop</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">while</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">interval</span><span class="p">)</span>
+                <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span><span class="p">,</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">syncCount</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">stop</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="n">loop</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">running</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">running</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sync</span> <span class="o">=</span> <span class="kt">SyncService</span><span class="p">()</span>
+<span class="n">sync</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">sync</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">interval</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>     <span class="c1">// Idempotent: still one loop.</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">55</span><span class="p">))</span>
+<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">syncsAtStop</span> <span class="o">=</span> <span class="n">sync</span><span class="o">.</span><span class="n">syncCount</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sync</span><span class="o">.</span><span class="n">syncCount</span> <span class="o">==</span> <span class="n">syncsAtStop</span><span class="p">,</span> <span class="s">"No work happens after stop() returns"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">sync</span><span class="o">.</span><span class="n">isRunning</span> <span class="o">&amp;&amp;</span> <span class="n">syncsAtStop</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">stop()</code> is <code class="language-plaintext highlighter-rouge">async</code> and awaits the task after cancelling it. That gives callers a strong guarantee: once <code class="language-plaintext highlighter-rouge">stop()</code> returns, the loop has exited and will not touch shared state again. Logging out, for example, can call <code class="language-plaintext highlighter-rouge">await sync.stop()</code> and then clear credentials without racing a sync that is still in progress. A synchronous <code class="language-plaintext highlighter-rouge">stop()</code> that only cancels gives a weaker guarantee: the loop will stop soon.</p>
+
+<h2 id="owners-in-swiftui-and-uikit">Owners in SwiftUI and UIKit</h2>
+
+<p>In SwiftUI, prefer the view’s own lifetime whenever the work belongs to a view being on screen:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">PhotoView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">photoID</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">loader</span><span class="p">:</span> <span class="kt">ThumbnailLoader</span>
+    <span class="kd">@State</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">thumbnail</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="n">thumbnail</span> <span class="p">??</span> <span class="s">"Loading"</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">task</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">photoID</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// Cancelled when the view disappears or when photoID changes.</span>
+                <span class="n">thumbnail</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">loader</span><span class="o">.</span><span class="nf">thumbnail</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">photoID</span><span class="p">)</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">.task(id:)</code> combines two owner patterns: the view owns the task, and a new <code class="language-plaintext highlighter-rouge">id</code> replaces the previous request. In UIKit, the equivalent owner is usually the view controller or its model, cancelling in <code class="language-plaintext highlighter-rouge">viewDidDisappear</code> or when the coordinator finishes, rather than in <code class="language-plaintext highlighter-rouge">deinit</code>.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Task { }</code> starts immediately and runs to completion whether or not anyone holds its handle. Unread errors are lost.</li>
+  <li>It inherits priority and task-local values. It inherits global-actor isolation, and an actor instance’s isolation only when the closure captures <code class="language-plaintext highlighter-rouge">self</code>. It never inherits cancellation.</li>
+  <li><code class="language-plaintext highlighter-rouge">Task.immediate</code> (Swift 6.2) runs synchronously until its first suspension; it does not change ownership.</li>
+  <li>Strongly capturing <code class="language-plaintext highlighter-rouge">self</code> in a long-lived task loop leaks the owner; so does <code class="language-plaintext highlighter-rouge">[weak self]</code> followed by an early <code class="language-plaintext highlighter-rouge">guard let self</code>.</li>
+  <li>Every unstructured task needs an owner that cancels it: a replaced-request property, a keyed registry, or a service with explicit, awaitable <code class="language-plaintext highlighter-rouge">stop()</code>.</li>
+  <li>Prefer framework-provided owners, such as SwiftUI’s <code class="language-plaintext highlighter-rouge">.task</code> and <code class="language-plaintext highlighter-rouge">.task(id:)</code>, whenever the work is tied to a view.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p><code class="language-plaintext highlighter-rouge">ThumbnailLoader</code> never cancels a shared render when its callers stop caring: if every caller waiting on photo 7 is cancelled, the render still runs to completion. Add reference counting. Each call to <code class="language-plaintext highlighter-rouge">thumbnail(for:)</code> registers as a waiter, wraps its <code class="language-plaintext highlighter-rouge">await</code> in <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code>, and unregisters when cancelled or finished; when the last waiter leaves, the registry cancels the render. Test that cancelling one of two waiters keeps the render alive, and cancelling both stops it. The <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a> covers the handler’s concurrency rules.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md">SE-0304: Structured concurrency</a>, section “Unstructured tasks.”</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0472-task-start-synchronously-on-caller-context.md">SE-0472: Starting tasks synchronously from caller context</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0469-task-names.md">SE-0469: Task naming</a>.</li>
+  <li>The Swift book on <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/#Strong-Reference-Cycles-for-Closures">strong reference cycles for closures</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-structured-concurrency/">Structured Concurrency and Child-Task Lifetimes</a>. Next: <a href="/swift-task-groups/">Task Groups: Fan-Out, Aggregation, and Early Exit</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-task-lifetime-ownership/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Creating+Tasks+and+Choosing+Their+Lifetime+Owner+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-task-lifetime-ownership%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-task-lifetime-ownership/&title=Creating+Tasks+and+Choosing+Their+Lifetime+Owner+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-task-lifetime-ownership/&title=Creating+Tasks+and+Choosing+Their+Lifetime+Owner+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-task-lifetime-ownership/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Creating Tasks and Choosing Their Lifetime Owner in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-task-lifetime-ownership/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Memory+Management">Memory Management</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Tasks">Tasks</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Task Groups in Swift: Fan-Out, Aggregation, and Early Exit" href="/swift-task-groups/"> <p>Previous post</p> Task Groups in Swift: Fan-Out, Aggregation, and Early Exit </a> </div> <div id="next-post"> <a alt="Structured Concurrency and Child-Task Lifetimes in Swift" href="/swift-structured-concurrency/"> <p>Next post</p> Structured Concurrency and Child-Task Lifetimes in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

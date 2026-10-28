@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Bridging Publishers to async/await with .values | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Bridging Publishers to async/await with .values" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Most codebases do not move from Combine to async/await in one step. They grow a boundary: an async function that needs the latest value of a @Published property, a for await loop over events that a Combine pipeline produces, a Combine pipeline that needs to call an async API. Since iOS 15, every publisher has a values property that turns it into an AsyncSequence, which covers the first two. The third direction has no built-in API, and the obvious way to write it, a Future that starts a Task, has two flaws that are easy to measure. This article measures the boundary in both directions. .values requests one value at a time, which loses nine values out of ten from a PassthroughSubject feeding a slow loop, and a buffer fixes it. Its loop body runs on the consuming task’s actor, which makes it the safest way to consume a background publisher from the main actor. Its error type is erased. In the other direction, Future runs the work before anyone subscribes and never cancels it, and a Deferred wrapper fixes both." /> <meta property="og:description" content="Most codebases do not move from Combine to async/await in one step. They grow a boundary: an async function that needs the latest value of a @Published property, a for await loop over events that a Combine pipeline produces, a Combine pipeline that needs to call an async API. Since iOS 15, every publisher has a values property that turns it into an AsyncSequence, which covers the first two. The third direction has no built-in API, and the obvious way to write it, a Future that starts a Task, has two flaws that are easy to measure. This article measures the boundary in both directions. .values requests one value at a time, which loses nine values out of ten from a PassthroughSubject feeding a slow loop, and a buffer fixes it. Its loop body runs on the consuming task’s actor, which makes it the safest way to consume a background publisher from the main actor. Its error type is erased. In the other direction, Future runs the work before anyone subscribes and never cancels it, and a Deferred wrapper fixes both." /> <link rel="canonical" href="https://swiftbydeya.com/combine-publisher-values-async/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-publisher-values-async/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-17T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Bridging Publishers to async/await with .values" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-17T00:00:00+03:00","datePublished":"2026-08-17T00:00:00+03:00","description":"Most codebases do not move from Combine to async/await in one step. They grow a boundary: an async function that needs the latest value of a @Published property, a for await loop over events that a Combine pipeline produces, a Combine pipeline that needs to call an async API. Since iOS 15, every publisher has a values property that turns it into an AsyncSequence, which covers the first two. The third direction has no built-in API, and the obvious way to write it, a Future that starts a Task, has two flaws that are easy to measure. This article measures the boundary in both directions. .values requests one value at a time, which loses nine values out of ten from a PassthroughSubject feeding a slow loop, and a buffer fixes it. Its loop body runs on the consuming task’s actor, which makes it the safest way to consume a background publisher from the main actor. Its error type is erased. In the other direction, Future runs the work before anyone subscribes and never cancels it, and a Deferred wrapper fixes both.","headline":"Bridging Publishers to async/await with .values","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-publisher-values-async/"},"url":"https://swiftbydeya.com/combine-publisher-values-async/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Bridging Publishers to async/await with .values"> <meta name="twitter:description" content="Most codebases do not move from Combine to async/await in one step. They grow a boundary: an async function that needs the latest value of a @Published prope..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Bridging Publishers to async/await with .values"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Bridging Publishers to async/await with .values</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-17T00:00:00+03:00">August 17, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Most codebases do not move from Combine to <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> in one step. They grow a boundary: an <code class="language-plaintext highlighter-rouge">async</code> function that needs the latest value of a <code class="language-plaintext highlighter-rouge">@Published</code> property, a <code class="language-plaintext highlighter-rouge">for await</code> loop over events that a Combine pipeline produces, a Combine pipeline that needs to call an <code class="language-plaintext highlighter-rouge">async</code> API. Since iOS 15, every publisher has a <code class="language-plaintext highlighter-rouge">values</code> property that turns it into an <code class="language-plaintext highlighter-rouge">AsyncSequence</code>, which covers the first two. The third direction has no built-in API, and the obvious way to write it, a <code class="language-plaintext highlighter-rouge">Future</code> that starts a <code class="language-plaintext highlighter-rouge">Task</code>, has two flaws that are easy to measure.</p>
+
+<p>This article measures the boundary in both directions. <code class="language-plaintext highlighter-rouge">.values</code> requests one value at a time, which loses nine values out of ten from a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> feeding a slow loop, and a <code class="language-plaintext highlighter-rouge">buffer</code> fixes it. Its loop body runs on the consuming task’s actor, which makes it the safest way to consume a background publisher from the main actor. Its error type is erased. In the other direction, <code class="language-plaintext highlighter-rouge">Future</code> runs the work before anyone subscribes and never cancels it, and a <code class="language-plaintext highlighter-rouge">Deferred</code> wrapper fixes both.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>; the file uses top-level <code class="language-plaintext highlighter-rouge">await</code>.</p>
+
+<h2 id="values-asks-for-one-value-at-a-time"><code class="language-plaintext highlighter-rouge">.values</code> asks for one value at a time</h2>
+
+<p><code class="language-plaintext highlighter-rouge">values</code> returns an <code class="language-plaintext highlighter-rouge">AsyncPublisher</code> for a publisher that cannot fail and an <code class="language-plaintext highlighter-rouge">AsyncThrowingPublisher</code> for one that can. Each call to the iterator’s <code class="language-plaintext highlighter-rouge">next()</code> requests exactly one value from the publisher:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="k">let</span> <span class="nv">requests</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+<span class="k">let</span> <span class="nv">counted</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">publisher</span>
+    <span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span><span class="nv">receiveRequest</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">demand</span> <span class="k">in</span> <span class="n">requests</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">demand</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span> <span class="p">})</span>
+<span class="k">var</span> <span class="nv">collected</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">counted</span><span class="o">.</span><span class="n">values</span> <span class="p">{</span> <span class="n">collected</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">collected</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"max(1)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">,</span> <span class="s">"max(1)"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">@Sendable</code> on that closure is required. The request is made from inside the iterator’s <code class="language-plaintext highlighter-rouge">next()</code>, which is a nonisolated <code class="language-plaintext highlighter-rouge">async</code> function and runs on the cooperative thread pool. When this example was first written without the annotation, the closure, written in top-level code and so inferred to be main-actor isolated, stopped the process in Swift 6’s isolation check from <code class="language-plaintext highlighter-rouge">Publishers.HandleEvents.Inner.request(_:)</code>. Closures that observe demand run wherever the consumer asks.</p>
+
+<p>One-at-a-time demand is the correct translation of a pull-based <code class="language-plaintext highlighter-rouge">AsyncSequence</code>, and harmless for a publisher that waits for demand, such as a sequence or a request. For a publisher that pushes regardless, it is data loss.</p>
+
+<h3 id="a-slow-loop-over-a-passthroughsubject-loses-values">A slow loop over a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> loses values</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> drops a value for any subscriber that has no outstanding demand, as <a href="/combine-subjects/">Subjects</a> measured. While the loop body of a <code class="language-plaintext highlighter-rouge">for await</code> is running, the iterator has not called <code class="language-plaintext highlighter-rouge">next()</code> yet, so it has no demand, and every value sent in that window is dropped. This consumer takes 10 ms per value, while the producer sends ten values at once:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">consume</span><span class="p">(</span><span class="n">_</span> <span class="nv">publisher</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">until</span> <span class="nv">last</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">received</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">publisher</span><span class="o">.</span><span class="n">values</span> <span class="p">{</span>
+        <span class="n">received</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>   <span class="c1">// the loop body takes time</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">last</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">received</span>
+<span class="p">}</span>
+
+<span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">lossyConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">consume</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">99</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">10</span> <span class="p">{</span> <span class="n">events</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">events</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">lossyResult</span> <span class="o">=</span> <span class="k">await</span> <span class="n">lossyConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lossyResult</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">99</span><span class="p">])</span>                  <span class="c1">// values 2 through 10 were dropped</span>
+</code></pre></div></div>
+
+<p>Nine of the ten values vanished with no error, no warning, and no log. The fix is to give the subject’s subscriber somewhere to put values it has not asked for yet. <code class="language-plaintext highlighter-rouge">buffer(size:prefetch:whenFull:)</code> requests from upstream on its own schedule, <code class="language-plaintext highlighter-rouge">prefetch: .keepFull</code> meaning it requests enough to fill itself immediately, and holds values until downstream demand arrives:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">bufferedEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">bufferedConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">consume</span><span class="p">(</span><span class="n">bufferedEvents</span><span class="o">.</span><span class="nf">buffer</span><span class="p">(</span><span class="nv">size</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">prefetch</span><span class="p">:</span> <span class="o">.</span><span class="n">keepFull</span><span class="p">,</span> <span class="nv">whenFull</span><span class="p">:</span> <span class="o">.</span><span class="n">dropOldest</span><span class="p">),</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">10</span> <span class="p">{</span> <span class="n">bufferedEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">bufferedResult</span> <span class="o">=</span> <span class="k">await</span> <span class="n">bufferedConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bufferedResult</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">1</span><span class="o">...</span><span class="mi">10</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The size is a decision, not a detail. It bounds memory if the consumer falls behind for good, and <code class="language-plaintext highlighter-rouge">whenFull</code> decides what is lost then: <code class="language-plaintext highlighter-rouge">.dropOldest</code> keeps the newest values, <code class="language-plaintext highlighter-rouge">.dropNewest</code> keeps the oldest, and <code class="language-plaintext highlighter-rouge">.customError</code> fails the stream so the loss is visible.</p>
+
+<h3 id="state-streams-are-already-safe">State streams are already safe</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">@Published</code> property or a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> keeps its latest value and delivers it when demand arrives, so a slow loop sees the current state rather than every intermediate one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">DownloadModel</span> <span class="p">{</span>
+    <span class="kd">@Published</span> <span class="k">var</span> <span class="nv">progress</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">download</span> <span class="o">=</span> <span class="kt">DownloadModel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">progressReader</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">progress</span> <span class="k">in</span> <span class="n">download</span><span class="o">.</span><span class="n">$progress</span><span class="o">.</span><span class="n">values</span> <span class="p">{</span>
+        <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">progress</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">progress</span> <span class="o">==</span> <span class="mf">1.0</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">seen</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">step</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">10</span> <span class="p">{</span> <span class="n">download</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">/</span> <span class="mi">10</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">progressSeen</span> <span class="o">=</span> <span class="k">await</span> <span class="n">progressReader</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">progressSeen</span><span class="o">.</span><span class="n">first</span> <span class="o">==</span> <span class="mf">0.0</span> <span class="o">&amp;&amp;</span> <span class="n">progressSeen</span><span class="o">.</span><span class="n">last</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">progressSeen</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="mi">11</span><span class="p">)</span>                 <span class="c1">// intermediate values were coalesced</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"progress values seen:"</span><span class="p">,</span> <span class="n">progressSeen</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>For progress, coalescing is exactly right. The rule of thumb follows from the two cases: <code class="language-plaintext highlighter-rouge">.values</code> on state is safe; <code class="language-plaintext highlighter-rouge">.values</code> on events needs a <code class="language-plaintext highlighter-rouge">buffer</code> in front of it.</p>
+
+<h2 id="the-loop-body-runs-on-the-consumers-actor">The loop body runs on the consumer’s actor</h2>
+
+<p>When a value arrives, <code class="language-plaintext highlighter-rouge">AsyncPublisher</code> resumes the waiting <code class="language-plaintext highlighter-rouge">next()</code>, and the loop body continues on whatever actor the consuming task is isolated to. A <code class="language-plaintext highlighter-rouge">@MainActor</code> task iterating a publisher that emits on a background thread runs its body on the main thread, with no <code class="language-plaintext highlighter-rouge">receive(on:)</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">backgroundEvents</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">mainActorConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">backgroundEvents</span><span class="o">.</span><span class="n">values</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">pthread_main_np</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span>          <span class="c1">// is the loop body on the main thread?</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">false</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="n">backgroundEvents</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">ranOnMainThread</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mainActorConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ranOnMainThread</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>That is the most useful property of the bridge. In a <code class="language-plaintext highlighter-rouge">@MainActor</code> view model, <code class="language-plaintext highlighter-rouge">for await</code> over a publisher’s values is checked by the compiler and safe by construction, whereas a <code class="language-plaintext highlighter-rouge">sink</code> needs a <code class="language-plaintext highlighter-rouge">receive(on:)</code> in exactly the right place and crashes in Swift 6 without one, as <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> explains. In SwiftUI, the <code class="language-plaintext highlighter-rouge">.task</code> modifier gives the loop a lifetime too: it starts the task when the view appears and cancels it when the view disappears, and cancelling the task cancels the Combine subscription.</p>
+
+<h2 id="errors-lose-their-type">Errors lose their type</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncThrowingPublisher</code> declares its failure as <code class="language-plaintext highlighter-rouge">any Error</code>, not the publisher’s <code class="language-plaintext highlighter-rouge">Failure</code>, so a typed Combine error becomes an untyped <code class="language-plaintext highlighter-rouge">throws</code>. The value keeps its concrete type at run time, so a cast recovers it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">FeedError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span> <span class="k">case</span> <span class="n">disconnected</span> <span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">caught</span><span class="p">:</span> <span class="kt">FeedError</span><span class="p">?</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Fail</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">FeedError</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="o">.</span><span class="n">disconnected</span><span class="p">)</span><span class="o">.</span><span class="n">values</span> <span class="p">{}</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="n">caught</span> <span class="o">=</span> <span class="n">error</span> <span class="k">as?</span> <span class="kt">FeedError</span>                <span class="c1">// statically `any Error`, dynamically FeedError</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">caught</span> <span class="o">==</span> <span class="o">.</span><span class="n">disconnected</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Wrap the cast in one place, for example a function that awaits the first value and rethrows as the domain error, rather than repeating it at every call site.</p>
+
+<h2 id="awaiting-a-single-value">Awaiting a single value</h2>
+
+<p>The common bridge is “give me the next value of this publisher”: the current account from a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code>, the result of a request publisher. A <code class="language-plaintext highlighter-rouge">for await</code> loop that returns on its first iteration does it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Publisher</span> <span class="k">where</span> <span class="kt">Failure</span> <span class="o">==</span> <span class="kt">Never</span> <span class="p">{</span>
+    <span class="c1">/// The publisher's next value, or `nil` if it finishes without one.</span>
+    <span class="kd">func</span> <span class="nf">firstValue</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Output</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">values</span> <span class="p">{</span> <span class="k">return</span> <span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Publisher</span> <span class="p">{</span>
+    <span class="c1">/// The publisher's next value. Throws the publisher's failure, or `EmptyStream` if it finishes empty.</span>
+    <span class="kd">func</span> <span class="nf">requireFirstValue</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Output</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">values</span> <span class="p">{</span> <span class="k">return</span> <span class="n">value</span> <span class="p">}</span>
+        <span class="k">throw</span> <span class="kt">EmptyStream</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">EmptyStream</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="k">let</span> <span class="nv">account</span> <span class="o">=</span> <span class="kt">CurrentValueSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"ada"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">currentAccount</span> <span class="o">=</span> <span class="k">await</span> <span class="n">account</span><span class="o">.</span><span class="nf">firstValue</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">nothing</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Empty</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span><span class="o">.</span><span class="nf">firstValue</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">loaded</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">Just</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="nf">setFailureType</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">FeedError</span><span class="o">.</span><span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">requireFirstValue</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">currentAccount</span> <span class="o">==</span> <span class="s">"ada"</span> <span class="o">&amp;&amp;</span> <span class="n">nothing</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="n">loaded</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Returning from inside the loop ends the iteration, which cancels the subscription, so a request publisher is not left running. The two names keep the overloads apart: a non-failing publisher matches both extensions, and with the same name Swift picked the throwing one. The one hazard is a publisher that never emits and never completes, such as a subject nobody sends to: either function then waits forever, unless the calling task is cancelled. Callers that cannot guarantee a value should race it against a timeout in a task group.</p>
+
+<h2 id="the-other-direction-async-work-as-a-publisher">The other direction: <code class="language-plaintext highlighter-rouge">async</code> work as a publisher</h2>
+
+<p>There is no built-in conversion from an <code class="language-plaintext highlighter-rouge">async</code> function to a publisher. The version most code reaches for wraps a <code class="language-plaintext highlighter-rouge">Task</code> in a <code class="language-plaintext highlighter-rouge">Future</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">WorkProbe</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">startedCount</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">wasCancelled</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Bool</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">didFinish</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Bool</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">started</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">startedCount</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">cancelled</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">wasCancelled</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">finished</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span> <span class="n">didFinish</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">work</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">startedCount</span><span class="o">.</span><span class="nf">wrappingAdd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">wasCancelled</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">error</span>
+        <span class="p">}</span>
+        <span class="n">didFinish</span><span class="o">.</span><span class="nf">store</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">42</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">futureProbe</span> <span class="o">=</span> <span class="kt">WorkProbe</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">futureWork</span> <span class="o">=</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">promise</span> <span class="k">in</span>
+    <span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="k">let</span> <span class="nv">promise</span> <span class="o">=</span> <span class="n">promise</span>     <span class="c1">// Future.Promise is not Sendable</span>
+    <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span> <span class="nf">promise</span><span class="p">(</span><span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="n">futureProbe</span><span class="o">.</span><span class="nf">work</span><span class="p">()))</span> <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span> <span class="nf">promise</span><span class="p">(</span><span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">futureProbe</span><span class="o">.</span><span class="n">started</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                <span class="c1">// started before anyone subscribed</span>
+
+<span class="k">let</span> <span class="nv">futureHandle</span> <span class="o">=</span> <span class="n">futureWork</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span> <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span>
+<span class="n">futureHandle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">400</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">futureProbe</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">&amp;&amp;</span> <span class="n">futureProbe</span><span class="o">.</span><span class="n">finished</span><span class="p">)</span>   <span class="c1">// cancelling did not stop the work</span>
+</code></pre></div></div>
+
+<p>Both flaws are visible. The work started when the <code class="language-plaintext highlighter-rouge">Future</code> was created, before any subscriber, because <code class="language-plaintext highlighter-rouge">Future</code> runs its closure at initialization, as <a href="/combine-publishers-subscribers-subscriptions/">Publishers, Subscribers, and Subscriptions</a> showed. And cancelling the subscription did nothing to the task, which ran to completion, because nothing connects a <code class="language-plaintext highlighter-rouge">Future</code>’s cancellation to the task its closure started. For a request, that means requests sent for screens that were never shown and requests that keep running after the user left. The <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code> is a third smell: <code class="language-plaintext highlighter-rouge">Future.Promise</code> is not <code class="language-plaintext highlighter-rouge">Sendable</code>, so Swift 6 refuses to let the task capture it without one.</p>
+
+<p>A wrapper built from <code class="language-plaintext highlighter-rouge">Deferred</code>, a subject, and <code class="language-plaintext highlighter-rouge">handleEvents</code> fixes all three. <code class="language-plaintext highlighter-rouge">Deferred</code> makes it lazy, the task starts when the subscription is made, and cancelling the subscription cancels the task:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A subject that may be shared across tasks. Combine's subjects are internally synchronized,</span>
+<span class="c1">/// but not annotated `Sendable`.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SendableSubject</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">subject</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Publishers</span> <span class="p">{</span>
+    <span class="c1">/// Runs `operation` in a task for each subscriber, and cancels the task when the subscriber cancels.</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="n">task</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="n">_</span> <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Output</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">Deferred</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">output</span> <span class="o">=</span> <span class="kt">SendableSubject</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">()</span>
+            <span class="k">let</span> <span class="nv">running</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="nf">handleEvents</span><span class="p">(</span>
+                <span class="nv">receiveSubscription</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+                    <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+                        <span class="k">do</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">operation</span><span class="p">()</span>
+                            <span class="n">output</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="n">output</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                            <span class="n">output</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="n">running</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">task</span> <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="nv">receiveCancel</span><span class="p">:</span> <span class="p">{</span> <span class="n">running</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">taskProbe</span> <span class="o">=</span> <span class="kt">WorkProbe</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">taskWork</span> <span class="o">=</span> <span class="kt">Publishers</span><span class="o">.</span><span class="n">task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">taskProbe</span><span class="o">.</span><span class="nf">work</span><span class="p">()</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskProbe</span><span class="o">.</span><span class="n">started</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>                  <span class="c1">// lazy: nothing yet</span>
+
+<span class="k">let</span> <span class="nv">taskHandle</span> <span class="o">=</span> <span class="n">taskWork</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span> <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="n">taskHandle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">400</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskProbe</span><span class="o">.</span><span class="n">started</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">taskProbe</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">taskProbe</span><span class="o">.</span><span class="n">finished</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The work started on subscription, and cancelling the subscription cancelled the task’s sleep. The subject is created inside <code class="language-plaintext highlighter-rouge">Deferred</code>, so each subscriber gets its own task, like any cold publisher.</p>
+
+<p>The values arrive on the task’s thread, which is a thread of the cooperative pool. A <code class="language-plaintext highlighter-rouge">sink</code> written in main-actor code needs a <code class="language-plaintext highlighter-rouge">receive(on:)</code> first; the first version of this example, which appended to a top-level array in its <code class="language-plaintext highlighter-rouge">sink</code>, stopped in the isolation check on a thread named “Task 11”. With the hop it works:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">valueProbe</span> <span class="o">=</span> <span class="kt">WorkProbe</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">taskResults</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">resultHandle</span> <span class="o">=</span> <span class="kt">Publishers</span><span class="o">.</span><span class="n">task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="n">valueProbe</span><span class="o">.</span><span class="nf">work</span><span class="p">()</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span> <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="n">taskResults</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskResults</span> <span class="o">==</span> <span class="p">[</span><span class="mi">42</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Two details are deliberate. The subject’s subscription is made before the task can send anything, because <code class="language-plaintext highlighter-rouge">handleEvents</code> calls <code class="language-plaintext highlighter-rouge">receiveSubscription</code> as the subscription passes through, before downstream demand is requested. And a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code> drops a value sent before demand arrives, which cannot happen here because <code class="language-plaintext highlighter-rouge">sink</code> requests unlimited demand at once; a custom subscriber that requests late would need a <code class="language-plaintext highlighter-rouge">buffer</code> or a <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> instead.</p>
+
+<h2 id="choosing-a-direction-at-the-boundary">Choosing a direction at the boundary</h2>
+
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Combine
+        P[Publisher]
+    end
+    subgraph Concurrency["async / await"]
+        A[async function]
+        S[AsyncSequence]
+    end
+    P --&gt;|"values: one at a time; buffer events first"| S
+    P --&gt;|"firstValue(): next value, then cancel"| A
+    A --&gt;|"Publishers.task: lazy, cancellable"| P
+</code></pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Bridge</th>
+      <th>Watch out for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">publisher.values</code> on state</td>
+      <td>nothing: latest values are coalesced</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">publisher.values</code> on events</td>
+      <td>lost values; add <code class="language-plaintext highlighter-rouge">buffer(size:prefetch:whenFull:)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">for await</code> in a <code class="language-plaintext highlighter-rouge">@MainActor</code> task</td>
+      <td>none: the body runs on the main actor</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">for try await</code> on a failing publisher</td>
+      <td>the error is <code class="language-plaintext highlighter-rouge">any Error</code>; cast once</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">firstValue()</code>, <code class="language-plaintext highlighter-rouge">requireFirstValue()</code></td>
+      <td>wait forever on a silent, never-completing publisher</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Future { Task { ... } }</code></td>
+      <td>starts on creation, never cancelled, non-<code class="language-plaintext highlighter-rouge">Sendable</code> promise</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Publishers.task</code></td>
+      <td>values arrive on the cooperative pool; hop before main-actor code</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Keep the remaining subscription alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">(</span><span class="n">resultHandle</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.values</code> requested <code class="language-plaintext highlighter-rouge">max(1)</code> per element. Over a <code class="language-plaintext highlighter-rouge">PassthroughSubject</code>, a loop that took 10 ms per value received 2 of 11 values; a <code class="language-plaintext highlighter-rouge">buffer(size:prefetch: .keepFull, whenFull:)</code> in front delivered all ten.</li>
+  <li><code class="language-plaintext highlighter-rouge">@Published</code> and <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> are safe to bridge: a slow loop over eleven progress values saw only the first and the last, <code class="language-plaintext highlighter-rouge">0.0</code> and <code class="language-plaintext highlighter-rouge">1.0</code>, which is the right outcome for state.</li>
+  <li>The body of a <code class="language-plaintext highlighter-rouge">for await</code> loop runs on the consuming task’s actor: a <code class="language-plaintext highlighter-rouge">@MainActor</code> task ran its body on the main thread for a publisher emitting in the background.</li>
+  <li>Demand-observing closures run on the consumer’s thread, outside the main actor; make them <code class="language-plaintext highlighter-rouge">@Sendable</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncThrowingPublisher</code> throws <code class="language-plaintext highlighter-rouge">any Error</code>; the concrete error survives at run time.</li>
+  <li><code class="language-plaintext highlighter-rouge">Future</code> with a <code class="language-plaintext highlighter-rouge">Task</code> started its work before subscription and finished it after cancellation. <code class="language-plaintext highlighter-rouge">Publishers.task</code>, built on <code class="language-plaintext highlighter-rouge">Deferred</code>, started on subscription and cancelled the task with the subscription.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write the inverse of <code class="language-plaintext highlighter-rouge">Publishers.task</code> for sequences: <code class="language-plaintext highlighter-rouge">Publishers.sequence(_:)</code>, which takes an <code class="language-plaintext highlighter-rouge">AsyncSequence</code> and publishes its elements, starting iteration on subscription and cancelling it when the subscriber cancels. Make it honor demand: if the subscriber has requested nothing, the iteration should wait instead of sending into a subject that would drop the value. Test it with an <code class="language-plaintext highlighter-rouge">AsyncStream</code> producer, a subscriber that requests one value at a time, and a cancellation in the middle, asserting that no element is lost or delivered after cancellation. Then use it to turn <code class="language-plaintext highlighter-rouge">NotificationCenter.default.messages(of:for:)</code> from <a href="/combine-notification-publishers/">Notifications as Publishers</a> into a publisher.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/values-1dm9r"><code class="language-plaintext highlighter-rouge">values</code></a>, <a href="https://developer.apple.com/documentation/combine/asyncpublisher"><code class="language-plaintext highlighter-rouge">AsyncPublisher</code></a>, and <a href="https://developer.apple.com/documentation/combine/publisher/buffer(size:prefetch:whenfull:)"><code class="language-plaintext highlighter-rouge">buffer(size:prefetch:whenFull:)</code></a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10019/">Discover concurrency in SwiftUI</a>, WWDC21, which introduces the <code class="language-plaintext highlighter-rouge">.task</code> modifier.</li>
+  <li>The concurrency roadmap’s <a href="/swift-checked-continuations/">Checked Continuations</a>, the other way to bridge callback-based code into <code class="language-plaintext highlighter-rouge">async</code> functions.</li>
+</ul>
+
+<p>Previous: <a href="/combine-vs-async-await/">Combine vs. <code class="language-plaintext highlighter-rouge">async</code>/<code class="language-plaintext highlighter-rouge">await</code> and <code class="language-plaintext highlighter-rouge">AsyncSequence</code></a>. Next: <a href="/combine-vs-observation-swiftui/">Combine vs. the Observation Framework in SwiftUI</a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-publisher-values-async/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Bridging+Publishers+to+async%2Fawait+with+.values%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-publisher-values-async%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-publisher-values-async/&title=Bridging+Publishers+to+async%2Fawait+with+.values%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-publisher-values-async/&title=Bridging+Publishers+to+async%2Fawait+with+.values%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-publisher-values-async/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Bridging Publishers to async/await with .values%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-publisher-values-async/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#AsyncSequence">AsyncSequence</a></li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Migration">Migration</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Continuation Ownership, Cancellation, and Double Resume in Swift" href="/swift-continuation-ownership/"> <p>Previous post</p> Continuation Ownership, Cancellation, and Double Resume in Swift </a> </div> <div id="next-post"> <a alt="Combine vs. async/await and AsyncSequence" href="/combine-vs-async-await/"> <p>Next post</p> Combine vs. async/await and AsyncSequence </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

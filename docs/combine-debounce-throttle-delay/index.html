@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Time: debounce, throttle, and delay | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Time: debounce, throttle, and delay" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Time-based operators reshape when values arrive. debounce waits for a pause and then emits the latest value, which is how a search field avoids sending a request per keystroke. throttle emits at most one value per interval, which is how a scroll handler avoids running at 120 Hz. delay shifts everything later by a fixed amount. All three take a scheduler, the object that tells them what time it is and runs their timers, and that parameter is what makes them testable: give them a scheduler whose clock you control, and their exact behavior can be checked in microseconds instead of seconds of flaky sleeping. This article builds that scheduler first, then uses it to pin down each operator to the millisecond. The results include three behaviors that surprise people who rely on them: debounce drops the pending value when its upstream finishes, throttle with latest: false delivers the second tap of a double tap almost a second late instead of dropping it, and delay on a concurrent queue occasionally loses a value. It also derives how many values debounce and throttle let through for random input and checks the formulas against simulation." /> <meta property="og:description" content="Time-based operators reshape when values arrive. debounce waits for a pause and then emits the latest value, which is how a search field avoids sending a request per keystroke. throttle emits at most one value per interval, which is how a scroll handler avoids running at 120 Hz. delay shifts everything later by a fixed amount. All three take a scheduler, the object that tells them what time it is and runs their timers, and that parameter is what makes them testable: give them a scheduler whose clock you control, and their exact behavior can be checked in microseconds instead of seconds of flaky sleeping. This article builds that scheduler first, then uses it to pin down each operator to the millisecond. The results include three behaviors that surprise people who rely on them: debounce drops the pending value when its upstream finishes, throttle with latest: false delivers the second tap of a double tap almost a second late instead of dropping it, and delay on a concurrent queue occasionally loses a value. It also derives how many values debounce and throttle let through for random input and checks the formulas against simulation." /> <link rel="canonical" href="https://swiftbydeya.com/combine-debounce-throttle-delay/" /> <meta property="og:url" content="https://swiftbydeya.com/combine-debounce-throttle-delay/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-20T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Time: debounce, throttle, and delay" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-20T00:00:00+03:00","datePublished":"2026-07-20T00:00:00+03:00","description":"Time-based operators reshape when values arrive. debounce waits for a pause and then emits the latest value, which is how a search field avoids sending a request per keystroke. throttle emits at most one value per interval, which is how a scroll handler avoids running at 120 Hz. delay shifts everything later by a fixed amount. All three take a scheduler, the object that tells them what time it is and runs their timers, and that parameter is what makes them testable: give them a scheduler whose clock you control, and their exact behavior can be checked in microseconds instead of seconds of flaky sleeping. This article builds that scheduler first, then uses it to pin down each operator to the millisecond. The results include three behaviors that surprise people who rely on them: debounce drops the pending value when its upstream finishes, throttle with latest: false delivers the second tap of a double tap almost a second late instead of dropping it, and delay on a concurrent queue occasionally loses a value. It also derives how many values debounce and throttle let through for random input and checks the formulas against simulation.","headline":"Time: debounce, throttle, and delay","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/combine-debounce-throttle-delay/"},"url":"https://swiftbydeya.com/combine-debounce-throttle-delay/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Time: debounce, throttle, and delay"> <meta name="twitter:description" content="Time-based operators reshape when values arrive. debounce waits for a pause and then emits the latest value, which is how a search field avoids sending a req..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Time: debounce, throttle, and delay"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Time: debounce, throttle, and delay</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-20T00:00:00+03:00">July 20, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Time-based operators reshape when values arrive. <code class="language-plaintext highlighter-rouge">debounce</code> waits for a pause and then emits the latest value, which is how a search field avoids sending a request per keystroke. <code class="language-plaintext highlighter-rouge">throttle</code> emits at most one value per interval, which is how a scroll handler avoids running at 120 Hz. <code class="language-plaintext highlighter-rouge">delay</code> shifts everything later by a fixed amount. All three take a <strong>scheduler</strong>, the object that tells them what time it is and runs their timers, and that parameter is what makes them testable: give them a scheduler whose clock you control, and their exact behavior can be checked in microseconds instead of seconds of flaky sleeping.</p>
+
+<p>This article builds that scheduler first, then uses it to pin down each operator to the millisecond. The results include three behaviors that surprise people who rely on them: <code class="language-plaintext highlighter-rouge">debounce</code> drops the pending value when its upstream finishes, <code class="language-plaintext highlighter-rouge">throttle</code> with <code class="language-plaintext highlighter-rouge">latest: false</code> delivers the second tap of a double tap almost a second late instead of dropping it, and <code class="language-plaintext highlighter-rouge">delay</code> on a concurrent queue occasionally loses a value. It also derives how many values <code class="language-plaintext highlighter-rouge">debounce</code> and <code class="language-plaintext highlighter-rouge">throttle</code> let through for random input and checks the formulas against simulation.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code>. Later articles in this series, including <a href="/combine-schedulers-receive-subscribe-on/">Schedulers: <code class="language-plaintext highlighter-rouge">receive(on:)</code> and <code class="language-plaintext highlighter-rouge">subscribe(on:)</code></a> and <a href="/combine-testing-publishers/">Testing Publishers</a>, reuse the <code class="language-plaintext highlighter-rouge">VirtualTimeScheduler</code> and <code class="language-plaintext highlighter-rouge">TimelineRecorder</code> defined in the next section.</p>
+
+<h2 id="a-scheduler-whose-clock-you-control">A scheduler whose clock you control</h2>
+
+<p>Every time-based operator asks its scheduler two things: what time it is now, and to run a closure at a later time. The <code class="language-plaintext highlighter-rouge">Scheduler</code> protocol has exactly those requirements, plus a variant for repeating work:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">Scheduler</span><span class="o">&lt;</span><span class="kt">SchedulerTimeType</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">associatedtype</span> <span class="kt">SchedulerTimeType</span><span class="p">:</span> <span class="kt">Strideable</span> <span class="k">where</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">:</span> <span class="kt">SchedulerTimeIntervalConvertible</span>
+    <span class="kd">associatedtype</span> <span class="kt">SchedulerOptions</span>
+    <span class="k">var</span> <span class="nv">now</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">minimumTolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kt">SchedulerOptions</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">options</span><span class="p">:</span> <span class="kt">SchedulerOptions</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span>
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">SchedulerOptions</span><span class="p">?,</span>
+                  <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Cancellable</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">DispatchQueue</code>, <code class="language-plaintext highlighter-rouge">RunLoop</code>, and <code class="language-plaintext highlighter-rouge">OperationQueue</code> conform, each with its own time type. A test scheduler only has to keep a list of scheduled closures and run them when the test says time has passed. Borrowing <code class="language-plaintext highlighter-rouge">DispatchQueue</code>’s time type saves writing a <code class="language-plaintext highlighter-rouge">Strideable</code> type by hand, and works because its arithmetic is pure nanosecond counting that never consults the real clock:</p>
+
+<!-- virtual-scheduler -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Combine</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="c1">/// A scheduler whose clock moves only when a test calls `advance(by:)`.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">VirtualTimeScheduler</span><span class="p">:</span> <span class="kt">Scheduler</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">SchedulerTimeType</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="kt">SchedulerTimeType</span>
+    <span class="kd">typealias</span> <span class="kt">SchedulerOptions</span> <span class="o">=</span> <span class="kt">Never</span>
+
+    <span class="kd">private</span> <span class="kd">struct</span> <span class="kt">Item</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+        <span class="k">let</span> <span class="nv">sequence</span><span class="p">:</span> <span class="kt">Int</span>
+        <span class="k">var</span> <span class="nv">due</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span>
+        <span class="k">let</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">?</span>
+        <span class="k">let</span> <span class="nv">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+    <span class="p">}</span>
+
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">now</span> <span class="o">=</span> <span class="kt">SchedulerTimeType</span><span class="p">(</span><span class="kt">DispatchTime</span><span class="p">(</span><span class="nv">uptimeNanoseconds</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">var</span> <span class="nv">minimumTolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span> <span class="p">{</span> <span class="o">.</span><span class="n">zero</span> <span class="p">}</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">Item</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">nextSequence</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1">/// Scheduled closures that have not run yet.</span>
+    <span class="k">var</span> <span class="nv">pendingCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">items</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">enqueue</span><span class="p">(</span><span class="nv">due</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span> <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">enqueue</span><span class="p">(</span><span class="nv">due</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">schedule</span><span class="p">(</span><span class="n">after</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span>
+                  <span class="nv">tolerance</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">Never</span><span class="p">?,</span>
+                  <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kd">any</span> <span class="kt">Cancellable</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="nf">enqueue</span><span class="p">(</span><span class="nv">due</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">AnyCancellable</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">removeAll</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">id</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Runs everything due up to `now + stride`, earliest first and in scheduling order</span>
+    <span class="c1">/// for equal times, then sets the clock to that time.</span>
+    <span class="kd">func</span> <span class="nf">advance</span><span class="p">(</span><span class="n">by</span> <span class="nv">stride</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span> <span class="o">=</span> <span class="o">.</span><span class="n">zero</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">target</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">stride</span><span class="p">)</span>
+        <span class="k">while</span> <span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="nf">nextDueIndex</span><span class="p">(</span><span class="nv">notAfter</span><span class="p">:</span> <span class="n">target</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">item</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">now</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">due</span><span class="p">)</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">interval</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">interval</span> <span class="p">{</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">due</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">due</span><span class="o">.</span><span class="nf">advanced</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">interval</span><span class="p">)</span>
+                <span class="n">items</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">items</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">index</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">item</span><span class="o">.</span><span class="nf">action</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">target</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Runs each step at its time, in milliseconds from now, then advances to `end`.</span>
+    <span class="c1">/// Timers due at the same instant as a step run before the step.</span>
+    <span class="kd">func</span> <span class="nf">perform</span><span class="p">(</span><span class="n">_</span> <span class="nv">steps</span><span class="p">:</span> <span class="p">[(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)],</span> <span class="n">until</span> <span class="nv">end</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="k">in</span> <span class="n">steps</span> <span class="p">{</span>
+            <span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">at</span> <span class="o">-</span> <span class="n">elapsed</span><span class="p">))</span>
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">at</span>
+            <span class="n">step</span><span class="o">.</span><span class="nf">action</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">elapsed</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">@discardableResult</span>
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">enqueue</span><span class="p">(</span><span class="nv">due</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">?,</span>
+                         <span class="n">_</span> <span class="nv">action</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">nextSequence</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">items</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Item</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">nextID</span><span class="p">,</span> <span class="nv">sequence</span><span class="p">:</span> <span class="n">nextSequence</span><span class="p">,</span> <span class="nv">due</span><span class="p">:</span> <span class="n">due</span><span class="p">,</span> <span class="nv">interval</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="n">action</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">nextID</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">nextDueIndex</span><span class="p">(</span><span class="n">notAfter</span> <span class="nv">target</span><span class="p">:</span> <span class="kt">SchedulerTimeType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">items</span><span class="o">.</span><span class="n">indices</span>
+            <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">items</span><span class="p">[</span><span class="nv">$0</span><span class="p">]</span><span class="o">.</span><span class="n">due</span> <span class="o">&lt;=</span> <span class="n">target</span> <span class="p">}</span>
+            <span class="o">.</span><span class="n">min</span> <span class="p">{</span> <span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="nv">$0</span><span class="p">]</span><span class="o">.</span><span class="n">due</span><span class="p">,</span> <span class="n">items</span><span class="p">[</span><span class="nv">$0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="nv">$1</span><span class="p">]</span><span class="o">.</span><span class="n">due</span><span class="p">,</span> <span class="n">items</span><span class="p">[</span><span class="nv">$1</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A recorder turns a publisher’s output into strings stamped with the virtual time at which each event arrived, in milliseconds since the recorder was created: <code class="language-plaintext highlighter-rouge">"swift@550"</code> for a value, <code class="language-plaintext highlighter-rouge">"|@800"</code> for finishing, and <code class="language-plaintext highlighter-rouge">"x(error)@250"</code> for a failure:</p>
+
+<!-- virtual-scheduler -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Records each event with the virtual time, in milliseconds, at which it arrived.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TimelineRecorder</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="p">:</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellable</span><span class="p">:</span> <span class="kt">AnyCancellable</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">publisher</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Publisher</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">VirtualTimeScheduler</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">let</span> <span class="nv">elapsed</span> <span class="o">=</span> <span class="p">{</span> <span class="n">start</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">/</span> <span class="mi">1_000_000</span> <span class="p">}</span>
+        <span class="n">cancellable</span> <span class="o">=</span> <span class="n">publisher</span><span class="o">.</span><span class="nf">sink</span><span class="p">(</span>
+            <span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">completion</span> <span class="k">in</span>
+                <span class="k">switch</span> <span class="n">completion</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nv">finished</span><span class="p">:</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"|@</span><span class="se">\(</span><span class="nf">elapsed</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">):</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"x(</span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">)@</span><span class="se">\(</span><span class="nf">elapsed</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">value</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">@</span><span class="se">\(</span><span class="nf">elapsed</span><span class="p">()</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span> <span class="n">cancellable</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Before trusting the virtual scheduler, it is worth checking that operators behave the same on it as on a real queue. The scripts below were also run against a serial <code class="language-plaintext highlighter-rouge">DispatchQueue</code> with real sleeps. Every value and completion matched; the real timings were between 1% and 4% later, because <code class="language-plaintext highlighter-rouge">DispatchQueue</code> timers are allowed some leeway. For example, the <code class="language-plaintext highlighter-rouge">debounce</code> script that emits <code class="language-plaintext highlighter-rouge">swif@550</code> on the virtual scheduler emitted <code class="language-plaintext highlighter-rouge">swif@562</code> on the real queue.</p>
+
+<h2 id="debounce-wait-for-a-pause"><code class="language-plaintext highlighter-rouge">debounce</code>: wait for a pause</h2>
+
+<p><code class="language-plaintext highlighter-rouge">debounce(for:scheduler:)</code> holds each value for the given interval. If another value arrives first, the held value is replaced and the timer restarts; if the interval passes in silence, the held value is emitted. Here is a user typing “swift” with a pause after the fourth letter, and the field closing at 800 ms:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+
+<span class="k">let</span> <span class="nv">keystrokes</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">debounced</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">keystrokes</span><span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"s"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"sw"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swi"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">250</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swif"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">700</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="p">{</span> <span class="n">keystrokes</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">debounced</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swif@550"</span><span class="p">,</span> <span class="s">"|@800"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>On a timeline, with the debounce window drawn after each value:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>time (ms)  0     100   200   250         550   700   800
+input      s     sw    swi   swif              swift  |
+window     [----replaced----][---300ms---]     [--cut short by completion
+output                                   swif         |
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">swif</code> was emitted 300 ms after the last keystroke of the burst, which is the point of the operator. <code class="language-plaintext highlighter-rouge">swift</code>, the final text, was <strong>never emitted</strong>: the upstream finished 100 ms into its window, and <code class="language-plaintext highlighter-rouge">debounce</code> forwarded the completion immediately and discarded the pending value. A failure behaves the same way, arriving at once and dropping the pending value:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">SaveError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">case</span> <span class="n">diskFull</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">failingInput</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">SaveError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">debouncedFailure</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">failingInput</span><span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">failingInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"draft"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">failingInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">diskFull</span><span class="p">))</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">debouncedFailure</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"x(diskFull)@100"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>For a search field that is harmless: nobody needs results for a field that has closed. For autosave it is data loss. A note editor that debounces edits into a save and finishes its edit stream when the screen closes silently loses the last 300 ms of typing. The fix is to emit the last value on completion as well. <code class="language-plaintext highlighter-rouge">share()</code> lets the same upstream feed both <code class="language-plaintext highlighter-rouge">debounce</code> and <code class="language-plaintext highlighter-rouge">last()</code>, and <code class="language-plaintext highlighter-rouge">removeDuplicates()</code> stops the final value being saved twice when the pause was already long enough:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Publisher</span> <span class="k">where</span> <span class="kt">Output</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="c1">/// Like `debounce`, but also emits the final value when the upstream finishes.</span>
+    <span class="kd">func</span> <span class="n">debounceKeepingLast</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Scheduler</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="k">for</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">S</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">S</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">Output</span><span class="p">,</span> <span class="kt">Failure</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">shared</span> <span class="o">=</span> <span class="nf">share</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">shared</span><span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">merge</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">shared</span><span class="o">.</span><span class="nf">last</span><span class="p">())</span>
+            <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">edits</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">saves</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">edits</span><span class="o">.</span><span class="nf">debounceKeepingLast</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"s"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"sw"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swi"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">250</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swif"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">700</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="p">{</span> <span class="n">edits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">saves</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swif@550"</span><span class="p">,</span> <span class="s">"swift@800"</span><span class="p">,</span> <span class="s">"|@800"</span><span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">quietEdits</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">quietSaves</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">quietEdits</span><span class="o">.</span><span class="nf">debounceKeepingLast</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">quietEdits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"done"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="p">{</span> <span class="n">quietEdits</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">quietSaves</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"done@300"</span><span class="p">,</span> <span class="s">"|@500"</span><span class="p">])</span>   <span class="c1">// not saved twice</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">removeDuplicates()</code> has a cost to be aware of: if the user types “a”, pauses, deletes it and types “a” again, the second “a” is not emitted. For a save, skipping a write of identical content is what you want; for an operator used elsewhere, document it.</p>
+
+<h2 id="throttle-at-most-one-value-per-interval"><code class="language-plaintext highlighter-rouge">throttle</code>: at most one value per interval</h2>
+
+<p><code class="language-plaintext highlighter-rouge">throttle(for:scheduler:latest:)</code> limits the rate of values instead of waiting for a pause. Its documentation describes it as publishing “either the most-recent or first element published by the upstream publisher in the specified time interval”, and the <code class="language-plaintext highlighter-rouge">latest</code> flag picks which. The exact timing is clearer on a timeline. This script is a user tapping a button: a triple tap, a later burst of three, and a lone tap:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">tapScript</span><span class="p">:</span> <span class="p">[(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"1"</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s">"2"</span><span class="p">),</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="s">"3"</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">1_100</span><span class="p">,</span> <span class="s">"4"</span><span class="p">),</span> <span class="p">(</span><span class="mi">1_150</span><span class="p">,</span> <span class="s">"5"</span><span class="p">),</span> <span class="p">(</span><span class="mi">1_300</span><span class="p">,</span> <span class="s">"6"</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">3_000</span><span class="p">,</span> <span class="s">"7"</span><span class="p">),</span> <span class="p">(</span><span class="mi">3_500</span><span class="p">,</span> <span class="kc">nil</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="kd">func</span> <span class="nf">play</span><span class="p">(</span><span class="n">_</span> <span class="nv">script</span><span class="p">:</span> <span class="p">[(</span><span class="nv">at</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)],</span> <span class="n">into</span> <span class="nv">subject</span><span class="p">:</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">,</span>
+          <span class="n">on</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">VirtualTimeScheduler</span><span class="p">,</span> <span class="n">until</span> <span class="nv">end</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">scheduler</span><span class="o">.</span><span class="nf">perform</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">step</span> <span class="nf">in</span>
+        <span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">at</span><span class="p">,</span> <span class="p">{</span> <span class="k">if</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">value</span> <span class="p">{</span> <span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="n">subject</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="n">finished</span><span class="p">)</span> <span class="p">}</span> <span class="p">})</span>
+    <span class="p">},</span> <span class="nv">until</span><span class="p">:</span> <span class="n">end</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">tapsForFirst</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">throttledFirst</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">tapsForFirst</span><span class="o">.</span><span class="nf">throttle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">latest</span><span class="p">:</span> <span class="kc">false</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="nf">play</span><span class="p">(</span><span class="n">tapScript</span><span class="p">,</span> <span class="nv">into</span><span class="p">:</span> <span class="n">tapsForFirst</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">throttledFirst</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1@0"</span><span class="p">,</span> <span class="s">"2@1000"</span><span class="p">,</span> <span class="s">"4@2000"</span><span class="p">,</span> <span class="s">"7@3000"</span><span class="p">,</span> <span class="s">"|@3500"</span><span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">tapsForLatest</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">throttledLatest</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">tapsForLatest</span><span class="o">.</span><span class="nf">throttle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">latest</span><span class="p">:</span> <span class="kc">true</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="nf">play</span><span class="p">(</span><span class="n">tapScript</span><span class="p">,</span> <span class="nv">into</span><span class="p">:</span> <span class="n">tapsForLatest</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">throttledLatest</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1@0"</span><span class="p">,</span> <span class="s">"3@1000"</span><span class="p">,</span> <span class="s">"6@2000"</span><span class="p">,</span> <span class="s">"7@3000"</span><span class="p">,</span> <span class="s">"|@3500"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>time (s)        0.0  0.1  0.2       1.0  1.1  1.15  1.3       2.0       3.0       3.5
+input           1    2    3              4    5     6                   7         |
+latest: false   1                   2                         4         7         |
+latest: true    1                   3                         6         7         |
+</code></pre></div></div>
+
+<p>The rules the timeline reveals:</p>
+
+<ol>
+  <li>A value that arrives when the throttle is idle is emitted immediately: <code class="language-plaintext highlighter-rouge">1</code> at 0 and <code class="language-plaintext highlighter-rouge">7</code> at 3.0.</li>
+  <li>Emitting starts an interval. Values that arrive during it are held, and at the end of the interval the first (<code class="language-plaintext highlighter-rouge">latest: false</code>) or last (<code class="language-plaintext highlighter-rouge">latest: true</code>) of them is emitted, which starts another interval.</li>
+  <li>An interval in which nothing arrives returns the throttle to idle.</li>
+</ol>
+
+<p>So <code class="language-plaintext highlighter-rouge">latest: false</code> did not drop the second and third taps; it delivered tap <code class="language-plaintext highlighter-rouge">2</code>, 900 ms after it happened. A throttle is often added to a “Submit” button to prevent double submission, and with either setting a double tap still submits twice, the second time almost a second later, when the user has moved on. What that button needs is a <em>leading-edge</em> filter: accept a tap, then ignore everything for an interval. The scheduler’s clock makes it a few lines, and <code class="language-plaintext highlighter-rouge">Deferred</code> gives each subscriber its own memory of the last accepted tap, for the reason explained in <a href="/combine-filter-removeduplicates-compactmap/">Filtering</a>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Publisher</span> <span class="p">{</span>
+    <span class="c1">/// Emits a value, then ignores values until `interval` has passed. Nothing is delayed.</span>
+    <span class="kd">func</span> <span class="n">throttleLeading</span><span class="o">&lt;</span><span class="kt">S</span><span class="p">:</span> <span class="kt">Scheduler</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="k">for</span> <span class="nv">interval</span><span class="p">:</span> <span class="kt">S</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="o">.</span><span class="kt">Stride</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">S</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Deferred</span><span class="o">&lt;</span><span class="kt">Publishers</span><span class="o">.</span><span class="kt">Filter</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+        <span class="kt">Deferred</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">lastAccepted</span><span class="p">:</span> <span class="kt">S</span><span class="o">.</span><span class="kt">SchedulerTimeType</span><span class="p">?</span>
+            <span class="k">return</span> <span class="k">self</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+                <span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">now</span>
+                <span class="k">if</span> <span class="k">let</span> <span class="nv">lastAccepted</span><span class="p">,</span> <span class="n">lastAccepted</span><span class="o">.</span><span class="nf">distance</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">now</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">interval</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+                <span class="n">lastAccepted</span> <span class="o">=</span> <span class="n">now</span>
+                <span class="k">return</span> <span class="kc">true</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">tapsForLeading</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">leading</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">tapsForLeading</span><span class="o">.</span><span class="nf">throttleLeading</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="nf">play</span><span class="p">(</span><span class="n">tapScript</span><span class="p">,</span> <span class="nv">into</span><span class="p">:</span> <span class="n">tapsForLeading</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">leading</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1@0"</span><span class="p">,</span> <span class="s">"4@1100"</span><span class="p">,</span> <span class="s">"7@3000"</span><span class="p">,</span> <span class="s">"|@3500"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Each accepted tap is delivered the moment it happens, and the extra taps are dropped rather than deferred.</p>
+
+<p>The built-in <code class="language-plaintext highlighter-rouge">throttle</code> also treats completion differently from <code class="language-plaintext highlighter-rouge">debounce</code>: it holds the completion until the pending value has been emitted at the end of the interval:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">shortBurst</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">throttledBurst</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">shortBurst</span><span class="o">.</span><span class="nf">throttle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">latest</span><span class="p">:</span> <span class="kc">true</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="nf">play</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"a"</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s">"b"</span><span class="p">),</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)],</span> <span class="nv">into</span><span class="p">:</span> <span class="n">shortBurst</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">clock</span><span class="p">,</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">throttledBurst</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"a@0"</span><span class="p">,</span> <span class="s">"b@1000"</span><span class="p">,</span> <span class="s">"|@1000"</span><span class="p">])</span>   <span class="c1">// completion waited for b</span>
+</code></pre></div></div>
+
+<p>That is the right default for progress and scroll positions, where the final value is the one that matters, and <code class="language-plaintext highlighter-rouge">latest: true</code> is the setting to choose for them.</p>
+
+<h2 id="delay-shift-everything"><code class="language-plaintext highlighter-rouge">delay</code>: shift everything</h2>
+
+<p><code class="language-plaintext highlighter-rouge">delay(for:scheduler:)</code> reschedules each value, and the completion, the given interval later. Unlike <code class="language-plaintext highlighter-rouge">debounce</code>, it delays failures too:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">delayedInput</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">SaveError</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">delayed</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">delayedInput</span><span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">clock</span><span class="p">)</span>
+<span class="n">clock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">delayedInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"a"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="p">{</span> <span class="n">delayedInput</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nv">completion</span><span class="p">:</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="n">diskFull</span><span class="p">))</span> <span class="p">}),</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">delayed</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"a@200"</span><span class="p">,</span> <span class="s">"x(diskFull)@250"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Its real-world uses are small: giving a spinner a minimum display time, spacing out a retry, or simulating latency in a preview or a test. It has one trap, which the series ran into while measuring <code class="language-plaintext highlighter-rouge">flatMap</code> in <a href="/combine-map-flatmap-scan/">Transforming: <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">flatMap</code>, and <code class="language-plaintext highlighter-rouge">scan</code></a>: on a <strong>concurrent</strong> queue, it can lose values. This test delays a single value by one millisecond, 2,000 times, on a concurrent and then on a serial queue, and counts the runs that did not receive the value before the completion:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">EventLog</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">storage</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="kd">func</span> <span class="nf">append</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">events</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span> <span class="n">storage</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">countLostValues</span><span class="p">(</span><span class="n">on</span> <span class="nv">queue</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="p">,</span> <span class="nv">runs</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">lost</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">run</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">runs</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">EventLog</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">finished</span> <span class="o">=</span> <span class="kt">DispatchSemaphore</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="kt">Just</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">queue</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">sink</span><span class="p">(</span><span class="nv">receiveCompletion</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"finished"</span><span class="p">);</span> <span class="n">finished</span><span class="o">.</span><span class="nf">signal</span><span class="p">()</span> <span class="p">},</span>
+                  <span class="nv">receiveValue</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span> <span class="n">log</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"value"</span><span class="p">)</span> <span class="p">})</span>
+        <span class="n">finished</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+        <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">events</span> <span class="o">!=</span> <span class="p">[</span><span class="s">"value"</span><span class="p">,</span> <span class="s">"finished"</span><span class="p">]</span> <span class="p">{</span> <span class="n">lost</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">lost</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">lostOnConcurrent</span> <span class="o">=</span> <span class="nf">countLostValues</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">(),</span> <span class="nv">runs</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">lostOnSerial</span> <span class="o">=</span> <span class="nf">countLostValues</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"delay.serial"</span><span class="p">),</span> <span class="nv">runs</span><span class="p">:</span> <span class="mi">2_000</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"lost on concurrent queue: </span><span class="se">\(</span><span class="n">lostOnConcurrent</span><span class="se">)</span><span class="s"> of 2,000; on serial queue: </span><span class="se">\(</span><span class="n">lostOnSerial</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lostOnSerial</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Across ten runs of this test, between 1 and 21 of the 2,000 attempts on <code class="language-plaintext highlighter-rouge">DispatchQueue.global()</code> received the completion without the value, and none of the attempts on the serial queue did. The pattern is consistent with the value and the completion being scheduled as separate blocks with the same deadline, which a concurrent queue is free to run in either order. The fix is to use a serial queue, or the main queue, for any time-based operator. The same applies to <code class="language-plaintext highlighter-rouge">debounce</code> and <code class="language-plaintext highlighter-rouge">throttle</code>, which also schedule separately from the values they receive.</p>
+
+<h2 id="how-many-values-get-through">How many values get through</h2>
+
+<p>For random input, both operators have simple emission rates. Model the input as a Poisson process with rate \(\lambda\) values per second, so gaps between values are exponentially distributed with mean \(1/\lambda\).</p>
+
+<p><strong><code class="language-plaintext highlighter-rouge">debounce</code> with window \(w\)</strong> emits a value exactly when the gap after it is longer than \(w\). The probability of that is \(P(\text{gap} &gt; w) = e^{-\lambda w}\), so it emits at rate</p>
+
+\[r_{\text{debounce}} = \lambda\, e^{-\lambda w}.\]
+
+<p>The rate is not monotonic in \(\lambda\): it peaks at \(\lambda = 1/w\), at \(1/(e\,w)\), and <em>falls</em> toward zero as input gets faster. A user who never pauses for \(w\) never gets a result, which is why <code class="language-plaintext highlighter-rouge">debounce</code> windows for search are kept around 250 to 400 ms, shorter than a typical pause between words.</p>
+
+<p><strong><code class="language-plaintext highlighter-rouge">throttle</code> with interval \(T\)</strong> emits on a cycle. After an emission, it waits \(T\). If anything arrived in that time, probability \(1 - e^{-\lambda T}\), it emits at the end and the next cycle starts at once; otherwise it goes idle and emits the next value on arrival, after a further exponential wait of mean \(1/\lambda\). The mean cycle length is \(T + e^{-\lambda T}/\lambda\), so</p>
+
+\[r_{\text{throttle}} = \frac{1}{T + e^{-\lambda T}/\lambda},\]
+
+<p>which approaches \(\lambda\) for slow input and \(1/T\) for fast input, as a rate limit should. The virtual scheduler makes checking both formulas instantaneous:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span> <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span> <span class="p">}</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">RateResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">emitted</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Double</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">simulate</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">windowMilliseconds</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">useThrottle</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">RateResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">scheduler</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">input</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">limited</span><span class="p">:</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="o">=</span> <span class="n">useThrottle</span>
+        <span class="p">?</span> <span class="n">input</span><span class="o">.</span><span class="nf">throttle</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">windowMilliseconds</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">,</span> <span class="nv">latest</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+        <span class="p">:</span> <span class="n">input</span><span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">windowMilliseconds</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span><span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">emitted</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">let</span> <span class="nv">handle</span> <span class="o">=</span> <span class="n">limited</span><span class="o">.</span><span class="n">sink</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">emitted</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">totalNanoseconds</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">count</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">gap</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="o">-</span><span class="nf">log</span><span class="p">(</span><span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">))</span> <span class="o">/</span> <span class="n">rate</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span>
+        <span class="n">totalNanoseconds</span> <span class="o">+=</span> <span class="n">gap</span>
+        <span class="n">scheduler</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">nanoseconds</span><span class="p">(</span><span class="n">gap</span><span class="p">))</span>
+        <span class="n">input</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">scheduler</span><span class="o">.</span><span class="nf">advance</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">handle</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kt">RateResult</span><span class="p">(</span><span class="nv">emitted</span><span class="p">:</span> <span class="n">emitted</span><span class="p">,</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Double</span><span class="p">(</span><span class="n">totalNanoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">rate</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mi">1_000</span><span class="p">),</span> <span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">w</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1_000</span>
+    <span class="k">let</span> <span class="nv">debounceRun</span> <span class="o">=</span> <span class="nf">simulate</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">,</span> <span class="nv">windowMilliseconds</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">,</span> <span class="nv">useThrottle</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">throttleRun</span> <span class="o">=</span> <span class="nf">simulate</span><span class="p">(</span><span class="nv">rate</span><span class="p">:</span> <span class="n">rate</span><span class="p">,</span> <span class="nv">windowMilliseconds</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">20_000</span><span class="p">,</span> <span class="nv">useThrottle</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">predictedDebounce</span> <span class="o">=</span> <span class="mi">20_000</span> <span class="o">*</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rate</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">predictedThrottle</span> <span class="o">=</span> <span class="n">throttleRun</span><span class="o">.</span><span class="n">duration</span> <span class="o">/</span> <span class="p">(</span><span class="n">w</span> <span class="o">+</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rate</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"λ=</span><span class="se">\(</span><span class="n">rate</span><span class="se">)</span><span class="s">/s, window </span><span class="se">\(</span><span class="n">window</span><span class="se">)</span><span class="s"> ms: debounce </span><span class="se">\(</span><span class="n">debounceRun</span><span class="o">.</span><span class="n">emitted</span><span class="se">)</span><span class="s"> (predicted </span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="n">predictedDebounce</span><span class="p">)</span><span class="se">)</span><span class="s">), "</span>
+          <span class="o">+</span> <span class="s">"throttle </span><span class="se">\(</span><span class="n">throttleRun</span><span class="o">.</span><span class="n">emitted</span><span class="se">)</span><span class="s"> (predicted </span><span class="se">\(</span><span class="kt">Int</span><span class="p">(</span><span class="n">predictedThrottle</span><span class="p">)</span><span class="se">)</span><span class="s">)"</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">debounceRun</span><span class="o">.</span><span class="n">emitted</span><span class="p">)</span> <span class="o">-</span> <span class="n">predictedDebounce</span><span class="p">)</span> <span class="o">/</span> <span class="n">predictedDebounce</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="kt">Double</span><span class="p">(</span><span class="n">throttleRun</span><span class="o">.</span><span class="n">emitted</span><span class="p">)</span> <span class="o">-</span> <span class="n">predictedThrottle</span><span class="p">)</span> <span class="o">/</span> <span class="n">predictedThrottle</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Twenty thousand random values per run, simulated in a fraction of a second:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Input rate \(\lambda\)</th>
+      <th>Window</th>
+      <th><code class="language-plaintext highlighter-rouge">debounce</code> emitted</th>
+      <th>predicted \(n e^{-\lambda w}\)</th>
+      <th><code class="language-plaintext highlighter-rouge">throttle</code> emitted</th>
+      <th>predicted</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>5 per s</td>
+      <td>300 ms</td>
+      <td>4,537</td>
+      <td>4,462</td>
+      <td>11,641</td>
+      <td>11,698</td>
+    </tr>
+    <tr>
+      <td>1 per s</td>
+      <td>1,000 ms</td>
+      <td>7,446</td>
+      <td>7,357</td>
+      <td>14,632</td>
+      <td>14,737</td>
+    </tr>
+    <tr>
+      <td>20 per s</td>
+      <td>100 ms</td>
+      <td>2,742</td>
+      <td>2,706</td>
+      <td>9,399</td>
+      <td>9,440</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both formulas hold to within 2%. The table also makes the difference between the operators concrete: at 20 values per second with a 100 ms window, <code class="language-plaintext highlighter-rouge">debounce</code> passed 14% of the input and <code class="language-plaintext highlighter-rouge">throttle</code> 47%, because <code class="language-plaintext highlighter-rouge">throttle</code> guarantees a steady trickle while <code class="language-plaintext highlighter-rouge">debounce</code> waits for pauses that rarely come.</p>
+
+<h2 id="putting-it-together-a-search-pipeline">Putting it together: a search pipeline</h2>
+
+<p>A production search field combines the operators from the last few articles. Trim and deduplicate the text, wait for a pause, skip empty queries, and let each new query cancel the request for the previous one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">requestsSent</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">VirtualTimeScheduler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AnyPublisher</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="n">requestsSent</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">Just</span><span class="p">(</span><span class="s">"results for </span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">delay</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">scheduler</span><span class="p">)</span>   <span class="c1">// simulated server latency</span>
+        <span class="o">.</span><span class="nf">eraseToAnyPublisher</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">searchClock</span> <span class="o">=</span> <span class="kt">VirtualTimeScheduler</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">searchField</span> <span class="o">=</span> <span class="kt">PassthroughSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">searchResults</span> <span class="o">=</span> <span class="kt">TimelineRecorder</span><span class="p">(</span>
+    <span class="n">searchField</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">trimmingCharacters</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">.</span><span class="n">whitespaces</span><span class="p">)</span> <span class="p">}</span>
+        <span class="o">.</span><span class="nf">removeDuplicates</span><span class="p">()</span>
+        <span class="o">.</span><span class="nf">debounce</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">300</span><span class="p">),</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="n">searchClock</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="o">!</span><span class="nv">$0</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">}</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">search</span><span class="p">(</span><span class="nv">$0</span><span class="p">,</span> <span class="nv">on</span><span class="p">:</span> <span class="n">searchClock</span><span class="p">)</span> <span class="p">}</span>
+        <span class="o">.</span><span class="nf">switchToLatest</span><span class="p">(),</span>
+    <span class="nv">scheduler</span><span class="p">:</span> <span class="n">searchClock</span><span class="p">)</span>
+
+<span class="n">searchClock</span><span class="o">.</span><span class="nf">perform</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"s"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"sw"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swi"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">250</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swif"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">700</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift"</span><span class="p">)</span> <span class="p">}),</span>
+    <span class="p">(</span><span class="mi">750</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">"swift "</span><span class="p">)</span> <span class="p">}),</span>     <span class="c1">// trailing space: same query after trimming</span>
+    <span class="p">(</span><span class="mi">1_200</span><span class="p">,</span> <span class="p">{</span> <span class="n">searchField</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="s">""</span><span class="p">)</span> <span class="p">}),</span>         <span class="c1">// field cleared</span>
+<span class="p">],</span> <span class="nv">until</span><span class="p">:</span> <span class="mi">3_000</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">requestsSent</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swif"</span><span class="p">,</span> <span class="s">"swift"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">searchResults</span><span class="o">.</span><span class="n">events</span> <span class="o">==</span> <span class="p">[</span><span class="s">"results for swif@630"</span><span class="p">,</span> <span class="s">"results for swift@1080"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Seven edits became two requests. The trailing space was removed by trimming and <code class="language-plaintext highlighter-rouge">removeDuplicates</code>, and clearing the field produced no request at all. Each result arrived 80 ms after its debounced query: <code class="language-plaintext highlighter-rouge">swif</code> at 550 + 80 and <code class="language-plaintext highlighter-rouge">swift</code> at 1,000 + 80. The whole script, three seconds of user time, ran in microseconds and gives the same answer on every run, which is the payoff of injecting the scheduler.</p>
+
+<p>Keep the recorders alive until the end of the file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">debounced</span><span class="p">,</span> <span class="n">debouncedFailure</span><span class="p">,</span> <span class="n">saves</span><span class="p">,</span> <span class="n">quietSaves</span><span class="p">,</span> <span class="n">throttledFirst</span><span class="p">,</span>
+                      <span class="n">throttledLatest</span><span class="p">,</span> <span class="n">leading</span><span class="p">,</span> <span class="n">throttledBurst</span><span class="p">,</span> <span class="n">delayed</span><span class="p">,</span> <span class="n">searchResults</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Time-based operators take a scheduler; a <code class="language-plaintext highlighter-rouge">VirtualTimeScheduler</code> that runs scheduled closures when a test advances its clock makes their behavior exact and instantaneous to check, and matched a real serial queue except for 1% to 4% timer leeway.</li>
+  <li><code class="language-plaintext highlighter-rouge">debounce</code> emits the latest value after a quiet interval. On completion or failure it forwards the event immediately and <strong>drops</strong> the pending value; <code class="language-plaintext highlighter-rouge">debounceKeepingLast</code> emits it, which autosave needs.</li>
+  <li><code class="language-plaintext highlighter-rouge">throttle</code> emits immediately when idle, then the first or latest value at the end of each busy interval, and holds completion until the pending value is out. With either setting, a double tap is delivered twice; use a leading-edge filter for buttons.</li>
+  <li><code class="language-plaintext highlighter-rouge">delay</code> shifts values, completion, and failure. On a concurrent queue, it lost the value in up to 1% of attempts, and never on a serial queue; use a serial queue for every time-based operator.</li>
+  <li>For Poisson input at rate \(\lambda\), <code class="language-plaintext highlighter-rouge">debounce</code> emits at \(\lambda e^{-\lambda w}\), which falls as input speeds up, and <code class="language-plaintext highlighter-rouge">throttle</code> at \(1/(T + e^{-\lambda T}/\lambda)\), approaching \(1/T\). Simulations agreed within 2%.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add <code class="language-plaintext highlighter-rouge">timeout(_:scheduler:customError:)</code> to the search pipeline so that a request that takes longer than 500 ms produces a “slow network” result instead of nothing, without failing the outer stream. Test it with the virtual scheduler: a fast response, a slow response that is replaced by a newer query before the timeout, and a slow response that times out. Then use <code class="language-plaintext highlighter-rouge">measureInterval(using:)</code> on the raw keystrokes to compute the distribution of gaps in a recorded typing session, and use the <code class="language-plaintext highlighter-rouge">debounce</code> rate formula to choose the shortest window that would have sent fewer than one request per word.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/combine/publisher/debounce(for:scheduler:options:)"><code class="language-plaintext highlighter-rouge">debounce(for:scheduler:options:)</code></a>, <a href="https://developer.apple.com/documentation/combine/publisher/throttle(for:scheduler:latest:)"><code class="language-plaintext highlighter-rouge">throttle(for:scheduler:latest:)</code></a>, and the <a href="https://developer.apple.com/documentation/combine/scheduler"><code class="language-plaintext highlighter-rouge">Scheduler</code></a> protocol.</li>
+  <li>Point-Free’s <a href="https://github.com/pointfreeco/combine-schedulers">combine-schedulers</a> library, whose <code class="language-plaintext highlighter-rouge">TestScheduler</code> is a fuller version of the virtual scheduler built here.</li>
+  <li>The concurrency roadmap’s <a href="/swift-testing-controlled-interleavings/">Testing Controlled Interleavings</a>, which applies the same “control the clock” idea to <code class="language-plaintext highlighter-rouge">async</code> code.</li>
+</ul>
+
+<p>Previous: <a href="/combine-combinelatest-zip-merge/">Combining: <code class="language-plaintext highlighter-rouge">combineLatest</code>, <code class="language-plaintext highlighter-rouge">zip</code>, and <code class="language-plaintext highlighter-rouge">merge</code></a>. Next: <a href="/combine-first-last-collect/">Sequence Operators: <code class="language-plaintext highlighter-rouge">first</code>, <code class="language-plaintext highlighter-rouge">last</code>, and <code class="language-plaintext highlighter-rouge">collect</code></a>.</p>
+
+<p>Return to the <a href="/combine/">Combine roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/combine-debounce-throttle-delay/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Time%3A+debounce%2C+throttle%2C+and+delay%20https%3A%2F%2Fswiftbydeya.com%2Fcombine-debounce-throttle-delay%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/combine-debounce-throttle-delay/&title=Time%3A+debounce%2C+throttle%2C+and+delay%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/combine-debounce-throttle-delay/&title=Time%3A+debounce%2C+throttle%2C+and+delay%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/combine-debounce-throttle-delay/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Time: debounce, throttle, and delay%20%7C%20Swift By Deya&body=https://swiftbydeya.com/combine-debounce-throttle-delay/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Combine">Combine</a></li>
+    
+    <li><a href="/tag/#Operators">Operators</a></li>
+    
+    <li><a href="/tag/#Schedulers">Schedulers</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Sendable in Swift: Moving Values Across Isolation Boundaries" href="/swift-sendable/"> <p>Previous post</p> Sendable in Swift: Moving Values Across Isolation Boundaries </a> </div> <div id="next-post"> <a alt="Combining: combineLatest, zip, and merge" href="/combine-combinelatest-zip-merge/"> <p>Next post</p> Combining: combineLatest, zip, and merge </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

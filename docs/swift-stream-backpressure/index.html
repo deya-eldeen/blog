@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Buffering, Backpressure, and Stream Termination in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Buffering, Backpressure, and Stream Termination in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Whenever a producer can generate values faster than a consumer can handle them, something has to give. The values can pile up in a buffer, which costs memory and makes the consumer see increasingly stale data. Some values can be dropped. Or the producer can be made to wait, which is backpressure: the consumer’s pace propagates back to the source. AsyncStream chooses buffering and dropping. Its yield never waits, so it cannot apply backpressure; it can only decide what to do with values that arrive while the consumer is busy. This article quantifies that choice, measures each buffering policy, builds a small bounded channel that does apply backpressure, and pins down exactly what happens to buffered values when a stream finishes, fails, or is cancelled." /> <meta property="og:description" content="Whenever a producer can generate values faster than a consumer can handle them, something has to give. The values can pile up in a buffer, which costs memory and makes the consumer see increasingly stale data. Some values can be dropped. Or the producer can be made to wait, which is backpressure: the consumer’s pace propagates back to the source. AsyncStream chooses buffering and dropping. Its yield never waits, so it cannot apply backpressure; it can only decide what to do with values that arrive while the consumer is busy. This article quantifies that choice, measures each buffering policy, builds a small bounded channel that does apply backpressure, and pins down exactly what happens to buffered values when a stream finishes, fails, or is cancelled." /> <link rel="canonical" href="https://swiftbydeya.com/swift-stream-backpressure/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-stream-backpressure/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-11T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Buffering, Backpressure, and Stream Termination in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-11T00:00:00+03:00","datePublished":"2026-08-11T00:00:00+03:00","description":"Whenever a producer can generate values faster than a consumer can handle them, something has to give. The values can pile up in a buffer, which costs memory and makes the consumer see increasingly stale data. Some values can be dropped. Or the producer can be made to wait, which is backpressure: the consumer’s pace propagates back to the source. AsyncStream chooses buffering and dropping. Its yield never waits, so it cannot apply backpressure; it can only decide what to do with values that arrive while the consumer is busy. This article quantifies that choice, measures each buffering policy, builds a small bounded channel that does apply backpressure, and pins down exactly what happens to buffered values when a stream finishes, fails, or is cancelled.","headline":"Buffering, Backpressure, and Stream Termination in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-stream-backpressure/"},"url":"https://swiftbydeya.com/swift-stream-backpressure/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Buffering, Backpressure, and Stream Termination in Swift"> <meta name="twitter:description" content="Whenever a producer can generate values faster than a consumer can handle them, something has to give. The values can pile up in a buffer, which costs memory..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Buffering, Backpressure, and Stream Termination in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Buffering, Backpressure, and Stream Termination in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-11T00:00:00+03:00">August 11, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Whenever a producer can generate values faster than a consumer can handle them, something has to give. The values can pile up in a buffer, which costs memory and makes the consumer see increasingly stale data. Some values can be dropped. Or the producer can be made to wait, which is <strong>backpressure</strong>: the consumer’s pace propagates back to the source.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream</code> chooses buffering and dropping. Its <code class="language-plaintext highlighter-rouge">yield</code> never waits, so it cannot apply backpressure; it can only decide what to do with values that arrive while the consumer is busy. This article quantifies that choice, measures each buffering policy, builds a small bounded channel that does apply backpressure, and pins down exactly what happens to buffered values when a stream finishes, fails, or is cancelled.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<h2 id="a-buffer-is-a-queue-and-queues-have-arithmetic">A buffer is a queue, and queues have arithmetic</h2>
+
+<p>Suppose a producer emits values at rate \(\lambda\) and a consumer processes them at rate \(\mu\). If \(\lambda \le \mu\), any buffer stays small: it absorbs bursts and drains between them. If \(\lambda &gt; \mu\) for a sustained period of length \(t\), the excess accumulates:</p>
+
+\[Q(t) = (\lambda - \mu)\, t .\]
+
+<p>A sensor producing 1,000 readings per second, consumed by UI code that handles 60 per second, accumulates 940 readings per second. After a minute, an unbounded buffer holds 56,400 readings, and the consumer is a minute behind reality.</p>
+
+<p>Staleness follows from Little’s law: a value that enters a buffer holding \(L\) values, drained at rate \(\mu\), waits about</p>
+
+\[W = \frac{L}{\mu}\]
+
+<p>before it is handled. With a 100-value buffer drained at 60 per second, the consumer is always about 1.7 seconds behind. For UI state, that is useless: the user sees where they <em>were</em>. For an audit log, it may be fine, as long as memory allows. The policy has to match what the values mean.</p>
+
+<h2 id="the-three-buffering-policies">The three buffering policies</h2>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream</code> and <code class="language-plaintext highlighter-rouge">AsyncThrowingStream</code> take a <code class="language-plaintext highlighter-rouge">bufferingPolicy</code> when created:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Policy</th>
+      <th>When the buffer is full</th>
+      <th>Keeps</th>
+      <th>Typical use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.unbounded</code> (default)</td>
+      <td>Never full</td>
+      <td>Everything</td>
+      <td>Bounded, bursty sources where every value matters</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.bufferingOldest(n)</code></td>
+      <td>Drops the <em>new</em> value</td>
+      <td>The first <code class="language-plaintext highlighter-rouge">n</code> values</td>
+      <td>First-come work where later duplicates are redundant</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">.bufferingNewest(n)</code></td>
+      <td>Drops the <em>oldest</em> buffered value</td>
+      <td>The latest <code class="language-plaintext highlighter-rouge">n</code> values</td>
+      <td>State, progress, positions: anything where newer supersedes older</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code class="language-plaintext highlighter-rouge">yield</code> reports what happened to each value through <code class="language-plaintext highlighter-rouge">YieldResult</code>: <code class="language-plaintext highlighter-rouge">.enqueued(remaining:)</code>, <code class="language-plaintext highlighter-rouge">.dropped(element)</code>, or <code class="language-plaintext highlighter-rouge">.terminated</code>. The experiment below yields 1,000 values while the consumer is busy elsewhere, then lets the consumer drain whatever the stream kept:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">StreamRun</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">delivered</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span>
+    <span class="k">let</span> <span class="nv">enqueued</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">dropped</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">flood</span><span class="p">(</span><span class="nv">policy</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="o">.</span><span class="kt">BufferingPolicy</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">StreamRun</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="n">policy</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">enqueued</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">var</span> <span class="nv">dropped</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span> <span class="p">{</span>          <span class="c1">// The consumer is not reading yet: everything goes to the buffer.</span>
+        <span class="k">switch</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">enqueued</span><span class="p">:</span> <span class="n">enqueued</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">dropped</span><span class="p">:</span> <span class="n">dropped</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">terminated</span><span class="p">:</span> <span class="k">break</span>
+        <span class="kd">@unknown</span> <span class="k">default</span><span class="p">:</span> <span class="k">break</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">delivered</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span>
+        <span class="n">delivered</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">StreamRun</span><span class="p">(</span><span class="nv">delivered</span><span class="p">:</span> <span class="n">delivered</span><span class="p">,</span> <span class="nv">enqueued</span><span class="p">:</span> <span class="n">enqueued</span><span class="p">,</span> <span class="nv">dropped</span><span class="p">:</span> <span class="n">dropped</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">unbounded</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">flood</span><span class="p">(</span><span class="nv">policy</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unbounded</span><span class="o">.</span><span class="n">delivered</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">unbounded</span><span class="o">.</span><span class="n">dropped</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">oldest</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">flood</span><span class="p">(</span><span class="nv">policy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingOldest</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">oldest</span><span class="o">.</span><span class="n">delivered</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">oldest</span><span class="o">.</span><span class="n">dropped</span> <span class="o">==</span> <span class="mi">990</span><span class="p">,</span> <span class="s">"Kept the first ten, dropped every later value"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">newest</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">flood</span><span class="p">(</span><span class="nv">policy</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">newest</span><span class="o">.</span><span class="n">delivered</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">990</span><span class="o">..&lt;</span><span class="mi">1_000</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">newest</span><span class="o">.</span><span class="n">dropped</span> <span class="o">==</span> <span class="mi">990</span><span class="p">,</span> <span class="s">"Kept the latest ten, evicting older ones"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The unbounded stream held all 1,000 values. Each bounded policy kept exactly ten and dropped 990, but different ones: <code class="language-plaintext highlighter-rouge">bufferingOldest</code> kept 0 through 9 and refused everything after; <code class="language-plaintext highlighter-rouge">bufferingNewest</code> kept 990 through 999, evicting older values as newer ones arrived. When a consumer is already waiting at the moment of a <code class="language-plaintext highlighter-rouge">yield</code>, the value is handed to it directly without touching the buffer, so in a live stream a bounded policy can deliver one more value than its limit.</p>
+
+<p>Two details matter in practice:</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">.unbounded</code> is the default.</strong> A stream created without a policy has no memory limit. That is fine for a delegate that reports a handful of events. It is a slow leak for a high-frequency source, such as motion data, audio levels, or download progress, paired with a consumer that occasionally stalls.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">bufferingNewest(1)</code> is “latest value” semantics.</strong> The consumer always sees the most recent state, never more than one value behind. For UI it is usually the right policy; staleness is bounded by one consumer iteration.</li>
+</ul>
+
+<h2 id="asyncstream-cannot-apply-backpressure"><code class="language-plaintext highlighter-rouge">AsyncStream</code> cannot apply backpressure</h2>
+
+<p>Dropping values is acceptable when values supersede each other. It is not acceptable for a file upload, a database import, or a log shipper, where every value must be processed. For those, the producer must slow down when the consumer cannot keep up.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AsyncStream.Continuation.yield</code> is synchronous. It cannot suspend the producer, so it cannot transmit the consumer’s pace. A proposal to add backpressure to <code class="language-plaintext highlighter-rouge">AsyncStream</code>, <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0406-async-stream-backpressure.md">SE-0406</a>, was returned for revision and is not part of the Swift 6.4 standard library. Until something like it ships, backpressure needs one of three designs:</p>
+
+<ol>
+  <li><strong>Pull-based production.</strong> If the source can produce on request, use <code class="language-plaintext highlighter-rouge">AsyncStream(unfolding:)</code> or a custom <code class="language-plaintext highlighter-rouge">AsyncSequence</code>. The producer runs only when the consumer calls <code class="language-plaintext highlighter-rouge">next()</code>, so it can never get ahead.</li>
+  <li><strong>A channel whose <code class="language-plaintext highlighter-rouge">send</code> suspends.</strong> The <a href="https://github.com/apple/swift-async-algorithms">swift-async-algorithms</a> package provides <code class="language-plaintext highlighter-rouge">AsyncChannel</code>, where <code class="language-plaintext highlighter-rouge">send</code> suspends until a consumer takes the value. A bounded buffer generalizes that to “suspend only when <code class="language-plaintext highlighter-rouge">n</code> values are waiting.”</li>
+  <li><strong>Source-level flow control.</strong> Pause and resume the underlying source, for example by suspending a <code class="language-plaintext highlighter-rouge">URLSessionTask</code> or stopping a sensor, driven by buffer depth. This is the only option when the source itself cannot wait, such as a network socket that keeps receiving.</li>
+</ol>
+
+<h2 id="a-bounded-channel-with-backpressure">A bounded channel with backpressure</h2>
+
+<p>A bounded channel is a buffer of capacity \(n\) where <code class="language-plaintext highlighter-rouge">send</code> suspends while the buffer is full and <code class="language-plaintext highlighter-rouge">receive</code> suspends while it is empty. An actor makes the bookkeeping straightforward:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// A single-consumer channel whose `send` suspends while `capacity` values are waiting.</span>
+<span class="kd">actor</span> <span class="kt">BoundedChannel</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">buffer</span><span class="p">:</span> <span class="p">[</span><span class="kt">Element</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waitingSenders</span><span class="p">:</span> <span class="p">[</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waitingReceiver</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">?,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">isFinished</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">peakBuffered</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">precondition</span><span class="p">(</span><span class="n">capacity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Returns false if the channel was finished before the value could be sent.</span>
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">element</span><span class="p">:</span> <span class="kt">Element</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">while</span> <span class="n">buffer</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="n">capacity</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isFinished</span> <span class="p">{</span>
+            <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">waitingSenders</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">isFinished</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">receiver</span> <span class="o">=</span> <span class="n">waitingReceiver</span> <span class="p">{</span>
+            <span class="n">waitingReceiver</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="n">receiver</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">element</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">buffer</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+            <span class="n">peakBuffered</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="n">peakBuffered</span><span class="p">,</span> <span class="n">buffer</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Returns nil once the channel is finished and drained.</span>
+    <span class="kd">func</span> <span class="nf">receive</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Element</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="o">!</span><span class="n">buffer</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">element</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="nf">removeFirst</span><span class="p">()</span>
+            <span class="k">if</span> <span class="o">!</span><span class="n">waitingSenders</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
+                <span class="n">waitingSenders</span><span class="o">.</span><span class="nf">removeFirst</span><span class="p">()</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">element</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">isFinished</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">waitingReceiver</span> <span class="o">=</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">finish</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">isFinished</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="n">waitingReceiver</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+        <span class="n">waitingReceiver</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">for</span> <span class="n">sender</span> <span class="k">in</span> <span class="n">waitingSenders</span> <span class="p">{</span>
+            <span class="n">sender</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">waitingSenders</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Two parts of this design come straight from the <a href="/swift-actor-reentrancy/">actor reentrancy article</a>. The <code class="language-plaintext highlighter-rouge">while</code> loop in <code class="language-plaintext highlighter-rouge">send</code>, rather than an <code class="language-plaintext highlighter-rouge">if</code>, re-checks the condition after every wake-up, because another sender may have filled the freed slot while this one was suspended. And every continuation is removed from the actor’s state at the moment it is resumed, so none can be resumed twice.</p>
+
+<p>With a fast producer and a slow consumer, the buffer never exceeds its capacity and nothing is lost:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">channel</span> <span class="o">=</span> <span class="kt">BoundedChannel</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">capacity</span><span class="p">:</span> <span class="mi">8</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">channelProducer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">sent</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span> <span class="n">sent</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">sent</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">channelDelivered</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">while</span> <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="nf">receive</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">channelDelivered</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">microseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>     <span class="c1">// A slow consumer.</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">channelSent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">channelProducer</span><span class="o">.</span><span class="n">value</span>
+<span class="k">let</span> <span class="nv">channelPeak</span> <span class="o">=</span> <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">peakBuffered</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">channelSent</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="n">channelDelivered</span> <span class="o">==</span> <span class="kt">Array</span><span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">200</span><span class="p">),</span> <span class="s">"Every value, in order"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">channelPeak</span> <span class="o">&lt;=</span> <span class="mi">8</span><span class="p">,</span> <span class="s">"Memory is bounded by the capacity"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The producer ran exactly as fast as the consumer allowed: whenever eight values were waiting, its <code class="language-plaintext highlighter-rouge">send</code> suspended until the consumer took one. Memory is bounded by the capacity, and staleness by \(W = n/\mu\).</p>
+
+<p>This channel is deliberately small, and a production version needs more:</p>
+
+<ul>
+  <li><strong>Cancellation.</strong> A sender cancelled while suspended stays suspended until space appears. Removing it requires the cancellation-handler pattern from the <a href="/swift-cancellation-handlers-cleanup/">cancellation handlers article</a>, with an identifier per waiter.</li>
+  <li><strong>Multiple consumers.</strong> <code class="language-plaintext highlighter-rouge">waitingReceiver</code> holds a single continuation. More consumers need a queue of them.</li>
+  <li><strong>Priority.</strong> Waiting senders are suspended through continuations, which hide the dependency from priority escalation, as the <a href="/swift-task-priority/">priority article</a> shows.</li>
+</ul>
+
+<p>For most code, a well-tested library type such as <code class="language-plaintext highlighter-rouge">AsyncChannel</code> is the better choice. Building one once is the best way to understand what it does.</p>
+
+<h2 id="backpressure-must-hold-at-every-stage">Backpressure must hold at every stage</h2>
+
+<p>In a multi-stage pipeline, backpressure propagates only if <em>every</em> stage is pull-based or suspending. A single push-based stage breaks the chain:</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: One push-based stage breaks backpressure propagation in a pipeline
+    subgraph Good["Backpressure propagates"]
+        A1["Source, pull-based"] --&gt; B1["Transform, pulls from source"] --&gt; C1["Bounded channel"] --&gt; D1["Slow consumer"]
+    end
+    subgraph Broken["Backpressure stops at the AsyncStream"]
+        A2["Source"] --&gt; B2["Task that yields into AsyncStream"] --&gt; C2[["Unbounded buffer grows"]] --&gt; D2["Slow consumer"]
+    end
+</code></pre>
+
+<p>The broken shape is common: a task reads from a pull-based source as fast as it can and yields every element into an <code class="language-plaintext highlighter-rouge">AsyncStream</code> for “decoupling.” The source is now read at full speed, the stream’s default buffer is unbounded, and the slow consumer’s pace never reaches the source. Either replace the stream with a suspending channel, or let the consumer pull from the source directly.</p>
+
+<h2 id="termination-and-what-happens-to-buffered-values">Termination and what happens to buffered values</h2>
+
+<p>A stream ends in one of three ways, and each treats the buffer differently:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">terminationLog</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+<span class="c1">// 1. finish(): buffered values are delivered, then the loop ends normally.</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">finishing</span><span class="p">,</span> <span class="nv">finishingContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="n">finishingContinuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">reason</span> <span class="k">in</span>
+    <span class="n">terminationLog</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"finishing: </span><span class="se">\(</span><span class="n">reason</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">3</span> <span class="p">{</span> <span class="n">finishingContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">finishingContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">drained</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">finishing</span> <span class="p">{</span> <span class="n">drained</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">drained</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="c1">// 2. finish(throwing:): buffered values are delivered, then the error is thrown.</span>
+<span class="kd">struct</span> <span class="kt">FeedBroke</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">failing</span><span class="p">,</span> <span class="nv">failingContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncThrowingStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">throwing</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">3</span> <span class="p">{</span> <span class="n">failingContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">failingContinuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="kt">FeedBroke</span><span class="p">())</span>
+<span class="k">var</span> <span class="nv">beforeFailure</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">failing</span> <span class="p">{</span> <span class="n">beforeFailure</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The stream must end with its error"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">is</span> <span class="kt">FeedBroke</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">beforeFailure</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s">"Values buffered before the error still arrive first"</span><span class="p">)</span>
+
+<span class="c1">// 3. Consumer cancellation while the consumer is busy in its loop body.</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">abandoned</span><span class="p">,</span> <span class="nv">abandonedContinuation</span><span class="p">)</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="n">abandonedContinuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="n">reason</span> <span class="k">in</span>
+    <span class="n">terminationLog</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"abandoned: </span><span class="se">\(</span><span class="n">reason</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">abandoningConsumer</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">var</span> <span class="nv">seen</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">value</span> <span class="k">in</span> <span class="n">abandoned</span> <span class="p">{</span>
+        <span class="n">seen</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">, cancelled: </span><span class="se">\(</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>         <span class="c1">// Busy, not waiting in next().</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">seen</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">3</span> <span class="p">{</span> <span class="n">abandonedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">abandoningConsumer</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">yieldRightAfterCancel</span> <span class="o">=</span> <span class="n">abandonedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">seenAfterCancellation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">abandoningConsumer</span><span class="o">.</span><span class="n">value</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">enqueued</span> <span class="o">=</span> <span class="n">yieldRightAfterCancel</span> <span class="p">{}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"The stream had not yet noticed the cancellation"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">seenAfterCancellation</span> <span class="o">==</span> <span class="p">[</span><span class="s">"1, cancelled: false"</span><span class="p">,</span> <span class="s">"2, cancelled: true"</span><span class="p">,</span> <span class="s">"3, cancelled: true"</span><span class="p">,</span> <span class="s">"4, cancelled: true"</span><span class="p">])</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">terminated</span> <span class="o">=</span> <span class="n">abandonedContinuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">{}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Once the consumer returned to next(), the stream terminated"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">terminationLog</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="p">[</span><span class="s">"finishing: finished"</span><span class="p">,</span> <span class="s">"abandoned: cancelled"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The third case surprised me when I first ran it, and it is worth reading the trace closely. The consumer was cancelled while it was busy in its loop body, sleeping, rather than waiting in <code class="language-plaintext highlighter-rouge">next()</code>. At that moment the stream did not know about the cancellation at all: a <code class="language-plaintext highlighter-rouge">yield</code> immediately after <code class="language-plaintext highlighter-rouge">cancel()</code> returned <code class="language-plaintext highlighter-rouge">.enqueued</code>. Only when the consumer came back and called <code class="language-plaintext highlighter-rouge">next()</code> did the stream terminate, run <code class="language-plaintext highlighter-rouge">onTermination</code> with <code class="language-plaintext highlighter-rouge">.cancelled</code>, and refuse further values. Even then, everything already in the buffer, including the value yielded <em>after</em> <code class="language-plaintext highlighter-rouge">cancel()</code>, was delivered to the cancelled loop before it ended.</p>
+
+<p>When the consumer is instead waiting inside <code class="language-plaintext highlighter-rouge">next()</code> at the moment of cancellation, the stream terminates immediately: in a separate run, <code class="language-plaintext highlighter-rouge">onTermination</code> fired before <code class="language-plaintext highlighter-rouge">cancel()</code> even returned, and the next <code class="language-plaintext highlighter-rouge">yield</code> returned <code class="language-plaintext highlighter-rouge">.terminated</code>.</p>
+
+<p>The consequences for design:</p>
+
+<ul>
+  <li><strong>Finishing is graceful.</strong> A producer that calls <code class="language-plaintext highlighter-rouge">finish()</code> can rely on the consumer seeing everything already yielded. Use it for orderly shutdown.</li>
+  <li><strong>Errors are ordered.</strong> <code class="language-plaintext highlighter-rouge">finish(throwing:)</code> does not jump the queue. A consumer that must react to the error immediately, for example to show “connection lost” without first rendering stale buffered updates, needs <code class="language-plaintext highlighter-rouge">bufferingNewest(1)</code> or a separate signal.</li>
+  <li><strong>Cancellation is noticed at <code class="language-plaintext highlighter-rouge">next()</code>, and buffered values still drain.</strong> A cancelled consumer keeps receiving whatever is buffered, and the producer can keep yielding until the consumer next asks for a value. A consumer that must stop immediately should check <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> at the top of its loop body and <code class="language-plaintext highlighter-rouge">break</code>; a producer that must stop immediately should not rely on <code class="language-plaintext highlighter-rouge">yield</code> returning <code class="language-plaintext highlighter-rouge">.terminated</code> promptly. Values that must not be lost, such as pending uploads, need the producer’s own record of what was delivered.</li>
+</ul>
+
+<h2 id="choosing-a-design">Choosing a design</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Values are…</th>
+      <th>Consumer may fall behind because…</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>State or progress, newer supersedes older</td>
+      <td>UI updates are slower than the source</td>
+      <td><code class="language-plaintext highlighter-rouge">bufferingNewest(1)</code></td>
+    </tr>
+    <tr>
+      <td>Events, occasional bursts, all needed</td>
+      <td>Short stalls</td>
+      <td><code class="language-plaintext highlighter-rouge">.unbounded</code>, with a bounded source</td>
+    </tr>
+    <tr>
+      <td>Events, sustained high rate, all needed</td>
+      <td>The consumer is fundamentally slower</td>
+      <td>A suspending channel, or pull-based production</td>
+    </tr>
+    <tr>
+      <td>Work items, first submission wins</td>
+      <td>Duplicates arrive while busy</td>
+      <td><code class="language-plaintext highlighter-rouge">bufferingOldest(n)</code></td>
+    </tr>
+    <tr>
+      <td>Bytes from a network socket</td>
+      <td>Disk or decoding is slower than the network</td>
+      <td>Source-level flow control</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>When producers outpace consumers, buffers grow as \((\lambda - \mu)\,t\) and staleness as \(L / \mu\).</li>
+  <li><code class="language-plaintext highlighter-rouge">AsyncStream</code> buffers or drops; its <code class="language-plaintext highlighter-rouge">yield</code> never suspends, so it cannot apply backpressure. The default policy is unbounded.</li>
+  <li><code class="language-plaintext highlighter-rouge">bufferingNewest(n)</code> keeps the latest values and <code class="language-plaintext highlighter-rouge">bufferingOldest(n)</code> the first; with \(n = 10\), each kept ten of 1,000 and dropped 990.</li>
+  <li>For backpressure, use pull-based production or a channel whose <code class="language-plaintext highlighter-rouge">send</code> suspends. A bounded channel kept the buffer at its capacity of 8 while delivering all 200 values in order.</li>
+  <li>Backpressure holds only if every pipeline stage respects it.</li>
+  <li><code class="language-plaintext highlighter-rouge">finish()</code> and <code class="language-plaintext highlighter-rouge">finish(throwing:)</code> deliver buffered values first. A stream notices consumer cancellation only at <code class="language-plaintext highlighter-rouge">next()</code>, and still delivers buffered values to the cancelled loop.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add cancellation support to <code class="language-plaintext highlighter-rouge">BoundedChannel.send</code>: a sender cancelled while waiting for space must return <code class="language-plaintext highlighter-rouge">false</code> promptly and leave no continuation behind, even if cancellation races with a receiver freeing a slot. Use <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code> and give each waiting sender an identifier. Then build a three-stage pipeline, reading lines, parsing them, and writing records, connected by two bounded channels, and verify with <code class="language-plaintext highlighter-rouge">peakBuffered</code> that a slow writer keeps both channels at their capacity rather than letting the reader run ahead.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0314-async-stream.md">SE-0314: AsyncStream and AsyncThrowingStream</a>, on buffering policies.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0406-async-stream-backpressure.md">SE-0406: Backpressure support for AsyncStream</a>, returned for revision.</li>
+  <li><a href="https://github.com/apple/swift-async-algorithms">swift-async-algorithms</a>, including <code class="language-plaintext highlighter-rouge">AsyncChannel</code> and <code class="language-plaintext highlighter-rouge">AsyncThrowingChannel</code>.</li>
+  <li><a href="/swift-parallel-mapreduce/">Parallel Algorithms and MapReduce in Swift</a>, for the work-and-span view of pipeline throughput.</li>
+</ul>
+
+<p>Previous: <a href="/swift-asyncstream/">Building Streams with <code class="language-plaintext highlighter-rouge">AsyncStream</code> and <code class="language-plaintext highlighter-rouge">AsyncThrowingStream</code></a>. Next: <a href="/swift-checked-continuations/">Bridging Callback APIs with Checked Continuations</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-stream-backpressure/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Buffering%2C+Backpressure%2C+and+Stream+Termination+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-stream-backpressure%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-stream-backpressure/&title=Buffering%2C+Backpressure%2C+and+Stream+Termination+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-stream-backpressure/&title=Buffering%2C+Backpressure%2C+and+Stream+Termination+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-stream-backpressure/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Buffering, Backpressure, and Stream Termination in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-stream-backpressure/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#AsyncStream">AsyncStream</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Performance">Performance</a></li>
+    
+    <li><a href="/tag/#Streams">Streams</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Testing Publishers" href="/combine-testing-publishers/"> <p>Previous post</p> Testing Publishers </a> </div> <div id="next-post"> <a alt="Debugging Pipelines with print and handleEvents" href="/combine-debugging-print-handleevents/"> <p>Next post</p> Debugging Pipelines with print and handleEvents </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

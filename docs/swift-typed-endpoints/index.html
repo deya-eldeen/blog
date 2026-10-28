@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Building Typed Endpoints and Request Bodies in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Building Typed Endpoints and Request Bodies in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A networking layer built from URLRequest values scattered across view models has the same bug in twenty places. One call site forgets Content-Type, another builds its path with string interpolation, a third decodes the response into the wrong model because it copied the wrong line. None of these are hard problems. They are repeated problems, and the fix for a repeated problem is to describe each endpoint once, as a value, and let one piece of code turn every description into a request. This article builds that description: a generic Endpoint&lt;Response&gt; type that ties a method, a path, a query, a body, and the expected response type together, so that the compiler checks what string-based code leaves to code review. It covers request bodies in detail, including the subtle difference between a missing field and a null one that every PATCH endpoint depends on." /> <meta property="og:description" content="A networking layer built from URLRequest values scattered across view models has the same bug in twenty places. One call site forgets Content-Type, another builds its path with string interpolation, a third decodes the response into the wrong model because it copied the wrong line. None of these are hard problems. They are repeated problems, and the fix for a repeated problem is to describe each endpoint once, as a value, and let one piece of code turn every description into a request. This article builds that description: a generic Endpoint&lt;Response&gt; type that ties a method, a path, a query, a body, and the expected response type together, so that the compiler checks what string-based code leaves to code review. It covers request bodies in detail, including the subtle difference between a missing field and a null one that every PATCH endpoint depends on." /> <link rel="canonical" href="https://swiftbydeya.com/swift-typed-endpoints/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-typed-endpoints/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-15T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Building Typed Endpoints and Request Bodies in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-15T00:00:00+03:00","datePublished":"2026-09-15T00:00:00+03:00","description":"A networking layer built from URLRequest values scattered across view models has the same bug in twenty places. One call site forgets Content-Type, another builds its path with string interpolation, a third decodes the response into the wrong model because it copied the wrong line. None of these are hard problems. They are repeated problems, and the fix for a repeated problem is to describe each endpoint once, as a value, and let one piece of code turn every description into a request. This article builds that description: a generic Endpoint&lt;Response&gt; type that ties a method, a path, a query, a body, and the expected response type together, so that the compiler checks what string-based code leaves to code review. It covers request bodies in detail, including the subtle difference between a missing field and a null one that every PATCH endpoint depends on.","headline":"Building Typed Endpoints and Request Bodies in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-typed-endpoints/"},"url":"https://swiftbydeya.com/swift-typed-endpoints/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Building Typed Endpoints and Request Bodies in Swift"> <meta name="twitter:description" content="A networking layer built from URLRequest values scattered across view models has the same bug in twenty places. One call site forgets Content-Type, another b..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Building Typed Endpoints and Request Bodies in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Building Typed Endpoints and Request Bodies in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-15T00:00:00+03:00">September 15, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A networking layer built from <code class="language-plaintext highlighter-rouge">URLRequest</code> values scattered across view models has the same bug in twenty places. One call site forgets <code class="language-plaintext highlighter-rouge">Content-Type</code>, another builds its path with string interpolation, a third decodes the response into the wrong model because it copied the wrong line. None of these are hard problems. They are repeated problems, and the fix for a repeated problem is to describe each endpoint once, as a value, and let one piece of code turn every description into a request.</p>
+
+<p>This article builds that description: a generic <code class="language-plaintext highlighter-rouge">Endpoint&lt;Response&gt;</code> type that ties a method, a path, a query, a body, and the expected response type together, so that the compiler checks what string-based code leaves to code review. It covers request bodies in detail, including the subtle difference between a missing field and a <code class="language-plaintext highlighter-rouge">null</code> one that every <code class="language-plaintext highlighter-rouge">PATCH</code> endpoint depends on.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="what-an-endpoint-is">What an endpoint is</h2>
+
+<p>From the client’s point of view, an endpoint is a function from some inputs to a typed result, implemented by an HTTP exchange. Everything needed to perform that exchange is data:</p>
+
+<pre><code class="language-mermaid">classDiagram
+    accTitle: The parts of a typed endpoint and how they become a request
+    class Endpoint~Response~ {
+        method: HTTPMethod
+        path: [PathSegment]
+        query: [URLQueryItem]
+        headers: [String: String]
+        body: RequestBody?
+        decode(Data, HTTPURLResponse) Response
+    }
+    class RequestBody {
+        &lt;&lt;enumeration&gt;&gt;
+        json(Encodable)
+        form([URLQueryItem])
+        raw(Data, contentType)
+    }
+    class URLRequest
+    Endpoint --&gt; RequestBody
+    Endpoint ..&gt; URLRequest : urlRequest(baseURL)
+</code></pre>
+
+<p>The <code class="language-plaintext highlighter-rouge">Response</code> type parameter is a <strong>phantom</strong> in the request-building half: no stored property of the request depends on it. It exists so that <code class="language-plaintext highlighter-rouge">client.send(.book(id))</code> has the type <code class="language-plaintext highlighter-rouge">Book</code> and <code class="language-plaintext highlighter-rouge">client.send(.loans)</code> has the type <code class="language-plaintext highlighter-rouge">[Loan]</code>, without a cast, and without the possibility of decoding one into the other.</p>
+
+<h2 id="methods-segments-and-ids">Methods, segments, and IDs</h2>
+
+<p>Start with the vocabulary. <code class="language-plaintext highlighter-rouge">HTTPMethod</code> is a struct with static members rather than an enum, so an API with an unusual method can still be described, and it records whether the method has defined body semantics:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">struct</span> <span class="kt">HTTPMethod</span><span class="p">:</span> <span class="kt">Hashable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">rawValue</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kt">Bool</span>
+
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">get</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"GET"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">head</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"HEAD"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">delete</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"DELETE"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">post</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"POST"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">put</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"PUT"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">patch</span> <span class="o">=</span> <span class="kt">HTTPMethod</span><span class="p">(</span><span class="nv">rawValue</span><span class="p">:</span> <span class="s">"PATCH"</span><span class="p">,</span> <span class="nv">allowsBody</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">PathSegment</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">ExpressibleByStringLiteral</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">literal</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>  <span class="c1">// part of the route, written in code</span>
+    <span class="k">case</span> <span class="nf">value</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>    <span class="c1">// data: encoded as exactly one segment</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">stringLiteral</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span> <span class="o">=</span> <span class="o">.</span><span class="nf">literal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">PathSegment</code> comes from <a href="/swift-urls-query-percent-encoding/">URLs, Query Parameters, and Percent Encoding</a>, where it kept route templates and data apart. Conforming to <code class="language-plaintext highlighter-rouge">ExpressibleByStringLiteral</code> means routes read naturally: <code class="language-plaintext highlighter-rouge">["books", .value(id)]</code>.</p>
+
+<p>Identifiers deserve their own type. When every ID is a <code class="language-plaintext highlighter-rouge">String</code> or an <code class="language-plaintext highlighter-rouge">Int</code>, nothing stops a call site from passing an author’s ID where a book’s ID was expected, and the server answers with a <code class="language-plaintext highlighter-rouge">404</code> or, worse, a different book. A generic <code class="language-plaintext highlighter-rouge">ID</code> type tagged with the entity it identifies makes that a compile error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Entity</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Hashable</span><span class="p">,</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">CustomStringConvertible</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">rawValue</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">rawValue</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">rawValue</span> <span class="o">=</span> <span class="n">rawValue</span> <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">from</span> <span class="nv">decoder</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Decoder</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="n">rawValue</span> <span class="o">=</span> <span class="k">try</span> <span class="n">decoder</span><span class="o">.</span><span class="nf">singleValueContainer</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">String</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">encode</span><span class="p">(</span><span class="n">to</span> <span class="nv">encoder</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Encoder</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">container</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">singleValueContainer</span><span class="p">()</span>
+        <span class="k">try</span> <span class="n">container</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">rawValue</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="n">rawValue</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Book</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">subtitle</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Author</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Author</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">ID&lt;Book&gt;</code> and <code class="language-plaintext highlighter-rouge">ID&lt;Author&gt;</code> are different types, though both wrap a string and both encode to a plain JSON string. Passing the wrong one is rejected:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile: the identifier types differ.</span>
+<span class="kd">func</span> <span class="nf">book</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">let</span> <span class="nv">author</span> <span class="o">=</span> <span class="kt">Author</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"a-1"</span><span class="p">),</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Frank Herbert"</span><span class="p">)</span>
+<span class="nf">book</span><span class="p">(</span><span class="n">author</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="c1">// error: cannot convert value of type 'ID&lt;Author&gt;' to expected argument type 'ID&lt;Book&gt;'</span>
+</code></pre></div></div>
+
+<p>Storing the raw value as a <code class="language-plaintext highlighter-rouge">String</code> even for APIs that use numeric IDs is deliberate. Numeric IDs above \(2^{53}\) lose precision in JavaScript-based servers and tools, which is why many APIs send them as strings; <a href="/swift-decoding-json-codable/">Decoding JSON with <code class="language-plaintext highlighter-rouge">Codable</code></a> shows what happens to them in Swift.</p>
+
+<h2 id="request-bodies">Request bodies</h2>
+
+<p>A body is bytes plus a <code class="language-plaintext highlighter-rouge">Content-Type</code> that tells the server how to read them. Keeping the two together in one type makes it impossible to set one and forget the other, which <a href="/swift-http-methods-status-codes-headers/">the first article</a> showed <code class="language-plaintext highlighter-rouge">URLSession</code> would otherwise fill in as <code class="language-plaintext highlighter-rouge">application/x-www-form-urlencoded</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">RequestBody</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">json</span><span class="p">(</span><span class="kd">any</span> <span class="kt">Encodable</span> <span class="o">&amp;</span> <span class="kt">Sendable</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">form</span><span class="p">([</span><span class="kt">URLQueryItem</span><span class="p">])</span>
+    <span class="k">case</span> <span class="nf">raw</span><span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">encoded</span><span class="p">(</span><span class="n">with</span> <span class="nv">encoder</span><span class="p">:</span> <span class="kt">JSONEncoder</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="k">self</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="k">let</span> <span class="nv">value</span><span class="p">):</span>
+            <span class="nf">return</span> <span class="p">(</span><span class="k">try</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="s">"application/json"</span><span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">form</span><span class="p">(</span><span class="k">let</span> <span class="nv">items</span><span class="p">):</span>
+            <span class="k">let</span> <span class="nv">pairs</span> <span class="o">=</span> <span class="n">items</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+                <span class="k">let</span> <span class="nv">name</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">addingPercentEncoding</span><span class="p">(</span><span class="nv">withAllowedCharacters</span><span class="p">:</span> <span class="o">.</span><span class="n">urlUnreserved</span><span class="p">)</span><span class="o">!</span>
+                <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span> <span class="p">??</span> <span class="s">""</span><span class="p">)</span><span class="o">.</span><span class="nf">addingPercentEncoding</span><span class="p">(</span><span class="nv">withAllowedCharacters</span><span class="p">:</span> <span class="o">.</span><span class="n">urlUnreserved</span><span class="p">)</span><span class="o">!</span>
+                <span class="k">return</span> <span class="s">"</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s">=</span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">"</span>
+            <span class="p">}</span>
+            <span class="nf">return</span> <span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"&amp;"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="s">"application/x-www-form-urlencoded"</span><span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">raw</span><span class="p">(</span><span class="k">let</span> <span class="nv">data</span><span class="p">,</span> <span class="k">let</span> <span class="nv">contentType</span><span class="p">):</span>
+            <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">contentType</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">CharacterSet</span> <span class="p">{</span>
+    <span class="c1">/// RFC 3986 unreserved characters: the only ones that never need encoding.</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">urlUnreserved</span> <span class="o">=</span> <span class="kt">CharacterSet</span><span class="p">(</span><span class="nv">charactersIn</span><span class="p">:</span>
+        <span class="s">"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The form encoder uses the same strict character set as the query builder in the URL article, for the same reason: in a form body, <code class="language-plaintext highlighter-rouge">+</code> means a space, so a literal plus sign must be sent as <code class="language-plaintext highlighter-rouge">%2B</code>. OAuth token requests are the place most apps meet form bodies, so getting this wrong typically shows up as “invalid_client” for users whose client secret, or password, contains a <code class="language-plaintext highlighter-rouge">+</code>.</p>
+
+<h3 id="deterministic-json">Deterministic JSON</h3>
+
+<p><code class="language-plaintext highlighter-rouge">JSONEncoder</code> does not promise any particular key order. Two encodings of the same value can differ byte for byte, which breaks request signing schemes that hash the body, golden-file tests, and HTTP caches keyed on the body. <code class="language-plaintext highlighter-rouge">.sortedKeys</code> makes output deterministic at a negligible cost:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">makeEncoder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">JSONEncoder</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">encoder</span> <span class="o">=</span> <span class="kt">JSONEncoder</span><span class="p">()</span>
+    <span class="n">encoder</span><span class="o">.</span><span class="n">outputFormatting</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="n">sortedKeys</span><span class="p">,</span> <span class="o">.</span><span class="n">withoutEscapingSlashes</span><span class="p">]</span>
+    <span class="n">encoder</span><span class="o">.</span><span class="n">dateEncodingStrategy</span> <span class="o">=</span> <span class="o">.</span><span class="n">iso8601</span>
+    <span class="k">return</span> <span class="n">encoder</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">encoder</span> <span class="o">=</span> <span class="nf">makeEncoder</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">dune</span> <span class="o">=</span> <span class="kt">Book</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">),</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Dune"</span><span class="p">,</span> <span class="nv">subtitle</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">encodedBook</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="k">try</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">dune</span><span class="p">),</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">encodedBook</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">.withoutEscapingSlashes</code> stops the encoder from writing <code class="language-plaintext highlighter-rouge">/</code> as <code class="language-plaintext highlighter-rouge">\/</code>, which is legal JSON but makes URLs in bodies harder to read in logs. Note also what the output does <em>not</em> contain: <code class="language-plaintext highlighter-rouge">subtitle</code> is <code class="language-plaintext highlighter-rouge">nil</code>, and the synthesized <code class="language-plaintext highlighter-rouge">Encodable</code> conformance omits it.</p>
+
+<h3 id="absent-is-not-null">Absent is not <code class="language-plaintext highlighter-rouge">null</code></h3>
+
+<p>For <code class="language-plaintext highlighter-rouge">POST</code> and <code class="language-plaintext highlighter-rouge">PUT</code>, omitting <code class="language-plaintext highlighter-rouge">nil</code> properties is usually fine. For <code class="language-plaintext highlighter-rouge">PATCH</code> it is a bug waiting to happen. A partial update needs three states per field, and an optional has only two:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Intent</th>
+      <th>JSON Merge Patch (<a href="https://www.rfc-editor.org/rfc/rfc7396">RFC 7396</a>)</th>
+      <th>Synthesized <code class="language-plaintext highlighter-rouge">Encodable</code> with <code class="language-plaintext highlighter-rouge">String?</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Leave the subtitle unchanged</td>
+      <td>field absent</td>
+      <td><code class="language-plaintext highlighter-rouge">nil</code> → absent</td>
+    </tr>
+    <tr>
+      <td>Remove the subtitle</td>
+      <td><code class="language-plaintext highlighter-rouge">"subtitle": null</code></td>
+      <td>not expressible</td>
+    </tr>
+    <tr>
+      <td>Set the subtitle</td>
+      <td><code class="language-plaintext highlighter-rouge">"subtitle": "Book One"</code></td>
+      <td><code class="language-plaintext highlighter-rouge">"Book One"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A small enum supplies the missing state. Its encoding depends on its container: <code class="language-plaintext highlighter-rouge">.unchanged</code> must not produce a key at all, which only the enclosing type can arrange, so the patch type writes its own <code class="language-plaintext highlighter-rouge">encode(to:)</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">PatchField</span><span class="o">&lt;</span><span class="kt">Value</span><span class="p">:</span> <span class="kt">Encodable</span> <span class="o">&amp;</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">unchanged</span>
+    <span class="k">case</span> <span class="nf">set</span><span class="p">(</span><span class="kt">Value</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">clear</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">KeyedEncodingContainer</span> <span class="p">{</span>
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="n">encode</span><span class="o">&lt;</span><span class="kt">Value</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">PatchField</span><span class="o">&lt;</span><span class="kt">Value</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">forKey</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">Key</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">field</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">unchanged</span><span class="p">:</span> <span class="k">break</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="k">let</span> <span class="nv">value</span><span class="p">):</span> <span class="k">try</span> <span class="nf">encode</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">clear</span><span class="p">:</span> <span class="k">try</span> <span class="nf">encodeNil</span><span class="p">(</span><span class="nv">forKey</span><span class="p">:</span> <span class="n">key</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BookPatch</span><span class="p">:</span> <span class="kt">Encodable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">PatchField</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">.</span><span class="n">unchanged</span>
+    <span class="k">var</span> <span class="nv">subtitle</span><span class="p">:</span> <span class="kt">PatchField</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">.</span><span class="n">unchanged</span>
+
+    <span class="kd">enum</span> <span class="kt">CodingKeys</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">CodingKey</span> <span class="p">{</span> <span class="k">case</span> <span class="n">title</span><span class="p">,</span> <span class="n">subtitle</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">encode</span><span class="p">(</span><span class="n">to</span> <span class="nv">encoder</span><span class="p">:</span> <span class="kd">any</span> <span class="kt">Encoder</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">container</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">container</span><span class="p">(</span><span class="nv">keyedBy</span><span class="p">:</span> <span class="kt">CodingKeys</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">container</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">container</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">subtitle</span><span class="p">,</span> <span class="nv">forKey</span><span class="p">:</span> <span class="o">.</span><span class="n">subtitle</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">json</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">Encodable</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="k">try</span> <span class="n">encoder</span><span class="o">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="nf">json</span><span class="p">(</span><span class="kt">BookPatch</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="s">"Dune Messiah"</span><span class="p">))))</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span> <span class="kt">Messiah</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="nf">json</span><span class="p">(</span><span class="kt">BookPatch</span><span class="p">(</span><span class="nv">subtitle</span><span class="p">:</span> <span class="o">.</span><span class="n">clear</span><span class="p">)))</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">subtitle</span><span class="s">":null}"</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="nf">json</span><span class="p">(</span><span class="kt">BookPatch</span><span class="p">()))</span> <span class="o">==</span> <span class="s">"{}"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The empty patch encodes to <code class="language-plaintext highlighter-rouge">{}</code>, which a merge-patch server treats as “change nothing.” A model that used <code class="language-plaintext highlighter-rouge">String?</code> for the patch would have had to choose between never clearing a field and clearing every field the user did not touch.</p>
+
+<h2 id="the-endpoint-type">The endpoint type</h2>
+
+<p>With the parts in place, the endpoint itself is a plain value. The decode step is stored as a closure, so endpoints can describe a JSON payload, an empty <code class="language-plaintext highlighter-rouge">204</code>, or raw bytes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Endpoint</span><span class="o">&lt;</span><span class="kt">Response</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">method</span><span class="p">:</span> <span class="kt">HTTPMethod</span>
+    <span class="k">var</span> <span class="nv">path</span><span class="p">:</span> <span class="p">[</span><span class="kt">PathSegment</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">query</span><span class="p">:</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">RequestBody</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="k">var</span> <span class="nv">decode</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Empty</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="k">where</span> <span class="kt">Response</span><span class="p">:</span> <span class="kt">Decodable</span> <span class="p">{</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">method</span><span class="p">:</span> <span class="kt">HTTPMethod</span><span class="p">,</span> <span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="p">[</span><span class="kt">PathSegment</span><span class="p">],</span> <span class="nv">query</span><span class="p">:</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">RequestBody</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">method</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="nv">query</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="n">body</span><span class="p">,</span>
+                  <span class="nv">decode</span><span class="p">:</span> <span class="p">{</span> <span class="n">data</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">Response</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span> <span class="p">})</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="k">where</span> <span class="kt">Response</span> <span class="o">==</span> <span class="kt">Empty</span> <span class="p">{</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">method</span><span class="p">:</span> <span class="kt">HTTPMethod</span><span class="p">,</span> <span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="p">[</span><span class="kt">PathSegment</span><span class="p">],</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">RequestBody</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">method</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="n">body</span><span class="p">,</span> <span class="nv">decode</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Empty</span><span class="p">()</span> <span class="p">})</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Turning an endpoint into a <code class="language-plaintext highlighter-rouge">URLRequest</code> is the one place that knows the rules: values are encoded as single segments, dot segments are rejected, the query is strictly encoded and sorted, and a body is refused for methods that do not allow one. That last check catches at the source the <code class="language-plaintext highlighter-rouge">GET</code>-with-body error that <code class="language-plaintext highlighter-rouge">URLSession</code> reports as an opaque <code class="language-plaintext highlighter-rouge">-1103</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">EndpointError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">invalidSegment</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">bodyNotAllowed</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">encoder</span><span class="p">:</span> <span class="kt">JSONEncoder</span> <span class="o">=</span> <span class="nf">makeEncoder</span><span class="p">())</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URLRequest</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">url</span> <span class="o">=</span> <span class="n">baseURL</span>
+        <span class="k">for</span> <span class="n">segment</span> <span class="k">in</span> <span class="n">path</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="n">segment</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">literal</span><span class="p">(</span><span class="k">let</span> <span class="nv">route</span><span class="p">):</span>
+                <span class="n">url</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">route</span><span class="p">)</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="k">let</span> <span class="nv">value</span><span class="p">):</span>
+                <span class="k">guard</span> <span class="o">!</span><span class="n">value</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">,</span> <span class="n">value</span> <span class="o">!=</span> <span class="s">"."</span><span class="p">,</span> <span class="n">value</span> <span class="o">!=</span> <span class="s">".."</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">EndpointError</span><span class="o">.</span><span class="nf">invalidSegment</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+                <span class="n">url</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">component</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="nv">directoryHint</span><span class="p">:</span> <span class="o">.</span><span class="n">notDirectory</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="o">!</span><span class="n">query</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">{</span>
+            <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+            <span class="n">components</span><span class="o">.</span><span class="n">percentEncodedQueryItems</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">sorted</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">name</span> <span class="o">&lt;</span> <span class="nv">$1</span><span class="o">.</span><span class="n">name</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+                <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="nf">addingPercentEncoding</span><span class="p">(</span><span class="nv">withAllowedCharacters</span><span class="p">:</span> <span class="o">.</span><span class="n">urlUnreserved</span><span class="p">)</span><span class="o">!</span><span class="p">,</span>
+                             <span class="nv">value</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">?</span><span class="o">.</span><span class="nf">addingPercentEncoding</span><span class="p">(</span><span class="nv">withAllowedCharacters</span><span class="p">:</span> <span class="o">.</span><span class="n">urlUnreserved</span><span class="p">))</span>
+            <span class="p">}</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span>
+        <span class="p">}</span>
+
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">rawValue</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Accept"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">body</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">method</span><span class="o">.</span><span class="n">allowsBody</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">EndpointError</span><span class="o">.</span><span class="nf">bodyNotAllowed</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="n">body</span><span class="o">.</span><span class="nf">encoded</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">encoder</span><span class="p">)</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">contentType</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">in</span> <span class="n">headers</span> <span class="p">{</span> <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">request</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Headers are applied last, so an endpoint can override <code class="language-plaintext highlighter-rouge">Accept</code> or <code class="language-plaintext highlighter-rouge">Content-Type</code> when it needs to, for example to send <code class="language-plaintext highlighter-rouge">application/merge-patch+json</code>, the registered media type for RFC 7396 patches.</p>
+
+<h2 id="describing-an-api">Describing an API</h2>
+
+<p>Endpoints are defined once, as static functions constrained to their response type. The definitions read like an API reference, and each one is a few lines:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Loan</span><span class="p">:</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">book</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">due</span><span class="p">:</span> <span class="kt">Date</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">NewBook</span><span class="p">:</span> <span class="kt">Encodable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">authorID</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Author</span><span class="o">&gt;</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="k">where</span> <span class="kt">Response</span> <span class="o">==</span> <span class="kt">Book</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">book</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> <span class="p">{</span> <span class="kt">Self</span><span class="p">(</span><span class="o">.</span><span class="k">get</span><span class="p">,</span> <span class="p">[</span><span class="s">"books"</span><span class="p">,</span> <span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="n">id</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)])</span> <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">createBook</span><span class="p">(</span><span class="n">_</span> <span class="nv">book</span><span class="p">:</span> <span class="kt">NewBook</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> <span class="p">{</span> <span class="kt">Self</span><span class="p">(</span><span class="o">.</span><span class="n">post</span><span class="p">,</span> <span class="p">[</span><span class="s">"books"</span><span class="p">],</span> <span class="nv">body</span><span class="p">:</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">book</span><span class="p">))</span> <span class="p">}</span>
+
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">updateBook</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">patch</span><span class="p">:</span> <span class="kt">BookPatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">endpoint</span> <span class="o">=</span> <span class="kt">Self</span><span class="p">(</span><span class="o">.</span><span class="n">patch</span><span class="p">,</span> <span class="p">[</span><span class="s">"books"</span><span class="p">,</span> <span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="n">id</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)],</span> <span class="nv">body</span><span class="p">:</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="n">patch</span><span class="p">))</span>
+        <span class="n">endpoint</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">"Content-Type"</span><span class="p">]</span> <span class="o">=</span> <span class="s">"application/merge-patch+json"</span>
+        <span class="k">return</span> <span class="n">endpoint</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="k">where</span> <span class="kt">Response</span> <span class="o">==</span> <span class="p">[</span><span class="kt">Book</span><span class="p">]</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="kt">Self</span><span class="p">(</span><span class="o">.</span><span class="k">get</span><span class="p">,</span> <span class="p">[</span><span class="s">"books"</span><span class="p">],</span> <span class="nv">query</span><span class="p">:</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"q"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">text</span><span class="p">),</span> <span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"limit"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">limit</span><span class="se">)</span><span class="s">"</span><span class="p">)])</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">Endpoint</span> <span class="k">where</span> <span class="kt">Response</span> <span class="o">==</span> <span class="kt">Empty</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">returnBook</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> <span class="p">{</span> <span class="kt">Self</span><span class="p">(</span><span class="o">.</span><span class="n">delete</span><span class="p">,</span> <span class="p">[</span><span class="s">"me"</span><span class="p">,</span> <span class="s">"loans"</span><span class="p">,</span> <span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="n">id</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)])</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Because the endpoints are values, most of their behavior can be tested without any network at all:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">base</span> <span class="o">=</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://api.library.example/v2"</span><span class="p">)</span><span class="o">!</span>
+
+<span class="k">let</span> <span class="nv">search</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Endpoint</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="s">"c++ &amp; rust"</span><span class="p">)</span><span class="o">.</span><span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">base</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">url</span><span class="p">?</span><span class="o">.</span><span class="n">absoluteString</span> <span class="o">==</span> <span class="s">"https://api.library.example/v2/books?limit=20&amp;q=c%2B%2B%20%26%20rust"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">==</span> <span class="s">"GET"</span> <span class="o">&amp;&amp;</span> <span class="n">search</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">patch</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Endpoint</span><span class="o">.</span><span class="nf">updateBook</span><span class="p">(</span><span class="kt">ID</span><span class="p">(</span><span class="s">"b/7"</span><span class="p">),</span> <span class="kt">BookPatch</span><span class="p">(</span><span class="nv">subtitle</span><span class="p">:</span> <span class="o">.</span><span class="n">clear</span><span class="p">))</span><span class="o">.</span><span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">base</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">url</span><span class="p">?</span><span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="nv">percentEncoded</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="o">==</span> <span class="s">"/v2/books/b%2F7"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">==</span> <span class="s">"PATCH"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"application/merge-patch+json"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">==</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">subtitle</span><span class="s">":null}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Endpoint</span><span class="o">&lt;</span><span class="kt">Book</span><span class="o">&gt;</span><span class="p">(</span><span class="o">.</span><span class="k">get</span><span class="p">,</span> <span class="p">[</span><span class="s">"books"</span><span class="p">],</span> <span class="nv">body</span><span class="p">:</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="kt">NewBook</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"x"</span><span class="p">,</span> <span class="nv">authorID</span><span class="p">:</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"a"</span><span class="p">))))</span><span class="o">.</span><span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">base</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"a GET with a body must be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">EndpointError</span> <span class="o">==</span> <span class="o">.</span><span class="nf">bodyNotAllowed</span><span class="p">(</span><span class="s">"GET"</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">Endpoint</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="kt">ID</span><span class="p">(</span><span class="s">".."</span><span class="p">))</span><span class="o">.</span><span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">base</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"dot segments must be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">EndpointError</span> <span class="o">==</span> <span class="o">.</span><span class="nf">invalidSegment</span><span class="p">(</span><span class="s">".."</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>These tests run in microseconds and pin down the exact bytes each endpoint produces. They do not prove that the server agrees with those bytes; <a href="/swift-contract-testing-controlled-server/">Verifying Contracts Against a Controlled Server</a> closes that gap.</p>
+
+<h2 id="sending-endpoints">Sending endpoints</h2>
+
+<p>The client is now generic over the endpoint, and its result type comes from the endpoint. It reuses the status and media-type checks from <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>, simplified here to keep the focus on the endpoint:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">StatusError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span> <span class="k">let</span> <span class="nv">status</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">LibraryClient</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">baseURL</span><span class="p">:</span> <span class="kt">URL</span>
+    <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="o">.</span><span class="n">shared</span>
+
+    <span class="kd">func</span> <span class="n">send</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">endpoint</span><span class="p">:</span> <span class="kt">Endpoint</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">request</span> <span class="o">=</span> <span class="k">try</span> <span class="n">endpoint</span><span class="o">.</span><span class="nf">urlRequest</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">baseURL</span><span class="p">)</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">badServerResponse</span><span class="p">)</span> <span class="p">}</span>
+        <span class="nf">guard</span> <span class="p">(</span><span class="mi">200</span><span class="o">..&lt;</span><span class="mi">300</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">statusCode</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">StatusError</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="n">http</span><span class="o">.</span><span class="n">statusCode</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="n">endpoint</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">http</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A server that records what it receives shows the whole path, from endpoint value to bytes on the wire and back to a typed result:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"GET"</span><span class="p">,</span> <span class="s">"/books/b-7"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"GET"</span><span class="p">,</span> <span class="s">"/books"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"[{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">7</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"},{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">8</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span> <span class="kt">Messiah</span><span class="s">","</span><span class="n">subtitle</span><span class="s">":"</span><span class="kt">Book</span> <span class="kt">Two</span><span class="s">"}]"</span><span class="err">#</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"POST"</span><span class="p">,</span> <span class="s">"/books"</span><span class="p">):</span>
+        <span class="k">guard</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Content-Type"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"application/json"</span><span class="p">,</span>
+              <span class="k">let</span> <span class="nv">new</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">([</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">),</span>
+              <span class="k">let</span> <span class="nv">title</span> <span class="o">=</span> <span class="k">new</span><span class="p">[</span><span class="s">"title"</span><span class="p">]</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"bad request"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">9</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">201</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"Location"</span><span class="p">,</span> <span class="s">"/books/b-9"</span><span class="p">)])</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"PATCH"</span><span class="p">,</span> <span class="s">"/books/b-8"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":"</span><span class="n">b</span><span class="o">-</span><span class="mi">8</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span> <span class="kt">Messiah</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+    <span class="k">case</span> <span class="p">(</span><span class="s">"DELETE"</span><span class="p">,</span> <span class="s">"/me/loans/b-7"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">204</span><span class="p">)</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">LibraryClient</span><span class="p">(</span><span class="nv">baseURL</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">fetched</span><span class="p">:</span> <span class="kt">Book</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">book</span><span class="p">(</span><span class="kt">ID</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">)))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">fetched</span> <span class="o">==</span> <span class="kt">Book</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">),</span> <span class="nv">title</span><span class="p">:</span> <span class="s">"Dune"</span><span class="p">,</span> <span class="nv">subtitle</span><span class="p">:</span> <span class="kc">nil</span><span class="p">))</span>
+
+<span class="k">let</span> <span class="nv">results</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="s">"dune"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="nf">map</span><span class="p">(\</span><span class="o">.</span><span class="n">title</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s">"Dune"</span><span class="p">,</span> <span class="s">"Dune Messiah"</span><span class="p">])</span>
+
+<span class="k">let</span> <span class="nv">created</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">createBook</span><span class="p">(</span><span class="kt">NewBook</span><span class="p">(</span><span class="nv">title</span><span class="p">:</span> <span class="s">"Children of Dune"</span><span class="p">,</span> <span class="nv">authorID</span><span class="p">:</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"a-1"</span><span class="p">))))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">created</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="kt">ID</span><span class="p">(</span><span class="s">"b-9"</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">created</span><span class="o">.</span><span class="n">title</span> <span class="o">==</span> <span class="s">"Children of Dune"</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">updated</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">updateBook</span><span class="p">(</span><span class="kt">ID</span><span class="p">(</span><span class="s">"b-8"</span><span class="p">),</span> <span class="kt">BookPatch</span><span class="p">(</span><span class="nv">subtitle</span><span class="p">:</span> <span class="o">.</span><span class="n">clear</span><span class="p">)))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">updated</span><span class="o">.</span><span class="n">subtitle</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">returned</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">returnBook</span><span class="p">(</span><span class="kt">ID</span><span class="p">(</span><span class="s">"b-7"</span><span class="p">)))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">returned</span> <span class="o">==</span> <span class="kt">Empty</span><span class="p">())</span>
+
+<span class="k">let</span> <span class="nv">wire</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">method</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="nv">$0</span><span class="o">.</span><span class="n">target</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">wire</span> <span class="o">==</span> <span class="p">[</span><span class="s">"GET /books/b-7"</span><span class="p">,</span> <span class="s">"GET /books?limit=20&amp;q=dune"</span><span class="p">,</span> <span class="s">"POST /books"</span><span class="p">,</span> <span class="s">"PATCH /books/b-8"</span><span class="p">,</span> <span class="s">"DELETE /me/loans/b-7"</span><span class="p">])</span>
+<span class="k">let</span> <span class="nv">sentPatch</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sentPatch</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Content-Type"</span><span class="p">)</span> <span class="o">==</span> <span class="s">"application/merge-patch+json"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sentPatch</span><span class="o">.</span><span class="n">body</span> <span class="o">==</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">subtitle</span><span class="s">":null}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">sentPost</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">sentPost</span><span class="o">.</span><span class="n">body</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="err">#</span><span class="s">"{"</span><span class="n">authorID</span><span class="s">":"</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="s">","</span><span class="n">title</span><span class="s">":"</span><span class="kt">Children</span> <span class="n">of</span> <span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The type annotation on <code class="language-plaintext highlighter-rouge">fetched</code> is optional; it is there to show that the result is a <code class="language-plaintext highlighter-rouge">Book</code> because the endpoint said so. <code class="language-plaintext highlighter-rouge">client.send(.returnBook(...))</code> returns <code class="language-plaintext highlighter-rouge">Empty</code> without trying to decode the empty <code class="language-plaintext highlighter-rouge">204</code> body, which would have thrown “The data couldn’t be read because it isn’t in the correct format.”</p>
+
+<h2 id="what-the-types-bought">What the types bought</h2>
+
+<p>Each mistake from the introduction now has a specific place where it cannot happen:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Mistake</th>
+      <th>Where it is prevented</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Missing or wrong <code class="language-plaintext highlighter-rouge">Content-Type</code></td>
+      <td><code class="language-plaintext highlighter-rouge">RequestBody</code> produces bytes and type together</td>
+    </tr>
+    <tr>
+      <td>Path built from unencoded user data</td>
+      <td><code class="language-plaintext highlighter-rouge">PathSegment.value</code> is always one encoded segment</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code> with a body</td>
+      <td><code class="language-plaintext highlighter-rouge">urlRequest</code> throws <code class="language-plaintext highlighter-rouge">bodyNotAllowed</code> before sending</td>
+    </tr>
+    <tr>
+      <td>Wrong ID passed to an endpoint</td>
+      <td><code class="language-plaintext highlighter-rouge">ID&lt;Entity&gt;</code> makes it a compile error</td>
+    </tr>
+    <tr>
+      <td>Response decoded into the wrong model</td>
+      <td>The endpoint’s <code class="language-plaintext highlighter-rouge">Response</code> type fixes the decoder</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PATCH</code> that clears untouched fields</td>
+      <td><code class="language-plaintext highlighter-rouge">PatchField</code> distinguishes absent from <code class="language-plaintext highlighter-rouge">null</code></td>
+    </tr>
+    <tr>
+      <td>Nondeterministic bodies</td>
+      <td>One encoder with <code class="language-plaintext highlighter-rouge">.sortedKeys</code>, used everywhere</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>There is a limit to how far types should go. It is possible to encode every API rule in the type system: path parameters as type-level lists, methods as phantom types, required headers as protocol requirements. Each step makes errors more precise and the code harder to read for the next person. A plain value with a single, well-tested <code class="language-plaintext highlighter-rouge">urlRequest</code> function catches the mistakes that actually happen, and keeps an endpoint definition short enough that reviewing a new one takes a minute.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Describe each endpoint once, as a value that holds method, path, query, headers, body, and how to decode the response.</li>
+  <li>A phantom <code class="language-plaintext highlighter-rouge">Response</code> type parameter makes the result of <code class="language-plaintext highlighter-rouge">send</code> typed and prevents decoding into the wrong model.</li>
+  <li>Tag identifiers with their entity, <code class="language-plaintext highlighter-rouge">ID&lt;Book&gt;</code>, so that mixing them up is a compile error.</li>
+  <li>Keep body bytes and <code class="language-plaintext highlighter-rouge">Content-Type</code> in one type; encode form bodies with the unreserved set, so <code class="language-plaintext highlighter-rouge">+</code> survives.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">.sortedKeys</code> for deterministic JSON. For <code class="language-plaintext highlighter-rouge">PATCH</code>, model absent, <code class="language-plaintext highlighter-rouge">null</code>, and set as three states.</li>
+  <li>Build the <code class="language-plaintext highlighter-rouge">URLRequest</code> in exactly one function, and test it without a network.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add pagination to <code class="language-plaintext highlighter-rouge">Endpoint.search</code> by returning a <code class="language-plaintext highlighter-rouge">Page&lt;Book&gt;</code> that includes a <code class="language-plaintext highlighter-rouge">next</code> cursor, and add an <code class="language-plaintext highlighter-rouge">Endpoint.nextPage(after:)</code> that reuses the original query. Then add an <code class="language-plaintext highlighter-rouge">Endpoint&lt;Data&gt;</code> for downloading a book’s cover image that sets <code class="language-plaintext highlighter-rouge">Accept: image/*</code> and decodes nothing. Write tests that check the exact URL and headers of each new endpoint, and one end-to-end test against <code class="language-plaintext highlighter-rouge">LocalServer</code> that verifies the cover endpoint does not send <code class="language-plaintext highlighter-rouge">Accept: application/json</code>.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc7396">RFC 7396: JSON Merge Patch</a> and <a href="https://www.rfc-editor.org/rfc/rfc6902">RFC 6902: JSON Patch</a>, the two standard <code class="language-plaintext highlighter-rouge">PATCH</code> formats.</li>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc5789">RFC 5789: PATCH Method for HTTP</a>.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/encoding-and-decoding-custom-types">Encoding and Decoding Custom Types</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>. Next: <a href="/swift-decoding-json-codable/">Decoding JSON with <code class="language-plaintext highlighter-rouge">Codable</code></a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-typed-endpoints/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Building+Typed+Endpoints+and+Request+Bodies+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-typed-endpoints%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-typed-endpoints/&title=Building+Typed+Endpoints+and+Request+Bodies+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-typed-endpoints/&title=Building+Typed+Endpoints+and+Request+Bodies+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-typed-endpoints/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Building Typed Endpoints and Request Bodies in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-typed-endpoints/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#API+Design">API Design</a></li>
+    
+    <li><a href="/tag/#Codable">Codable</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Decoding JSON with Codable: Keys, Numbers, Dates, and Failure" href="/swift-decoding-json-codable/"> <p>Previous post</p> Decoding JSON with Codable: Keys, Numbers, Dates, and Failure </a> </div> <div id="next-post"> <a alt="Separating Transport Errors from Application Failures" href="/swift-transport-vs-application-errors/"> <p>Next post</p> Separating Transport Errors from Application Failures </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Isolated and Nonisolated Methods in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Isolated and Nonisolated Methods in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every function in Swift 6 has an isolation: a static answer to the question “which actor’s state may this code touch synchronously?” Most of the time the answer is inferred, from the enclosing type, a protocol, or the default for the module. The keywords isolated and nonisolated let you state it explicitly, and Swift 6.2 adds nonisolated(nonsending) and @concurrent to say where non-isolated asynchronous code runs. Knowing these tools turns many “cannot be called from” errors from obstacles into design decisions. This article walks through each spelling with a compiled example: nonisolated members on actors, isolated parameters that let free functions run on an actor, #isolation for helpers that inherit their caller’s isolation, @isolated(any) closures that carry their isolation with them, the inference rules that decide isolation when you write nothing, and the escape hatch for global variables." /> <meta property="og:description" content="Every function in Swift 6 has an isolation: a static answer to the question “which actor’s state may this code touch synchronously?” Most of the time the answer is inferred, from the enclosing type, a protocol, or the default for the module. The keywords isolated and nonisolated let you state it explicitly, and Swift 6.2 adds nonisolated(nonsending) and @concurrent to say where non-isolated asynchronous code runs. Knowing these tools turns many “cannot be called from” errors from obstacles into design decisions. This article walks through each spelling with a compiled example: nonisolated members on actors, isolated parameters that let free functions run on an actor, #isolation for helpers that inherit their caller’s isolation, @isolated(any) closures that carry their isolation with them, the inference rules that decide isolation when you write nothing, and the escape hatch for global variables." /> <link rel="canonical" href="https://swiftbydeya.com/swift-isolated-nonisolated/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-isolated-nonisolated/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-07-23T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Isolated and Nonisolated Methods in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-07-23T00:00:00+03:00","datePublished":"2026-07-23T00:00:00+03:00","description":"Every function in Swift 6 has an isolation: a static answer to the question “which actor’s state may this code touch synchronously?” Most of the time the answer is inferred, from the enclosing type, a protocol, or the default for the module. The keywords isolated and nonisolated let you state it explicitly, and Swift 6.2 adds nonisolated(nonsending) and @concurrent to say where non-isolated asynchronous code runs. Knowing these tools turns many “cannot be called from” errors from obstacles into design decisions. This article walks through each spelling with a compiled example: nonisolated members on actors, isolated parameters that let free functions run on an actor, #isolation for helpers that inherit their caller’s isolation, @isolated(any) closures that carry their isolation with them, the inference rules that decide isolation when you write nothing, and the escape hatch for global variables.","headline":"Isolated and Nonisolated Methods in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-isolated-nonisolated/"},"url":"https://swiftbydeya.com/swift-isolated-nonisolated/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Isolated and Nonisolated Methods in Swift"> <meta name="twitter:description" content="Every function in Swift 6 has an isolation: a static answer to the question “which actor’s state may this code touch synchronously?” Most of the time the ans..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Isolated and Nonisolated Methods in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Isolated and Nonisolated Methods in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-07-23T00:00:00+03:00">July 23, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every function in Swift 6 has an <strong>isolation</strong>: a static answer to the question “which actor’s state may this code touch synchronously?” Most of the time the answer is inferred, from the enclosing type, a protocol, or the default for the module. The keywords <code class="language-plaintext highlighter-rouge">isolated</code> and <code class="language-plaintext highlighter-rouge">nonisolated</code> let you state it explicitly, and Swift 6.2 adds <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> and <code class="language-plaintext highlighter-rouge">@concurrent</code> to say where non-isolated <em>asynchronous</em> code runs.</p>
+
+<p>Knowing these tools turns many “cannot be called from” errors from obstacles into design decisions. This article walks through each spelling with a compiled example: <code class="language-plaintext highlighter-rouge">nonisolated</code> members on actors, <code class="language-plaintext highlighter-rouge">isolated</code> parameters that let free functions run on an actor, <code class="language-plaintext highlighter-rouge">#isolation</code> for helpers that inherit their caller’s isolation, <code class="language-plaintext highlighter-rouge">@isolated(any)</code> closures that carry their isolation with them, the inference rules that decide isolation when you write nothing, and the escape hatch for global variables.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>; blocks marked “Does not compile” show the diagnostics the compiler produced.</p>
+
+<h2 id="isolation-domains">Isolation domains</h2>
+
+<p>A function’s isolation is one of:</p>
+
+<ul>
+  <li><strong>Actor-instance isolated</strong>: methods of an actor, and functions with an <code class="language-plaintext highlighter-rouge">isolated</code> parameter. They run on that actor instance.</li>
+  <li><strong>Global-actor isolated</strong>: declarations annotated <code class="language-plaintext highlighter-rouge">@MainActor</code> or another global actor, or inferred to be.</li>
+  <li><strong>Non-isolated</strong>: everything else. Non-isolated synchronous code runs wherever it is called. Non-isolated asynchronous code runs on the global concurrent executor or on the caller’s executor, depending on the rules covered below.</li>
+</ul>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: Synchronous calls stay inside a domain while calls between domains are awaited
+    subgraph MA["Main actor domain"]
+        M1["@MainActor func"] -- "sync call" --&gt; M2["@MainActor type member"]
+    end
+    subgraph LA["Ledger actor domain"]
+        L1["Ledger method"] -- "sync call" --&gt; L2["func f(_: isolated Ledger)"]
+    end
+    subgraph NI["Non-isolated"]
+        N1["nonisolated func"]
+        N2["@concurrent func"]
+    end
+    M1 -- "await, Sendable values" --&gt; L1
+    L1 -- "await, Sendable values" --&gt; M2
+    M1 -- "sync call allowed" --&gt; N1
+    L1 -- "sync call allowed" --&gt; N1
+    M1 -- "await, leaves the actor" --&gt; N2
+</code></pre>
+
+<p>The <code class="language-plaintext highlighter-rouge">#isolation</code> macro (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md">SE-0420</a>) evaluates to the current isolation as an <code class="language-plaintext highlighter-rouge">(any Actor)?</code>, which makes it possible to observe:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">func</span> <span class="nf">describe</span><span class="p">(</span><span class="n">_</span> <span class="nv">isolation</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Actor</span><span class="p">)?)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="n">isolation</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="s">"</span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span> <span class="p">??</span> <span class="s">"nonisolated"</span>
+<span class="p">}</span>
+
+<span class="kd">actor</span> <span class="kt">Ledger</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">entries</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">entries</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">whereAmI</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">onMainActor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">plainFunction</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ledger</span> <span class="o">=</span> <span class="kt">Ledger</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"household"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">insideActor</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ledger</span><span class="o">.</span><span class="nf">whereAmI</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">insideMain</span> <span class="o">=</span> <span class="nf">onMainActor</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">insideDetached</span> <span class="o">=</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="n">detached</span> <span class="p">{</span> <span class="nf">plainFunction</span><span class="p">()</span> <span class="p">}</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">insideActor</span> <span class="o">==</span> <span class="s">"Ledger"</span> <span class="o">&amp;&amp;</span> <span class="n">insideMain</span> <span class="o">==</span> <span class="s">"MainActor"</span> <span class="o">&amp;&amp;</span> <span class="n">insideDetached</span> <span class="o">==</span> <span class="s">"nonisolated"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The rules for crossing between domains are simple. Synchronous calls are allowed only within the same domain. Calls into another domain must be <code class="language-plaintext highlighter-rouge">await</code>ed, and the values that cross must be <code class="language-plaintext highlighter-rouge">Sendable</code>, or provably unshared, as the <a href="/swift-sendable/">Sendable article</a> explains.</p>
+
+<h2 id="nonisolated-members-on-an-actor"><code class="language-plaintext highlighter-rouge">nonisolated</code> members on an actor</h2>
+
+<p>An actor’s members are isolated by default. Marking a member <code class="language-plaintext highlighter-rouge">nonisolated</code> removes it from the actor’s domain: it can be called synchronously from anywhere, and in exchange it cannot touch the actor’s mutable state.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Ledger</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span> <span class="p">{</span>
+    <span class="c1">/// Synchronous and callable from anywhere: uses only the immutable, Sendable `name`.</span>
+    <span class="kd">nonisolated</span> <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="s">"Ledger(</span><span class="se">\(</span><span class="n">name</span><span class="se">)</span><span class="s">)"</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Pure helper that needs no actor state.</span>
+    <span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">formatted</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="n">amount</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">?</span> <span class="s">"+</span><span class="se">\(</span><span class="n">amount</span><span class="se">)</span><span class="s">"</span> <span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">amount</span><span class="se">)</span><span class="s">"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">ledger</span><span class="o">.</span><span class="n">description</span> <span class="o">==</span> <span class="s">"Ledger(household)"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">ledger</span><span class="o">.</span><span class="nf">formatted</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="s">"-5"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">extension</span> <span class="kt">Ledger</span> <span class="p">{</span>
+    <span class="kd">nonisolated</span> <span class="k">var</span> <span class="nv">total</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">entries</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">+</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// error: actor-isolated property 'entries' can not be referenced from a nonisolated context</span>
+</code></pre></div></div>
+
+<p>Use <code class="language-plaintext highlighter-rouge">nonisolated</code> for protocol requirements that must be synchronous, such as <code class="language-plaintext highlighter-rouge">description</code>, <code class="language-plaintext highlighter-rouge">hash(into:)</code>, and <code class="language-plaintext highlighter-rouge">Identifiable.id</code> backed by a <code class="language-plaintext highlighter-rouge">let</code>, and for pure helpers that happen to live on an actor type. A <code class="language-plaintext highlighter-rouge">let</code> of <code class="language-plaintext highlighter-rouge">Sendable</code> type is already accessible without <code class="language-plaintext highlighter-rouge">await</code> inside its module; <code class="language-plaintext highlighter-rouge">nonisolated</code> on such a <code class="language-plaintext highlighter-rouge">let</code> makes that true across modules too.</p>
+
+<h2 id="isolated-parameters-running-a-function-on-an-actor"><code class="language-plaintext highlighter-rouge">isolated</code> parameters: running a function on an actor</h2>
+
+<p>A method is not the only way to put code on an actor. A function with a parameter marked <code class="language-plaintext highlighter-rouge">isolated</code> runs on <em>that argument’s</em> actor, and can touch its state synchronously (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0313-actor-isolation-control.md">SE-0313</a>):</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs on `ledger`'s actor. Both appends happen in one job, with no other call in between.</span>
+<span class="kd">func</span> <span class="nf">recordPair</span><span class="p">(</span><span class="n">_</span> <span class="nv">amount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="k">in</span> <span class="nv">ledger</span><span class="p">:</span> <span class="k">isolated</span> <span class="kt">Ledger</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">ledger</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>
+    <span class="n">ledger</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="o">-</span><span class="n">amount</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">await</span> <span class="nf">recordPair</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ledger</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">pairEntries</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">entries</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">pairEntries</span> <span class="o">==</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="o">-</span><span class="mi">25</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Callers outside the actor <code class="language-plaintext highlighter-rouge">await</code> the function as they would a method. Inside, there is no <code class="language-plaintext highlighter-rouge">await</code> between the two <code class="language-plaintext highlighter-rouge">record</code> calls, so the pair is atomic with respect to other calls on the ledger. That is the main reason to use an isolated parameter: <strong>to write multi-step operations against an actor without adding a method to the actor itself</strong>, for example in a different module, in tests, or in a utility that works on any actor conforming to a protocol.</p>
+
+<p>A function may have at most one <code class="language-plaintext highlighter-rouge">isolated</code> parameter; two would require running on two actors at once:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">func</span> <span class="nf">moveAll</span><span class="p">(</span><span class="n">from</span> <span class="nv">source</span><span class="p">:</span> <span class="k">isolated</span> <span class="kt">Ledger</span><span class="p">,</span> <span class="n">to</span> <span class="nv">destination</span><span class="p">:</span> <span class="k">isolated</span> <span class="kt">Ledger</span><span class="p">)</span> <span class="p">{}</span>
+<span class="c1">// error: cannot have more than one 'isolated' parameter</span>
+</code></pre></div></div>
+
+<p>Operations across two actors remain non-atomic, exactly as the <a href="/swift-actors/">actors article</a> describes for transfers between accounts.</p>
+
+<h2 id="inheriting-the-callers-isolation">Inheriting the caller’s isolation</h2>
+
+<p>Generic helpers that take closures face a dilemma. If the helper is non-isolated and <code class="language-plaintext highlighter-rouge">async</code>, then under default Swift 6 rules it runs on the global executor, so the closure it calls must be <code class="language-plaintext highlighter-rouge">@Sendable</code>, and callers on the main actor cannot capture their non-<code class="language-plaintext highlighter-rouge">Sendable</code> state in it. The fix is for the helper to run in whatever isolation its caller has.</p>
+
+<p>The Swift 6.0 way is an <code class="language-plaintext highlighter-rouge">isolated</code> optional parameter defaulted to <code class="language-plaintext highlighter-rouge">#isolation</code>. The default is evaluated at the call site, so the helper inherits the caller’s actor, or <code class="language-plaintext highlighter-rouge">nil</code> if the caller is non-isolated:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs `body` with retries, on the caller's actor, so `body` need not be Sendable.</span>
+<span class="kd">func</span> <span class="n">withRetries</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span>
+    <span class="n">_</span> <span class="nv">attempts</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span>
+    <span class="nv">isolation</span><span class="p">:</span> <span class="nf">isolated</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Actor</span><span class="p">)?</span> <span class="o">=</span> <span class="k">#isolation</span><span class="p">,</span>
+    <span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span>
+<span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+    <span class="nf">precondition</span><span class="p">(</span><span class="n">attempts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">lastError</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">attempts</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">body</span><span class="p">()</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">lastError</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">throw</span> <span class="n">lastError</span><span class="o">!</span>
+<span class="p">}</span>
+
+<span class="c1">/// A non-Sendable class used only on the main actor.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">AttemptLog</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">attempts</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Flaky</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">retryOnMainActor</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="p">[</span><span class="kt">String</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">AttemptLog</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">remainingFailures</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withRetries</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">attempts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">remainingFailures</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+            <span class="n">remainingFailures</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">throw</span> <span class="kt">Flaky</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="mi">42</span>
+    <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">log</span><span class="o">.</span><span class="n">attempts</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="p">(</span><span class="nv">retried</span><span class="p">,</span> <span class="nv">attemptIsolations</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">retryOnMainActor</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">retried</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">attemptIsolations</span> <span class="o">==</span> <span class="p">[</span><span class="s">"MainActor"</span><span class="p">,</span> <span class="s">"MainActor"</span><span class="p">,</span> <span class="s">"MainActor"</span><span class="p">],</span> <span class="s">"Every attempt ran on the caller's actor"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The closure mutates a non-<code class="language-plaintext highlighter-rouge">Sendable</code> <code class="language-plaintext highlighter-rouge">AttemptLog</code> and a local variable, which would be rejected if the closure crossed into another domain. It never does: <code class="language-plaintext highlighter-rouge">withRetries</code> runs on the main actor because its caller does.</p>
+
+<p>Swift 6.2 offers a shorter spelling of the same idea. A <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> async function runs on its caller’s executor without an explicit parameter (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0461-async-function-isolation.md">SE-0461</a>):</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">nonisolated</span><span class="p">(</span><span class="n">nonsending</span><span class="p">)</span>
+<span class="kd">func</span> <span class="n">withRetriesNonsending</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">attempts</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">lastError</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)?</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">attempts</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">body</span><span class="p">()</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">lastError</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">throw</span> <span class="n">lastError</span><span class="o">!</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">retryNonsending</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">log</span> <span class="o">=</span> <span class="kt">AttemptLog</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">failuresLeft</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">withRetriesNonsending</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">attempts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nf">describe</span><span class="p">(</span><span class="k">#isolation</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">failuresLeft</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+            <span class="n">failuresLeft</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">throw</span> <span class="kt">Flaky</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">log</span><span class="o">.</span><span class="n">attempts</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">nonsendingIsolations</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">retryNonsending</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">nonsendingIsolations</span> <span class="o">==</span> <span class="p">[</span><span class="s">"MainActor"</span><span class="p">,</span> <span class="s">"MainActor"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The standard library uses both forms. <code class="language-plaintext highlighter-rouge">withTaskGroup</code>, <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code>, and <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> take <code class="language-plaintext highlighter-rouge">isolation: isolated (any Actor)? = #isolation</code>; newer APIs such as <code class="language-plaintext highlighter-rouge">withTaskCancellationShield</code> are declared <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code>. For your own scoped helpers, prefer <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> when you can require Swift 6.2, and the <code class="language-plaintext highlighter-rouge">#isolation</code> parameter when you need to support older compilers or need the actor value inside the function.</p>
+
+<h2 id="where-non-isolated-async-code-runs">Where non-isolated async code runs</h2>
+
+<p>The previous section depends on a rule worth stating in one place:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Declaration</th>
+      <th>Runs on</th>
+      <th>Arguments and results</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">func f() async</code> under default Swift 6 rules</td>
+      <td>Global concurrent executor</td>
+      <td>Must be <code class="language-plaintext highlighter-rouge">Sendable</code> when called from an actor</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">func f() async</code> with <code class="language-plaintext highlighter-rouge">NonisolatedNonsendingByDefault</code></td>
+      <td>Caller’s executor</td>
+      <td>Need not be <code class="language-plaintext highlighter-rouge">Sendable</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">nonisolated(nonsending) func f() async</code> (6.2)</td>
+      <td>Caller’s executor</td>
+      <td>Need not be <code class="language-plaintext highlighter-rouge">Sendable</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@concurrent func f() async</code> (6.2)</td>
+      <td>Global concurrent executor</td>
+      <td>Must be <code class="language-plaintext highlighter-rouge">Sendable</code> when called from an actor</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">func f(isolation: isolated (any Actor)? = #isolation) async</code></td>
+      <td>Caller’s actor, or global executor if <code class="language-plaintext highlighter-rouge">nil</code></td>
+      <td>Need not be <code class="language-plaintext highlighter-rouge">Sendable</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The upcoming feature <code class="language-plaintext highlighter-rouge">NonisolatedNonsendingByDefault</code>, enabled by Xcode’s “Approachable Concurrency” setting, flips the default from the first row to the second. Code that relied on plain non-isolated <code class="language-plaintext highlighter-rouge">async</code> functions to get off the main actor should say <code class="language-plaintext highlighter-rouge">@concurrent</code> instead. The <a href="/swift-async-await-suspension/">async/await article</a> measures both behaviors on the main thread.</p>
+
+<h2 id="closures-that-carry-their-isolation-isolatedany">Closures that carry their isolation: <code class="language-plaintext highlighter-rouge">@isolated(any)</code></h2>
+
+<p>A function value normally hides its isolation inside its type: a <code class="language-plaintext highlighter-rouge">() async -&gt; Void</code> might be main-actor isolated or not, and the caller cannot tell until it calls it. An <code class="language-plaintext highlighter-rouge">@isolated(any)</code> function type keeps that information available at run time through an <code class="language-plaintext highlighter-rouge">isolation</code> property (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0431-isolated-any-functions.md">SE-0431</a>):</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">JobRecorder</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">records</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">run</span><span class="p">(</span><span class="n">_</span> <span class="nv">label</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">_</span> <span class="nv">job</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@isolated</span><span class="p">(</span><span class="kd">any</span><span class="p">)</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">isolation</span> <span class="o">=</span> <span class="nf">describe</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">isolation</span><span class="p">)</span>
+        <span class="n">records</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">label</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">isolation</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="nf">job</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">all</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">records</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">recorder</span> <span class="o">=</span> <span class="kt">JobRecorder</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"main-actor job"</span><span class="p">)</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"ledger job"</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="n">ledger</span><span class="p">]</span> <span class="k">in</span> <span class="k">await</span> <span class="n">ledger</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">recorder</span><span class="o">.</span><span class="nf">run</span><span class="p">(</span><span class="s">"detached job"</span><span class="p">,</span> <span class="p">{</span> <span class="kd">@concurrent</span> <span class="k">in</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">recorder</span><span class="o">.</span><span class="n">all</span> <span class="o">==</span> <span class="p">[</span><span class="s">"main-actor job: MainActor"</span><span class="p">,</span> <span class="s">"ledger job: MainActor"</span><span class="p">,</span> <span class="s">"detached job: nonisolated"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Two results are worth a second look. The “ledger job” reports <code class="language-plaintext highlighter-rouge">MainActor</code>, not <code class="language-plaintext highlighter-rouge">Ledger</code>: the closure itself is written in top-level code, so it inherits the main actor’s isolation, and only its <em>call</em> to <code class="language-plaintext highlighter-rouge">record</code> hops to the ledger. And a closure marked <code class="language-plaintext highlighter-rouge">@concurrent</code> reports no isolation at all.</p>
+
+<p>This is how <code class="language-plaintext highlighter-rouge">Task.init</code> and <code class="language-plaintext highlighter-rouge">TaskGroup.addTask</code> work. Their operation parameters are <code class="language-plaintext highlighter-rouge">@isolated(any)</code>, so the runtime can enqueue a new task <em>directly</em> on the executor the closure is isolated to, instead of starting it on the global executor and hopping. You need <code class="language-plaintext highlighter-rouge">@isolated(any)</code> in your own APIs when you build schedulers, event dispatchers, or other infrastructure that stores closures and runs them later, and wants to run each where it belongs.</p>
+
+<h2 id="how-isolation-is-inferred">How isolation is inferred</h2>
+
+<p>When you write no annotation, Swift infers isolation from context. The rules that matter most in practice:</p>
+
+<ul>
+  <li><strong>Members inherit from their type.</strong> Methods and properties of an actor, or of a <code class="language-plaintext highlighter-rouge">@MainActor</code> type, share that isolation unless marked <code class="language-plaintext highlighter-rouge">nonisolated</code>.</li>
+  <li><strong>Subclasses inherit from superclasses.</strong> A subclass of a <code class="language-plaintext highlighter-rouge">@MainActor</code> class such as <code class="language-plaintext highlighter-rouge">UIViewController</code> is main-actor isolated.</li>
+  <li><strong>Conformances in the primary declaration infer isolation.</strong> A type that conforms to a global-actor-isolated protocol in its <em>primary</em> declaration takes that isolation for the whole type. Conformances added in extensions do not.</li>
+  <li><strong>Closures inherit from their context</strong> unless they are <code class="language-plaintext highlighter-rouge">@Sendable</code>, <code class="language-plaintext highlighter-rouge">@concurrent</code>, or passed to a <code class="language-plaintext highlighter-rouge">sending</code> parameter that does not inherit, such as <code class="language-plaintext highlighter-rouge">Task.detached</code>.</li>
+  <li><strong>Module defaults apply last.</strong> With Swift 6.2’s default isolation set to <code class="language-plaintext highlighter-rouge">MainActor</code>, everything not otherwise inferred is main-actor isolated, as the <a href="/swift-main-actor/">main actor article</a> describes.</li>
+</ul>
+
+<p>The protocol rule surprises people, because it reaches beyond the requirements:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">@MainActor</span>
+<span class="kd">protocol</span> <span class="kt">Screen</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">render</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">HomeScreen</span><span class="p">:</span> <span class="kt">Screen</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">render</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="kd">func</span> <span class="nf">analyticsName</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span> <span class="s">"home"</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">nonisolated</span> <span class="kd">func</span> <span class="nf">logScreen</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+    <span class="kt">HomeScreen</span><span class="p">()</span><span class="o">.</span><span class="nf">analyticsName</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="c1">// error: call to main actor-isolated instance method 'analyticsName()' in a synchronous nonisolated context</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">analyticsName()</code> has nothing to do with <code class="language-plaintext highlighter-rouge">Screen</code>, but because the conformance is declared on the struct itself, the entire struct became main-actor isolated. Moving the conformance into an extension, <code class="language-plaintext highlighter-rouge">extension HomeScreen: Screen {}</code>, isolates only the members in that extension. Alternatively, mark individual members <code class="language-plaintext highlighter-rouge">nonisolated</code>.</p>
+
+<h2 id="global-and-static-variables">Global and static variables</h2>
+
+<p>A global or static <code class="language-plaintext highlighter-rouge">var</code> is shared by every isolation domain, so Swift 6 requires each one to be safe (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0412-strict-concurrency-for-global-variables.md">SE-0412</a>). The options, in order of preference:</p>
+
+<ol>
+  <li><strong>Make it a <code class="language-plaintext highlighter-rouge">let</code> of a <code class="language-plaintext highlighter-rouge">Sendable</code> type.</strong> Immutable and safe everywhere.</li>
+  <li><strong>Isolate it to a global actor</strong>, for example <code class="language-plaintext highlighter-rouge">@MainActor static var current = Theme()</code>.</li>
+  <li><strong>Protect it with a lock</strong>, as a <code class="language-plaintext highlighter-rouge">let</code> holding a <code class="language-plaintext highlighter-rouge">Mutex</code>, which is <code class="language-plaintext highlighter-rouge">Sendable</code>.</li>
+  <li><strong>Mark it <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code></strong> when correctness is guaranteed by something the compiler cannot see.</li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Defaults</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">retryLimit</span> <span class="o">=</span> <span class="mi">3</span>                                <span class="c1">// Option 1</span>
+    <span class="kd">@MainActor</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">lastScreenName</span> <span class="o">=</span> <span class="s">"home"</span>            <span class="c1">// Option 2</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">requestCount</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>                       <span class="c1">// Option 3</span>
+    <span class="nf">nonisolated</span><span class="p">(</span><span class="n">unsafe</span><span class="p">)</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">testOverride</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>  <span class="c1">// Option 4: only touched during single-threaded setup</span>
+<span class="p">}</span>
+
+<span class="kt">Defaults</span><span class="o">.</span><span class="n">requestCount</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Defaults</span><span class="o">.</span><span class="n">retryLimit</span> <span class="o">==</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="kt">Defaults</span><span class="o">.</span><span class="n">lastScreenName</span> <span class="o">==</span> <span class="s">"home"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Defaults</span><span class="o">.</span><span class="n">requestCount</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code> turns off checking for that one declaration, so its safety becomes a code-review responsibility. It is acceptable for values written once during process start-up, before any concurrency exists, and for test hooks. It is not acceptable for state that real concurrent code mutates; that is a data race with the warning removed.</p>
+
+<h2 id="choosing-a-spelling">Choosing a spelling</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Goal</th>
+      <th>Spelling</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Synchronous member on an actor that reads only <code class="language-plaintext highlighter-rouge">let</code>s</td>
+      <td><code class="language-plaintext highlighter-rouge">nonisolated</code></td>
+    </tr>
+    <tr>
+      <td>Protocol conformance for a global-actor type, used only on that actor</td>
+      <td>Isolated conformance, <code class="language-plaintext highlighter-rouge">extension T: @MainActor P</code></td>
+    </tr>
+    <tr>
+      <td>Multi-step atomic operation on an actor from outside its declaration</td>
+      <td><code class="language-plaintext highlighter-rouge">isolated</code> parameter</td>
+    </tr>
+    <tr>
+      <td>Helper that takes a closure and should run where its caller runs</td>
+      <td><code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code>, or <code class="language-plaintext highlighter-rouge">isolation: isolated (any Actor)? = #isolation</code></td>
+    </tr>
+    <tr>
+      <td>Async function that must never run on the caller’s actor</td>
+      <td><code class="language-plaintext highlighter-rouge">@concurrent</code></td>
+    </tr>
+    <tr>
+      <td>Stored closure that should later run in its own isolation</td>
+      <td><code class="language-plaintext highlighter-rouge">@isolated(any)</code> function type</td>
+    </tr>
+    <tr>
+      <td>Global mutable state guaranteed safe by other means</td>
+      <td><code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code>, with a comment</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Every function has a static isolation: an actor instance, a global actor, or none. <code class="language-plaintext highlighter-rouge">#isolation</code> reveals it.</li>
+  <li><code class="language-plaintext highlighter-rouge">nonisolated</code> members on an actor are synchronous everywhere and cannot touch isolated state.</li>
+  <li>An <code class="language-plaintext highlighter-rouge">isolated</code> parameter runs a free function on an actor, making multi-step operations atomic; only one is allowed.</li>
+  <li>Helpers that take closures should inherit their caller’s isolation, with <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> or an <code class="language-plaintext highlighter-rouge">isolated (any Actor)? = #isolation</code> parameter, so closures need not be <code class="language-plaintext highlighter-rouge">Sendable</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">@concurrent</code> guarantees off-actor execution regardless of defaults; <code class="language-plaintext highlighter-rouge">NonisolatedNonsendingByDefault</code> changes what plain non-isolated <code class="language-plaintext highlighter-rouge">async</code> functions do.</li>
+  <li><code class="language-plaintext highlighter-rouge">@isolated(any)</code> closures expose their isolation, which lets schedulers run each closure where it belongs.</li>
+  <li>Conformance to a global-actor protocol in a type’s primary declaration isolates the whole type; extensions isolate only their own members.</li>
+  <li>Global variables must be immutable and <code class="language-plaintext highlighter-rouge">Sendable</code>, isolated, locked, or explicitly <code class="language-plaintext highlighter-rouge">nonisolated(unsafe)</code>.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">func batch&lt;T&gt;(_ items: [T], size: Int, isolation: isolated (any Actor)? = #isolation, process: ([T]) async throws -&gt; Void) async rethrows</code> that calls <code class="language-plaintext highlighter-rouge">process</code> with consecutive chunks. Call it from the main actor with a closure that updates a non-<code class="language-plaintext highlighter-rouge">Sendable</code> progress object, and from inside an actor method with a closure that mutates the actor’s state directly. Then rewrite it with <code class="language-plaintext highlighter-rouge">nonisolated(nonsending)</code> and verify, using <code class="language-plaintext highlighter-rouge">#isolation</code> inside the closure, that both versions keep every call in the caller’s domain.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0313-actor-isolation-control.md">SE-0313: Improved control over actor isolation</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md">SE-0420: Inheritance of actor isolation</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0431-isolated-any-functions.md">SE-0431: <code class="language-plaintext highlighter-rouge">@isolated(any)</code> function types</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0461-async-function-isolation.md">SE-0461: Run nonisolated async functions on the caller’s actor by default</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0412-strict-concurrency-for-global-variables.md">SE-0412: Strict concurrency for global variables</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-sendable/"><code class="language-plaintext highlighter-rouge">Sendable</code>: Moving Values Across Isolation Boundaries</a>. Next: <a href="/swift-executors/">Choosing an Executor Without Blocking the UI</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-isolated-nonisolated/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Isolated+and+Nonisolated+Methods+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-isolated-nonisolated%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-isolated-nonisolated/&title=Isolated+and+Nonisolated+Methods+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-isolated-nonisolated/&title=Isolated+and+Nonisolated+Methods+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-isolated-nonisolated/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Isolated and Nonisolated Methods in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-isolated-nonisolated/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Actors">Actors</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Isolation">Isolation</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Networking with URLSession Publishers" href="/combine-urlsession-publishers/"> <p>Previous post</p> Networking with URLSession Publishers </a> </div> <div id="next-post"> <a alt="Sequence Operators: first, last, and collect" href="/combine-first-last-collect/"> <p>Next post</p> Sequence Operators: first, last, and collect </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Rejecting Stale Results After Request Replacement in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Rejecting Stale Results After Request Replacement in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A user types “swift” into a search field. Five requests go out, one per keystroke. The response for “s” is large and slow; the response for “swift” is small and fast. “swift” arrives first and is displayed. Then “s” arrives and replaces it. The screen now shows results for a query the user typed a second ago and has since extended four times. This is the stale-result bug, and it appears wherever a newer request replaces an older one: search fields, filters, pagination after a sort change, detail screens when the selection changes, map tiles when the viewport moves. Swift 6’s data-race checking does not catch it, because nothing races in the memory-model sense; the main actor applies each result in turn, in the wrong order. This article quantifies how often the reordering happens, then builds up the defenses in order: cancellation, generation tokens for results that arrive outside the task, commit checks for multi-step updates, and debouncing." /> <meta property="og:description" content="A user types “swift” into a search field. Five requests go out, one per keystroke. The response for “s” is large and slow; the response for “swift” is small and fast. “swift” arrives first and is displayed. Then “s” arrives and replaces it. The screen now shows results for a query the user typed a second ago and has since extended four times. This is the stale-result bug, and it appears wherever a newer request replaces an older one: search fields, filters, pagination after a sort change, detail screens when the selection changes, map tiles when the viewport moves. Swift 6’s data-race checking does not catch it, because nothing races in the memory-model sense; the main actor applies each result in turn, in the wrong order. This article quantifies how often the reordering happens, then builds up the defenses in order: cancellation, generation tokens for results that arrive outside the task, commit checks for multi-step updates, and debouncing." /> <link rel="canonical" href="https://swiftbydeya.com/swift-rejecting-stale-results/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-rejecting-stale-results/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-20T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Rejecting Stale Results After Request Replacement in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-20T00:00:00+03:00","datePublished":"2026-08-20T00:00:00+03:00","description":"A user types “swift” into a search field. Five requests go out, one per keystroke. The response for “s” is large and slow; the response for “swift” is small and fast. “swift” arrives first and is displayed. Then “s” arrives and replaces it. The screen now shows results for a query the user typed a second ago and has since extended four times. This is the stale-result bug, and it appears wherever a newer request replaces an older one: search fields, filters, pagination after a sort change, detail screens when the selection changes, map tiles when the viewport moves. Swift 6’s data-race checking does not catch it, because nothing races in the memory-model sense; the main actor applies each result in turn, in the wrong order. This article quantifies how often the reordering happens, then builds up the defenses in order: cancellation, generation tokens for results that arrive outside the task, commit checks for multi-step updates, and debouncing.","headline":"Rejecting Stale Results After Request Replacement in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-rejecting-stale-results/"},"url":"https://swiftbydeya.com/swift-rejecting-stale-results/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Rejecting Stale Results After Request Replacement in Swift"> <meta name="twitter:description" content="A user types “swift” into a search field. Five requests go out, one per keystroke. The response for “s” is large and slow; the response for “swift” is small ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Rejecting Stale Results After Request Replacement in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Rejecting Stale Results After Request Replacement in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-20T00:00:00+03:00">August 20, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A user types “swift” into a search field. Five requests go out, one per keystroke. The response for “s” is large and slow; the response for “swift” is small and fast. “swift” arrives first and is displayed. Then “s” arrives and replaces it. The screen now shows results for a query the user typed a second ago and has since extended four times.</p>
+
+<p>This is the stale-result bug, and it appears wherever a newer request replaces an older one: search fields, filters, pagination after a sort change, detail screens when the selection changes, map tiles when the viewport moves. Swift 6’s data-race checking does not catch it, because nothing races in the memory-model sense; the main actor applies each result in turn, in the wrong order. This article quantifies how often the reordering happens, then builds up the defenses in order: cancellation, generation tokens for results that arrive outside the task, commit checks for multi-step updates, and debouncing.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="how-often-responses-overtake-each-other">How often responses overtake each other</h2>
+
+<p>Suppose keystrokes are \(\Delta\) apart and request latencies are independent and exponentially distributed with mean \(m\), a common first model for network response times. Request \(i\) is sent at time \(t\) and request \(i+1\) at \(t + \Delta\). The older response arrives <em>after</em> the newer one when \(L_i &gt; \Delta + L_{i+1}\). Integrating over \(L_{i+1}\):</p>
+
+\[P(\text{reorder}) = \int_0^\infty e^{-(\Delta + x)/m}\,\frac{1}{m}e^{-x/m}\,dx = \frac{1}{2}\,e^{-\Delta/m}.\]
+
+<p>With a typing gap of 150 ms and a mean latency of 300 ms, \(P = \tfrac{1}{2}e^{-0.5} \approx 0.30\): almost a third of consecutive request pairs arrive out of order. On a fast connection with a mean latency of 50 ms, \(P \approx 0.025\), rare enough to escape testing on office Wi-Fi and common enough to appear daily on cellular networks.</p>
+
+<p>The formula is easy to check by simulation:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">SplitMix64</span><span class="p">:</span> <span class="kt">RandomNumberGenerator</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">UInt64</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">seed</span>
+    <span class="p">}</span>
+
+    <span class="k">mutating</span> <span class="kd">func</span> <span class="nf">next</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">UInt64</span> <span class="p">{</span>
+        <span class="n">state</span> <span class="o">&amp;+=</span> <span class="mh">0x9E37_79B9_7F4A_7C15</span>
+        <span class="k">var</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0xBF58_476D_1CE4_E5B9</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">27</span><span class="p">))</span> <span class="o">&amp;*</span> <span class="mh">0x94D0_49BB_1331_11EB</span>
+        <span class="k">return</span> <span class="n">z</span> <span class="o">^</span> <span class="p">(</span><span class="n">z</span> <span class="o">&gt;&gt;</span> <span class="mi">31</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">exponential</span><span class="p">(</span><span class="nv">mean</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="n">using</span> <span class="nv">generator</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">SplitMix64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="o">-</span><span class="n">mean</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="kt">Double</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">simulatedReorderRate</span><span class="p">(</span><span class="nv">gap</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">meanLatency</span><span class="p">:</span> <span class="kt">Double</span><span class="p">,</span> <span class="nv">trials</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">generator</span> <span class="o">=</span> <span class="kt">SplitMix64</span><span class="p">(</span><span class="nv">seed</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">reordered</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">trials</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">older</span> <span class="o">=</span> <span class="nf">exponential</span><span class="p">(</span><span class="nv">mean</span><span class="p">:</span> <span class="n">meanLatency</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">newer</span> <span class="o">=</span> <span class="nf">exponential</span><span class="p">(</span><span class="nv">mean</span><span class="p">:</span> <span class="n">meanLatency</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">older</span> <span class="o">&gt;</span> <span class="n">gap</span> <span class="o">+</span> <span class="n">newer</span> <span class="p">{</span> <span class="n">reordered</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">Double</span><span class="p">(</span><span class="n">reordered</span><span class="p">)</span> <span class="o">/</span> <span class="kt">Double</span><span class="p">(</span><span class="n">trials</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">predicted</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">150.0</span> <span class="o">/</span> <span class="mf">300.0</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">simulated</span> <span class="o">=</span> <span class="nf">simulatedReorderRate</span><span class="p">(</span><span class="nv">gap</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span> <span class="nv">meanLatency</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="nv">trials</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">simulated</span> <span class="o">-</span> <span class="n">predicted</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"reorder probability: predicted </span><span class="se">\(</span><span class="n">predicted</span><span class="se">)</span><span class="s">, simulated </span><span class="se">\(</span><span class="n">simulated</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The simulation agreed with the formula to within a few thousandths. Real latency distributions have heavier tails than the exponential, which makes reordering <em>more</em> likely, not less: one slow response can overtake many fast ones.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: An older, slower response overwrites the newer result
+    participant U as Search field
+    participant M as Model on the main actor
+    participant S as Server
+    U-&gt;&gt;M: query "s"
+    M-&gt;&gt;S: search "s", slow
+    U-&gt;&gt;M: query "swift"
+    M-&gt;&gt;S: search "swift", fast
+    S--&gt;&gt;M: results for "swift"
+    M-&gt;&gt;U: show "swift" results
+    S--&gt;&gt;M: results for "s"
+    M-&gt;&gt;U: show "s" results, stale
+</code></pre>
+
+<h2 id="a-controllable-fake-service">A controllable fake service</h2>
+
+<p>The examples use a search service whose latency per query is set by the test, so every interleaving is deterministic:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SearchService</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">latencies</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">requests</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">latencies</span> <span class="o">=</span> <span class="n">latencies</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Async API.</span>
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">latencies</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="p">??</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">]</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Legacy callback API for the same backend. There is no handle to cancel.</span>
+    <span class="kd">func</span> <span class="nf">search</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">([</span><span class="kt">String</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">latency</span> <span class="o">=</span> <span class="n">latencies</span><span class="p">[</span><span class="n">query</span><span class="p">]</span> <span class="p">??</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">milliseconds</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">latency</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span> <span class="o">*</span> <span class="mi">1_000</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Int</span><span class="p">(</span><span class="n">latency</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span> <span class="o">/</span> <span class="mi">1_000_000_000_000_000</span><span class="p">)</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">milliseconds</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nf">completion</span><span class="p">([</span><span class="s">"</span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s"> result"</span><span class="p">])</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">requestLog</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="p">{</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// The slow-first, fast-last shape that produces stale results.</span>
+<span class="k">let</span> <span class="nv">typingLatencies</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">"s"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">120</span><span class="p">),</span> <span class="s">"sw"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">90</span><span class="p">),</span> <span class="s">"swi"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span>
+    <span class="s">"swif"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span> <span class="s">"swift"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="k">let</span> <span class="nv">typedQueries</span> <span class="o">=</span> <span class="p">[</span><span class="s">"s"</span><span class="p">,</span> <span class="s">"sw"</span><span class="p">,</span> <span class="s">"swi"</span><span class="p">,</span> <span class="s">"swif"</span><span class="p">,</span> <span class="s">"swift"</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h2 id="step-0-the-naive-model">Step 0: the naive model</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">NaiveSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">tasks</span><span class="p">:</span> <span class="p">[</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">tasks</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+            <span class="p">}</span>
+        <span class="p">})</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="k">in</span> <span class="n">tasks</span> <span class="p">{</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">naive</span> <span class="o">=</span> <span class="kt">NaiveSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="n">typingLatencies</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">typedQueries</span> <span class="p">{</span>
+    <span class="n">naive</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">naive</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naive</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"s result"</span><span class="p">],</span> <span class="s">"The slowest, oldest response was applied last"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Every response was applied, in arrival order, and the oldest arrived last. Note that there is no data race here: the model is main-actor isolated, and every assignment is checked and serialized. The bug is entirely about <em>which</em> result wins.</p>
+
+<h2 id="step-1-cancel-the-previous-request">Step 1: cancel the previous request</h2>
+
+<p>The first defense is to keep one handle and cancel it whenever a newer query arrives, checking for cancellation after the <code class="language-plaintext highlighter-rouge">await</code> and before committing:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CancellingSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">guard</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>      <span class="c1">// Let any replaced task finish too.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">cancelling</span> <span class="o">=</span> <span class="kt">CancellingSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="n">typingLatencies</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">typedQueries</span> <span class="p">{</span>
+    <span class="n">cancelling</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">cancelling</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cancelling</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>This version is correct for this shape, and it is worth understanding exactly why. The check and the assignment run on the main actor in one synchronous stretch, and <code class="language-plaintext highlighter-rouge">cancel()</code> is called from the main actor too. So no cancellation can arrive <em>between</em> the check and the assignment. A replaced task either sees the flag and returns, or was never replaced. Cancellation also saves work: <code class="language-plaintext highlighter-rouge">Task.sleep</code>, standing in for <code class="language-plaintext highlighter-rouge">URLSession</code>, stops early, so replaced requests stop consuming bandwidth.</p>
+
+<p>The defense depends on three conditions: the work is a task you hold, its result is delivered <em>through that task</em>, and the commit happens in one isolated job after the check. When any of the three fails, cancellation is no longer sufficient.</p>
+
+<h2 id="step-2-results-that-do-not-arrive-through-the-task">Step 2: results that do not arrive through the task</h2>
+
+<p>A callback API has no task to cancel. The response arrives in a closure, whenever the server answers:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">CallbackSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">generation</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">let</span> <span class="nv">usesGeneration</span><span class="p">:</span> <span class="kt">Bool</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">,</span> <span class="nv">usesGeneration</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">usesGeneration</span> <span class="o">=</span> <span class="n">usesGeneration</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">generation</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">requestGeneration</span> <span class="o">=</span> <span class="n">generation</span>
+        <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">found</span> <span class="k">in</span>
+            <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+                <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="k">if</span> <span class="k">self</span><span class="o">.</span><span class="n">usesGeneration</span><span class="p">,</span> <span class="n">requestGeneration</span> <span class="o">!=</span> <span class="k">self</span><span class="o">.</span><span class="n">generation</span> <span class="p">{</span>
+                    <span class="k">return</span>                              <span class="c1">// A newer query has been issued since.</span>
+                <span class="p">}</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">unguardedCallbacks</span> <span class="o">=</span> <span class="kt">CallbackSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="n">typingLatencies</span><span class="p">),</span> <span class="nv">usesGeneration</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">guardedCallbacks</span> <span class="o">=</span> <span class="kt">CallbackSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="n">typingLatencies</span><span class="p">),</span> <span class="nv">usesGeneration</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">typedQueries</span> <span class="p">{</span>
+    <span class="n">unguardedCallbacks</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">guardedCallbacks</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">unguardedCallbacks</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"s result"</span><span class="p">],</span> <span class="s">"Without a token, the last response to arrive wins"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">guardedCallbacks</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">],</span> <span class="s">"With a token, only the latest request may commit"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The <strong>generation token</strong> is a counter incremented for every new request. Each request captures the value current when it was issued, and its response may commit only if the counter has not moved since. Unlike the cancellation flag, the token is about <em>identity</em>: it does not ask “was this work cancelled?” but “is this still the request the user is waiting for?” It works for callbacks, for responses delivered through streams, for work shared between several callers, and for results produced by code you cannot cancel.</p>
+
+<p>Tokens and cancellation are complementary. Cancellation stops work that is no longer wanted, saving bandwidth and battery. The token guarantees correctness regardless of whether the work stopped. A robust model uses both.</p>
+
+<h2 id="step-3-multi-step-commits">Step 3: multi-step commits</h2>
+
+<p>Some updates happen in stages: show the first page, then load thumbnails; show cached results, then refresh from the network; update the list, then the detail pane. Each stage is a separate commit after a separate <code class="language-plaintext highlighter-rouge">await</code>, and the request can be replaced between them. Check the token at <em>every</em> commit point:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">StagedSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">details</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">appliedStages</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">generation</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">generation</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">requestGeneration</span> <span class="o">=</span> <span class="n">generation</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">requestGeneration</span> <span class="o">==</span> <span class="n">generation</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+            <span class="n">appliedStages</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"results for </span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">40</span><span class="p">))</span>              <span class="c1">// Second stage: load details.</span>
+            <span class="k">guard</span> <span class="n">requestGeneration</span> <span class="o">==</span> <span class="n">generation</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">details</span> <span class="o">=</span> <span class="kt">Dictionary</span><span class="p">(</span><span class="nv">uniqueKeysWithValues</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">$0</span><span class="p">,</span> <span class="s">"details for </span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">})</span>
+            <span class="n">appliedStages</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"details for </span><span class="se">\(</span><span class="n">query</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">staged</span> <span class="o">=</span> <span class="kt">StagedSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="p">[</span><span class="s">"first"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="s">"second"</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)]))</span>
+<span class="n">staged</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"first"</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>          <span class="c1">// "first" has shown results and is loading details.</span>
+<span class="n">staged</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="s">"second"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">staged</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">60</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">staged</span><span class="o">.</span><span class="n">appliedStages</span> <span class="o">==</span> <span class="p">[</span><span class="s">"results for first"</span><span class="p">,</span> <span class="s">"results for second"</span><span class="p">,</span> <span class="s">"details for second"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">staged</span><span class="o">.</span><span class="n">details</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span> <span class="o">==</span> <span class="p">[</span><span class="s">"second result"</span><span class="p">],</span> <span class="s">"The replaced request never applied its details"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The replaced request committed its first stage legitimately, then was replaced while loading details. The second check prevented it from writing details for “first” into a model that now shows results for “second”, a mismatch that would be visible as the wrong detail pane for the selected row.</p>
+
+<p>Here, <code class="language-plaintext highlighter-rouge">Task.sleep</code> would also have thrown on cancellation, so the replaced task would have stopped anyway. The token check makes correctness independent of whether the second stage happens to be cancellable, which matters as soon as it is a legacy callback, a shared load, or a synchronous computation.</p>
+
+<h2 id="step-4-fewer-requests-with-debouncing">Step 4: fewer requests with debouncing</h2>
+
+<p>Every keystroke so far produced a request. Most of them were wasted. <strong>Debouncing</strong> waits until the input has been quiet for a short interval before starting work, and restarts the wait on every change. With tasks, a debounce is just a cancellable sleep at the start of the request:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">DebouncedSearchModel</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">current</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">generation</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">quietPeriod</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span><span class="p">,</span> <span class="nv">quietPeriod</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">service</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">quietPeriod</span> <span class="o">=</span> <span class="n">quietPeriod</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">queryChanged</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">generation</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">requestGeneration</span> <span class="o">=</span> <span class="n">generation</span>
+        <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">quietPeriod</span><span class="p">)</span>    <span class="c1">// Cancelled by the next keystroke.</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="k">return</span>
+            <span class="p">}</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">requestGeneration</span> <span class="o">==</span> <span class="n">generation</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">settle</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">current</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">debounceService</span> <span class="o">=</span> <span class="kt">SearchService</span><span class="p">(</span><span class="nv">latencies</span><span class="p">:</span> <span class="n">typingLatencies</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">debounced</span> <span class="o">=</span> <span class="kt">DebouncedSearchModel</span><span class="p">(</span><span class="nv">service</span><span class="p">:</span> <span class="n">debounceService</span><span class="p">,</span> <span class="nv">quietPeriod</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">query</span> <span class="k">in</span> <span class="n">typedQueries</span> <span class="p">{</span>
+    <span class="n">debounced</span><span class="o">.</span><span class="nf">queryChanged</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>      <span class="c1">// Typing faster than the quiet period.</span>
+<span class="p">}</span>
+<span class="k">await</span> <span class="n">debounced</span><span class="o">.</span><span class="nf">settle</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">debounced</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift result"</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">debounceService</span><span class="o">.</span><span class="n">requestLog</span> <span class="o">==</span> <span class="p">[</span><span class="s">"swift"</span><span class="p">],</span> <span class="s">"Five keystrokes, one request"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Five keystrokes produced one request. Debouncing does not replace the token: if the user pauses for longer than the quiet period and then keeps typing, two requests can be in flight, and the reordering analysis above applies again. It changes the effective gap \(\Delta\) in the formula to at least the quiet period, which lowers the reorder probability, \(\tfrac{1}{2}e^{-\Delta/m}\), without eliminating it.</p>
+
+<p>The quiet period is a trade-off between wasted requests and perceived latency. Values between 150 and 300 ms are typical for search; a filter that recomputes locally may not need debouncing at all.</p>
+
+<h2 id="in-swiftui">In SwiftUI</h2>
+
+<p>SwiftUI’s <code class="language-plaintext highlighter-rouge">.task(id:)</code> modifier implements step 1 for you: when <code class="language-plaintext highlighter-rouge">id</code> changes, it cancels the running task and starts a new one. Combined with a quiet period inside the task, it also gives debouncing:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SearchView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">query</span> <span class="o">=</span> <span class="s">""</span>
+    <span class="kd">@State</span> <span class="kd">private</span> <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">let</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">SearchService</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="kd">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">List</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="p">\</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="kt">Text</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">searchable</span><span class="p">(</span><span class="nv">text</span><span class="p">:</span> <span class="n">$query</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">task</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">query</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+                <span class="k">guard</span> <span class="o">!</span><span class="kt">Task</span><span class="o">.</span><span class="n">isCancelled</span><span class="p">,</span> <span class="k">let</span> <span class="nv">found</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">found</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The same three conditions apply. Because the work is a task SwiftUI holds, the result arrives through it, and the commit is a single main-actor assignment, the cancellation check is sufficient. Once the view model starts using callbacks, shared loaders, or multi-stage commits, add a token.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Replaced requests reorder often: with exponential latencies, \(P = \tfrac{1}{2}e^{-\Delta/m}\), about 30% for a 150 ms typing gap and 300 ms mean latency.</li>
+  <li>The bug is not a data race; Swift 6 accepts it. It is about which result is allowed to commit.</li>
+  <li>Cancelling the previous task and checking <code class="language-plaintext highlighter-rouge">Task.isCancelled</code> before committing is sufficient when the work is a task you hold, its result comes through that task, and the commit is one isolated job.</li>
+  <li>Generation tokens make commits depend on request identity, so they also work for callbacks, streams, shared work, and uncancellable code.</li>
+  <li>Check the token at every commit point of a multi-stage update.</li>
+  <li>Debouncing removes most requests and widens the effective gap, but does not remove the need for a token.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Build a <code class="language-plaintext highlighter-rouge">PhotoGridModel</code> whose visible range changes as the user scrolls. Each range change requests thumbnails for the new range through a shared <code class="language-plaintext highlighter-rouge">ThumbnailLoader</code> that deduplicates concurrent requests for the same photo, as in the <a href="/swift-task-lifetime-ownership/">task lifetime article</a>. Because loads are shared, cancelling one range’s task must not cancel a thumbnail another range still needs. Use per-cell generation tokens so that a cell only shows the thumbnail for the photo it currently displays, and write a test that scrolls quickly back and forth across the same rows with randomized load latencies.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://en.wikipedia.org/wiki/Exponential_distribution">Exponential distribution</a>, for the latency model used above.</li>
+  <li>[task(id:name:priority:file:line:<em>:)](https://developer.apple.com/documentation/swiftui/view/task(id:name:priority:file:line:</em>:)) in the SwiftUI documentation.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10019/">Discover concurrency in SwiftUI</a>, WWDC21.</li>
+</ul>
+
+<p>Previous: <a href="/swift-continuation-ownership/">Continuation Ownership, Cancellation, and Double Resume</a>. Next: <a href="/swift-testing-controlled-interleavings/">Testing Concurrent Work with Controlled Interleavings</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-rejecting-stale-results/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Rejecting+Stale+Results+After+Request+Replacement+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-rejecting-stale-results%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-rejecting-stale-results/&title=Rejecting+Stale+Results+After+Request+Replacement+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-rejecting-stale-results/&title=Rejecting+Stale+Results+After+Request+Replacement+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-rejecting-stale-results/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Rejecting Stale Results After Request Replacement in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-rejecting-stale-results/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Cancellation">Cancellation</a></li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Race+Conditions">Race Conditions</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Testing">Testing</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Testing Concurrent Swift Code with Controlled Interleavings" href="/swift-testing-controlled-interleavings/"> <p>Previous post</p> Testing Concurrent Swift Code with Controlled Interleavings </a> </div> <div id="next-post"> <a alt="Combine vs. the Observation Framework in SwiftUI" href="/combine-vs-observation-swiftui/"> <p>Next post</p> Combine vs. the Observation Framework in SwiftUI </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

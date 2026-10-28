@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Publisher-subscriber separates event producers from independently subscribed consumers. A typed event bus can be a useful local implementation, but delivery timing, reentrancy, cancellation, and buffering are part of its contract. An observer list that recursively invokes itself can create surprising order or an infinite feedback loop. This article queues nested events so every subscriber finishes the current event before the next event begins." /> <meta property="og:description" content="Publisher-subscriber separates event producers from independently subscribed consumers. A typed event bus can be a useful local implementation, but delivery timing, reentrancy, cancellation, and buffering are part of its contract. An observer list that recursively invokes itself can create surprising order or an infinite feedback loop. This article queues nested events so every subscriber finishes the current event before the next event begins." /> <link rel="canonical" href="https://swiftbydeya.com/swift-publisher-subscriber/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-publisher-subscriber/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2024-04-09T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2024-04-09T00:00:00+03:00","datePublished":"2024-04-09T00:00:00+03:00","description":"Publisher-subscriber separates event producers from independently subscribed consumers. A typed event bus can be a useful local implementation, but delivery timing, reentrancy, cancellation, and buffering are part of its contract. An observer list that recursively invokes itself can create surprising order or an infinite feedback loop. This article queues nested events so every subscriber finishes the current event before the next event begins.","headline":"Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-publisher-subscriber/"},"url":"https://swiftbydeya.com/swift-publisher-subscriber/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime"> <meta name="twitter:description" content="Publisher-subscriber separates event producers from independently subscribed consumers. A typed event bus can be a useful local implementation, but delivery ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2024-04-09T00:00:00+03:00">April 9, 2024</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Publisher-subscriber separates event producers from independently subscribed consumers. A typed event bus can be a useful local implementation, but delivery timing, reentrancy, cancellation, and buffering are part of its contract.</p>
+
+<p>An observer list that recursively invokes itself can create surprising order or an infinite feedback loop. This article queues nested events so every subscriber finishes the current event before the next event begins.</p>
+
+<!--more-->
+
+<p>The Swift 5.7 bus is synchronous and requires serialized access. It is an in-memory notification mechanism, not a durable broker. The existing <a href="/swift-protocol-observer-pattern/">Observer article</a> develops a complementary policy that rejects nested emission.</p>
+
+<h2 id="make-subscription-lifetime-explicit">Make subscription lifetime explicit</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Subscription</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">cancellation</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">cancellation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">cancellation</span> <span class="o">=</span> <span class="n">cancellation</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">action</span> <span class="o">=</span> <span class="n">cancellation</span>
+        <span class="n">cancellation</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="nf">action</span><span class="p">?()</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">PublishReport</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">queued</span>
+    <span class="k">case</span> <span class="n">rejectedFull</span>
+    <span class="k">case</span> <span class="nf">drained</span><span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+    <span class="k">case</span> <span class="nf">limitReached</span><span class="p">(</span><span class="nv">processed</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">discarded</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">QueuedEventBus</span><span class="o">&lt;</span><span class="kt">Event</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">callbacks</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">:</span> <span class="p">(</span><span class="kt">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">order</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">nextID</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">pending</span><span class="p">:</span> <span class="p">[</span><span class="kt">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">head</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">draining</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">maximumPending</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">maximumEventsPerDrain</span><span class="p">:</span> <span class="kt">Int</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">maximumPending</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">maximumEventsPerDrain</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1_000</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">precondition</span><span class="p">(</span><span class="n">maximumPending</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">maximumEventsPerDrain</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">maximumPending</span> <span class="o">=</span> <span class="n">maximumPending</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">maximumEventsPerDrain</span> <span class="o">=</span> <span class="n">maximumEventsPerDrain</span>
+    <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">subscribe</span><span class="p">(</span><span class="n">_</span> <span class="nv">callback</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Subscription</span> <span class="p">{</span>
+        <span class="n">nextID</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="n">nextID</span>
+        <span class="n">callbacks</span><span class="p">[</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">callback</span>
+        <span class="n">order</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">Subscription</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="nf">removeValue</span><span class="p">(</span><span class="nv">forKey</span><span class="p">:</span> <span class="n">id</span><span class="p">)</span>
+            <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">removeAll</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="n">id</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">@discardableResult</span>
+    <span class="kd">func</span> <span class="nf">publish</span><span class="p">(</span><span class="n">_</span> <span class="nv">event</span><span class="p">:</span> <span class="kt">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">PublishReport</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">pending</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">head</span> <span class="o">&lt;</span> <span class="n">maximumPending</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="n">rejectedFull</span> <span class="p">}</span>
+        <span class="n">pending</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draining</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="n">queued</span> <span class="p">}</span>
+        <span class="n">draining</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">defer</span> <span class="p">{</span>
+            <span class="n">draining</span> <span class="o">=</span> <span class="kc">false</span>
+            <span class="n">pending</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">(</span><span class="nv">keepingCapacity</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+            <span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">processed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">head</span> <span class="o">&lt;</span> <span class="n">pending</span><span class="o">.</span><span class="n">count</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">processed</span> <span class="o">==</span> <span class="n">maximumEventsPerDrain</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">limitReached</span><span class="p">(</span><span class="nv">processed</span><span class="p">:</span> <span class="n">processed</span><span class="p">,</span> <span class="nv">discarded</span><span class="p">:</span> <span class="n">pending</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">head</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">current</span> <span class="o">=</span> <span class="n">pending</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+            <span class="n">head</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">let</span> <span class="nv">scheduled</span> <span class="o">=</span> <span class="n">order</span>
+            <span class="k">for</span> <span class="n">id</span> <span class="k">in</span> <span class="n">scheduled</span> <span class="p">{</span> <span class="n">callbacks</span><span class="p">[</span><span class="n">id</span><span class="p">]?(</span><span class="n">current</span><span class="p">)</span> <span class="p">}</span>
+            <span class="n">processed</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">drained</span><span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="n">processed</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A delivery pass snapshots subscriber IDs, then looks up live callbacks before each call. Cancellation before a subscriber’s turn suppresses it. A new subscription does not join the already scheduled pass.</p>
+
+<p>The identifier counter assumes a bounded demonstration lifetime; a reusable implementation needs a checked counter or a suitable token identity scheme.</p>
+
+<h2 id="queued-reentrancy-preserves-breadth-first-event-order">Queued reentrancy preserves breadth-first event order</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">bus</span> <span class="o">=</span> <span class="kt">QueuedEventBus</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">trace</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="n">bus</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+    <span class="n">trace</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"A</span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span> <span class="nf">assert</span><span class="p">(</span><span class="n">bus</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">queued</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="n">bus</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">trace</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"B</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bus</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">drained</span><span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">trace</span> <span class="o">==</span> <span class="p">[</span><span class="s">"A1"</span><span class="p">,</span> <span class="s">"B1"</span><span class="p">,</span> <span class="s">"A2"</span><span class="p">,</span> <span class="s">"B2"</span><span class="p">])</span>
+<span class="n">first</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">second</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Subscriber B receives event one before either subscriber receives event two. A recursively delivered bus could instead produce <code class="language-plaintext highlighter-rouge">A1, A2, B2, B1</code>, which is a different contract.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Nested publication waits until the current event reaches all subscribers
+    participant Bus
+    participant A
+    participant B
+    Bus-&gt;&gt;A: event 1
+    A-&gt;&gt;Bus: publish event 2
+    Note over Bus: Queue event 2
+    Bus-&gt;&gt;B: event 1
+    Bus-&gt;&gt;A: event 2
+    Bus-&gt;&gt;B: event 2
+</code></pre>
+
+<h2 id="bound-feedback-as-well-as-pending-capacity">Bound feedback as well as pending capacity</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">feedback</span> <span class="o">=</span> <span class="kt">QueuedEventBus</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">maximumPending</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">maximumEventsPerDrain</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">observed</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">token</span> <span class="o">=</span> <span class="n">feedback</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+    <span class="n">observed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">feedback</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">feedback</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">limitReached</span><span class="p">(</span><span class="nv">processed</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">discarded</span><span class="p">:</span> <span class="mi">1</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">observed</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">token</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>A queue limit alone does not stop a feedback loop that consumes one event and appends one forever. The per-drain work limit bounds that sequence and reports discarded work explicitly.</p>
+
+<p>A nested <code class="language-plaintext highlighter-rouge">.queued</code> result acknowledges admission, not eventual delivery. A later limit can discard it. A durable command system needs stronger acknowledgements and persistence; this bus intentionally does not claim them.</p>
+
+<p>The array retains processed prefix elements until the drain ends. Peak retained event storage therefore depends on both the work limit and pending limit, not only the number waiting. A deque can release processed payloads earlier.</p>
+
+<h2 id="events-describe-facts-commands-request-work">Events describe facts; commands request work</h2>
+
+<p>An event such as <code class="language-plaintext highlighter-rouge">ArticlePublished</code> can have zero or several subscribers. The publisher should not depend on one particular observer updating a hidden field before it can continue.</p>
+
+<p>A command such as <code class="language-plaintext highlighter-rouge">PublishArticle</code> needs a responsible handler and an outcome. Sending it into an anonymous broadcast bus can hide missing handlers or duplicate effects.</p>
+
+<p>If a workflow requires ordered transactional cooperation, use an explicit service or mediator rather than treating event delivery as a substitute for control flow.</p>
+
+<h2 id="typed-events-still-need-scope-and-version">Typed events still need scope and version</h2>
+
+<p>A generic bus prevents accidental string-name collisions, but a shared event may still belong to a different account, document, or generation. Include the identity facts consumers need to reject irrelevant or obsolete events.</p>
+
+<p>Payload value semantics matter too. Publishing a mutable class reference does not freeze its contents for subscribers. Prefer immutable snapshots when every subscriber should observe the same fact.</p>
+
+<p>Subscriptions also retain callbacks. A callback strongly capturing its owner can keep that owner alive through the bus. Retain the subscription where observation is desired and cancel when the feature stops; weak captures and ownership decisions should follow the actual lifecycle.</p>
+
+<h2 id="this-is-not-combine-demand">This is not Combine demand</h2>
+
+<p>Apple’s <a href="https://developer.apple.com/documentation/combine">Combine framework</a> supplies publisher/subscriber protocols with demand, completion, and operator semantics. This simple bus has no per-subscriber demand or asynchronous buffering.</p>
+
+<p>Do not infer stream backpressure from a global pending-event limit. A slow synchronous subscriber blocks the whole drain, and the bus cannot selectively pause one observer while others proceed.</p>
+
+<h2 id="specify-who-receives-a-nested-publication">Specify who receives a nested publication</h2>
+
+<p>A serial event bus can still be reentrant: a subscriber handling one event may publish another. The queue above makes the delivery order explicit, completing the current event’s subscriber pass before draining the nested event. This avoids an uncontrolled recursive call stack and the surprising interleaving of half-finished deliveries.</p>
+
+<p>Subscription changes during delivery need a similarly explicit rule. A useful approach takes a snapshot of recipient identities for the current event, then checks whether each recipient is still subscribed before invoking it. A newly registered subscriber participates in later events; a cancelled subscriber can be skipped if its turn has not occurred. Other policies are possible, but tests must pin down the one the bus promises.</p>
+
+<p>Callback order also becomes an implicit dependency if one handler assumes another handler has already updated shared state. If the business operation requires those steps to happen in sequence, represent the sequence in a service or command handler. Relying on incidental subscription order makes that invariant hard to find.</p>
+
+<h2 id="event-facts-and-requests-have-different-failure-semantics">Event facts and requests have different failure semantics</h2>
+
+<p>An event such as <code class="language-plaintext highlighter-rouge">BookSaved</code> announces that something already happened. Dropping it might be acceptable for a transient animation but unacceptable for durable synchronization. A request such as <code class="language-plaintext highlighter-rouge">SaveBook</code> asks for an effect and usually needs a result addressed to its caller.</p>
+
+<p>Do not put both behind an untyped “message” operation without defining acknowledgment and ownership. A fire-and-forget publish result can report local queue admission; it cannot establish that every subscriber completed an effect successfully.</p>
+
+<p>For durable workflows, record pending delivery, stable message IDs, retry policy, and acknowledgments in persistent storage. Subscribers may see duplicates and need idempotent handling. An in-memory queue with a drain limit provides none of those guarantees by itself.</p>
+
+<h2 id="bounds-prevent-one-failure-mode-not-all-overload">Bounds prevent one failure mode, not all overload</h2>
+
+<p>A pending-event bound limits queued entries. The drain budget limits work performed in one drain, including feedback loops that keep the queue small while generating endless replacements. Neither bound limits the time spent inside one slow callback.</p>
+
+<p>If callbacks perform blocking I/O, they can freeze the entire serial bus. Moving work to tasks changes ordering, cancellation, and lifetime rules, so define that as a different delivery contract rather than a hidden optimization.</p>
+
+<p>Use separate channels when events have different durability or latency needs. A progress animation and an accounting update should not compete under an unspecified universal drop policy. The bus is useful only when subscribers understand what delivery actually means.</p>
+
+<h2 id="verify-cancellation-and-registration-during-delivery">Verify cancellation and registration during delivery</h2>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">changingBus</span> <span class="o">=</span> <span class="kt">QueuedEventBus</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">changingTrace</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">cancelledBeforeTurn</span><span class="p">:</span> <span class="kt">Subscription</span><span class="p">?</span>
+<span class="k">var</span> <span class="nv">addedDuringDelivery</span><span class="p">:</span> <span class="kt">Subscription</span><span class="p">?</span>
+<span class="k">let</span> <span class="nv">changingFirst</span> <span class="o">=</span> <span class="n">changingBus</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">value</span> <span class="k">in</span>
+    <span class="n">changingTrace</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"A</span><span class="se">\(</span><span class="n">value</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+        <span class="n">cancelledBeforeTurn</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+        <span class="n">addedDuringDelivery</span> <span class="o">=</span> <span class="n">changingBus</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">changingTrace</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"C</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="nf">assert</span><span class="p">(</span><span class="n">changingBus</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">queued</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">cancelledBeforeTurn</span> <span class="o">=</span> <span class="n">changingBus</span><span class="o">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">changingTrace</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="s">"B</span><span class="se">\(</span><span class="nv">$0</span><span class="se">)</span><span class="s">"</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changingBus</span><span class="o">.</span><span class="nf">publish</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="nf">drained</span><span class="p">(</span><span class="nv">events</span><span class="p">:</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">changingTrace</span> <span class="o">==</span> <span class="p">[</span><span class="s">"A1"</span><span class="p">,</span> <span class="s">"A2"</span><span class="p">,</span> <span class="s">"C2"</span><span class="p">])</span>
+<span class="n">changingFirst</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">addedDuringDelivery</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+<span class="n">cancelledBeforeTurn</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>B was scheduled for the first event, but cancellation removed its callback before its turn. C was added too late for that event’s recipient snapshot and participates in the next one. Explicit cancellation at the end also releases closures that capture the bus; token ownership remains part of the design even when delivery is synchronous.</p>
+
+<h2 id="exercise-add-subscriber-failure-outcomes">Exercise: add subscriber failure outcomes</h2>
+
+<p>Allow a subscriber to report a handled failure without throwing through the entire drain. Define whether remaining subscribers still receive the event, where diagnostics go, and whether any retry is permitted. Test that retries cannot silently duplicate an external effect under an event-delivery guarantee that only promised notification.</p>
+
+<p>Return to the <a href="/swift-design-patterns/">Design Patterns roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-publisher-subscriber/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Publisher-Subscriber+in+Swift%3A+Typed+Events%2C+Queued+Delivery%2C+and+Subscription+Lifetime%20https%3A%2F%2Fswiftbydeya.com%2Fswift-publisher-subscriber%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-publisher-subscriber/&title=Publisher-Subscriber+in+Swift%3A+Typed+Events%2C+Queued+Delivery%2C+and+Subscription+Lifetime%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-publisher-subscriber/&title=Publisher-Subscriber+in+Swift%3A+Typed+Events%2C+Queued+Delivery%2C+and+Subscription+Lifetime%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-publisher-subscriber/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Publisher-Subscriber in Swift: Typed Events, Queued Delivery, and Subscription Lifetime%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-publisher-subscriber/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Architecture">Architecture</a></li>
+    
+    <li><a href="/tag/#Design+Patterns">Design Patterns</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="When Architecture Structure Pays Off: Change Cost, Contracts, and Evidence" href="/swift-architecture-structure-cost/"> <p>Previous post</p> When Architecture Structure Pays Off: Change Cost, Contracts, and Evidence </a> </div> <div id="next-post"> <a alt="Mixing Object-Oriented and Functional Programming in Swift" href="/swift-oop-functional-programming/"> <p>Next post</p> Mixing Object-Oriented and Functional Programming in Swift </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

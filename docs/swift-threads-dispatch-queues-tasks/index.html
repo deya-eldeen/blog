@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A Swift task is not a thread, and a dispatch queue is not a thread either. Each is a different layer of abstraction over the same hardware. Threads are execution resources managed by the kernel. Dispatch queues are scheduling structures that borrow threads from a pool. Tasks are units of asynchronous work that occupy a thread only while they are actually running. The differences matter most when work waits. A blocked thread holds memory and a scheduling slot while doing nothing. A blocked dispatch work item holds a thread. A suspended task holds neither. This article measures those differences on real hardware, maps the GCD idioms you already know onto Swift concurrency, and shows where the two models still have to meet." /> <meta property="og:description" content="A Swift task is not a thread, and a dispatch queue is not a thread either. Each is a different layer of abstraction over the same hardware. Threads are execution resources managed by the kernel. Dispatch queues are scheduling structures that borrow threads from a pool. Tasks are units of asynchronous work that occupy a thread only while they are actually running. The differences matter most when work waits. A blocked thread holds memory and a scheduling slot while doing nothing. A blocked dispatch work item holds a thread. A suspended task holds neither. This article measures those differences on real hardware, maps the GCD idioms you already know onto Swift concurrency, and shows where the two models still have to meet." /> <link rel="canonical" href="https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-06-04T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-06-04T00:00:00+03:00","datePublished":"2026-06-04T00:00:00+03:00","description":"A Swift task is not a thread, and a dispatch queue is not a thread either. Each is a different layer of abstraction over the same hardware. Threads are execution resources managed by the kernel. Dispatch queues are scheduling structures that borrow threads from a pool. Tasks are units of asynchronous work that occupy a thread only while they are actually running. The differences matter most when work waits. A blocked thread holds memory and a scheduling slot while doing nothing. A blocked dispatch work item holds a thread. A suspended task holds neither. This article measures those differences on real hardware, maps the GCD idioms you already know onto Swift concurrency, and shows where the two models still have to meet.","headline":"Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/"},"url":"https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work"> <meta name="twitter:description" content="A Swift task is not a thread, and a dispatch queue is not a thread either. Each is a different layer of abstraction over the same hardware. Threads are execu..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-06-04T00:00:00+03:00">June 4, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A Swift task is not a thread, and a dispatch queue is not a thread either. Each is a different layer of abstraction over the same hardware. Threads are execution resources managed by the kernel. Dispatch queues are scheduling structures that borrow threads from a pool. Tasks are units of asynchronous work that occupy a thread only while they are actually running.</p>
+
+<p>The differences matter most when work <em>waits</em>. A blocked thread holds memory and a scheduling slot while doing nothing. A blocked dispatch work item holds a thread. A suspended task holds neither. This article measures those differences on real hardware, maps the GCD idioms you already know onto Swift concurrency, and shows where the two models still have to meet.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26, on an Apple M1 Ultra with 20 CPU cores. Measured numbers are from that machine and will differ on yours; the <em>shape</em> of the results is what matters. The Swift blocks build on one another in a single <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later, and <code class="language-plaintext highlighter-rouge">pthread_mach_thread_np</code> is Darwin-specific.</p>
+
+<h2 id="layer-one-threads">Layer one: threads</h2>
+
+<p>A thread is the unit the kernel schedules onto a CPU core. Each thread has its own stack, its own register state, and an entry in the scheduler’s run queues. When a thread blocks, waiting on a lock, a semaphore, a <code class="language-plaintext highlighter-rouge">read</code> system call, or a sleep, the kernel takes it off the core and schedules another runnable thread. When the wait ends, the thread becomes runnable again.</p>
+
+<p>That model is simple and general, but every thread has a cost even when it is idle:</p>
+
+<ul>
+  <li><strong>Memory.</strong> Apple’s <a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/CreatingThreads/CreatingThreads.html">Threading Programming Guide</a> lists a default stack of 512 KiB for secondary threads. That is reserved virtual address space; pages are committed as they are touched. With \(N\) threads and stack reservation \(S\), address space for stacks alone is \(N \times S\), so 100 threads reserve about 50 MiB.</li>
+  <li><strong>Kernel bookkeeping.</strong> Each thread has kernel data structures and appears in every scheduling decision.</li>
+  <li><strong>Context switches.</strong> Moving a core from one thread to another saves and restores registers, and often costs cache and TLB warmth. Individually cheap, they add up when hundreds of threads contend for a few cores.</li>
+</ul>
+
+<p>Threads are the right tool when you need an execution context with a fixed identity: a real-time audio render thread, a thread that owns a run loop, or a C library that stores state in thread-local storage. For ordinary application work, creating threads directly is almost never the right level of abstraction.</p>
+
+<h2 id="layer-two-dispatch-queues">Layer two: dispatch queues</h2>
+
+<p>Grand Central Dispatch (GCD) replaced “create a thread for this” with “submit this block to a queue.” A queue is a FIFO list of work items. GCD drains queues using a pool of worker threads that it manages.</p>
+
+<ul>
+  <li>A <strong>serial</strong> queue runs one work item at a time, in submission order. It is the classic GCD tool for protecting state: if only blocks on <code class="language-plaintext highlighter-rouge">queue</code> touch a dictionary, the dictionary never sees two accesses at once.</li>
+  <li>A <strong>concurrent</strong> queue may run many work items at once, on several pool threads.</li>
+  <li>The <strong>main</strong> queue is a serial queue bound to the main thread.</li>
+  <li><strong>Quality of service</strong> (<code class="language-plaintext highlighter-rouge">.userInteractive</code> down to <code class="language-plaintext highlighter-rouge">.background</code>) tells the system how urgent the work is.</li>
+</ul>
+
+<p>Here is the serial-queue idiom for a small cache. It will reappear when we translate it to an actor.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// The GCD idiom: a private serial queue is the only code that touches `storage`.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">QueueCache</span><span class="p">:</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"cache.storage"</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">storage</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">set</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">queue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">storage</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">queue</span><span class="o">.</span><span class="n">sync</span> <span class="p">{</span> <span class="n">storage</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">queueCache</span> <span class="o">=</span> <span class="kt">QueueCache</span><span class="p">()</span>
+<span class="n">queueCache</span><span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="nv">for</span><span class="p">:</span> <span class="s">"answer"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">queueCache</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"answer"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Notice the <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code>. The class <em>is</em> safe to share, but only because every access to <code class="language-plaintext highlighter-rouge">storage</code> goes through <code class="language-plaintext highlighter-rouge">queue</code>. The compiler cannot see that discipline. If a future edit reads <code class="language-plaintext highlighter-rouge">storage</code> outside the queue, nothing stops it. GCD gives you a correct pattern; it does not give you a checked one.</p>
+
+<h2 id="when-dispatched-work-blocks-thread-explosion">When dispatched work blocks: thread explosion</h2>
+
+<p>GCD’s pool grows when its threads block. If every worker is stuck waiting, the queue cannot make progress, so the system adds threads. This keeps blocked work from deadlocking the pool, but it means blocking calls on concurrent queues translate into thread creation.</p>
+
+<p>To see this, record the identity of each OS thread that runs a work item:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Collects the distinct OS threads that called `record()`.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ThreadCensus</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">ids</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Set</span><span class="o">&lt;</span><span class="kt">UInt32</span><span class="o">&gt;&gt;</span><span class="p">([])</span>
+
+    <span class="kd">func</span> <span class="nf">record</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">id</span> <span class="o">=</span> <span class="nf">pthread_mach_thread_np</span><span class="p">(</span><span class="nf">pthread_self</span><span class="p">())</span>
+        <span class="n">ids</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">id</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">distinctThreads</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="n">ids</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">count</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">DispatchGroup</span> <span class="p">{</span>
+    <span class="c1">/// Suspends until every work item in the group has finished, without blocking a thread.</span>
+    <span class="kd">func</span> <span class="nf">finished</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+            <span class="nf">notify</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="k">in</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">@Sendable</code> on the <code class="language-plaintext highlighter-rouge">notify</code> closure is not decoration. It is the subject of a later section.</p>
+
+<p>Now submit 100 work items that each block their thread for 100 ms, standing in for a synchronous file read or a legacy network call:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">blockingWorkOnGCD</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="kt">ThreadCensus</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"blocking.work"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="o">.</span><span class="n">concurrent</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">group</span> <span class="o">=</span> <span class="kt">DispatchGroup</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">items</span> <span class="p">{</span>
+        <span class="n">queue</span><span class="o">.</span><span class="nf">async</span><span class="p">(</span><span class="nv">group</span><span class="p">:</span> <span class="n">group</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">census</span><span class="o">.</span><span class="nf">record</span><span class="p">()</span>
+            <span class="kt">Thread</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">forTimeInterval</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">finished</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">gcdCensus</span> <span class="o">=</span> <span class="kt">ThreadCensus</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">gcdElapsed</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">blockingWorkOnGCD</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="n">gcdCensus</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"GCD:"</span><span class="p">,</span> <span class="n">gcdCensus</span><span class="o">.</span><span class="n">distinctThreads</span><span class="p">,</span> <span class="s">"threads,"</span><span class="p">,</span> <span class="n">gcdElapsed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the 20-core test machine this printed <strong>100 threads</strong> and about 0.11 seconds. GCD created one thread per blocked work item, five times the number of cores. Raising the count to 200 produced 100 threads and two rounds of about 0.1 seconds each. That ceiling is a kernel limit on this macOS installation (<code class="language-plaintext highlighter-rouge">sysctl kern.wq_max_constrained_threads</code> reported 100). The exact limit is an implementation detail, but the behavior is the point: <strong>with GCD, blocking work costs threads.</strong></p>
+
+<p>Thread explosion is not an exotic failure. It is the default outcome when code dispatches many blocking operations, such as reading files from a slow network volume, calling synchronous networking libraries, or waiting on semaphores inside blocks. The symptoms are high memory, lots of context switching, and, at the limit, work that stalls because the pool cannot grow any further.</p>
+
+<h2 id="layer-three-tasks">Layer three: tasks</h2>
+
+<p>A Swift task is a unit of asynchronous work with its own priority, cancellation state, and task-local values. While it runs, it executes on a thread. When it reaches an <code class="language-plaintext highlighter-rouge">await</code> that actually suspends, it saves the state it needs in heap-allocated <em>async frames</em> and gives the thread back. Resuming later is closer to calling a function than to a kernel context switch: an executor picks up the task’s next <em>job</em> and runs it on whatever thread that executor uses.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A blocked thread holds the core's thread while a suspended task gives it back
+    participant T1 as Pool thread 1
+    participant A as Task A
+    participant B as Task B
+    Note over T1: Blocking model
+    T1-&gt;&gt;T1: Run work item A
+    T1--&gt;&gt;T1: Blocked on read for 100 ms, thread unavailable
+    T1-&gt;&gt;T1: Resume A, then run B
+    Note over T1: Suspending model
+    T1-&gt;&gt;A: Run task A until await
+    A--&gt;&gt;T1: Suspend, save async frame, return thread
+    T1-&gt;&gt;B: Run task B on the same thread
+    B--&gt;&gt;T1: Suspend
+    T1-&gt;&gt;A: Resume A when its result is ready
+</code></pre>
+
+<p>The global concurrent executor that runs non-isolated tasks uses a <strong>cooperative thread pool</strong> with about one thread per CPU core. It does not grow when tasks wait, because tasks are expected not to block. A thousand tasks waiting on the network need no more threads than ten.</p>
+
+<p>Run the same experiment with tasks that <em>suspend</em> instead of block:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">suspendingWorkOnTasks</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="kt">ThreadCensus</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">items</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="n">census</span><span class="o">.</span><span class="nf">record</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+                <span class="n">census</span><span class="o">.</span><span class="nf">record</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">taskCensus</span> <span class="o">=</span> <span class="kt">ThreadCensus</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">taskElapsed</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">suspendingWorkOnTasks</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="n">taskCensus</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">cores</span> <span class="o">=</span> <span class="kt">ProcessInfo</span><span class="o">.</span><span class="n">processInfo</span><span class="o">.</span><span class="n">activeProcessorCount</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">taskCensus</span><span class="o">.</span><span class="n">distinctThreads</span> <span class="o">&lt;=</span> <span class="n">cores</span><span class="p">,</span> <span class="s">"Suspended tasks do not consume extra threads"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Tasks:"</span><span class="p">,</span> <span class="n">taskCensus</span><span class="o">.</span><span class="n">distinctThreads</span><span class="p">,</span> <span class="s">"threads,"</span><span class="p">,</span> <span class="n">taskElapsed</span><span class="p">,</span> <span class="s">"on"</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="s">"cores"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine, across several runs, this used between <strong>7 and 15 threads</strong> and finished in about 0.11 seconds, the same elapsed time as GCD with a fraction of the threads. The census records before and after the sleep, so it includes every thread that ever ran one of the tasks. A task can resume on a different thread than the one it suspended on; that is normal.</p>
+
+<h2 id="the-pool-assumes-forward-progress">The pool assumes forward progress</h2>
+
+<p>The cooperative pool’s fixed width is a contract. The runtime promises not to create more threads than cores, and your code promises that a task running on the pool will either finish or suspend in a reasonable time. Swift calls this the <strong>forward-progress</strong> requirement.</p>
+
+<p>What happens when a task breaks the contract and blocks its thread?</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">blockingWorkOnTasks</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="kt">ThreadCensus</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Duration</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">items</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="n">census</span><span class="o">.</span><span class="nf">record</span><span class="p">()</span>
+                <span class="nf">usleep</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)</span>   <span class="c1">// Blocks the pool thread. Never do this in real code.</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">start</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">blockedCensus</span> <span class="o">=</span> <span class="kt">ThreadCensus</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">blockedElapsed</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">blockingWorkOnTasks</span><span class="p">(</span><span class="nv">items</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="nv">census</span><span class="p">:</span> <span class="n">blockedCensus</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">blockedCensus</span><span class="o">.</span><span class="n">distinctThreads</span> <span class="o">&lt;=</span> <span class="n">cores</span><span class="p">,</span> <span class="s">"The cooperative pool does not grow when tasks block"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"Blocking tasks:"</span><span class="p">,</span> <span class="n">blockedCensus</span><span class="o">.</span><span class="n">distinctThreads</span><span class="p">,</span> <span class="s">"threads,"</span><span class="p">,</span> <span class="n">blockedElapsed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>On the test machine: <strong>20 threads</strong>, exactly the core count, and about 0.21 seconds. The pool did not grow, so 40 blocking jobs ran in two waves. If \(n\) tasks each block for \(d\) on a pool of width \(w\), the elapsed time is at least</p>
+
+\[T \ge \left\lceil \frac{n}{w} \right\rceil d.\]
+
+<p>On a six-core iPhone the same 40 tasks would take at least \(\lceil 40/6 \rceil \times 100\,\text{ms} = 700\,\text{ms}\), and during that time <em>every other</em> non-isolated task in the process would wait for a free thread. Main-actor code is affected too: the <a href="/swift-executors/">executors article</a> measures a 20 ms main-actor <code class="language-plaintext highlighter-rouge">Task.sleep</code> taking 140 ms while the pool is blocked, because the sleep’s wake-up passes through the pool. That is the real cost of blocking in Swift concurrency: not extra threads, but starvation of unrelated work. If the blocked tasks are waiting for something that another task on the pool must produce, the result is a deadlock. The <a href="/swift-deadlocks-blocking-waits/">deadlocks article</a> covers that failure in detail.</p>
+
+<p>The compiler helps by marking the most common blocking calls as unavailable from asynchronous contexts. In Swift 6 mode, each of these is a compile error inside an <code class="language-plaintext highlighter-rouge">async</code> function:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Call</th>
+      <th>Diagnostic suggestion</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Thread.sleep(forTimeInterval:)</code></td>
+      <td>Use <code class="language-plaintext highlighter-rouge">Task.sleep(until:clock:)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchSemaphore.wait()</code></td>
+      <td>Await a task handle</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchGroup.wait()</code></td>
+      <td>Use a task group</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Thread.current</code></td>
+      <td>Not available from async contexts</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>C functions like <code class="language-plaintext highlighter-rouge">usleep</code>, <code class="language-plaintext highlighter-rouge">read</code>, and <code class="language-plaintext highlighter-rouge">pthread_mutex_lock</code>, and synchronous wrappers around them, carry no such annotation. The compiler cannot tell a fast synchronous call from a slow blocking one.</p>
+
+<h2 id="mapping-gcd-idioms-to-swift-concurrency">Mapping GCD idioms to Swift concurrency</h2>
+
+<p>Most GCD patterns have a direct counterpart. The counterpart usually adds something GCD lacked: compile-time checking, cancellation, or structure.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>GCD idiom</th>
+      <th>Swift concurrency</th>
+      <th>What changes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Private serial queue guarding state</td>
+      <td><code class="language-plaintext highlighter-rouge">actor</code></td>
+      <td>Compiler-checked isolation; reentrant at <code class="language-plaintext highlighter-rouge">await</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchQueue.main.async { }</code></td>
+      <td><code class="language-plaintext highlighter-rouge">@MainActor</code> function, or <code class="language-plaintext highlighter-rouge">Task { @MainActor in }</code></td>
+      <td>Isolation is part of the type, checked statically</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchGroup</code> + <code class="language-plaintext highlighter-rouge">notify</code></td>
+      <td><code class="language-plaintext highlighter-rouge">async let</code> or a task group</td>
+      <td>Results and errors flow back; children cancel together</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchWorkItem.cancel()</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Task.cancel()</code></td>
+      <td>Cooperative, propagates to child tasks</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">asyncAfter(deadline:)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">try await Task.sleep(for:)</code></td>
+      <td>Sleeping is cancellable and does not hold a thread</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DispatchSemaphore</code> as a concurrency limit</td>
+      <td>Task group that adds a child when one finishes</td>
+      <td>No blocked threads</td>
+    </tr>
+    <tr>
+      <td>QoS classes</td>
+      <td><code class="language-plaintext highlighter-rouge">TaskPriority</code></td>
+      <td>Priority escalates when higher-priority work awaits</td>
+    </tr>
+    <tr>
+      <td>Concurrent queue with barrier writes</td>
+      <td>Actor, or <code class="language-plaintext highlighter-rouge">Mutex</code> for short critical sections</td>
+      <td>No hand-rolled reader/writer protocol</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The serial-queue cache becomes an actor:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// The actor idiom: the compiler enforces that only isolated code touches `storage`.</span>
+<span class="kd">actor</span> <span class="kt">ActorCache</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">storage</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="kd">func</span> <span class="nf">set</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">value</span><span class="p">(</span><span class="k">for</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span><span class="p">?</span> <span class="p">{</span>
+        <span class="n">storage</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">actorCache</span> <span class="o">=</span> <span class="kt">ActorCache</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">actorCache</span><span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="nv">for</span><span class="p">:</span> <span class="s">"answer"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">cachedAnswer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">actorCache</span><span class="o">.</span><span class="nf">value</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="s">"answer"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cachedAnswer</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>No <code class="language-plaintext highlighter-rouge">@unchecked</code>. The actor is <code class="language-plaintext highlighter-rouge">Sendable</code> by construction, and reading <code class="language-plaintext highlighter-rouge">storage</code> from outside the actor is a compile error rather than a latent bug.</p>
+
+<p>One semantic difference deserves emphasis. A serial queue runs each block <strong>to completion</strong> before starting the next. An actor runs each <em>job</em> to completion, but an actor method that contains an <code class="language-plaintext highlighter-rouge">await</code> is split into several jobs, and other calls can run on the actor between them. That property, <strong>reentrancy</strong>, avoids the deadlocks that <code class="language-plaintext highlighter-rouge">queue.sync</code> from inside the same queue produces, but it means state can change across an <code class="language-plaintext highlighter-rouge">await</code> inside an actor method. The <a href="/swift-actor-reentrancy/">actor reentrancy article</a> treats it in depth.</p>
+
+<h2 id="the-isolation-trap-at-the-gcd-boundary">The isolation trap at the GCD boundary</h2>
+
+<p>Code that mixes GCD and Swift concurrency must respect a rule that did not exist before Swift 6: <strong>closures inherit the isolation of the context they are written in, unless they are <code class="language-plaintext highlighter-rouge">@Sendable</code> or explicitly annotated otherwise.</strong></p>
+
+<p>Most GCD APIs mark their closure parameters <code class="language-plaintext highlighter-rouge">@Sendable</code>, so a block passed to <code class="language-plaintext highlighter-rouge">queue.async</code> is non-isolated. But not every Dispatch API does. In the macOS 26 SDK, <code class="language-plaintext highlighter-rouge">DispatchGroup.notify(queue:execute:)</code> takes a plain <code class="language-plaintext highlighter-rouge">@escaping @convention(block)</code> closure. Write that closure in main-actor-isolated code, such as top-level code in <code class="language-plaintext highlighter-rouge">main.swift</code>, a <code class="language-plaintext highlighter-rouge">@MainActor</code> view model, or a SwiftUI view, and it is inferred to be <code class="language-plaintext highlighter-rouge">@MainActor</code>:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Compiles in Swift 6 mode, then traps at runtime when the notify block runs.</span>
+<span class="k">let</span> <span class="nv">group</span> <span class="o">=</span> <span class="kt">DispatchGroup</span><span class="p">()</span>
+<span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">async</span><span class="p">(</span><span class="nv">group</span><span class="p">:</span> <span class="n">group</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* work */</span> <span class="p">}</span>
+<span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+    <span class="n">group</span><span class="o">.</span><span class="nf">notify</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span> <span class="p">{</span>      <span class="c1">// inferred @MainActor</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The program compiles. When GCD later runs the block on a global-queue thread, the process stops with a breakpoint trap. In Swift 6 mode the compiler inserts a runtime executor check into synchronous isolated closures that may be invoked by code it cannot verify (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0423-dynamic-actor-isolation.md">SE-0423</a>). The check fails because a <code class="language-plaintext highlighter-rouge">@MainActor</code> closure is running off the main thread, and the runtime stops the process rather than let a data race proceed silently.</p>
+
+<p>Two fixes are correct, depending on intent:</p>
+
+<ul>
+  <li>If the block does not need main-actor state, mark it <code class="language-plaintext highlighter-rouge">@Sendable</code>, as the <code class="language-plaintext highlighter-rouge">finished()</code> helper above does. A <code class="language-plaintext highlighter-rouge">@Sendable</code> closure is non-isolated, and the compiler checks that it captures only <code class="language-plaintext highlighter-rouge">Sendable</code> values.</li>
+  <li>If the block does need the main actor, notify on <code class="language-plaintext highlighter-rouge">.main</code>, so the runtime check holds.</li>
+</ul>
+
+<p>This trap appears most often during Swift 6 migration, in code that worked for years. It is not a regression: the old code was reading main-actor state from a background thread all along. The <a href="/swift-6-data-race-safety-migration/">Swift 6 migration article</a> lists other boundaries where the same check appears.</p>
+
+<h2 id="bridging-blocking-work-without-starving-the-pool">Bridging blocking work without starving the pool</h2>
+
+<p>Some calls must block: a synchronous C library, a file API on a slow network volume, an XPC call without an async variant. Do not make those calls from a task on the cooperative pool. Give them threads that are allowed to block, and suspend the task until they finish:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">LegacyIO</span> <span class="p">{</span>
+    <span class="c1">/// Threads on this queue are allowed to block. Its width bounds how many threads blocking can consume.</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">queue</span> <span class="o">=</span> <span class="kt">DispatchQueue</span><span class="p">(</span><span class="nv">label</span><span class="p">:</span> <span class="s">"legacy.blocking-io"</span><span class="p">,</span> <span class="nv">qos</span><span class="p">:</span> <span class="o">.</span><span class="n">utility</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// A synchronous API that blocks its caller, standing in for a legacy library.</span>
+<span class="kd">func</span> <span class="nf">legacyChecksum</span><span class="p">(</span><span class="n">_</span> <span class="nv">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">UInt32</span> <span class="p">{</span>
+    <span class="nf">usleep</span><span class="p">(</span><span class="mi">20_000</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bytes</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&amp;+</span> <span class="kt">UInt32</span><span class="p">(</span><span class="nv">$1</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// Async wrapper: the task suspends while a GCD thread does the blocking.</span>
+<span class="kd">func</span> <span class="nf">checksum</span><span class="p">(</span><span class="n">_</span> <span class="nv">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">UInt32</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="kt">LegacyIO</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="nf">legacyChecksum</span><span class="p">(</span><span class="n">bytes</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sums</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">UInt32</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">seed</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">await</span> <span class="nf">checksum</span><span class="p">([</span><span class="kt">UInt8</span><span class="p">](</span><span class="nv">repeating</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">(</span><span class="n">seed</span><span class="p">),</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">collected</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt32</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">sum</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">collected</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">sum</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">collected</span><span class="o">.</span><span class="nf">sorted</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sums</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The task calling <code class="language-plaintext highlighter-rouge">checksum</code> suspends inside <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code>, which returns its pool thread. The blocking happens on a thread owned by <code class="language-plaintext highlighter-rouge">LegacyIO.queue</code>, which is a serial queue, so blocking can consume at most one extra thread. That is a deliberate choice. A concurrent queue here would reintroduce thread explosion under load; if the legacy API tolerates parallel calls, cap the parallelism explicitly instead.</p>
+
+<p>This pattern trades latency for safety: the four calls above run one after another on the serial queue. When that matters, use a small fixed set of serial queues, or an actor with a <a href="/swift-executors/">custom executor</a> backed by a dedicated thread. Continuations themselves have rules, such as resuming exactly once, which the <a href="/swift-checked-continuations/">checked continuations article</a> covers.</p>
+
+<h2 id="when-threads-still-matter">When threads still matter</h2>
+
+<p>Swift concurrency hides threads, but it does not abolish them. Keep thinking in threads when:</p>
+
+<ul>
+  <li><strong>An API is thread-affine.</strong> Run-loop-based APIs, such as <code class="language-plaintext highlighter-rouge">Timer</code> scheduled on a run loop, older <code class="language-plaintext highlighter-rouge">NSStream</code> code, and some C libraries, expect calls from the same thread that set them up. A task can resume on a different thread after any suspension, so it cannot provide that guarantee. Use the main actor (bound to the main thread) or a dedicated thread.</li>
+  <li><strong>State is stored per thread.</strong> Thread-local storage is unreliable across <code class="language-plaintext highlighter-rouge">await</code> for the same reason. Use <code class="language-plaintext highlighter-rouge">@TaskLocal</code> for values that should follow a logical operation; task-local values are inherited by child tasks and by <code class="language-plaintext highlighter-rouge">Task { }</code>.</li>
+  <li><strong>Code runs under real-time constraints.</strong> An audio render callback must not allocate, take locks, or wait. Swift concurrency’s runtime does all three internally. Keep real-time code on its own thread, and communicate with lock-free structures.</li>
+  <li><strong>You are diagnosing.</strong> Instruments, backtraces, and Thread Sanitizer report threads. Knowing that one task can appear on several threads, and that one pool thread runs many tasks, is necessary to read those reports correctly.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Threads are kernel execution resources with real memory and scheduling cost.</li>
+  <li>Dispatch queues schedule blocks onto a managed pool. When those blocks block, the pool grows: 100 threads for 100 sleeping work items on the test machine.</li>
+  <li>Tasks give their thread back when they suspend. The cooperative pool stays near the core count no matter how many tasks wait.</li>
+  <li>The pool’s fixed width requires forward progress. Blocking a task’s thread starves other work: \(T \ge \lceil n/w \rceil d\).</li>
+  <li>Actors replace serial queues with compiler-checked isolation, at the cost of reentrancy across <code class="language-plaintext highlighter-rouge">await</code>.</li>
+  <li>At the GCD boundary, closures inherit isolation unless marked <code class="language-plaintext highlighter-rouge">@Sendable</code>. A main-actor closure run on a background queue traps in Swift 6.</li>
+  <li>Route unavoidable blocking calls to threads that may block, and bridge them with a continuation.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Take the <code class="language-plaintext highlighter-rouge">QueueCache</code> class and add a method <code class="language-plaintext highlighter-rouge">func valueOrLoad(_ key: String, load: () -&gt; Int) -&gt; Int</code> that computes a missing value inside <code class="language-plaintext highlighter-rouge">queue.sync</code>. Then translate it to <code class="language-plaintext highlighter-rouge">ActorCache</code> with an <code class="language-plaintext highlighter-rouge">async</code> loader. Explain why the GCD version never runs two loads for the same key, why the actor version can, and change the actor version so that concurrent callers for the same key share one load. The <a href="/swift-actor-reentrancy/">actor reentrancy article</a> contains a reference solution.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10254/">Swift concurrency: Behind the scenes</a>, WWDC21, on the cooperative pool and forward progress.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2017/706/">Modernizing Grand Central Dispatch Usage</a>, WWDC17, on thread explosion and queue hierarchies.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0423-dynamic-actor-isolation.md">SE-0423: Dynamic actor isolation enforcement</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0340-swift-noasync.md">SE-0340: Unavailable from async attribute</a>, the mechanism behind the blocking-call errors.</li>
+</ul>
+
+<p>Previous: <a href="/swift-concurrency-vs-parallelism/">Concurrency vs. Parallelism</a>. Next: <a href="/swift-async-await-suspension/">Suspending Functions with <code class="language-plaintext highlighter-rouge">async</code> and <code class="language-plaintext highlighter-rouge">await</code></a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Threads%2C+Dispatch+Queues%2C+and+Swift+Tasks%3A+Three+Layers+of+Concurrent+Work%20https%3A%2F%2Fswiftbydeya.com%2Fswift-threads-dispatch-queues-tasks%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/&title=Threads%2C+Dispatch+Queues%2C+and+Swift+Tasks%3A+Three+Layers+of+Concurrent+Work%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/&title=Threads%2C+Dispatch+Queues%2C+and+Swift+Tasks%3A+Three+Layers+of+Concurrent+Work%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Threads, Dispatch Queues, and Swift Tasks: Three Layers of Concurrent Work%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-threads-dispatch-queues-tasks/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#GCD">GCD</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#Tasks">Tasks</a></li>
+    
+    <li><a href="/tag/#Threads">Threads</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Suspending Functions with async and await in Swift" href="/swift-async-await-suspension/"> <p>Previous post</p> Suspending Functions with async and await in Swift </a> </div> <div id="next-post"> <a alt="Concurrency vs. Parallelism in Swift: Understanding the Difference" href="/swift-concurrency-vs-parallelism/"> <p>Next post</p> Concurrency vs. Parallelism in Swift: Understanding the Difference </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

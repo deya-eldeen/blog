@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Bridging Callback APIs with Checked Continuations in Swift | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Bridging Callback APIs with Checked Continuations in Swift" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="A continuation is the bridge between the callback world and the async world. Inside withCheckedContinuation, the current task suspends and hands you an object; whoever calls resume on that object, from any thread and at any later time, wakes the task up with a value or an error. With it, a twenty-year-old completion-handler API becomes an async function in a dozen lines. The bridge has exactly one rule: resume every continuation exactly once. Resume it twice and the program traps. Never resume it and the waiting task is suspended forever, holding whatever it captured. This article builds wrappers for the common shapes of callback API, shows the diagnostics for each kind of misuse, compares the checked, unsafe, and new Swift 6.4 noncopyable continuations, and lists the cases where you do not need a continuation at all." /> <meta property="og:description" content="A continuation is the bridge between the callback world and the async world. Inside withCheckedContinuation, the current task suspends and hands you an object; whoever calls resume on that object, from any thread and at any later time, wakes the task up with a value or an error. With it, a twenty-year-old completion-handler API becomes an async function in a dozen lines. The bridge has exactly one rule: resume every continuation exactly once. Resume it twice and the program traps. Never resume it and the waiting task is suspended forever, holding whatever it captured. This article builds wrappers for the common shapes of callback API, shows the diagnostics for each kind of misuse, compares the checked, unsafe, and new Swift 6.4 noncopyable continuations, and lists the cases where you do not need a continuation at all." /> <link rel="canonical" href="https://swiftbydeya.com/swift-checked-continuations/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-checked-continuations/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-13T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Bridging Callback APIs with Checked Continuations in Swift" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-13T00:00:00+03:00","datePublished":"2026-08-13T00:00:00+03:00","description":"A continuation is the bridge between the callback world and the async world. Inside withCheckedContinuation, the current task suspends and hands you an object; whoever calls resume on that object, from any thread and at any later time, wakes the task up with a value or an error. With it, a twenty-year-old completion-handler API becomes an async function in a dozen lines. The bridge has exactly one rule: resume every continuation exactly once. Resume it twice and the program traps. Never resume it and the waiting task is suspended forever, holding whatever it captured. This article builds wrappers for the common shapes of callback API, shows the diagnostics for each kind of misuse, compares the checked, unsafe, and new Swift 6.4 noncopyable continuations, and lists the cases where you do not need a continuation at all.","headline":"Bridging Callback APIs with Checked Continuations in Swift","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-checked-continuations/"},"url":"https://swiftbydeya.com/swift-checked-continuations/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Bridging Callback APIs with Checked Continuations in Swift"> <meta name="twitter:description" content="A continuation is the bridge between the callback world and the async world. Inside withCheckedContinuation, the current task suspends and hands you an objec..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Bridging Callback APIs with Checked Continuations in Swift"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Bridging Callback APIs with Checked Continuations in Swift</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-13T00:00:00+03:00">August 13, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>A continuation is the bridge between the callback world and the <code class="language-plaintext highlighter-rouge">async</code> world. Inside <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code>, the current task suspends and hands you an object; whoever calls <code class="language-plaintext highlighter-rouge">resume</code> on that object, from any thread and at any later time, wakes the task up with a value or an error. With it, a twenty-year-old completion-handler API becomes an <code class="language-plaintext highlighter-rouge">async</code> function in a dozen lines.</p>
+
+<p>The bridge has exactly one rule: <strong>resume every continuation exactly once.</strong> Resume it twice and the program traps. Never resume it and the waiting task is suspended forever, holding whatever it captured. This article builds wrappers for the common shapes of callback API, shows the diagnostics for each kind of misuse, compares the checked, unsafe, and new Swift 6.4 noncopyable continuations, and lists the cases where you do not need a continuation at all.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26. Performance numbers come from an optimized build on an Apple M1 Ultra. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. The noncopyable <code class="language-plaintext highlighter-rouge">Continuation</code> type requires iOS 27, macOS 27, or later; its example was compiled but not executed on the macOS 26 test machine.</p>
+
+<h2 id="the-four-functions">The four functions</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>Continuation type</th>
+      <th>Resumes with</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withCheckedContinuation</code></td>
+      <td><code class="language-plaintext highlighter-rouge">CheckedContinuation&lt;T, Never&gt;</code></td>
+      <td>A value</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withCheckedThrowingContinuation</code></td>
+      <td><code class="language-plaintext highlighter-rouge">CheckedContinuation&lt;T, any Error&gt;</code></td>
+      <td>A value or an error</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withUnsafeContinuation</code></td>
+      <td><code class="language-plaintext highlighter-rouge">UnsafeContinuation&lt;T, Never&gt;</code></td>
+      <td>A value, without misuse checks</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">withUnsafeThrowingContinuation</code></td>
+      <td><code class="language-plaintext highlighter-rouge">UnsafeContinuation&lt;T, any Error&gt;</code></td>
+      <td>A value or an error, without checks</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>All four run their closure <strong>immediately and synchronously</strong>, in the caller’s isolation, before the task suspends (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0300-continuation.md">SE-0300</a>). That is what makes them safe to use for registration: the closure starts the legacy operation and stores or captures the continuation, then returns, and only then does the task suspend.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: A task suspends inside withCheckedContinuation until a callback resumes it
+    participant T as Async caller
+    participant W as withCheckedContinuation body
+    participant L as Legacy API
+    participant Q as Callback queue
+    T-&gt;&gt;W: call, body runs synchronously
+    W-&gt;&gt;L: start operation, pass a completion that captures the continuation
+    W--&gt;&gt;T: body returns, task suspends and frees its thread
+    L-&gt;&gt;Q: operation completes later
+    Q-&gt;&gt;Q: completion calls continuation.resume(returning:)
+    Q--&gt;&gt;T: task becomes runnable
+    T-&gt;&gt;T: continues on its own executor with the value
+</code></pre>
+
+<p>The continuation is <code class="language-plaintext highlighter-rouge">Sendable</code>, so completion handlers on any queue may resume it. After <code class="language-plaintext highlighter-rouge">resume</code>, the task continues on its own executor, so a main-actor caller is back on the main actor, whatever thread the callback used.</p>
+
+<h2 id="shape-1-a-single-result-completion">Shape 1: a single <code class="language-plaintext highlighter-rouge">Result</code> completion</h2>
+
+<p>The simplest and most common shape is a function that calls one completion handler exactly once, with either a value or an error:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">Place</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">GeocodeError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">notFound</span><span class="p">(</span><span class="kt">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">/// A legacy API: calls `completion` exactly once, on a background queue.</span>
+<span class="kd">func</span> <span class="nf">legacyGeocode</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="kt">Place</span><span class="p">,</span> <span class="kt">GeocodeError</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nf">completion</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">isEmpty</span> <span class="p">?</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="o">.</span><span class="nf">notFound</span><span class="p">(</span><span class="n">query</span><span class="p">))</span> <span class="p">:</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="kt">Place</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="n">query</span><span class="o">.</span><span class="n">capitalized</span><span class="p">)))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">geocode</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Place</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="nf">legacyGeocode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">place</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">geocode</span><span class="p">(</span><span class="s">"lisbon"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">place</span> <span class="o">==</span> <span class="kt">Place</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"Lisbon"</span><span class="p">))</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">geocode</span><span class="p">(</span><span class="s">""</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"An empty query must fail"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">GeocodeError</span><span class="o">.</span><span class="nf">notFound</span><span class="p">(</span><span class="k">let</span> <span class="nv">query</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">resume(with:)</code> forwards a <code class="language-plaintext highlighter-rouge">Result</code> directly. The error arrives as <code class="language-plaintext highlighter-rouge">any Error</code>, because <code class="language-plaintext highlighter-rouge">CheckedContinuation</code>’s throwing form is untyped; the <code class="language-plaintext highlighter-rouge">catch</code> pattern recovers the concrete type.</p>
+
+<p>This wrapper is correct only because the legacy function’s contract says it calls <code class="language-plaintext highlighter-rouge">completion</code> <strong>exactly once</strong>. That is the property to verify, from documentation or from the source, before writing any continuation wrapper. The rest of this article is about APIs that do not make that promise cleanly.</p>
+
+<h2 id="shape-2-separate-success-and-failure-callbacks">Shape 2: separate success and failure callbacks</h2>
+
+<p>Some APIs take two closures and promise, usually only in documentation, that exactly one of them runs:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Calls exactly one of `onSuccess` or `onFailure`, once.</span>
+<span class="kd">func</span> <span class="nf">legacyFetchAvatar</span><span class="p">(</span>
+    <span class="nv">userID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span>
+    <span class="nv">onSuccess</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">,</span>
+    <span class="nv">onFailure</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+<span class="p">)</span> <span class="p">{</span>
+    <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">userID</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+            <span class="nf">onSuccess</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mh">0xAB</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">userID</span><span class="p">))</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nf">onFailure</span><span class="p">(</span><span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">badURL</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">avatar</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="nf">legacyFetchAvatar</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="n">userID</span><span class="p">)</span> <span class="p">{</span> <span class="n">data</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+        <span class="p">}</span> <span class="nv">onFailure</span><span class="p">:</span> <span class="p">{</span> <span class="n">error</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">avatarData</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">avatar</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">avatarData</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The continuation is captured by two closures, so the compiler cannot prove only one of them calls it. A checked continuation catches a violation at run time. If you do not trust the “exactly one” promise, for example because a third-party SDK has been seen calling both on some error path, add a guard that makes extra calls harmless:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Wraps a continuation so that only the first resume takes effect. Later ones are ignored.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ResumeOnce</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">continuation</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="n">continuation</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">resume</span><span class="p">(</span><span class="n">with</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">pending</span> <span class="o">=</span> <span class="n">continuation</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">stored</span> <span class="k">in</span>
+            <span class="k">defer</span> <span class="p">{</span> <span class="n">stored</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="n">stored</span>
+        <span class="p">}</span>
+        <span class="n">pending</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Use it deliberately. It turns a crash into silently discarded callbacks, which is the right trade only when the extra calls are known to be benign duplicates.</p>
+
+<h2 id="shape-3-callbacks-that-may-run-synchronously">Shape 3: callbacks that may run synchronously</h2>
+
+<p>Many APIs call their completion handler <em>synchronously</em> in some cases, such as a cache hit or an invalid argument, and asynchronously otherwise. Continuations handle both, because resuming before the task suspends is allowed: the task simply does not suspend.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyThumbnailCache</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">cached</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([</span><span class="s">"logo"</span><span class="p">:</span> <span class="mi">128</span><span class="p">])</span>
+
+    <span class="c1">/// Calls `completion` synchronously for a cache hit, asynchronously for a miss.</span>
+    <span class="kd">func</span> <span class="nf">thumbnail</span><span class="p">(</span><span class="n">named</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">size</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="p">})</span> <span class="p">{</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">async</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="n">cached</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">64</span> <span class="p">}</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">thumbnailSize</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">from</span> <span class="nv">cache</span><span class="p">:</span> <span class="kt">LegacyThumbnailCache</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="n">cache</span><span class="o">.</span><span class="nf">thumbnail</span><span class="p">(</span><span class="nv">named</span><span class="p">:</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="n">size</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">size</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">thumbnailCache</span> <span class="o">=</span> <span class="kt">LegacyThumbnailCache</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">hit</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">thumbnailSize</span><span class="p">(</span><span class="s">"logo"</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">thumbnailCache</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">miss</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">thumbnailSize</span><span class="p">(</span><span class="s">"banner"</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">thumbnailCache</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">hit</span> <span class="o">==</span> <span class="mi">128</span> <span class="o">&amp;&amp;</span> <span class="n">miss</span> <span class="o">==</span> <span class="mi">64</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This is one of the advantages of continuations over the old habit of “always dispatch the completion asynchronously to be safe”: the wrapper does not care which path the API takes.</p>
+
+<h2 id="shape-4-a-delegate-that-answers-one-request">Shape 4: a delegate that answers one request</h2>
+
+<p>Some single-shot operations report through a delegate: a permission prompt, a document picker, an authentication session. The continuation must be <strong>stored</strong> until the delegate method fires, and the storage must handle a second request arriving while the first is pending:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">PermissionError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">requestAlreadyPending</span>
+<span class="p">}</span>
+
+<span class="c1">/// A delegate-style API: `onDecision` is called once per request, later.</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">LegacyPermissionPrompt</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">onDecision</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">(</span><span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+
+    <span class="kd">func</span> <span class="nf">present</span><span class="p">(</span><span class="nv">userWillGrant</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">DispatchQueue</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="nf">asyncAfter</span><span class="p">(</span><span class="nv">deadline</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span> <span class="p">{</span> <span class="p">[</span><span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+            <span class="n">onDecision</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}?(</span><span class="n">userWillGrant</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PermissionRequester</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">prompt</span> <span class="o">=</span> <span class="kt">LegacyPermissionPrompt</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">pending</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Bool</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">prompt</span><span class="o">.</span><span class="n">onDecision</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span>
+            <span class="nv">$0</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">granted</span> <span class="k">in</span>
+                <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="nf">complete</span><span class="p">(</span><span class="n">granted</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">requestAccess</span><span class="p">(</span><span class="nv">userWillGrant</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="n">pending</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">PermissionError</span><span class="o">.</span><span class="n">requestAlreadyPending</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="n">pending</span> <span class="o">=</span> <span class="n">continuation</span>
+            <span class="n">prompt</span><span class="o">.</span><span class="nf">present</span><span class="p">(</span><span class="nv">userWillGrant</span><span class="p">:</span> <span class="n">userWillGrant</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">complete</span><span class="p">(</span><span class="n">_</span> <span class="nv">granted</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">continuation</span> <span class="o">=</span> <span class="n">pending</span>
+        <span class="n">pending</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="n">continuation</span><span class="p">?</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">granted</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">requester</span> <span class="o">=</span> <span class="kt">PermissionRequester</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">firstRequest</span> <span class="o">=</span> <span class="n">requester</span><span class="o">.</span><span class="nf">requestAccess</span><span class="p">(</span><span class="nv">userWillGrant</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">requester</span><span class="o">.</span><span class="nf">requestAccess</span><span class="p">(</span><span class="nv">userWillGrant</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"A second request while one is pending must be rejected"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="kt">PermissionError</span><span class="o">.</span><span class="n">requestAlreadyPending</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">granted</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">firstRequest</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">granted</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Three details carry the correctness:</p>
+
+<ul>
+  <li><strong>The check and the store happen in one synchronous stretch.</strong> <code class="language-plaintext highlighter-rouge">requestAccess</code> runs on the main actor, and <code class="language-plaintext highlighter-rouge">withCheckedThrowingContinuation</code> runs its closure synchronously, so no other call can slip in between <code class="language-plaintext highlighter-rouge">guard pending == nil</code> and <code class="language-plaintext highlighter-rouge">pending = continuation</code>.</li>
+  <li><strong>The continuation leaves storage before it is resumed.</strong> <code class="language-plaintext highlighter-rouge">complete</code> clears <code class="language-plaintext highlighter-rouge">pending</code> first, so a duplicate delegate call finds nothing to resume.</li>
+  <li><strong>Concurrent requests have a policy.</strong> Here the second one is rejected. Joining it to the first, by storing an array of continuations and resuming all of them, is equally valid; silently overwriting the first continuation is not, because that leaks it.</li>
+</ul>
+
+<h2 id="what-misuse-looks-like">What misuse looks like</h2>
+
+<p>The “checked” in <code class="language-plaintext highlighter-rouge">CheckedContinuation</code> means the runtime tracks each continuation and reports both kinds of misuse. On the test toolchain:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">resumesTwice</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// Fatal error: SWIFT TASK CONTINUATION MISUSE: resumesTwice() tried to resume its</span>
+<span class="c1">// continuation more than once, returning 2!</span>
+
+<span class="kd">func</span> <span class="nf">neverResumes</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+        <span class="c1">// Forgot to start the operation, or the operation's error path never calls back.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// SWIFT TASK CONTINUATION MISUSE: neverResumes() leaked its continuation without resuming it.</span>
+<span class="c1">// This may cause tasks waiting on it to remain suspended forever.</span>
+</code></pre></div></div>
+
+<p>A double resume is a fatal error: the program stops at the second <code class="language-plaintext highlighter-rouge">resume</code>, with the function name in the message. A leak is reported as a printed warning when the continuation object is destroyed without having been resumed; the waiting task stays suspended, and nothing else happens. If the continuation is still referenced somewhere, for example stored in a property that is never cleared, no warning appears at all, and the task simply hangs. Tests that exercise error paths, such as timeouts, invalid input, and cancellation, are the best defense against leaks.</p>
+
+<p>The function name in both messages comes from a <code class="language-plaintext highlighter-rouge">function: String = #function</code> parameter on <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code>, so it names the function that created the continuation. That makes the wrapper function easy to find in a crash report.</p>
+
+<h2 id="checked-or-unsafe">Checked or unsafe?</h2>
+
+<p><code class="language-plaintext highlighter-rouge">UnsafeContinuation</code> has the same API without the bookkeeping. It is faster, and it turns misuse into undefined behavior. A microbenchmark that creates a continuation and resumes it immediately, 200,000 times in an optimized build, measured:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Continuation</th>
+      <th>Time per create-and-resume</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CheckedContinuation</code></td>
+      <td>about 340 ns</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">UnsafeContinuation</code></td>
+      <td>about 180 ns</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The difference, about 160 ns, matters only when bridging happens hundreds of thousands of times per second: per-packet or per-sample callbacks in a hot loop. For a network request, a file read, or a permission prompt, it is unmeasurable next to the operation itself. Use checked continuations by default. If profiling shows the checks matter, switch to unsafe only after the wrapper has been exercised thoroughly with checked continuations, and keep tests that run its error paths.</p>
+
+<h2 id="swift-64-a-continuation-the-compiler-checks">Swift 6.4: a continuation the compiler checks</h2>
+
+<p>Swift 6.4 adds a third option, <code class="language-plaintext highlighter-rouge">Continuation&lt;Success, Failure&gt;</code> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0528-noncopyable-continuation.md">SE-0528</a>), obtained with <code class="language-plaintext highlighter-rouge">withContinuation(of:throwing:_:)</code>. It is <strong>noncopyable</strong>, and each <code class="language-plaintext highlighter-rouge">resume</code> method <em>consumes</em> it. Resuming twice is therefore a compile-time error, and a continuation that is dropped without being resumed traps immediately instead of leaking silently. It has no run-time bookkeeping on the success path, so it costs about what an unsafe continuation does. It also adopts typed throws: <code class="language-plaintext highlighter-rouge">throwing: NetworkError.self</code> gives a continuation, and a call site, that can throw only <code class="language-plaintext highlighter-rouge">NetworkError</code>.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">resumesTwiceNoncopyable</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">await</span> <span class="nf">withContinuation</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// error: 'continuation' consumed more than once</span>
+</code></pre></div></div>
+
+<p>The same ownership rules that prevent the double resume also prevent the most common bridging pattern. A noncopyable value cannot be captured by an escaping closure, and completion handlers are escaping:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Does not compile in Swift 6 mode.</span>
+<span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">func</span> <span class="nf">geocodeNoncopyable</span><span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Place</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withContinuation</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Place</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">throwing</span><span class="p">:</span> <span class="p">(</span><span class="kd">any</span> <span class="kt">Error</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="nf">legacyGeocode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="p">{</span> <span class="n">result</span> <span class="k">in</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">mapError</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// error: noncopyable 'continuation' cannot be consumed when captured by an escaping closure</span>
+<span class="c1">// or borrowed by a non-Escapable type</span>
+</code></pre></div></div>
+
+<p>So the new type does not replace <code class="language-plaintext highlighter-rouge">CheckedContinuation</code> for completion handlers. The proposal provides <code class="language-plaintext highlighter-rouge">CheckedContinuation(continuation)</code> to convert when a continuation must flow into callbacks. Where <code class="language-plaintext highlighter-rouge">Continuation</code> shines is code that <strong>stores</strong> continuations and resumes them later from a single place: actor-based waiters, queues of pending requests, permit pools, and gates like the ones in the <a href="/swift-actor-reentrancy/">reentrancy</a> and <a href="/swift-cancellation-handlers-cleanup/">cancellation handler</a> articles. There, moving the continuation out of storage and consuming it with <code class="language-plaintext highlighter-rouge">resume</code> is exactly the discipline those designs already follow by hand, and the compiler now enforces it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span>
+<span class="kd">actor</span> <span class="kt">OneShotSignal</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waiter</span><span class="p">:</span> <span class="kt">Continuation</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">wait</span><span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">value</span> <span class="p">{</span> <span class="k">return</span> <span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="nf">withContinuation</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Int</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="n">waiter</span> <span class="o">=</span> <span class="k">consume</span> <span class="n">continuation</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">fire</span><span class="p">(</span><span class="n">_</span> <span class="nv">newValue</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">waiter</span> <span class="o">=</span> <span class="n">waiter</span><span class="o">.</span><span class="nf">take</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">waiter</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">newValue</span><span class="p">)</span>   <span class="c1">// Consumed: cannot be resumed again.</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">#available</span><span class="p">(</span><span class="n">iOS</span> <span class="mi">27</span><span class="p">,</span> <span class="n">macOS</span> <span class="mi">27</span><span class="p">,</span> <span class="o">*</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">signal</span> <span class="o">=</span> <span class="kt">OneShotSignal</span><span class="p">()</span>
+    <span class="k">async</span> <span class="k">let</span> <span class="nv">waited</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+    <span class="k">await</span> <span class="n">signal</span><span class="o">.</span><span class="nf">fire</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">signalled</span> <span class="o">=</span> <span class="k">await</span> <span class="n">waited</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">signalled</span> <span class="o">==</span> <span class="mi">42</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Optional.take()</code> moves the stored continuation out and leaves <code class="language-plaintext highlighter-rouge">nil</code> behind, so storage and resumption cannot get out of step. Overwriting a stored continuation without resuming it would destroy it, which traps, turning the silent hang of a leaked <code class="language-plaintext highlighter-rouge">CheckedContinuation</code> into a crash at the line that caused it.</p>
+
+<h2 id="when-you-do-not-need-a-continuation">When you do not need a continuation</h2>
+
+<p>Before writing a wrapper, check whether one already exists:</p>
+
+<ul>
+  <li><strong>Objective-C completion handlers are imported as <code class="language-plaintext highlighter-rouge">async</code> automatically</strong> (<a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0297-concurrency-objc.md">SE-0297</a>). A method like <code class="language-plaintext highlighter-rouge">- (void)fetchWithCompletion:(void (^)(NSData *, NSError *))completion</code> is also available as <code class="language-plaintext highlighter-rouge">func fetch() async throws -&gt; Data</code>. Most Apple frameworks already provide these.</li>
+  <li><strong>Foundation has async APIs</strong> for most I/O: <code class="language-plaintext highlighter-rouge">URLSession.data(for:)</code>, <code class="language-plaintext highlighter-rouge">FileHandle.bytes</code>, <code class="language-plaintext highlighter-rouge">URL.lines</code>, <code class="language-plaintext highlighter-rouge">NotificationCenter.notifications(named:)</code>.</li>
+  <li><strong>Multi-shot callbacks want a stream, not a continuation.</strong> A continuation resumes once. A callback that fires repeatedly, such as progress updates, location fixes, or ticks, belongs in an <code class="language-plaintext highlighter-rouge">AsyncStream</code>, as the <a href="/swift-asyncstream/">AsyncStream article</a> shows.</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">withChecked(Throwing)Continuation</code> runs its closure synchronously, then suspends until <code class="language-plaintext highlighter-rouge">resume</code> is called, from any thread.</li>
+  <li>Resume exactly once. A double resume is a fatal error naming the function; a leak prints a warning when the continuation is destroyed, or hangs silently if it is still stored.</li>
+  <li>Verify the “called exactly once” contract of every API you wrap. Guard two-callback APIs, store delegate continuations with a policy for concurrent requests, and clear storage before resuming.</li>
+  <li>Checked continuations cost about 340 ns per use against 180 ns for unsafe ones; use checked by default.</li>
+  <li>Swift 6.4’s noncopyable <code class="language-plaintext highlighter-rouge">Continuation</code> turns double resumes into compile errors and leaks into traps, but cannot be captured by escaping completion handlers. Use it for stored waiters on iOS 27 and macOS 27.</li>
+  <li>Prefer existing async APIs, including automatically imported Objective-C ones, and use streams for multi-shot callbacks.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Wrap a legacy <code class="language-plaintext highlighter-rouge">Downloader</code> whose <code class="language-plaintext highlighter-rouge">start(url:completion:)</code> calls <code class="language-plaintext highlighter-rouge">completion</code> exactly once, but whose <code class="language-plaintext highlighter-rouge">cancel()</code> method, if called while a download is in progress, calls <code class="language-plaintext highlighter-rouge">completion</code> with a cancellation error, and if called after completion, does nothing. Write <code class="language-plaintext highlighter-rouge">func download(_ url: URL) async throws -&gt; Data</code> using a checked continuation, then add cancellation support with <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code>. Write tests for completion, failure, cancellation before start, cancellation mid-download, and cancellation after completion, and verify that no test produces a continuation misuse message. The <a href="/swift-continuation-ownership/">next article</a> covers the patterns these tests will need.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0300-continuation.md">SE-0300: Continuations for interfacing async tasks with synchronous code</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0528-noncopyable-continuation.md">SE-0528: <code class="language-plaintext highlighter-rouge">Continuation</code>, safe and performant async continuations</a>.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0297-concurrency-objc.md">SE-0297: Concurrency Interoperability with Objective-C</a>.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10194/">Swift concurrency: Update a sample app</a>, WWDC21, on migrating completion handlers.</li>
+</ul>
+
+<p>Previous: <a href="/swift-stream-backpressure/">Buffering, Backpressure, and Stream Termination</a>. Next: <a href="/swift-continuation-ownership/">Continuation Ownership, Cancellation, and Double Resume</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-checked-continuations/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Bridging+Callback+APIs+with+Checked+Continuations+in+Swift%20https%3A%2F%2Fswiftbydeya.com%2Fswift-checked-continuations%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-checked-continuations/&title=Bridging+Callback+APIs+with+Checked+Continuations+in+Swift%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-checked-continuations/&title=Bridging+Callback+APIs+with+Checked+Continuations+in+Swift%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-checked-continuations/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Bridging Callback APIs with Checked Continuations in Swift%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-checked-continuations/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Continuations">Continuations</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#async%2Fawait">async/await</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Combine vs. async/await and AsyncSequence" href="/combine-vs-async-await/"> <p>Previous post</p> Combine vs. async/await and AsyncSequence </a> </div> <div id="next-post"> <a alt="Testing Publishers" href="/combine-testing-publishers/"> <p>Next post</p> Testing Publishers </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

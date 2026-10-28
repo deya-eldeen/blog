@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Uploading Files and Multipart Form Data | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Uploading Files and Multipart Form Data" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Uploading a file looks like a request with a large body, and for small files that is all it is. The details start to matter as files grow and as servers ask for more than a file. A profile photo upload usually needs the image, its file name, and a caption in one request, which is what multipart/form-data is for. A video from the camera roll is hundreds of megabytes, and loading it into a Data value before sending it can get an app terminated for memory use. And a user who watches a progress bar expects it to move. This article builds a multipart body by hand, following RFC 7578, and verifies it with a parser on the server side. It measures the memory cost of building a 100 MB body in memory against streaming it through a file, including a trap in the streaming version that makes it as expensive as the in-memory one. It reports progress from the session delegate, and it ends with when not to use multipart at all." /> <meta property="og:description" content="Uploading a file looks like a request with a large body, and for small files that is all it is. The details start to matter as files grow and as servers ask for more than a file. A profile photo upload usually needs the image, its file name, and a caption in one request, which is what multipart/form-data is for. A video from the camera roll is hundreds of megabytes, and loading it into a Data value before sending it can get an app terminated for memory use. And a user who watches a progress bar expects it to move. This article builds a multipart body by hand, following RFC 7578, and verifies it with a parser on the server side. It measures the memory cost of building a 100 MB body in memory against streaming it through a file, including a trap in the streaming version that makes it as expensive as the in-memory one. It reports progress from the session delegate, and it ends with when not to use multipart at all." /> <link rel="canonical" href="https://swiftbydeya.com/swift-multipart-uploads/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-multipart-uploads/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-10-06T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Uploading Files and Multipart Form Data" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-10-06T00:00:00+03:00","datePublished":"2026-10-06T00:00:00+03:00","description":"Uploading a file looks like a request with a large body, and for small files that is all it is. The details start to matter as files grow and as servers ask for more than a file. A profile photo upload usually needs the image, its file name, and a caption in one request, which is what multipart/form-data is for. A video from the camera roll is hundreds of megabytes, and loading it into a Data value before sending it can get an app terminated for memory use. And a user who watches a progress bar expects it to move. This article builds a multipart body by hand, following RFC 7578, and verifies it with a parser on the server side. It measures the memory cost of building a 100 MB body in memory against streaming it through a file, including a trap in the streaming version that makes it as expensive as the in-memory one. It reports progress from the session delegate, and it ends with when not to use multipart at all.","headline":"Uploading Files and Multipart Form Data","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-multipart-uploads/"},"url":"https://swiftbydeya.com/swift-multipart-uploads/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Uploading Files and Multipart Form Data"> <meta name="twitter:description" content="Uploading a file looks like a request with a large body, and for small files that is all it is. The details start to matter as files grow and as servers ask ..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Uploading Files and Multipart Form Data"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Uploading Files and Multipart Form Data</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-10-06T00:00:00+03:00">October 6, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Uploading a file looks like a request with a large body, and for small files that is all it is. The details start to matter as files grow and as servers ask for more than a file. A profile photo upload usually needs the image, its file name, and a caption in one request, which is what <code class="language-plaintext highlighter-rouge">multipart/form-data</code> is for. A video from the camera roll is hundreds of megabytes, and loading it into a <code class="language-plaintext highlighter-rouge">Data</code> value before sending it can get an app terminated for memory use. And a user who watches a progress bar expects it to move.</p>
+
+<p>This article builds a multipart body by hand, following <a href="https://www.rfc-editor.org/rfc/rfc7578">RFC 7578</a>, and verifies it with a parser on the server side. It measures the memory cost of building a 100 MB body in memory against streaming it through a file, including a trap in the streaming version that makes it as expensive as the in-memory one. It reports progress from the session delegate, and it ends with when <em>not</em> to use multipart at all.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="the-shape-of-a-multipart-body">The shape of a multipart body</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">multipart/form-data</code> body is a sequence of <strong>parts</strong>, each with its own small header section and content, separated by a <strong>boundary</strong> string that the client chooses and announces in the request’s <code class="language-plaintext highlighter-rouge">Content-Type</code>:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /uploads HTTP/1.1
+Content-Type: multipart/form-data; boundary=Boundary-5C1A...
+Content-Length: 1843
+
+--Boundary-5C1A...
+Content-Disposition: form-data; name="caption"
+
+Reading on the train
+--Boundary-5C1A...
+Content-Disposition: form-data; name="photo"; filename="cover.jpg"
+Content-Type: image/jpeg
+
+&lt;binary bytes of the file&gt;
+--Boundary-5C1A...--
+</code></pre></div></div>
+
+<p>The rules are few and strict, and each one is a bug in a hand-written encoder somewhere:</p>
+
+<ul>
+  <li>Every line break in the framing is <code class="language-plaintext highlighter-rouge">CRLF</code>, <code class="language-plaintext highlighter-rouge">\r\n</code>, never a bare <code class="language-plaintext highlighter-rouge">\n</code>.</li>
+  <li>Each part starts with <code class="language-plaintext highlighter-rouge">--</code> followed by the boundary, then <code class="language-plaintext highlighter-rouge">CRLF</code>.</li>
+  <li>A part’s headers end with an empty line. <code class="language-plaintext highlighter-rouge">Content-Disposition: form-data; name="..."</code> is required; <code class="language-plaintext highlighter-rouge">filename</code> marks a file; <code class="language-plaintext highlighter-rouge">Content-Type</code> defaults to <code class="language-plaintext highlighter-rouge">text/plain</code> if omitted.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">CRLF</code> <em>before</em> each boundary line belongs to the delimiter, not to the preceding content. A file that ends without a newline must not gain one.</li>
+  <li>The body ends with <code class="language-plaintext highlighter-rouge">--</code> boundary <code class="language-plaintext highlighter-rouge">--</code>.</li>
+</ul>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: The structure of a multipart/form-data body
+    D1["--boundary CRLF"] --&gt; H1["Content-Disposition: form-data; name=caption CRLF CRLF"]
+    H1 --&gt; C1["Reading on the train"]
+    C1 --&gt; D2["CRLF --boundary CRLF"]
+    D2 --&gt; H2["Content-Disposition ... filename=cover.jpg CRLF&lt;br/&gt;Content-Type: image/jpeg CRLF CRLF"]
+    H2 --&gt; C2["file bytes"]
+    C2 --&gt; E["CRLF --boundary-- CRLF"]
+</code></pre>
+
+<h3 id="choosing-a-boundary">Choosing a boundary</h3>
+
+<p>The boundary must not occur inside any part’s content, because the receiver would take that occurrence as the end of the part. Scanning every file for the boundary would require reading it twice, so encoders instead choose a boundary long and random enough that a collision is not a practical concern. With a boundary containing \(k\) random bits, the chance that it appears at any given position of arbitrary content is at most \(2^{-k}\), so over a body of \(n\) bytes:</p>
+
+\[P(\text{collision}) \;\le\; n \cdot 2^{-k}\]
+
+<p>A UUID has 122 random bits. For a terabyte of uploads, \(n = 10^{12}\), the bound is \(10^{12} \times 2^{-122} \approx 2 \times 10^{-25}\). Random boundaries are safe; fixed ones such as <code class="language-plaintext highlighter-rouge">"----boundary"</code> are not, because they can appear in content the app does not control, including a previous multipart body uploaded as a file.</p>
+
+<h2 id="an-encoder">An encoder</h2>
+
+<p>The encoder writes to any destination that accepts bytes, so the same code builds a body in memory or streams it into a file:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">CryptoKit</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">struct</span> <span class="kt">MultipartForm</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Part</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nf">field</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
+        <span class="k">case</span> <span class="nf">file</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">filename</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">source</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">let</span> <span class="nv">boundary</span> <span class="o">=</span> <span class="s">"Boundary-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">"</span>
+    <span class="k">var</span> <span class="nv">parts</span><span class="p">:</span> <span class="p">[</span><span class="kt">Part</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">var</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="s">"multipart/form-data; boundary=</span><span class="se">\(</span><span class="n">boundary</span><span class="se">)</span><span class="s">"</span> <span class="p">}</span>
+
+    <span class="c1">/// RFC 7578 §4.2 and the HTML standard: quote names and escape ", CR and LF by percent-encoding.</span>
+    <span class="kd">static</span> <span class="kd">func</span> <span class="nf">quoted</span><span class="p">(</span><span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">escaped</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"</span><span class="se">\"</span><span class="s">"</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">"%22"</span><span class="p">)</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"</span><span class="se">\r</span><span class="s">"</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">"%0D"</span><span class="p">)</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">"%0A"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">"</span><span class="se">\"\(</span><span class="n">escaped</span><span class="se">)\"</span><span class="s">"</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">write</span><span class="p">(</span><span class="n">to</span> <span class="nv">sink</span><span class="p">:</span> <span class="p">(</span><span class="kt">Data</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">crlf</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="k">in</span> <span class="n">parts</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"--</span><span class="se">\(</span><span class="n">boundary</span><span class="se">)\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+            <span class="k">switch</span> <span class="n">part</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">field</span><span class="p">(</span><span class="k">let</span> <span class="nv">name</span><span class="p">,</span> <span class="k">let</span> <span class="nv">value</span><span class="p">):</span>
+                <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"Content-Disposition: form-data; name=</span><span class="se">\(</span><span class="k">Self</span><span class="o">.</span><span class="nf">quoted</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="se">)\r\n\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+                <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">file</span><span class="p">(</span><span class="k">let</span> <span class="nv">name</span><span class="p">,</span> <span class="k">let</span> <span class="nv">filename</span><span class="p">,</span> <span class="k">let</span> <span class="nv">contentType</span><span class="p">,</span> <span class="k">let</span> <span class="nv">source</span><span class="p">):</span>
+                <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="kt">Data</span><span class="p">((</span><span class="s">"Content-Disposition: form-data; name=</span><span class="se">\(</span><span class="k">Self</span><span class="o">.</span><span class="nf">quoted</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="se">)</span><span class="s">; filename=</span><span class="se">\(</span><span class="k">Self</span><span class="o">.</span><span class="nf">quoted</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="se">)\r\n</span><span class="s">"</span>
+                               <span class="o">+</span> <span class="s">"Content-Type: </span><span class="se">\(</span><span class="n">contentType</span><span class="se">)\r\n\r\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+                <span class="k">let</span> <span class="nv">reader</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">FileHandle</span><span class="p">(</span><span class="nv">forReadingFrom</span><span class="p">:</span> <span class="n">source</span><span class="p">)</span>
+                <span class="k">defer</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="n">reader</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span> <span class="p">}</span>
+                <span class="k">while</span> <span class="k">try</span> <span class="nf">autoreleasepool</span><span class="p">(</span><span class="nv">invoking</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="k">guard</span> <span class="k">let</span> <span class="nv">chunk</span> <span class="o">=</span> <span class="k">try</span> <span class="n">reader</span><span class="o">.</span><span class="nf">read</span><span class="p">(</span><span class="nv">upToCount</span><span class="p">:</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span><span class="p">),</span> <span class="o">!</span><span class="n">chunk</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">false</span> <span class="p">}</span>
+                    <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">true</span>
+                <span class="p">})</span> <span class="p">{}</span>
+            <span class="p">}</span>
+            <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="n">crlf</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="nf">sink</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"--</span><span class="se">\(</span><span class="n">boundary</span><span class="se">)</span><span class="s">--</span><span class="se">\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">data</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">body</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+        <span class="k">try</span> <span class="n">write</span> <span class="p">{</span> <span class="n">body</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">body</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">writeFile</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">url</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"upload-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">.multipart"</span><span class="p">)</span>
+        <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createFile</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="nv">contents</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">writer</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">FileHandle</span><span class="p">(</span><span class="nv">forWritingTo</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="n">writer</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">try</span> <span class="n">write</span> <span class="p">{</span> <span class="k">try</span> <span class="n">writer</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">url</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>File names are UTF-8 inside the quotes. RFC 7578 explicitly says the <code class="language-plaintext highlighter-rouge">filename*</code> syntax from other headers is not used in <code class="language-plaintext highlighter-rouge">multipart/form-data</code>, and servers that accept form uploads from browsers expect what browsers send: raw UTF-8, with <code class="language-plaintext highlighter-rouge">"</code>, CR, and LF percent-encoded. The <code class="language-plaintext highlighter-rouge">autoreleasepool</code> around each chunk read is not decoration; the measurement below shows what happens without it.</p>
+
+<h2 id="a-server-that-checks-the-bytes">A server that checks the bytes</h2>
+
+<p>A parser on the server side splits the body at the boundary and reports each part’s headers and the SHA-256 of its content, so the test can compare exact bytes, not just sizes:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ReceivedPart</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">disposition</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">sha256</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">parseMultipart</span><span class="p">(</span><span class="n">_</span> <span class="nv">body</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">ReceivedPart</span><span class="p">]?</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">contentType</span><span class="p">,</span> <span class="k">let</span> <span class="nv">range</span> <span class="o">=</span> <span class="n">contentType</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="s">"boundary="</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">boundary</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="n">contentType</span><span class="p">[</span><span class="n">range</span><span class="o">.</span><span class="n">upperBound</span><span class="o">...</span><span class="p">])</span>
+    <span class="k">let</span> <span class="nv">delimiter</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n</span><span class="s">--</span><span class="se">\(</span><span class="n">boundary</span><span class="se">)</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">framed</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span> <span class="o">+</span> <span class="n">body</span>                      <span class="c1">// the first delimiter has no leading CRLF</span>
+    <span class="k">var</span> <span class="nv">parts</span><span class="p">:</span> <span class="p">[</span><span class="kt">ReceivedPart</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">var</span> <span class="nv">cursor</span> <span class="o">=</span> <span class="n">framed</span><span class="o">.</span><span class="n">startIndex</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="n">framed</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">delimiter</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">cursor</span><span class="o">..&lt;</span><span class="n">framed</span><span class="o">.</span><span class="n">endIndex</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">first</span><span class="o">.</span><span class="n">upperBound</span>
+    <span class="k">while</span> <span class="kc">true</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">framed</span><span class="p">[</span><span class="n">cursor</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="nf">starts</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"--"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span> <span class="p">{</span> <span class="k">return</span> <span class="n">parts</span> <span class="p">}</span>   <span class="c1">// closing delimiter</span>
+        <span class="k">guard</span> <span class="n">framed</span><span class="p">[</span><span class="n">cursor</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="nf">starts</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="n">cursor</span> <span class="o">+=</span> <span class="mi">2</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">headerEnd</span> <span class="o">=</span> <span class="n">framed</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">),</span> <span class="nv">in</span><span class="p">:</span> <span class="n">cursor</span><span class="o">..&lt;</span><span class="n">framed</span><span class="o">.</span><span class="n">endIndex</span><span class="p">),</span>
+              <span class="k">let</span> <span class="nv">next</span> <span class="o">=</span> <span class="n">framed</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">delimiter</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">headerEnd</span><span class="o">.</span><span class="n">upperBound</span><span class="o">..&lt;</span><span class="n">framed</span><span class="o">.</span><span class="n">endIndex</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">headers</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">framed</span><span class="p">[</span><span class="n">cursor</span><span class="o">..&lt;</span><span class="n">headerEnd</span><span class="o">.</span><span class="n">lowerBound</span><span class="p">],</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">components</span><span class="p">(</span><span class="nv">separatedBy</span><span class="p">:</span> <span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">content</span> <span class="o">=</span> <span class="n">framed</span><span class="p">[</span><span class="n">headerEnd</span><span class="o">.</span><span class="n">upperBound</span><span class="o">..&lt;</span><span class="n">next</span><span class="o">.</span><span class="n">lowerBound</span><span class="p">]</span>
+        <span class="k">let</span> <span class="nv">disposition</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">first</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">()</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"content-disposition:"</span><span class="p">)</span> <span class="p">}</span> <span class="p">??</span> <span class="s">""</span>
+        <span class="k">let</span> <span class="nv">type</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">first</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">()</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"content-type:"</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(</span><span class="mi">13</span><span class="p">))</span><span class="o">.</span><span class="nf">trimmingCharacters</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">.</span><span class="n">whitespaces</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">parts</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="kt">ReceivedPart</span><span class="p">(</span><span class="nv">disposition</span><span class="p">:</span> <span class="kt">String</span><span class="p">(</span><span class="n">disposition</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span><span class="o">.</span><span class="nf">trimmingCharacters</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">.</span><span class="n">whitespaces</span><span class="p">),</span>
+                                  <span class="nv">contentType</span><span class="p">:</span> <span class="n">type</span><span class="p">,</span>
+                                  <span class="nv">sha256</span><span class="p">:</span> <span class="kt">SHA256</span><span class="o">.</span><span class="nf">hash</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%02x"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(),</span>
+                                  <span class="nv">text</span><span class="p">:</span> <span class="n">content</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="mi">200</span> <span class="p">?</span> <span class="kt">String</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span> <span class="nv">encoding</span><span class="p">:</span> <span class="o">.</span><span class="n">utf8</span><span class="p">)</span> <span class="p">:</span> <span class="kc">nil</span><span class="p">))</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">next</span><span class="o">.</span><span class="n">upperBound</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">received</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">ReceivedPart</span><span class="p">]</span><span class="o">&gt;</span><span class="p">([])</span>
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/uploads"</span><span class="p">,</span> <span class="k">let</span> <span class="nv">parts</span> <span class="o">=</span> <span class="nf">parseMultipart</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Content-Type"</span><span class="p">))</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"malformed multipart body"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">received</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">parts</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">parts</span><span class="s">":</span><span class="err">\</span><span class="s">#(parts.count),"</span><span class="n">bytes</span><span class="s">":</span><span class="err">\</span><span class="s">#(request.body.count)}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">201</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="sending-a-small-upload">Sending a small upload</h2>
+
+<p>A caption and a small file with a non-ASCII name that contains quotes. The test file deliberately ends without a newline, to catch an encoder that adds one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">workspace</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"uploads-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createDirectory</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">workspace</span><span class="p">,</span> <span class="nv">withIntermediateDirectories</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">coverFile</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"cover.jpg"</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">coverBytes</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">((</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5_000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">truncatingIfNeeded</span><span class="p">:</span> <span class="nv">$0</span> <span class="o">&amp;*</span> <span class="mi">7</span><span class="p">)</span> <span class="p">})</span> <span class="o">+</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"--Boundary-"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+<span class="k">try</span> <span class="n">coverBytes</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">coverFile</span><span class="p">)</span>
+
+<span class="k">var</span> <span class="nv">form</span> <span class="o">=</span> <span class="kt">MultipartForm</span><span class="p">()</span>
+<span class="n">form</span><span class="o">.</span><span class="n">parts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="o">.</span><span class="nf">field</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"caption"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"Reading on the train ☕"</span><span class="p">),</span>
+    <span class="o">.</span><span class="nf">file</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"photo"</span><span class="p">,</span> <span class="nv">filename</span><span class="p">:</span> <span class="err">#</span><span class="s">"résumé "</span><span class="kd">final</span><span class="s">".jpg"</span><span class="err">#</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="s">"image/jpeg"</span><span class="p">,</span> <span class="nv">source</span><span class="p">:</span> <span class="n">coverFile</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"uploads"</span><span class="p">))</span>
+<span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">contentType</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">upload</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="k">try</span> <span class="n">form</span><span class="o">.</span><span class="nf">data</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">201</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">parts</span> <span class="o">=</span> <span class="n">received</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parts</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">disposition</span> <span class="o">==</span> <span class="err">#</span><span class="s">"form-data; name="</span><span class="n">caption</span><span class="s">""</span><span class="err">#</span> <span class="o">&amp;&amp;</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">"Reading on the train ☕"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">disposition</span> <span class="o">==</span> <span class="err">#</span><span class="s">"form-data; name="</span><span class="n">photo</span><span class="s">"; filename="</span><span class="n">résumé</span> <span class="o">%</span><span class="mi">22</span><span class="kd">final</span><span class="o">%</span><span class="mi">22</span><span class="o">.</span><span class="n">jpg</span><span class="s">""</span><span class="err">#</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">contentType</span> <span class="o">==</span> <span class="s">"image/jpeg"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">sha256</span> <span class="o">==</span> <span class="kt">SHA256</span><span class="o">.</span><span class="nf">hash</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="n">coverBytes</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%02x"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>The file’s hash matches byte for byte, including its last bytes, which look like the start of a boundary on purpose. Content that resembles the delimiter is harmless as long as it does not contain the whole delimiter, <code class="language-plaintext highlighter-rouge">CRLF</code> followed by <code class="language-plaintext highlighter-rouge">--</code> and the exact boundary, which a random boundary guarantees in practice.</p>
+
+<h2 id="large-files-memory-is-the-constraint">Large files: memory is the constraint</h2>
+
+<p><code class="language-plaintext highlighter-rouge">upload(for:from:)</code> takes a <code class="language-plaintext highlighter-rouge">Data</code>, so the whole body is in memory, and building it with <code class="language-plaintext highlighter-rouge">Data(contentsOf:)</code> and <code class="language-plaintext highlighter-rouge">append</code> holds the file twice for a moment. For a 100 MB video that is the difference between a smooth upload and the system terminating an app extension, whose memory limits are far lower than an app’s. <code class="language-plaintext highlighter-rouge">upload(for:fromFile:)</code> streams the body from disk instead. The cost of each approach, measured with the process’s physical footprint, the number the system uses for memory limits:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">physicalFootprint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">info</span> <span class="o">=</span> <span class="nf">task_vm_info_data_t</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">count</span> <span class="o">=</span> <span class="nf">mach_msg_type_number_t</span><span class="p">(</span><span class="kt">MemoryLayout</span><span class="o">&lt;</span><span class="n">task_vm_info_data_t</span><span class="o">&gt;.</span><span class="n">size</span> <span class="o">/</span> <span class="kt">MemoryLayout</span><span class="o">&lt;</span><span class="n">natural_t</span><span class="o">&gt;.</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="nf">withUnsafeMutablePointer</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">info</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$0</span><span class="o">.</span><span class="nf">withMemoryRebound</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">integer_t</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">capacity</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">count</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nf">task_info</span><span class="p">(</span><span class="n">mach_task_self_</span><span class="p">,</span> <span class="nf">task_flavor_t</span><span class="p">(</span><span class="kt">TASK_VM_INFO</span><span class="p">),</span> <span class="nv">$0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">count</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">precondition</span><span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="kt">KERN_SUCCESS</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">Int</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">phys_footprint</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">videoFile</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"video.mov"</span><span class="p">)</span>
+<span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createFile</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">videoFile</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="nv">contents</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">videoWriter</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">FileHandle</span><span class="p">(</span><span class="nv">forWritingTo</span><span class="p">:</span> <span class="n">videoFile</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">megabyte</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">((</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_048_576</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">UInt8</span><span class="p">(</span><span class="nv">truncatingIfNeeded</span><span class="p">:</span> <span class="nv">$0</span> <span class="o">&amp;*</span> <span class="mi">31</span><span class="p">)</span> <span class="p">})</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100</span> <span class="p">{</span> <span class="k">try</span> <span class="k">autoreleasepool</span> <span class="p">{</span> <span class="k">try</span> <span class="n">videoWriter</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">megabyte</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="k">try</span> <span class="n">videoWriter</span><span class="o">.</span><span class="nf">close</span><span class="p">()</span>
+
+<span class="k">var</span> <span class="nv">videoForm</span> <span class="o">=</span> <span class="kt">MultipartForm</span><span class="p">()</span>
+<span class="n">videoForm</span><span class="o">.</span><span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="nf">file</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"video"</span><span class="p">,</span> <span class="nv">filename</span><span class="p">:</span> <span class="s">"video.mov"</span><span class="p">,</span> <span class="nv">contentType</span><span class="p">:</span> <span class="s">"video/quicktime"</span><span class="p">,</span> <span class="nv">source</span><span class="p">:</span> <span class="n">videoFile</span><span class="p">)]</span>
+
+<span class="k">let</span> <span class="nv">beforeInMemory</span> <span class="o">=</span> <span class="nf">physicalFootprint</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">inMemoryBody</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?</span> <span class="o">=</span> <span class="k">try</span> <span class="n">videoForm</span><span class="o">.</span><span class="nf">data</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">inMemoryCost</span> <span class="o">=</span> <span class="nf">physicalFootprint</span><span class="p">()</span> <span class="o">-</span> <span class="n">beforeInMemory</span>
+<span class="n">inMemoryBody</span> <span class="o">=</span> <span class="kc">nil</span>
+
+<span class="k">let</span> <span class="nv">beforeStreaming</span> <span class="o">=</span> <span class="nf">physicalFootprint</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">bodyFile</span> <span class="o">=</span> <span class="k">try</span> <span class="n">videoForm</span><span class="o">.</span><span class="nf">writeFile</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">streamingCost</span> <span class="o">=</span> <span class="nf">physicalFootprint</span><span class="p">()</span> <span class="o">-</span> <span class="n">beforeStreaming</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="s">"in memory: +</span><span class="se">\(</span><span class="n">inMemoryCost</span> <span class="o">/</span> <span class="mi">1_000_000</span><span class="se">)</span><span class="s"> MB, streamed to a file: +</span><span class="se">\(</span><span class="n">streamingCost</span> <span class="o">/</span> <span class="mi">1_000_000</span><span class="se">)</span><span class="s"> MB"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">inMemoryCost</span> <span class="o">&gt;</span> <span class="mi">100_000_000</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">streamingCost</span> <span class="o">&lt;</span> <span class="mi">10_000_000</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Building a 100 MB multipart body</th>
+      <th>Footprint increase (measured)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Data(contentsOf:)</code> for the file, then <code class="language-plaintext highlighter-rouge">append</code> into a body <code class="language-plaintext highlighter-rouge">Data</code></td>
+      <td>209 MB</td>
+    </tr>
+    <tr>
+      <td>The encoder above writing into a <code class="language-plaintext highlighter-rouge">Data</code> (<code class="language-plaintext highlighter-rouge">videoForm.data()</code>)</td>
+      <td>108 MB</td>
+    </tr>
+    <tr>
+      <td>Streamed to a file, chunked reads without <code class="language-plaintext highlighter-rouge">autoreleasepool</code></td>
+      <td>105 MB</td>
+    </tr>
+    <tr>
+      <td>Streamed to a file, chunked reads inside <code class="language-plaintext highlighter-rouge">autoreleasepool</code> (<code class="language-plaintext highlighter-rouge">videoForm.writeFile()</code>)</td>
+      <td>under 1 MB</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The first row holds the file twice for a moment: once as read, once as copied into the body. The second holds the body once, which is the minimum for any <code class="language-plaintext highlighter-rouge">Data</code>-based upload. The third is the trap.</p>
+
+<p>Reading the file in 1 MB chunks looks like streaming, but each chunk returned by <code class="language-plaintext highlighter-rouge">FileHandle.read(upToCount:)</code> is released only when the enclosing autorelease pool drains. In a loop on one thread, that happens only after the loop, so every chunk stays alive and the “streaming” version holds the whole file in memory anyway. On the main thread of an app the pool drains once per run-loop pass, which does not help a loop that runs within one pass. Wrapping each iteration in <code class="language-plaintext highlighter-rouge">autoreleasepool</code> releases each chunk before the next is read.</p>
+
+<p>The body file is then sent with <code class="language-plaintext highlighter-rouge">upload(for:fromFile:)</code>, which also streams, and sets <code class="language-plaintext highlighter-rouge">Content-Length</code> from the file’s size. The server’s hash of the received part confirms the 100 MB arrived intact:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">videoRequest</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"uploads"</span><span class="p">))</span>
+<span class="n">videoRequest</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+<span class="n">videoRequest</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="n">videoForm</span><span class="o">.</span><span class="n">contentType</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">videoResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">upload</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">videoRequest</span><span class="p">,</span> <span class="nv">fromFile</span><span class="p">:</span> <span class="n">bodyFile</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">videoResponse</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">201</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">videoPart</span> <span class="o">=</span> <span class="n">received</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">.</span><span class="n">first</span>
+<span class="k">let</span> <span class="nv">expectedVideoHash</span> <span class="o">=</span> <span class="k">try</span> <span class="k">autoreleasepool</span> <span class="p">{</span> <span class="kt">SHA256</span><span class="o">.</span><span class="nf">hash</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="k">try</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">videoFile</span><span class="p">))</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">videoPart</span><span class="p">?</span><span class="o">.</span><span class="n">sha256</span> <span class="o">==</span> <span class="n">expectedVideoHash</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">String</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="s">"%02x"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">())</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">bodyFile</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="reporting-progress">Reporting progress</h2>
+
+<p>The session delegate’s <code class="language-plaintext highlighter-rouge">urlSession(_:task:didSendBodyData:totalBytesSent:totalBytesExpectedToSend:)</code> reports upload progress. Measured against <code class="language-plaintext highlighter-rouge">LocalServer</code>, it was called exactly <strong>once</strong> for the 100 MB upload, with the full size: over the loopback interface the whole body was accepted in a fraction of a second, and progress callbacks are delivered at a limited rate. To see what a user on a real network sees, the server below reads at a fixed rate, 256 KB every 10 ms, about 25 MB/s, and records how much it has received:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Network</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ByteCounter</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">SlowSink</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">received</span> <span class="o">=</span> <span class="kt">ByteCounter</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">listener</span><span class="p">:</span> <span class="kt">NWListener</span>
+    <span class="k">var</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="kt">Int</span><span class="p">(</span><span class="n">listener</span><span class="o">.</span><span class="n">port</span><span class="o">!.</span><span class="n">rawValue</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">bytesPerTick</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">tick</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">parameters</span> <span class="o">=</span> <span class="kt">NWParameters</span><span class="o">.</span><span class="n">tcp</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">requiredLocalEndpoint</span> <span class="o">=</span> <span class="o">.</span><span class="nf">hostPort</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="o">.</span><span class="nf">ipv4</span><span class="p">(</span><span class="o">.</span><span class="n">loopback</span><span class="p">),</span> <span class="nv">port</span><span class="p">:</span> <span class="o">.</span><span class="kd">any</span><span class="p">)</span>
+        <span class="n">listener</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">NWListener</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="n">parameters</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">received</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">received</span>
+        <span class="n">listener</span><span class="o">.</span><span class="n">newConnectionHandler</span> <span class="o">=</span> <span class="p">{</span> <span class="n">connection</span> <span class="k">in</span>
+            <span class="n">connection</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span>
+            <span class="kt">Task</span> <span class="p">{</span>
+                <span class="k">do</span> <span class="p">{</span>
+                    <span class="k">var</span> <span class="nv">buffer</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+                    <span class="k">while</span> <span class="n">buffer</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+                        <span class="k">guard</span> <span class="k">let</span> <span class="nv">more</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="nf">receiveSome</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+                        <span class="n">buffer</span> <span class="o">+=</span> <span class="n">more</span>
+                    <span class="p">}</span>
+                    <span class="k">let</span> <span class="nv">headEnd</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"</span><span class="se">\r\n\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span><span class="o">!</span>
+                    <span class="k">let</span> <span class="nv">head</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">buffer</span><span class="p">[</span><span class="o">..&lt;</span><span class="n">headEnd</span><span class="o">.</span><span class="n">lowerBound</span><span class="p">],</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span><span class="o">.</span><span class="nf">lowercased</span><span class="p">()</span>
+                    <span class="k">let</span> <span class="nv">length</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\r\n</span><span class="s">"</span><span class="p">)</span><span class="o">.</span><span class="n">first</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"content-length:"</span><span class="p">)</span> <span class="p">}</span>
+                        <span class="o">.</span><span class="n">flatMap</span> <span class="p">{</span> <span class="kt">Int</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="nf">trimmingCharacters</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="o">.</span><span class="n">whitespaces</span><span class="p">))</span> <span class="p">}</span> <span class="p">??</span> <span class="mi">0</span>
+                    <span class="n">received</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">headEnd</span><span class="o">.</span><span class="n">upperBound</span> <span class="p">}</span>
+                    <span class="k">while</span> <span class="n">received</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="o">&lt;</span> <span class="n">length</span> <span class="p">{</span>
+                        <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">tick</span><span class="p">)</span>
+                        <span class="k">let</span> <span class="nv">chunk</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+                            <span class="n">connection</span><span class="o">.</span><span class="nf">receive</span><span class="p">(</span><span class="nv">minimumIncompleteLength</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">maximumLength</span><span class="p">:</span> <span class="n">bytesPerTick</span><span class="p">)</span> <span class="p">{</span> <span class="n">data</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+                                <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span> <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span> <span class="p">}</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                        <span class="n">received</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="n">chunk</span><span class="p">?</span><span class="o">.</span><span class="n">count</span> <span class="p">??</span> <span class="mi">0</span> <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="k">try</span> <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="nf">sendAll</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"HTTP/1.1 201 </span><span class="se">\r\n</span><span class="s">Content-Length: 0</span><span class="se">\r\n\r\n</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                    <span class="n">connection</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">try</span> <span class="k">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="p">(</span><span class="nv">continuation</span><span class="p">:</span> <span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">resumed</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+            <span class="n">listener</span><span class="o">.</span><span class="n">stateUpdateHandler</span> <span class="o">=</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+                <span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="n">state</span><span class="p">,</span> <span class="n">resumed</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="n">done</span> <span class="k">in</span> <span class="k">defer</span> <span class="p">{</span> <span class="n">done</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">};</span> <span class="k">return</span> <span class="o">!</span><span class="n">done</span> <span class="p">})</span> <span class="p">{</span>
+                    <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">listener</span><span class="o">.</span><span class="nf">start</span><span class="p">(</span><span class="nv">queue</span><span class="p">:</span> <span class="o">.</span><span class="nf">global</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">UploadProgress</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionTaskDelegate</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="p">[(</span><span class="nv">sent</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span> <span class="nv">expected</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span> <span class="nv">serverHad</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span><span class="p">)]</span><span class="o">&gt;</span><span class="p">([])</span>
+    <span class="k">let</span> <span class="nv">sink</span><span class="p">:</span> <span class="kt">SlowSink</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">sink</span><span class="p">:</span> <span class="kt">SlowSink</span><span class="p">)</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="n">sink</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didSendBodyData</span> <span class="nv">bytesSent</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span>
+                    <span class="nv">totalBytesSent</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">,</span> <span class="nv">totalBytesExpectedToSend</span><span class="p">:</span> <span class="kt">Int64</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">serverHad</span> <span class="o">=</span> <span class="n">sink</span><span class="o">.</span><span class="n">received</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">append</span><span class="p">((</span><span class="n">totalBytesSent</span><span class="p">,</span> <span class="n">totalBytesExpectedToSend</span><span class="p">,</span> <span class="n">serverHad</span><span class="p">,</span> <span class="o">.</span><span class="n">now</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">slowSink</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">SlowSink</span><span class="p">(</span><span class="nv">bytesPerTick</span><span class="p">:</span> <span class="mi">256</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span> <span class="nv">tick</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">twentyMegabytes</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"progress-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">.bin"</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">20_000_000</span><span class="p">)</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">twentyMegabytes</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">progressRequest</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"http://127.0.0.1:</span><span class="se">\(</span><span class="n">slowSink</span><span class="o">.</span><span class="n">port</span><span class="se">)</span><span class="s">/uploads"</span><span class="p">)</span><span class="o">!</span><span class="p">)</span>
+<span class="n">progressRequest</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+
+<span class="k">let</span> <span class="nv">progress</span> <span class="o">=</span> <span class="kt">UploadProgress</span><span class="p">(</span><span class="nv">sink</span><span class="p">:</span> <span class="n">slowSink</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">progressStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">progressResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">upload</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">progressRequest</span><span class="p">,</span> <span class="nv">fromFile</span><span class="p">:</span> <span class="n">twentyMegabytes</span><span class="p">,</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">progress</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">progressResponse</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">201</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">events</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">gaps</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">events</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$1</span><span class="o">.</span><span class="n">at</span> <span class="o">-</span> <span class="nv">$0</span><span class="o">.</span><span class="n">at</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">events</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> events in </span><span class="se">\(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">progressStart</span><span class="se">)</span><span class="s">; first: sent </span><span class="se">\(</span><span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sent</span><span class="se">)</span><span class="s">, server had </span><span class="se">\(</span><span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">serverHad</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">events</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">last</span><span class="p">?</span><span class="o">.</span><span class="n">sent</span> <span class="o">==</span> <span class="mi">20_000_000</span> <span class="o">&amp;&amp;</span> <span class="n">events</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">expected</span> <span class="o">==</span> <span class="mi">20_000_000</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="nf">zip</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">events</span><span class="o">.</span><span class="nf">dropFirst</span><span class="p">())</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">sent</span> <span class="o">&lt;=</span> <span class="nv">$1</span><span class="o">.</span><span class="n">sent</span> <span class="p">})</span>   <span class="c1">// monotonic</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">gaps</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">)</span> <span class="p">})</span>                         <span class="c1">// rate-limited callbacks</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sent</span> <span class="o">&gt;</span> <span class="kt">Int64</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">serverHad</span><span class="p">))</span>                          <span class="c1">// sent runs ahead of received</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">twentyMegabytes</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">workspace</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The 20 MB upload took about 1.1 seconds and produced seven progress events, never closer together than about 110 ms; the median gap was 150 ms. The first event reported 5,242,880 bytes sent 0.16 seconds in, when the server had read only 2 MB in this run: the difference was sitting in socket buffers on the way. Two consequences for a progress bar:</p>
+
+<ul>
+  <li>It should animate between events rather than jump, because events arrive a few times per second at most, and on a fast network there may be only one.</li>
+  <li>It runs ahead of the server and reaches 100% before the server has finished receiving, let alone processing. Keep the bar at “Processing…” until the response arrives.</li>
+</ul>
+
+<p>When the body length is unknown, as with a stream body, <code class="language-plaintext highlighter-rouge">totalBytesExpectedToSend</code> is <code class="language-plaintext highlighter-rouge">NSURLSessionTransferSizeUnknown</code> (<code class="language-plaintext highlighter-rouge">-1</code>), and the bar can only be indeterminate.</p>
+
+<h2 id="when-not-to-use-multipart">When not to use multipart</h2>
+
+<p>Multipart exists for browser forms, where one submission mixes text fields and files. An API designed for an app often has better options:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Approach</th>
+      <th>When it fits</th>
+      <th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PUT</code> or <code class="language-plaintext highlighter-rouge">POST</code> the raw file, <code class="language-plaintext highlighter-rouge">Content-Type: image/jpeg</code></td>
+      <td>One file, metadata in headers or the URL</td>
+      <td>No framing, no boundary, the body <em>is</em> the file</td>
+    </tr>
+    <tr>
+      <td>Upload to a <strong>pre-signed URL</strong>, then <code class="language-plaintext highlighter-rouge">POST</code> metadata as JSON</td>
+      <td>Large files to object storage (S3, GCS)</td>
+      <td>The file never passes through the API servers</td>
+    </tr>
+    <tr>
+      <td>Resumable upload protocols, such as <a href="https://tus.io">tus</a> or the IETF’s <a href="https://datatracker.ietf.org/doc/draft-ietf-httpbis-resumable-upload/">resumable uploads</a> draft</td>
+      <td>Very large files on unreliable networks</td>
+      <td>An interrupted upload continues from where it stopped</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">multipart/form-data</code></td>
+      <td>Server already accepts browser forms, or several files plus fields in one request</td>
+      <td>Compatibility</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Resumability is the strongest argument against a single large request. A 500 MB upload that fails at 90% over cellular has to start again unless the protocol can resume it. Since iOS 17, <code class="language-plaintext highlighter-rouge">URLSession</code> supports the IETF resumable upload draft for servers that implement it, which <a href="/swift-background-transfers/">Background Transfers and App Relaunch</a> touches on, and downloads have resumed for much longer, as <a href="/swift-download-progress-resume/">Download Progress, Resuming, and Temporary Files</a> shows.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>A multipart body is parts separated by <code class="language-plaintext highlighter-rouge">CRLF--boundary</code>, each with <code class="language-plaintext highlighter-rouge">Content-Disposition</code> and optional <code class="language-plaintext highlighter-rouge">Content-Type</code>, ending with <code class="language-plaintext highlighter-rouge">--boundary--</code>. The <code class="language-plaintext highlighter-rouge">CRLF</code> before a boundary belongs to the delimiter.</li>
+  <li>Use a random boundary; a UUID’s 122 random bits make collisions negligible, \(n \cdot 2^{-122}\).</li>
+  <li>Quote names, keep file names as UTF-8, and percent-encode <code class="language-plaintext highlighter-rouge">"</code>, CR, and LF; <code class="language-plaintext highlighter-rouge">filename*</code> is not used in form data.</li>
+  <li>Measured for a 100 MB file: building the body in memory cost 209 MB; streaming it to a file cost 105 MB without <code class="language-plaintext highlighter-rouge">autoreleasepool</code> and 1 MB with it. Send it with <code class="language-plaintext highlighter-rouge">upload(for:fromFile:)</code>.</li>
+  <li>Measured: <code class="language-plaintext highlighter-rouge">didSendBodyData</code> fired once for a 100 MB loopback upload and seven times, at least 110 ms apart, for 20 MB at 25 MB/s. It reports bytes handed to the network, ahead of what the server has read; the response, not 100%, means done.</li>
+  <li>Prefer a raw-body upload, a pre-signed URL, or a resumable protocol when the API allows.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Add an <code class="language-plaintext highlighter-rouge">InputStream</code>-based part source to <code class="language-plaintext highlighter-rouge">MultipartForm</code> and send the body with <code class="language-plaintext highlighter-rouge">URLRequest.httpBodyStream</code> instead of a file. Check with <code class="language-plaintext highlighter-rouge">LocalServer</code> which framing <code class="language-plaintext highlighter-rouge">URLSession</code> uses on the wire (<code class="language-plaintext highlighter-rouge">HTTPRequest.headers</code> will show <code class="language-plaintext highlighter-rouge">Transfer-Encoding: chunked</code> or a <code class="language-plaintext highlighter-rouge">Content-Length</code>), and what <code class="language-plaintext highlighter-rouge">totalBytesExpectedToSend</code> reports. Then compute the exact <code class="language-plaintext highlighter-rouge">Content-Length</code> of the multipart body in advance from the parts’ sizes, set it on the request, and verify that progress becomes determinate.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc7578">RFC 7578: Returning Values from Forms: multipart/form-data</a> and <a href="https://www.rfc-editor.org/rfc/rfc2046#section-5.1">RFC 2046 §5.1</a>, which defines the multipart syntax.</li>
+  <li>The HTML Standard’s <a href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart-form-data">multipart/form-data encoding algorithm</a>, which defines the escaping browsers use.</li>
+  <li>Apple’s <a href="https://developer.apple.com/documentation/foundation/uploading-data-to-a-website">Uploading data to a website</a> and <a href="https://developer.apple.com/documentation/xcode/reducing-your-app-s-memory-use">Reducing Your App’s Memory Use</a>.</li>
+</ul>
+
+<p>Previous: <a href="/swift-request-coalescing/">Coalescing Duplicate Requests and Rejecting Stale Results</a>. Next: <a href="/swift-download-progress-resume/">Download Progress, Resuming, and Temporary Files</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-multipart-uploads/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Uploading+Files+and+Multipart+Form+Data%20https%3A%2F%2Fswiftbydeya.com%2Fswift-multipart-uploads%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-multipart-uploads/&title=Uploading+Files+and+Multipart+Form+Data%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-multipart-uploads/&title=Uploading+Files+and+Multipart+Form+Data%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-multipart-uploads/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Uploading Files and Multipart Form Data%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-multipart-uploads/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#URLSession">URLSession</a></li>
+    
+    <li><a href="/tag/#Uploads">Uploads</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Download Progress, Resuming, and Temporary Files" href="/swift-download-progress-resume/"> <p>Previous post</p> Download Progress, Resuming, and Temporary Files </a> </div> <div id="next-post"> <a alt="Coalescing Duplicate Requests and Rejecting Stale Results" href="/swift-request-coalescing/"> <p>Next post</p> Coalescing Duplicate Requests and Rejecting Stale Results </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

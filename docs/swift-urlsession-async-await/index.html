@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Requests and Responses with async and await in URLSession | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Requests and Responses with async and await in URLSession" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Before Swift concurrency, a network request was a callback that arrived on an unknown queue, at some point, maybe more than once if the code was wrong, and usually after a hop back to the main queue that someone forgot at least once. The async methods on URLSession replaced all of that with a function call that suspends. The surface looks simple: let (data, response) = try await session.data(for: request). The simplicity hides several decisions worth understanding. When exactly does each method return relative to what is happening on the wire? What happens to the underlying task when the calling Swift task is cancelled? Where does the code after await run? Where does a downloaded file live, and for how long? This article answers each question with a measurement, and then builds the small client wrapper the rest of the series uses." /> <meta property="og:description" content="Before Swift concurrency, a network request was a callback that arrived on an unknown queue, at some point, maybe more than once if the code was wrong, and usually after a hop back to the main queue that someone forgot at least once. The async methods on URLSession replaced all of that with a function call that suspends. The surface looks simple: let (data, response) = try await session.data(for: request). The simplicity hides several decisions worth understanding. When exactly does each method return relative to what is happening on the wire? What happens to the underlying task when the calling Swift task is cancelled? Where does the code after await run? Where does a downloaded file live, and for how long? This article answers each question with a measurement, and then builds the small client wrapper the rest of the series uses." /> <link rel="canonical" href="https://swiftbydeya.com/swift-urlsession-async-await/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-urlsession-async-await/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-11T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Requests and Responses with async and await in URLSession" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-11T00:00:00+03:00","datePublished":"2026-09-11T00:00:00+03:00","description":"Before Swift concurrency, a network request was a callback that arrived on an unknown queue, at some point, maybe more than once if the code was wrong, and usually after a hop back to the main queue that someone forgot at least once. The async methods on URLSession replaced all of that with a function call that suspends. The surface looks simple: let (data, response) = try await session.data(for: request). The simplicity hides several decisions worth understanding. When exactly does each method return relative to what is happening on the wire? What happens to the underlying task when the calling Swift task is cancelled? Where does the code after await run? Where does a downloaded file live, and for how long? This article answers each question with a measurement, and then builds the small client wrapper the rest of the series uses.","headline":"Requests and Responses with async and await in URLSession","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-urlsession-async-await/"},"url":"https://swiftbydeya.com/swift-urlsession-async-await/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Requests and Responses with async and await in URLSession"> <meta name="twitter:description" content="Before Swift concurrency, a network request was a callback that arrived on an unknown queue, at some point, maybe more than once if the code was wrong, and u..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Requests and Responses with async and await in URLSession"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Requests and Responses with async and await in URLSession</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-11T00:00:00+03:00">September 11, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Before Swift concurrency, a network request was a callback that arrived on an unknown queue, at some point, maybe more than once if the code was wrong, and usually after a hop back to the main queue that someone forgot at least once. The <code class="language-plaintext highlighter-rouge">async</code> methods on <code class="language-plaintext highlighter-rouge">URLSession</code> replaced all of that with a function call that suspends. The surface looks simple: <code class="language-plaintext highlighter-rouge">let (data, response) = try await session.data(for: request)</code>.</p>
+
+<p>The simplicity hides several decisions worth understanding. When exactly does each method return relative to what is happening on the wire? What happens to the underlying task when the calling Swift task is cancelled? Where does the code after <code class="language-plaintext highlighter-rouge">await</code> run? Where does a downloaded file live, and for how long? This article answers each question with a measurement, and then builds the small client wrapper the rest of the series uses.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The <a href="/swift-concurrency-roadmap/">concurrency roadmap</a> covers the language features used here in depth.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="four-methods-four-moments">Four methods, four moments</h2>
+
+<p><code class="language-plaintext highlighter-rouge">URLSession</code> has four families of <code class="language-plaintext highlighter-rouge">async</code> methods. They differ in where the response body goes, and therefore in <em>when</em> they return:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Body goes to</th>
+      <th>Returns when</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data(for:)</code> / <code class="language-plaintext highlighter-rouge">data(from:)</code></td>
+      <td>Memory, as <code class="language-plaintext highlighter-rouge">Data</code></td>
+      <td>The whole body has arrived</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">upload(for:from:)</code> / <code class="language-plaintext highlighter-rouge">upload(for:fromFile:)</code></td>
+      <td>Memory, as <code class="language-plaintext highlighter-rouge">Data</code> (the request body comes from the argument)</td>
+      <td>The whole response body has arrived</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">download(for:)</code> / <code class="language-plaintext highlighter-rouge">download(from:)</code></td>
+      <td>A temporary file on disk</td>
+      <td>The whole body is on disk</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">bytes(for:)</code> / <code class="language-plaintext highlighter-rouge">bytes(from:)</code></td>
+      <td>An <code class="language-plaintext highlighter-rouge">AsyncSequence</code> of bytes</td>
+      <td>The response headers have arrived (with a caveat below)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each returns the payload together with a <code class="language-plaintext highlighter-rouge">URLResponse</code>. For HTTP and HTTPS URLs the response is always an <code class="language-plaintext highlighter-rouge">HTTPURLResponse</code>, but the type system does not know that, so every client starts with a cast.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: When the async URLSession methods return relative to network events
+    participant App
+    participant Session as URLSession
+    participant Server
+    App-&gt;&gt;Session: await bytes(for:) or data(for:)
+    Session-&gt;&gt;Server: request
+    Server--&gt;&gt;Session: status line + headers
+    Session--&gt;&gt;App: bytes(for:) returns (response, AsyncBytes)
+    Server--&gt;&gt;Session: body, part 1
+    Server--&gt;&gt;Session: body, part 2 (end)
+    Session--&gt;&gt;App: data(for:) returns (Data, response)
+</code></pre>
+
+<p>The server below makes these moments visible. Its <code class="language-plaintext highlighter-rouge">/slow-body</code> route waits 100 ms, sends headers and half of a six-byte body, pauses for 500 ms, and sends the rest:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+
+<span class="kd">func</span> <span class="nf">seconds</span><span class="p">(</span><span class="n">_</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Double</span> <span class="p">{</span>
+    <span class="kt">Double</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">+</span> <span class="kt">Double</span><span class="p">(</span><span class="n">duration</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">attoseconds</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e18</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">firstHalf</span> <span class="o">=</span> <span class="kt">Int</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"first"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"3"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">3</span>
+    <span class="k">let</span> <span class="nv">type</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"type"</span><span class="p">]</span>
+    <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s">"/slow-body"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+                            <span class="nv">headers</span><span class="p">:</span> <span class="p">(</span><span class="n">type</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">[(</span><span class="s">"Content-Type"</span><span class="p">,</span> <span class="nv">$0</span><span class="p">)]</span> <span class="p">}</span> <span class="p">??</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[(</span><span class="s">"Content-Length"</span><span class="p">,</span> <span class="s">"</span><span class="se">\(</span><span class="n">firstHalf</span> <span class="o">+</span> <span class="mi">3</span><span class="se">)</span><span class="s">"</span><span class="p">)],</span>
+                            <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="mi">65</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">firstHalf</span><span class="p">)),</span> <span class="o">.</span><span class="nf">pause</span><span class="p">(</span><span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">)),</span>
+                                   <span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="s">"def"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))],</span>
+                            <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/hang"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/book"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="nv">body</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">id</span><span class="s">":7,"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))],</span>
+                            <span class="nv">delay</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="kt">Int</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s">"delay"</span><span class="p">]</span> <span class="p">??</span> <span class="s">"0"</span><span class="p">)</span> <span class="p">??</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/file"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">repeating</span><span class="p">:</span> <span class="s">"x"</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">100_000</span><span class="p">))</span>
+    <span class="k">case</span> <span class="s">"/upload"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">count</span><span class="se">)</span><span class="s"> </span><span class="se">\(</span><span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Content-Type"</span><span class="p">)</span> <span class="p">??</span> <span class="s">"none"</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">default</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="nf">text</span><span class="p">(</span><span class="s">"not found"</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">404</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">slowBody</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">firstHalf</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"slow-body"</span><span class="p">),</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+    <span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"first"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">firstHalf</span><span class="se">)</span><span class="s">"</span><span class="p">)]</span> <span class="o">+</span> <span class="p">(</span><span class="n">type</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"type"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)]</span> <span class="p">}</span> <span class="p">??</span> <span class="p">[])</span>
+    <span class="k">return</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">dataStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">wholeBody</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nf">slowBody</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">dataTime</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">dataStart</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">bytesStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">stream</span><span class="p">,</span> <span class="nv">streamResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nf">slowBody</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="s">"application/json"</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">headersTime</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">bytesStart</span><span class="p">)</span>
+<span class="k">var</span> <span class="nv">streamed</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">()</span>
+<span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">byte</span> <span class="k">in</span> <span class="n">stream</span> <span class="p">{</span> <span class="n">streamed</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">byte</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">streamTime</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">bytesStart</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">wholeBody</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">6</span> <span class="o">&amp;&amp;</span> <span class="n">streamed</span> <span class="o">==</span> <span class="n">wholeBody</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="n">streamResponse</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">dataTime</span> <span class="o">&gt;</span> <span class="mf">0.55</span><span class="p">)</span>                       <span class="c1">// waited for the whole body</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">headersTime</span> <span class="o">&lt;</span> <span class="mf">0.3</span> <span class="o">&amp;&amp;</span> <span class="n">streamTime</span> <span class="o">&gt;</span> <span class="mf">0.55</span><span class="p">)</span> <span class="c1">// returned at the headers, then streamed</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"data: </span><span class="se">\(</span><span class="n">dataTime</span><span class="se">)</span><span class="s"> s; bytes: headers at </span><span class="se">\(</span><span class="n">headersTime</span><span class="se">)</span><span class="s"> s, body at </span><span class="se">\(</span><span class="n">streamTime</span><span class="se">)</span><span class="s"> s"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">bytes(for:)</code> returned about 0.11 s in, as soon as the headers arrived, while <code class="language-plaintext highlighter-rouge">data(for:)</code> returned only when the last byte did. That makes <code class="language-plaintext highlighter-rouge">bytes(for:)</code> the tool for reacting to a status code before downloading a large body, for showing progress, and for streaming formats, which <a href="/swift-streaming-responses/">Streaming Responses and Incremental Parsing</a> builds on.</p>
+
+<h3 id="the-512-byte-caveat">The 512-byte caveat</h3>
+
+<p>Run the same measurement with a response that has no <code class="language-plaintext highlighter-rouge">Content-Type</code>, or one that says <code class="language-plaintext highlighter-rouge">text/plain</code>, and <code class="language-plaintext highlighter-rouge">bytes(for:)</code> no longer returns at the headers:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">delivery</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">firstHalf</span><span class="p">)</span> <span class="k">in</span> <span class="p">[(</span><span class="s">"none"</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="s">"text/plain"</span><span class="p">,</span> <span class="s">"text/plain"</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="s">"text/plain, 512 bytes"</span><span class="p">,</span> <span class="s">"text/plain"</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="s">"application/json"</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span> <span class="k">as</span> <span class="p">[(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">String</span><span class="p">?,</span> <span class="kt">Int</span><span class="p">)]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">start</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">bytes</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">bytes</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="nf">slowBody</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="n">type</span><span class="p">,</span> <span class="nv">firstHalf</span><span class="p">:</span> <span class="n">firstHalf</span><span class="p">))</span>
+    <span class="n">delivery</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="k">for</span> <span class="k">try</span> <span class="k">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">bytes</span> <span class="p">{}</span>
+<span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">delivery</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">delivery</span><span class="p">[</span><span class="s">"none"</span><span class="p">]</span><span class="o">!</span> <span class="o">&gt;</span> <span class="mf">0.55</span> <span class="o">&amp;&amp;</span> <span class="n">delivery</span><span class="p">[</span><span class="s">"text/plain"</span><span class="p">]</span><span class="o">!</span> <span class="o">&gt;</span> <span class="mf">0.55</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">delivery</span><span class="p">[</span><span class="s">"text/plain, 512 bytes"</span><span class="p">]</span><span class="o">!</span> <span class="o">&lt;</span> <span class="mf">0.3</span> <span class="o">&amp;&amp;</span> <span class="n">delivery</span><span class="p">[</span><span class="s">"application/json"</span><span class="p">]</span><span class="o">!</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Response <code class="language-plaintext highlighter-rouge">Content-Type</code></th>
+      <th>Bytes before the pause</th>
+      <th><code class="language-plaintext highlighter-rouge">bytes(for:)</code> returned after</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>none</td>
+      <td>3</td>
+      <td>0.65 s (end of body)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">text/plain</code></td>
+      <td>3</td>
+      <td>0.65 s (end of body)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">text/plain</code></td>
+      <td>511</td>
+      <td>0.61 s (end of body)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">text/plain</code></td>
+      <td>512</td>
+      <td>0.11 s</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">text/plain</code> + <code class="language-plaintext highlighter-rouge">X-Content-Type-Options: nosniff</code></td>
+      <td>3</td>
+      <td>0.11 s</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application/json</code>, <code class="language-plaintext highlighter-rouge">application/octet-stream</code>, <code class="language-plaintext highlighter-rouge">text/event-stream</code>, <code class="language-plaintext highlighter-rouge">text/html</code></td>
+      <td>3</td>
+      <td>0.11 s</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The system performs <strong>content sniffing</strong> on responses whose declared type is missing or is the generic <code class="language-plaintext highlighter-rouge">text/plain</code>. It holds the response back until it has 512 bytes to inspect, or the body ends. In a regular request this costs nothing visible. In a streaming response, where the server sends a small event and then waits, it means the client sees nothing until 512 bytes have accumulated. The fix belongs on the server: declare a specific type, or send <code class="language-plaintext highlighter-rouge">X-Content-Type-Options: nosniff</code>. When you control only the client, knowing the threshold at least explains a stream that “starts” seconds late.</p>
+
+<h2 id="the-response-is-a-urlresponse">The response is a <code class="language-plaintext highlighter-rouge">URLResponse</code></h2>
+
+<p>Every client wraps the cast and the checks that follow it in one place. This version is the base the rest of the series builds on:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">HTTPClientError</span><span class="p">:</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">notHTTP</span><span class="p">(</span><span class="kt">URLResponse</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">HTTPClient</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="o">.</span><span class="n">shared</span>
+
+    <span class="kd">func</span> <span class="nf">send</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">URLRequest</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Data</span><span class="p">,</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">HTTPClientError</span><span class="o">.</span><span class="nf">notHTTP</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">http</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">HTTPClient</span><span class="p">()</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">bookData</span><span class="p">,</span> <span class="nv">bookResponse</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"book"</span><span class="p">)))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bookResponse</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="n">bookData</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">23</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>It does not throw for a <code class="language-plaintext highlighter-rouge">404</code> or a <code class="language-plaintext highlighter-rouge">500</code>; as <a href="/swift-http-methods-status-codes-headers/">the first article</a> showed, those are successful HTTP exchanges whose outcome the caller must classify. <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a> adds that classification.</p>
+
+<h2 id="uploads-the-body-comes-from-the-argument">Uploads: the body comes from the argument</h2>
+
+<p>The upload methods take the body as a separate argument, <code class="language-plaintext highlighter-rouge">Data</code> or a file URL, instead of <code class="language-plaintext highlighter-rouge">URLRequest.httpBody</code>. When both are present, the argument wins. As with any body, <code class="language-plaintext highlighter-rouge">URLSession</code> supplies a form-encoding <code class="language-plaintext highlighter-rouge">Content-Type</code> for a <code class="language-plaintext highlighter-rouge">POST</code> that does not declare one:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">post</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"upload"</span><span class="p">))</span>
+<span class="n">post</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">posted</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">upload</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">post</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"hello"</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">posted</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="s">"POST 5 application/x-www-form-urlencoded"</span><span class="p">)</span>
+
+<span class="k">var</span> <span class="nv">put</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"upload"</span><span class="p">))</span>
+<span class="n">put</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"PUT"</span>
+<span class="n">put</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"ignored"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+<span class="n">put</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/json"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">replaced</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">upload</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">put</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="kt">Data</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">title</span><span class="s">":"</span><span class="kt">Dune</span><span class="s">"}"</span><span class="err">#</span><span class="o">.</span><span class="n">utf8</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">replaced</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="o">==</span> <span class="s">"PUT 16 application/json"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">upload(for:fromFile:)</code> streams the file from disk instead of holding it in memory, which matters for anything larger than a few megabytes. <a href="/swift-multipart-uploads/">Uploading Files and Multipart Form Data</a> uses it to send multipart bodies built on disk.</p>
+
+<h2 id="downloads-the-file-is-yours-to-move">Downloads: the file is yours to move</h2>
+
+<p><code class="language-plaintext highlighter-rouge">download(for:)</code> writes the body to a temporary file and returns its URL. The file is in the process’s temporary directory with a <code class="language-plaintext highlighter-rouge">CFNetworkDownload_</code> prefix, and in this measurement it was still there two seconds after the call returned:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="p">(</span><span class="nv">temporary</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"file"</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">temporary</span><span class="o">.</span><span class="n">lastPathComponent</span><span class="o">.</span><span class="nf">hasPrefix</span><span class="p">(</span><span class="s">"CFNetworkDownload_"</span><span class="p">))</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">fileExists</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="n">temporary</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>“Still there” is not a contract. Temporary files can be removed by the system at any time the app is not running, and on iOS when storage is low. The correct pattern is to move the file somewhere you own, immediately, in the same synchronous stretch of code that received the URL:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">downloadBook</span><span class="p">(</span><span class="n">_</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="n">to</span> <span class="nv">directory</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span> <span class="o">=</span> <span class="o">.</span><span class="n">shared</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">temporary</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="nf">download</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">http</span> <span class="o">=</span> <span class="n">response</span> <span class="k">as?</span> <span class="kt">HTTPURLResponse</span><span class="p">,</span> <span class="n">http</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">temporary</span><span class="p">)</span>
+        <span class="k">throw</span> <span class="kt">URLError</span><span class="p">(</span><span class="o">.</span><span class="n">badServerResponse</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">destination</span> <span class="o">=</span> <span class="n">directory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span> <span class="o">+</span> <span class="s">".txt"</span><span class="p">)</span>
+    <span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">moveItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">temporary</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">destination</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">destination</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">library</span> <span class="o">=</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="n">temporaryDirectory</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"library-</span><span class="se">\(</span><span class="kt">UUID</span><span class="p">()</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">createDirectory</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">library</span><span class="p">,</span> <span class="nv">withIntermediateDirectories</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">saved</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">downloadBook</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"file"</span><span class="p">),</span> <span class="nv">to</span><span class="p">:</span> <span class="n">library</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">((</span><span class="k">try</span><span class="p">?</span> <span class="kt">Data</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">saved</span><span class="p">))?</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">100_000</span><span class="p">)</span>
+<span class="k">try</span> <span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span><span class="o">.</span><span class="nf">removeItem</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">library</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The status check comes first, and the temporary file is removed on failure. A download of a <code class="language-plaintext highlighter-rouge">404</code> page still produces a file, containing the error page; without the check, an app happily saves “Not Found” as a book. The delegate-based API is stricter: there, the file is deleted as soon as <code class="language-plaintext highlighter-rouge">urlSession(_:downloadTask:didFinishDownloadingTo:)</code> returns. <a href="/swift-download-progress-resume/">Download Progress, Resuming, and Temporary Files</a> covers that API, progress, and resume data.</p>
+
+<h2 id="cancellation-follows-the-swift-task">Cancellation follows the Swift task</h2>
+
+<p>The async methods connect Swift task cancellation to the underlying <code class="language-plaintext highlighter-rouge">URLSessionTask</code>. Cancelling the Swift task cancels the network task, the connection is closed or returned to the pool, and the call throws. The error it throws is a <code class="language-plaintext highlighter-rouge">URLError</code> with code <code class="language-plaintext highlighter-rouge">.cancelled</code>, <strong>not</strong> a <code class="language-plaintext highlighter-rouge">CancellationError</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">pending</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"hang"</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">cancelStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="n">pending</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">pending</span><span class="o">.</span><span class="n">value</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"the request should have been cancelled"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="k">let</span> <span class="nv">error</span> <span class="k">as</span> <span class="kt">URLError</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>  <span class="c1">// -999</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">cancelStart</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"expected URLError, got </span><span class="se">\(</span><span class="nf">type</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">error</span><span class="p">)</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>If the Swift task is already cancelled when the method is called, no request is sent at all:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">preCancelled</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">withUnsafeCurrentTask</span> <span class="p">{</span> <span class="nv">$0</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">before</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span>
+    <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"book"</span><span class="p">))</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="n">before</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">failed</span><span class="p">,</span> <span class="nv">sent</span><span class="p">)</span> <span class="o">=</span> <span class="k">await</span> <span class="n">preCancelled</span><span class="o">.</span><span class="n">value</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">failed</span> <span class="o">&amp;&amp;</span> <span class="n">sent</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Because the error type differs from the standard library’s, code that wants to treat “the user navigated away” differently from “the request failed” must check both. One helper keeps that logic in one place:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">isCancellation</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">self</span> <span class="k">is</span> <span class="kt">CancellationError</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">url</span> <span class="o">=</span> <span class="k">self</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">,</span> <span class="n">url</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="kc">false</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>A cancelled request is not a failure to show to the user. SwiftUI’s <code class="language-plaintext highlighter-rouge">.task</code> modifier cancels its task when the view disappears, so every screen that loads data with it will see <code class="language-plaintext highlighter-rouge">URLError.cancelled</code> during normal navigation. <a href="/swift-network-timeouts-cancellation/">Timeouts, Cancellation, and Request Lifetimes</a> builds deadlines and request ownership on this behavior.</p>
+
+<h2 id="where-the-code-after-await-runs">Where the code after <code class="language-plaintext highlighter-rouge">await</code> runs</h2>
+
+<p>The code after <code class="language-plaintext highlighter-rouge">await</code> resumes in the isolation domain of the caller. A function isolated to the main actor resumes on the main actor; there is no completion-handler queue to hop off and no <code class="language-plaintext highlighter-rouge">DispatchQueue.main.async</code> to forget:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">@MainActor</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">BookViewModel</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">title</span> <span class="o">=</span> <span class="s">""</span>
+
+    <span class="kd">func</span> <span class="nf">load</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">_</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"book"</span><span class="p">)))</span>
+        <span class="kt">MainActor</span><span class="o">.</span><span class="nf">assertIsolated</span><span class="p">()</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">BookDTO</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">title</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">BookDTO</span><span class="p">:</span> <span class="kt">Decodable</span> <span class="p">{</span> <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">;</span> <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span> <span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">viewModel</span> <span class="o">=</span> <span class="kt">BookViewModel</span><span class="p">()</span>
+<span class="k">try</span> <span class="k">await</span> <span class="n">viewModel</span><span class="o">.</span><span class="nf">load</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">loadedTitle</span> <span class="o">=</span> <span class="n">viewModel</span><span class="o">.</span><span class="n">title</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">loadedTitle</span> <span class="o">==</span> <span class="s">"Dune"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The waiting happens off the main actor; while the request is in flight, the main actor is free. The decoding, however, happens on it. For a 23-byte book that is irrelevant. For a multi-megabyte payload it is a dropped frame, and the fix is to decode in a function that runs on the concurrent pool, a pattern <a href="/swift-decoding-json-codable/">Decoding JSON with <code class="language-plaintext highlighter-rouge">Codable</code></a> measures.</p>
+
+<h2 id="running-requests-concurrently">Running requests concurrently</h2>
+
+<p>Independent requests should run at the same time. With two requests whose durations are \(W_1\) and \(W_2\), sequential code takes \(W_1 + W_2\) and concurrent code takes about \(\max(W_1, W_2)\). <code class="language-plaintext highlighter-rouge">async let</code> expresses a fixed number of concurrent requests:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">URLRequest</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">components</span> <span class="o">=</span> <span class="kt">URLComponents</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"book"</span><span class="p">),</span> <span class="nv">resolvingAgainstBaseURL</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span><span class="o">!</span>
+    <span class="n">components</span><span class="o">.</span><span class="n">queryItems</span> <span class="o">=</span> <span class="p">[</span><span class="kt">URLQueryItem</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"delay"</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="s">"</span><span class="se">\(</span><span class="n">delay</span><span class="se">)</span><span class="s">"</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">components</span><span class="o">.</span><span class="n">url</span><span class="o">!</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">sequentialStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">300</span><span class="p">))</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">200</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">sequential</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">sequentialStart</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">concurrentStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">300</span><span class="p">))</span>
+<span class="k">async</span> <span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">200</span><span class="p">))</span>
+<span class="k">let</span> <span class="p">(</span><span class="nv">firstResult</span><span class="p">,</span> <span class="nv">secondResult</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="nf">await</span> <span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">concurrent</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">concurrentStart</span><span class="p">)</span>
+
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstResult</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="n">secondResult</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">sequential</span> <span class="o">&gt;</span> <span class="mf">0.5</span> <span class="o">&amp;&amp;</span> <span class="n">concurrent</span> <span class="o">&lt;</span> <span class="mf">0.45</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"sequential </span><span class="se">\(</span><span class="n">sequential</span><span class="se">)</span><span class="s"> s, concurrent </span><span class="se">\(</span><span class="n">concurrent</span><span class="se">)</span><span class="s"> s"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>For a variable number of requests, use a task group, and bound how many run at once so a list of 500 items does not become 500 queued tasks. Each child returns its index along with its result, so the output keeps the input’s order even though completions arrive in any order:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">fetchAll</span><span class="p">(</span><span class="n">_</span> <span class="nv">requests</span><span class="p">:</span> <span class="p">[</span><span class="kt">URLRequest</span><span class="p">],</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Data</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Data</span><span class="p">)</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">results</span> <span class="o">=</span> <span class="p">[</span><span class="kt">Data</span><span class="p">?](</span><span class="nv">repeating</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">var</span> <span class="nv">next</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="kd">func</span> <span class="nf">startNext</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">next</span> <span class="o">&lt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">count</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">index</span> <span class="o">=</span> <span class="n">next</span><span class="p">,</span> <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="k">try</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="n">request</span><span class="p">)</span><span class="o">.</span><span class="mi">0</span><span class="p">)</span> <span class="p">}</span>
+            <span class="n">next</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="nf">min</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="n">requests</span><span class="o">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span> <span class="nf">startNext</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">while</span> <span class="k">let</span> <span class="p">(</span><span class="nv">index</span><span class="p">,</span> <span class="nv">data</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="nf">startNext</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">results</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">!</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">manyStart</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">let</span> <span class="nv">many</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">fetchAll</span><span class="p">((</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">100</span><span class="p">)</span> <span class="p">},</span> <span class="nv">limit</span><span class="p">:</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">manyTime</span> <span class="o">=</span> <span class="nf">seconds</span><span class="p">(</span><span class="kt">ContinuousClock</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">manyStart</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">many</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">12</span> <span class="o">&amp;&amp;</span> <span class="n">manyTime</span> <span class="o">&gt;</span> <span class="mf">0.29</span> <span class="o">&amp;&amp;</span> <span class="n">manyTime</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">)</span>  <span class="c1">// three waves of four</span>
+</code></pre></div></div>
+
+<p>Twelve 100 ms requests with a limit of four take three waves, about 0.3 s, as Little’s law from <a href="/swift-urlsession-configuration/">Choosing a <code class="language-plaintext highlighter-rouge">URLSession</code> Configuration</a> predicts. Because <code class="language-plaintext highlighter-rouge">next()</code> rethrows the first child error, a failure cancels the remaining children through the group, and their requests are cancelled with them. The <a href="/swift-task-groups/">task groups article</a> covers the alternatives when partial results are acceptable.</p>
+
+<h2 id="per-task-delegates">Per-task delegates</h2>
+
+<p>Some features still need a delegate: refusing a redirect, answering an authentication challenge, collecting metrics, or observing upload progress. The async methods accept a per-task <code class="language-plaintext highlighter-rouge">delegate:</code> parameter, so you can attach one to a single request without creating a session for it. The session holds the delegate strongly until the task finishes, then releases it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MetricsProbe</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">URLSessionTaskDelegate</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">duration</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="nf">urlSession</span><span class="p">(</span><span class="n">_</span> <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">,</span> <span class="nv">task</span><span class="p">:</span> <span class="kt">URLSessionTask</span><span class="p">,</span> <span class="n">didFinishCollecting</span> <span class="nv">metrics</span><span class="p">:</span> <span class="kt">URLSessionTaskMetrics</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">taskInterval</span><span class="o">.</span><span class="n">duration</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">probe</span> <span class="o">=</span> <span class="kt">MetricsProbe</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">50</span><span class="p">),</span> <span class="nv">delegate</span><span class="p">:</span> <span class="n">probe</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;=</span> <span class="mf">0.05</span> <span class="p">}</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The probe is marked <code class="language-plaintext highlighter-rouge">@unchecked Sendable</code> because the session calls it on its own delegate queue while the code above reads it afterwards. That is safe only because the read happens after the task has finished, which the <code class="language-plaintext highlighter-rouge">await</code> guarantees. A delegate that is read <em>while</em> the task runs needs a lock, as the <a href="/swift-urlsessiontaskmetrics/">metrics article</a> shows.</p>
+
+<h2 id="the-task-underneath">The task underneath</h2>
+
+<p>Every async call creates a <code class="language-plaintext highlighter-rouge">URLSessionTask</code>, and the older completion-handler and delegate APIs expose that task directly. Its states explain several behaviors above:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    accTitle: The states of a URLSessionTask
+    [*] --&gt; suspended: created (dataTask, downloadTask, ...)
+    suspended --&gt; running: resume()
+    running --&gt; suspended: suspend()
+    running --&gt; canceling: cancel()
+    suspended --&gt; canceling: cancel()
+    canceling --&gt; completed: delegate receives error -999
+    running --&gt; completed: response finished or failed
+    completed --&gt; [*]
+</code></pre>
+
+<p>A task is created <strong>suspended</strong>. With the completion-handler API, forgetting <code class="language-plaintext highlighter-rouge">resume()</code> is a classic bug: nothing happens, no error is reported, and the completion handler is never called. The async methods create and resume the task for you, and cancel it when the Swift task is cancelled. They also guarantee that the continuation resumes exactly once, which hand-written bridges of the completion-handler API often got wrong, as <a href="/swift-continuation-ownership/">Continuation Ownership, Cancellation, and Double Resume</a> explains.</p>
+
+<p>Code that targets older APIs or needs the task object can still use the completion-handler form:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">legacy</span> <span class="o">=</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">dataTask</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="nf">book</span><span class="p">(</span><span class="nv">delay</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span> <span class="n">data</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+    <span class="c1">// Runs on the session's delegate queue, not the main thread.</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">legacy</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="o">.</span><span class="n">suspended</span><span class="p">)</span>
+<span class="n">legacy</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">legacy</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="o">.</span><span class="n">running</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">data</code>, <code class="language-plaintext highlighter-rouge">upload</code>, and <code class="language-plaintext highlighter-rouge">download</code> return when the whole body has arrived; <code class="language-plaintext highlighter-rouge">bytes</code> returns when the headers have arrived.</li>
+  <li>Responses with no <code class="language-plaintext highlighter-rouge">Content-Type</code> or with <code class="language-plaintext highlighter-rouge">text/plain</code> are held back until 512 bytes arrive, because of content sniffing. A specific type or <code class="language-plaintext highlighter-rouge">X-Content-Type-Options: nosniff</code> avoids it.</li>
+  <li>The response is a <code class="language-plaintext highlighter-rouge">URLResponse</code>; cast it once in a wrapper. Status codes do not throw.</li>
+  <li>Upload methods take the body from their argument and ignore <code class="language-plaintext highlighter-rouge">httpBody</code>.</li>
+  <li>Downloaded files live in a temporary directory; check the status and move the file immediately.</li>
+  <li>Cancelling the Swift task cancels the request, which throws <code class="language-plaintext highlighter-rouge">URLError(.cancelled)</code>, not <code class="language-plaintext highlighter-rouge">CancellationError</code>. A task cancelled beforehand sends nothing.</li>
+  <li>Code after <code class="language-plaintext highlighter-rouge">await</code> resumes in the caller’s isolation. Waiting is off the main actor; decoding there is not.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">async let</code> for a fixed set of concurrent requests and a bounded task group for a variable one.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write <code class="language-plaintext highlighter-rouge">func firstAvailable(_ mirrors: [URL]) async throws -&gt; Data</code> that requests the same resource from several mirrors concurrently, returns the first successful <code class="language-plaintext highlighter-rouge">200</code> body, and cancels the remaining requests. Add a <code class="language-plaintext highlighter-rouge">LocalServer</code> with one route per mirror, each delayed by a different amount, one of which returns <code class="language-plaintext highlighter-rouge">503</code>. Use the server’s <code class="language-plaintext highlighter-rouge">requests</code> array and the <code class="language-plaintext highlighter-rouge">isCancellation</code> helper to assert that the losing requests were cancelled rather than completed, and measure how long the function takes compared with the fastest mirror.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10095/">Use async/await with URLSession</a>, WWDC21.</li>
+  <li>Apple’s documentation for <a href="https://developer.apple.com/documentation/foundation/urlsession"><code class="language-plaintext highlighter-rouge">URLSession</code></a> and <a href="https://developer.apple.com/documentation/foundation/urlsession/asyncbytes"><code class="language-plaintext highlighter-rouge">URLSession.AsyncBytes</code></a>.</li>
+  <li>The WHATWG <a href="https://mimesniff.spec.whatwg.org/">MIME Sniffing Standard</a>, which describes why 512 bytes is the classic sniffing window.</li>
+</ul>
+
+<p>Previous: <a href="/swift-urlsession-configuration/">Choosing a <code class="language-plaintext highlighter-rouge">URLSession</code> Configuration</a>. Next: <a href="/swift-transport-vs-application-errors/">Separating Transport Errors from Application Failures</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-urlsession-async-await/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Requests+and+Responses+with+async+and+await+in+URLSession%20https%3A%2F%2Fswiftbydeya.com%2Fswift-urlsession-async-await%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-urlsession-async-await/&title=Requests+and+Responses+with+async+and+await+in+URLSession%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-urlsession-async-await/&title=Requests+and+Responses+with+async+and+await+in+URLSession%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-urlsession-async-await/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Requests and Responses with async and await in URLSession%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-urlsession-async-await/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+    <li><a href="/tag/#URLSession">URLSession</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Separating Transport Errors from Application Failures" href="/swift-transport-vs-application-errors/"> <p>Previous post</p> Separating Transport Errors from Application Failures </a> </div> <div id="next-post"> <a alt="Choosing a URLSession Configuration" href="/swift-urlsession-configuration/"> <p>Next post</p> Choosing a URLSession Configuration </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

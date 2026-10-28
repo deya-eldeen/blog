@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Avoiding Deadlocks and Blocking Waits in Swift Concurrency | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Avoiding Deadlocks and Blocking Waits in Swift Concurrency" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Swift concurrency removes the most common way to deadlock: actors are reentrant, so two actors that call each other do not lock each other up, and Mutex.withLock cannot be held across an await. It does not remove deadlocks altogether. A program can still reach a state where every piece of work it needs is waiting for another piece of work that cannot run, and in async code that state is often quieter than a classic deadlock: no thread is stuck in a lock, the CPU is idle, and the app simply never finishes what it started. This article reproduces the deadlocks that remain, each one safely, with a timeout instead of a hang: blocking the main thread on main-actor work, starving the cooperative pool with blocking waits, waiting on yourself, and cyclic waits between tasks. It then shows how to diagnose them, because a suspended task does not appear in a thread backtrace, and the habits that prevent them." /> <meta property="og:description" content="Swift concurrency removes the most common way to deadlock: actors are reentrant, so two actors that call each other do not lock each other up, and Mutex.withLock cannot be held across an await. It does not remove deadlocks altogether. A program can still reach a state where every piece of work it needs is waiting for another piece of work that cannot run, and in async code that state is often quieter than a classic deadlock: no thread is stuck in a lock, the CPU is idle, and the app simply never finishes what it started. This article reproduces the deadlocks that remain, each one safely, with a timeout instead of a hang: blocking the main thread on main-actor work, starving the cooperative pool with blocking waits, waiting on yourself, and cyclic waits between tasks. It then shows how to diagnose them, because a suspended task does not appear in a thread backtrace, and the habits that prevent them." /> <link rel="canonical" href="https://swiftbydeya.com/swift-deadlocks-blocking-waits/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-deadlocks-blocking-waits/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-08-27T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Avoiding Deadlocks and Blocking Waits in Swift Concurrency" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-08-27T00:00:00+03:00","datePublished":"2026-08-27T00:00:00+03:00","description":"Swift concurrency removes the most common way to deadlock: actors are reentrant, so two actors that call each other do not lock each other up, and Mutex.withLock cannot be held across an await. It does not remove deadlocks altogether. A program can still reach a state where every piece of work it needs is waiting for another piece of work that cannot run, and in async code that state is often quieter than a classic deadlock: no thread is stuck in a lock, the CPU is idle, and the app simply never finishes what it started. This article reproduces the deadlocks that remain, each one safely, with a timeout instead of a hang: blocking the main thread on main-actor work, starving the cooperative pool with blocking waits, waiting on yourself, and cyclic waits between tasks. It then shows how to diagnose them, because a suspended task does not appear in a thread backtrace, and the habits that prevent them.","headline":"Avoiding Deadlocks and Blocking Waits in Swift Concurrency","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-deadlocks-blocking-waits/"},"url":"https://swiftbydeya.com/swift-deadlocks-blocking-waits/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Avoiding Deadlocks and Blocking Waits in Swift Concurrency"> <meta name="twitter:description" content="Swift concurrency removes the most common way to deadlock: actors are reentrant, so two actors that call each other do not lock each other up, and Mutex.with..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Avoiding Deadlocks and Blocking Waits in Swift Concurrency"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Avoiding Deadlocks and Blocking Waits in Swift Concurrency</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-08-27T00:00:00+03:00">August 27, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Swift concurrency removes the most common way to deadlock: actors are reentrant, so two actors that call each other do not lock each other up, and <code class="language-plaintext highlighter-rouge">Mutex.withLock</code> cannot be held across an <code class="language-plaintext highlighter-rouge">await</code>. It does not remove deadlocks altogether. A program can still reach a state where every piece of work it needs is waiting for another piece of work that cannot run, and in async code that state is often <em>quieter</em> than a classic deadlock: no thread is stuck in a lock, the CPU is idle, and the app simply never finishes what it started.</p>
+
+<p>This article reproduces the deadlocks that remain, each one safely, with a timeout instead of a hang: blocking the main thread on main-actor work, starving the cooperative pool with blocking waits, waiting on yourself, and cyclic waits between tasks. It then shows how to diagnose them, because a suspended task does not appear in a thread backtrace, and the habits that prevent them.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain on macOS 26, on a machine whose cooperative pool has 20 threads. The Swift blocks build on one another in one <code class="language-plaintext highlighter-rouge">main.swift</code>. <code class="language-plaintext highlighter-rouge">Mutex</code> requires iOS 18, macOS 15, or later.</p>
+
+<h2 id="what-a-deadlock-is">What a deadlock is</h2>
+
+<p>A deadlock is a cycle of waits: A waits for B, B waits for C, and something in the chain waits for A. Coffman, Elphick, and Shoshani identified four conditions that must all hold for one to occur: mutual exclusion, hold-and-wait, no preemption, and a circular wait. Remove any one, and the deadlock cannot happen.</p>
+
+<p>Swift concurrency attacks the conditions in specific places:</p>
+
+<ul>
+  <li><strong>Actor reentrancy removes hold-and-wait for actors.</strong> An actor that suspends on an <code class="language-plaintext highlighter-rouge">await</code> releases itself, so it does not hold anything while it waits.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">Mutex.withLock</code> takes a synchronous closure</strong>, so a lock cannot be held while waiting on asynchronous work.</li>
+  <li><strong>Structured concurrency makes most waits point downward,</strong> from parents to children, which cannot form a cycle.</li>
+</ul>
+
+<p>The deadlocks that remain come from bringing <em>blocking</em> into async code, from unstructured or continuation-based waits that can point anywhere, and from synchronous locks used the classic way.</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    accTitle: A deadlock is a cycle in the wait-for graph
+    A["Main thread, blocked on semaphore"] -- "waits for signal from" --&gt; B["Task isolated to the main actor"]
+    B -- "needs to run on" --&gt; A
+    C["20 pool threads, blocked on semaphore"] -- "wait for signal from" --&gt; D["Signalling task"]
+    D -- "needs a free thread from" --&gt; C
+</code></pre>
+
+<h2 id="deadlock-1-the-main-thread-waits-for-main-actor-work">Deadlock 1: the main thread waits for main-actor work</h2>
+
+<p>The most common deadlock in apps adopting Swift concurrency is a synchronous function on the main thread that starts async work and blocks until it finishes, typically to satisfy a synchronous API that must return a value:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="c1">/// A blocking wait with a timeout, so these demonstrations report instead of hanging.</span>
+<span class="kd">func</span> <span class="nf">blockingWait</span><span class="p">(</span><span class="n">on</span> <span class="nv">semaphore</span><span class="p">:</span> <span class="kt">DispatchSemaphore</span><span class="p">,</span> <span class="nv">milliseconds</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">DispatchTimeoutResult</span> <span class="p">{</span>
+    <span class="n">semaphore</span><span class="o">.</span><span class="nf">wait</span><span class="p">(</span><span class="nv">timeout</span><span class="p">:</span> <span class="o">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">+</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="n">milliseconds</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span>
+<span class="kd">func</span> <span class="nf">synchronousAPIThatWaitsForAsyncWork</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">DispatchTimeoutResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">done</span> <span class="o">=</span> <span class="kt">DispatchSemaphore</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="kt">Task</span> <span class="p">{</span>                       <span class="c1">// Inherits the main actor.</span>
+        <span class="n">done</span><span class="o">.</span><span class="nf">signal</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">blockingWait</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">done</span><span class="p">,</span> <span class="nv">milliseconds</span><span class="p">:</span> <span class="mi">300</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">mainActorResult</span> <span class="o">=</span> <span class="nf">synchronousAPIThatWaitsForAsyncWork</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">mainActorResult</span> <span class="o">==</span> <span class="o">.</span><span class="n">timedOut</span><span class="p">,</span> <span class="s">"The task needed the main actor, which was blocked waiting for it"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The task is isolated to the main actor, so it cannot start until the current main-actor job finishes. That job is the function waiting for it. With an untimed <code class="language-plaintext highlighter-rouge">wait()</code>, the app freezes permanently; the watchdog on iOS eventually kills it.</p>
+
+<p>Swift 6 makes the direct form a compile error: <code class="language-plaintext highlighter-rouge">DispatchSemaphore.wait()</code> is unavailable from asynchronous contexts. But the wait here happens in a <em>synchronous</em> helper called from a synchronous function, and nothing in the type system objects. The rule the compiler cannot enforce is: <strong>never block a thread waiting for async work that may need that thread.</strong> If a synchronous API must return something only async code can produce, the API has to change, to async, to a completion handler, or to returning a placeholder and updating later.</p>
+
+<h2 id="deadlock-2-starving-the-cooperative-pool">Deadlock 2: starving the cooperative pool</h2>
+
+<p>The cooperative pool has a fixed width, as the <a href="/swift-threads-dispatch-queues-tasks/">threads article</a> measured. If every pool thread blocks waiting for something that itself needs a pool thread, nothing can run:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">poolWidth</span> <span class="o">=</span> <span class="kt">ProcessInfo</span><span class="o">.</span><span class="n">processInfo</span><span class="o">.</span><span class="n">activeProcessorCount</span>
+
+<span class="c1">/// Starts `blockers` tasks that block until signalled, and one task that signals all of them.</span>
+<span class="kd">func</span> <span class="nf">blockedWaiters</span><span class="p">(</span><span class="nv">blockers</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nv">succeeded</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">timedOut</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">signal</span> <span class="o">=</span> <span class="kt">DispatchSemaphore</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">DispatchTimeoutResult</span><span class="p">?</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">blockers</span> <span class="p">{</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="nf">blockingWait</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">signal</span><span class="p">,</span> <span class="nv">milliseconds</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span> <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="n">blockers</span> <span class="p">{</span> <span class="n">signal</span><span class="o">.</span><span class="nf">signal</span><span class="p">()</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="k">var</span> <span class="nv">succeeded</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">timedOut</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="k">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="n">success</span><span class="p">?:</span> <span class="n">succeeded</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">case</span> <span class="o">.</span><span class="n">timedOut</span><span class="p">?:</span> <span class="n">timedOut</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">case</span> <span class="nv">nil</span><span class="p">:</span> <span class="k">break</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">succeeded</span><span class="p">,</span> <span class="n">timedOut</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">starved</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">blockedWaiters</span><span class="p">(</span><span class="nv">blockers</span><span class="p">:</span> <span class="n">poolWidth</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">notStarved</span> <span class="o">=</span> <span class="k">await</span> <span class="nf">blockedWaiters</span><span class="p">(</span><span class="nv">blockers</span><span class="p">:</span> <span class="n">poolWidth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">starved</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">poolWidth</span><span class="p">),</span> <span class="s">"Every pool thread blocked; the signalling task never ran"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">notStarved</span> <span class="o">==</span> <span class="p">(</span><span class="n">poolWidth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"One free thread was enough for the signaller"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"pool width </span><span class="se">\(</span><span class="n">poolWidth</span><span class="se">)</span><span class="s">: </span><span class="se">\(</span><span class="n">starved</span><span class="se">)</span><span class="s"> with </span><span class="se">\(</span><span class="n">poolWidth</span><span class="se">)</span><span class="s"> blockers, </span><span class="se">\(</span><span class="n">notStarved</span><span class="se">)</span><span class="s"> with one fewer"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>With 20 blocked tasks on a 20-thread pool, all 20 timed out: the signalling task was runnable the whole time, and no thread was free to run it. With 19, the signaller found the twentieth thread and released everyone. The condition is exactly</p>
+
+\[B \ge W \quad\text{and}\quad \text{the releasing work needs the pool} \;\Longrightarrow\; \text{deadlock},\]
+
+<p>where \(B\) is the number of pool threads blocked and \(W\) is the pool width. In production, \(W\) is the device’s core count, so this deadlock appears on a six-core phone with six blocked tasks, and not on a twenty-core development machine with six. It is the definition of a bug that “only happens on some devices.”</p>
+
+<p>The fix is to wait without blocking. An async signal, built on continuations, suspends its waiters and frees their threads:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Suspends waiters until signalled. Waiting costs no thread.</span>
+<span class="kd">actor</span> <span class="kt">AsyncSignal</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">signalled</span> <span class="o">=</span> <span class="kc">false</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">waiters</span><span class="p">:</span> <span class="p">[</span><span class="kt">CheckedContinuation</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kd">func</span> <span class="nf">wait</span><span class="p">()</span> <span class="k">async</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">signalled</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">waiters</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">signal</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">signalled</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">for</span> <span class="n">waiter</span> <span class="k">in</span> <span class="n">waiters</span> <span class="p">{</span> <span class="n">waiter</span><span class="o">.</span><span class="nf">resume</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">waiters</span><span class="o">.</span><span class="nf">removeAll</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">asyncSignal</span> <span class="o">=</span> <span class="kt">AsyncSignal</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">clock</span> <span class="o">=</span> <span class="kt">ContinuousClock</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">asyncStart</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span>
+<span class="k">await</span> <span class="nf">withTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Void</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="p">(</span><span class="n">poolWidth</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">await</span> <span class="n">asyncSignal</span><span class="o">.</span><span class="nf">wait</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+        <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">asyncSignal</span><span class="o">.</span><span class="nf">signal</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">asyncElapsed</span> <span class="o">=</span> <span class="n">asyncStart</span><span class="o">.</span><span class="nf">duration</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="n">clock</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">asyncElapsed</span> <span class="o">&lt;</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">),</span> <span class="s">"Ten times the pool width of waiters, released promptly"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Two hundred waiters on a twenty-thread pool were released about 20 ms after the signal. None of them held a thread while waiting.</p>
+
+<h2 id="deadlock-3-waiting-on-yourself">Deadlock 3: waiting on yourself</h2>
+
+<p>An operation that waits for something only it can produce never finishes. In async code the shape is usually indirect: a serializer that runs operations one at a time, and an operation that, somewhere deep in its call graph, submits more work to the same serializer and awaits it.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">/// Runs operations one at a time, each after the previous one finishes.</span>
+<span class="kd">actor</span> <span class="kt">SerialQueue</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">tail</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span>
+
+    <span class="kd">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">operation</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">previous</span> <span class="o">=</span> <span class="n">tail</span>
+        <span class="k">let</span> <span class="nv">current</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">await</span> <span class="n">previous</span><span class="p">?</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="nf">operation</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">current</span><span class="o">.</span><span class="n">value</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">current</span><span class="o">.</span><span class="n">value</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">finished</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">serial</span> <span class="o">=</span> <span class="kt">SerialQueue</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">selfWaiting</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">serial</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
+        <span class="c1">// A nested call on the same queue: it waits for the outer operation, which waits for it.</span>
+        <span class="k">await</span> <span class="n">serial</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="mi">42</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">finished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="o">!</span><span class="n">finished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">},</span> <span class="s">"The nested operation waits for the outer one forever"</span><span class="p">)</span>
+<span class="n">selfWaiting</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>        <span class="c1">// Cancellation does not help: nothing in the cycle checks for it.</span>
+</code></pre></div></div>
+
+<p>The nested <code class="language-plaintext highlighter-rouge">run</code> is queued behind the outer operation, and the outer operation is waiting for the nested one to return. Cancelling the task does nothing, because neither side is at a cancellable suspension point: each is awaiting a task’s <code class="language-plaintext highlighter-rouge">value</code>, which waits for completion regardless of cancellation. The task above stays suspended until the process exits.</p>
+
+<p>This is precisely the deadlock that actor reentrancy was designed to avoid, as the <a href="/swift-actor-reentrancy/">actor reentrancy article</a> explains, reintroduced by building a non-reentrant section on top of actors. It also appears with <code class="language-plaintext highlighter-rouge">DispatchQueue.sync</code> called on the queue you are already running on, where GCD detects it and crashes rather than hanging, and with <code class="language-plaintext highlighter-rouge">MainActor</code> code that synchronously waits on a main-queue <code class="language-plaintext highlighter-rouge">sync</code> call.</p>
+
+<p>Prefer designs that do not need a non-reentrant section. If you must have one, make it detect re-entry: record a task-local marker while inside, and fail loudly when <code class="language-plaintext highlighter-rouge">run</code> is called with the marker already set.</p>
+
+<h2 id="deadlock-4-cyclic-waits-between-tasks">Deadlock 4: cyclic waits between tasks</h2>
+
+<p>Unstructured tasks can wait on each other in any shape. Two tasks that each await the other’s value form the smallest cycle:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">HandleStore</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">second</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="o">&lt;</span><span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span><span class="p">?</span><span class="o">&gt;</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">handles</span> <span class="o">=</span> <span class="kt">HandleStore</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">cycleFinished</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">handles</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">slot</span> <span class="k">in</span>
+    <span class="n">slot</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">while</span> <span class="n">handles</span><span class="o">.</span><span class="n">second</span><span class="o">.</span><span class="nf">withLock</span><span class="p">({</span> <span class="nv">$0</span> <span class="p">})</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">yield</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">other</span> <span class="o">=</span> <span class="k">await</span> <span class="n">handles</span><span class="o">.</span><span class="n">second</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">!.</span><span class="n">value</span>
+        <span class="n">cycleFinished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">other</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">handles</span><span class="o">.</span><span class="n">second</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">slot</span> <span class="k">in</span>
+    <span class="n">slot</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">other</span> <span class="o">=</span> <span class="k">await</span> <span class="n">handles</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span><span class="o">!.</span><span class="n">value</span>
+        <span class="n">cycleFinished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">other</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cycleFinished</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">"Each task waits for the other; neither can finish"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Real cycles are rarely this direct. They form through caches that share in-flight loads, like the one in the <a href="/swift-actor-reentrancy/">actor reentrancy article</a>: if loading A requires B, and loading B requires A, both callers join each other’s in-flight task and wait forever. Structured concurrency prevents such cycles by construction, since a parent waits only for its own children. Unstructured tasks and shared in-flight work need an explicit rule: a dependency graph that is known to be acyclic, or a check that refuses to join a load already on the current call path.</p>
+
+<h2 id="deadlock-5-lock-ordering-in-synchronous-code">Deadlock 5: lock ordering in synchronous code</h2>
+
+<p>Synchronous locks still deadlock the classic way. If one code path takes lock A then lock B, and another takes B then A, two threads can each hold one lock and wait for the other. Swift’s <code class="language-plaintext highlighter-rouge">Mutex</code> makes this harder to write by accident, because the nested lock must appear lexically inside the outer <code class="language-plaintext highlighter-rouge">withLock</code> closure, but not impossible.</p>
+
+<p>The standard rules still apply:</p>
+
+<ul>
+  <li><strong>Do not nest locks.</strong> Copy what you need out of one critical section before entering another.</li>
+  <li><strong>If you must nest, impose a global order</strong>, such as by object identity or a documented hierarchy, and acquire in that order everywhere.</li>
+  <li><strong>Never call unknown code while holding a lock.</strong> Resuming a continuation, calling a delegate, or invoking a closure from inside <code class="language-plaintext highlighter-rouge">withLock</code> can re-enter the lock or take another one. Every example in this series takes the continuation out under the lock and resumes it after.</li>
+</ul>
+
+<h2 id="diagnosing-a-hang">Diagnosing a hang</h2>
+
+<p>Classic deadlocks are visible in a debugger: pause the app, and two threads are blocked in <code class="language-plaintext highlighter-rouge">__psynch_mutexwait</code> or <code class="language-plaintext highlighter-rouge">semaphore_wait_trap</code>, each holding what the other wants. Async deadlocks are different, and the difference is the most useful thing to know when debugging one.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Symptom</th>
+      <th>Likely cause</th>
+      <th>Where to look</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Main thread blocked in a semaphore or lock wait</td>
+      <td>Deadlock 1, or a lock held too long</td>
+      <td>Xcode’s debug navigator; the main thread’s backtrace</td>
+    </tr>
+    <tr>
+      <td>All pool threads blocked in semaphore waits, nothing progressing</td>
+      <td>Deadlock 2</td>
+      <td>Backtraces of threads named after the cooperative queue</td>
+    </tr>
+    <tr>
+      <td>Threads idle, CPU idle, work never completes</td>
+      <td>Deadlocks 3 and 4, or a leaked continuation</td>
+      <td>Task-level tools, not thread backtraces</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">SWIFT TASK CONTINUATION MISUSE ... leaked its continuation</code> in the console</td>
+      <td>A continuation dropped without resuming</td>
+      <td>The function named in the message</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The third row is the hard one. A suspended task does not occupy a thread, so it does not appear in any thread’s backtrace. Pausing the app shows idle threads and nothing obviously wrong. To see it, you need tools that show <em>tasks</em>:</p>
+
+<ul>
+  <li><strong>Instruments’ Swift Tasks instrument</strong> records every task’s state over time, including tasks that are suspended and never resume. Named tasks, created with <code class="language-plaintext highlighter-rouge">Task(name:)</code> in Swift 6.2, are far easier to find. The <a href="/swift-profiling-tasks-main-actor/">profiling article</a> walks through it.</li>
+  <li><strong>Continuation misuse messages</strong> catch leaked checked continuations when they are destroyed.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">swift-inspect</code></strong>, a command-line tool shipped with the toolchain, can dump the tasks and actors of a running process when it is allowed to attach to it, as with debug builds.</li>
+  <li><strong>Timeouts in tests.</strong> A test with <code class="language-plaintext highlighter-rouge">.timeLimit</code> turns a silent hang into a failure that points at the operation that never completed, as the <a href="/swift-testing-controlled-interleavings/">controlled interleavings article</a> recommends.</li>
+</ul>
+
+<h2 id="habits-that-prevent-deadlocks">Habits that prevent deadlocks</h2>
+
+<ol>
+  <li><strong>Never block in async code, or on a thread that async code may need.</strong> Not with semaphores, not with <code class="language-plaintext highlighter-rouge">DispatchGroup.wait</code>, not with <code class="language-plaintext highlighter-rouge">Thread.sleep</code>, and not indirectly through a synchronous helper.</li>
+  <li><strong>Keep waits structured.</strong> Parents awaiting children cannot form cycles. Be suspicious of every unstructured task that awaits another unstructured task.</li>
+  <li><strong>Do not build non-reentrant sections on top of actors</strong> unless re-entry is detected and rejected.</li>
+  <li><strong>Make shared in-flight work acyclic.</strong> Know the dependency graph of anything that joins other callers’ work.</li>
+  <li><strong>Do not nest synchronous locks,</strong> and never resume continuations or call out while holding one.</li>
+  <li><strong>Name long-lived tasks and bound tests in time,</strong> so the hangs you do get are diagnosable.</li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Swift concurrency removes the classic actor-to-actor deadlock through reentrancy, and lock-across-await through <code class="language-plaintext highlighter-rouge">Mutex</code>’s synchronous API.</li>
+  <li>Blocking the main thread on main-actor work deadlocks; Swift 6 catches only the direct form.</li>
+  <li>Blocking pool threads deadlocks when \(B \ge W\) blocked threads wait for work that needs the pool. On the test machine, 20 blockers deadlocked and 19 did not. Async signals avoid it entirely.</li>
+  <li>Non-reentrant serializers and cyclic waits between unstructured tasks hang silently, and cancellation does not break the cycle.</li>
+  <li>Synchronous locks still need the classic discipline: no nesting, or a global order, and no calling out while held.</li>
+  <li>Async hangs show idle threads. Diagnose them with task-level tools, continuation misuse messages, and time-limited tests.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">ConfigLoader</code> actor that loads configuration files, where a file may <code class="language-plaintext highlighter-rouge">include</code> other files, and concurrent loads of the same file share one in-flight task. Construct two files that include each other and show that the naive design hangs. Then add cycle detection: track the chain of files being loaded in a task-local value, and throw a descriptive error when a load would join a file already in the chain. Test both the cycle and a diamond-shaped include graph, which must still share work without reporting a false cycle.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li>Coffman, Elphick, and Shoshani, <a href="https://dl.acm.org/doi/10.1145/356586.356588"><em>System Deadlocks</em></a>, ACM Computing Surveys, 1971.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10254/">Swift concurrency: Behind the scenes</a>, WWDC21, on the forward-progress contract.</li>
+  <li><a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0340-swift-noasync.md">SE-0340: Unavailable From Async Attribute</a>, which makes the most common blocking calls compile errors in async code.</li>
+</ul>
+
+<p>Previous: <a href="/swift-testing-controlled-interleavings/">Testing Concurrent Work with Controlled Interleavings</a>. Next: <a href="/swift-thread-sanitizer/">Finding Data Races with Thread Sanitizer</a>.</p>
+
+<p>Return to the <a href="/swift-concurrency-roadmap/">Concurrency roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-deadlocks-blocking-waits/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Avoiding+Deadlocks+and+Blocking+Waits+in+Swift+Concurrency%20https%3A%2F%2Fswiftbydeya.com%2Fswift-deadlocks-blocking-waits%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-deadlocks-blocking-waits/&title=Avoiding+Deadlocks+and+Blocking+Waits+in+Swift+Concurrency%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-deadlocks-blocking-waits/&title=Avoiding+Deadlocks+and+Blocking+Waits+in+Swift+Concurrency%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-deadlocks-blocking-waits/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Avoiding Deadlocks and Blocking Waits in Swift Concurrency%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-deadlocks-blocking-waits/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Concurrency">Concurrency</a></li>
+    
+    <li><a href="/tag/#Deadlocks">Deadlocks</a></li>
+    
+    <li><a href="/tag/#Debugging">Debugging</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="Finding Data Races in Swift with Thread Sanitizer" href="/swift-thread-sanitizer/"> <p>Previous post</p> Finding Data Races in Swift with Thread Sanitizer </a> </div> <div id="next-post"> <a alt="Testing Concurrent Swift Code with Controlled Interleavings" href="/swift-testing-controlled-interleavings/"> <p>Next post</p> Testing Concurrent Swift Code with Controlled Interleavings </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

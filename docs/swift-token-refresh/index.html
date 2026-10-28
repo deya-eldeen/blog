@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <script defer src="/assets/js/vendor/katex.min.js"></script> <script defer src="/assets/js/vendor/katex.auto-render.min.js" onload="renderMathInElement(document.body);"></script> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Refreshing Credentials Without Duplicate Requests | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Refreshing Credentials Without Duplicate Requests" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Access tokens expire on purpose. A short lifetime limits what a leaked token is worth, and the app holds a longer-lived refresh token that it exchanges for a new access token when the old one stops working. The exchange itself is one POST. Making it correct is harder, because the moment a token expires is exactly the moment several requests discover it at once. A home screen that loads five sections sends five requests. When the token has expired, all five get 401, and a client that handles each 401 independently sends five refresh requests. Against a server that rotates refresh tokens, issuing a new one on every refresh and treating reuse of an old one as theft, the second refresh request looks like an attack, and the server revokes the session. The user is signed out by their own app. This article reproduces that failure against a local server, then builds a refresh coordinator that sends exactly one refresh per expiry, survives callers being cancelled, and refreshes ahead of expiry so most requests never see a 401 at all." /> <meta property="og:description" content="Access tokens expire on purpose. A short lifetime limits what a leaked token is worth, and the app holds a longer-lived refresh token that it exchanges for a new access token when the old one stops working. The exchange itself is one POST. Making it correct is harder, because the moment a token expires is exactly the moment several requests discover it at once. A home screen that loads five sections sends five requests. When the token has expired, all five get 401, and a client that handles each 401 independently sends five refresh requests. Against a server that rotates refresh tokens, issuing a new one on every refresh and treating reuse of an old one as theft, the second refresh request looks like an attack, and the server revokes the session. The user is signed out by their own app. This article reproduces that failure against a local server, then builds a refresh coordinator that sends exactly one refresh per expiry, survives callers being cancelled, and refreshes ahead of expiry so most requests never see a 401 at all." /> <link rel="canonical" href="https://swiftbydeya.com/swift-token-refresh/" /> <meta property="og:url" content="https://swiftbydeya.com/swift-token-refresh/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-09-23T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Refreshing Credentials Without Duplicate Requests" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-09-23T00:00:00+03:00","datePublished":"2026-09-23T00:00:00+03:00","description":"Access tokens expire on purpose. A short lifetime limits what a leaked token is worth, and the app holds a longer-lived refresh token that it exchanges for a new access token when the old one stops working. The exchange itself is one POST. Making it correct is harder, because the moment a token expires is exactly the moment several requests discover it at once. A home screen that loads five sections sends five requests. When the token has expired, all five get 401, and a client that handles each 401 independently sends five refresh requests. Against a server that rotates refresh tokens, issuing a new one on every refresh and treating reuse of an old one as theft, the second refresh request looks like an attack, and the server revokes the session. The user is signed out by their own app. This article reproduces that failure against a local server, then builds a refresh coordinator that sends exactly one refresh per expiry, survives callers being cancelled, and refreshes ahead of expiry so most requests never see a 401 at all.","headline":"Refreshing Credentials Without Duplicate Requests","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/swift-token-refresh/"},"url":"https://swiftbydeya.com/swift-token-refresh/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Refreshing Credentials Without Duplicate Requests"> <meta name="twitter:description" content="Access tokens expire on purpose. A short lifetime limits what a leaked token is worth, and the app holds a longer-lived refresh token that it exchanges for a..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Refreshing Credentials Without Duplicate Requests"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Refreshing Credentials Without Duplicate Requests</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-09-23T00:00:00+03:00">September 23, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Access tokens expire on purpose. A short lifetime limits what a leaked token is worth, and the app holds a longer-lived refresh token that it exchanges for a new access token when the old one stops working. The exchange itself is one <code class="language-plaintext highlighter-rouge">POST</code>. Making it correct is harder, because the moment a token expires is exactly the moment several requests discover it at once.</p>
+
+<p>A home screen that loads five sections sends five requests. When the token has expired, all five get <code class="language-plaintext highlighter-rouge">401</code>, and a client that handles each <code class="language-plaintext highlighter-rouge">401</code> independently sends five refresh requests. Against a server that <strong>rotates</strong> refresh tokens, issuing a new one on every refresh and treating reuse of an old one as theft, the second refresh request looks like an attack, and the server revokes the session. The user is signed out by their own app. This article reproduces that failure against a local server, then builds a refresh coordinator that sends exactly one refresh per expiry, survives callers being cancelled, and refreshes ahead of expiry so most requests never see a <code class="language-plaintext highlighter-rouge">401</code> at all.</p>
+
+<!--more-->
+
+<p>The examples use Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. They send requests to <code class="language-plaintext highlighter-rouge">LocalServer</code>, the loopback HTTP server from the <a href="/swift-http-methods-status-codes-headers/#appendix-the-local-server-used-in-this-series">appendix of the first article</a>; paste that code first, then the blocks below in order, into one <code class="language-plaintext highlighter-rouge">main.swift</code>. The coordinator is an actor, and <a href="/swift-actor-reentrancy/">Actor Reentrancy Across Suspension Points</a> covers the behavior it depends on.</p>
+
+<!-- check-uses: local-server -->
+
+<h2 id="a-server-that-rotates-refresh-tokens">A server that rotates refresh tokens</h2>
+
+<p><a href="https://www.rfc-editor.org/rfc/rfc9700">RFC 9700</a>, the current OAuth security best practice, recommends that servers either bind refresh tokens to the client cryptographically or <strong>rotate</strong> them: each refresh returns a new refresh token and invalidates the old one. If an old refresh token is ever presented again, the server cannot tell whether the legitimate client or an attacker holds the newer one, so it revokes the whole family of tokens. That rule turns a stolen refresh token into a short-lived one. It also turns a client that refreshes twice with the same token into a signed-out client.</p>
+
+<p>The server below implements that rule. Access tokens expire after a configurable lifetime, the refresh endpoint takes 200 ms, which widens the window in which concurrent requests race, and every refresh call is counted:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">AuthServer</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">accessTokens</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>  <span class="c1">// token -&gt; expiry</span>
+        <span class="k">var</span> <span class="nv">currentRefresh</span> <span class="o">=</span> <span class="s">"refresh-0"</span>
+        <span class="k">var</span> <span class="nv">usedRefresh</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">var</span> <span class="nv">revoked</span> <span class="o">=</span> <span class="kc">false</span>
+        <span class="k">var</span> <span class="nv">generation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">refreshCalls</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">refreshCallsByToken</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="p">}</span>
+
+    <span class="k">let</span> <span class="nv">state</span> <span class="o">=</span> <span class="kt">Mutex</span><span class="p">(</span><span class="kt">State</span><span class="p">())</span>
+    <span class="k">let</span> <span class="nv">lifetime</span><span class="p">:</span> <span class="kt">Duration</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="kt">Duration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">lifetime</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">accessTokens</span><span class="p">[</span><span class="s">"access-0"</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>  <span class="c1">// the app starts with an expired token</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">handle</span><span class="p">(</span><span class="n">_</span> <span class="nv">request</span><span class="p">:</span> <span class="kt">HTTPRequest</span><span class="p">)</span> <span class="k">async</span> <span class="o">-&gt;</span> <span class="kt">HTTPResponse</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="s">"/auth/refresh"</span><span class="p">:</span>
+            <span class="k">let</span> <span class="nv">presented</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="nv">decoding</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">,</span> <span class="nv">as</span><span class="p">:</span> <span class="kt">UTF8</span><span class="o">.</span><span class="k">self</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">split</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"="</span><span class="p">,</span> <span class="nv">maxSplits</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">last</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">String</span><span class="o">.</span><span class="kd">init</span><span class="p">)</span> <span class="p">??</span> <span class="s">""</span>
+            <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">refreshCallsByToken</span><span class="p">[</span><span class="n">presented</span><span class="p">,</span> <span class="k">default</span><span class="p">:</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">revoked</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">error</span><span class="s">":"</span><span class="n">invalid_grant</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span> <span class="p">}</span>
+                <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">usedRefresh</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">presented</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">revoked</span> <span class="o">=</span> <span class="kc">true</span>  <span class="c1">// reuse detected: revoke the whole family</span>
+                    <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">error</span><span class="s">":"</span><span class="n">invalid_grant</span><span class="s">","</span><span class="n">error_description</span><span class="s">":"</span><span class="n">refresh</span> <span class="n">token</span> <span class="n">reuse</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">guard</span> <span class="n">presented</span> <span class="o">==</span> <span class="n">state</span><span class="o">.</span><span class="n">currentRefresh</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">error</span><span class="s">":"</span><span class="n">invalid_grant</span><span class="s">"}"</span><span class="err">#</span><span class="p">,</span> <span class="nv">status</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span> <span class="p">}</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">usedRefresh</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">presented</span><span class="p">)</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">generation</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">let</span> <span class="nv">access</span> <span class="o">=</span> <span class="s">"access-</span><span class="se">\(</span><span class="n">state</span><span class="o">.</span><span class="n">generation</span><span class="se">)</span><span class="s">"</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">currentRefresh</span> <span class="o">=</span> <span class="s">"refresh-</span><span class="se">\(</span><span class="n">state</span><span class="o">.</span><span class="n">generation</span><span class="se">)</span><span class="s">"</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">accessTokens</span><span class="p">[</span><span class="n">access</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="n">lifetime</span>
+                <span class="k">let</span> <span class="nv">seconds</span> <span class="o">=</span> <span class="n">lifetime</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">seconds</span>
+                <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">access_token</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">access</span><span class="p">)</span><span class="s">","</span><span class="n">refresh_token</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">currentRefresh</span><span class="p">)</span><span class="s">","</span><span class="n">expires_in</span><span class="s">":</span><span class="err">\</span><span class="s">#(seconds)}"</span><span class="err">#</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="k">default</span><span class="p">:</span>
+            <span class="k">let</span> <span class="nv">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="nf">header</span><span class="p">(</span><span class="s">"Authorization"</span><span class="p">)?</span><span class="o">.</span><span class="nf">replacing</span><span class="p">(</span><span class="s">"Bearer "</span><span class="p">,</span> <span class="nv">with</span><span class="p">:</span> <span class="s">""</span><span class="p">)</span> <span class="p">??</span> <span class="s">""</span>
+            <span class="k">let</span> <span class="nv">valid</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="n">state</span> <span class="k">in</span>
+                <span class="o">!</span><span class="n">state</span><span class="o">.</span><span class="n">revoked</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">accessTokens</span><span class="p">[</span><span class="n">token</span><span class="p">]</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;</span> <span class="o">.</span><span class="n">now</span> <span class="p">}</span> <span class="p">??</span> <span class="kc">false</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="k">guard</span> <span class="n">valid</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="kt">HTTPResponse</span><span class="p">(</span><span class="nv">status</span><span class="p">:</span> <span class="mi">401</span><span class="p">,</span> <span class="nv">headers</span><span class="p">:</span> <span class="p">[(</span><span class="s">"WWW-Authenticate"</span><span class="p">,</span> <span class="err">#</span><span class="s">"Bearer error="</span><span class="n">invalid_token</span><span class="s">""</span><span class="err">#</span><span class="p">)])</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="o">.</span><span class="nf">json</span><span class="p">(</span><span class="err">#</span><span class="s">"{"</span><span class="n">path</span><span class="s">":"</span><span class="p">\</span><span class="err">#</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">path</span><span class="p">)</span><span class="s">"}"</span><span class="err">#</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Tokens</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">access</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">refresh</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">expires</span><span class="p">:</span> <span class="kt">ContinuousClock</span><span class="o">.</span><span class="kt">Instant</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">TokenResponse</span><span class="p">:</span> <span class="kt">Decodable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">access_token</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">refresh_token</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">expires_in</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">AuthError</span><span class="p">:</span> <span class="kt">Error</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">signedOut</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="n">at</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">,</span> <span class="n">using</span> <span class="nv">refreshToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Tokens</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"auth/refresh"</span><span class="p">))</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">httpMethod</span> <span class="o">=</span> <span class="s">"POST"</span>
+    <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"application/x-www-form-urlencoded"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Content-Type"</span><span class="p">)</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">httpBody</span> <span class="o">=</span> <span class="kt">Data</span><span class="p">(</span><span class="s">"refresh_token=</span><span class="se">\(</span><span class="n">refreshToken</span><span class="se">)</span><span class="s">"</span><span class="o">.</span><span class="n">utf8</span><span class="p">)</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">data</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="nf">guard</span> <span class="p">(</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span> <span class="o">==</span> <span class="mi">200</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">AuthError</span><span class="o">.</span><span class="n">signedOut</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">body</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">JSONDecoder</span><span class="p">()</span><span class="o">.</span><span class="nf">decode</span><span class="p">(</span><span class="kt">TokenResponse</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="n">body</span><span class="o">.</span><span class="n">access_token</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="n">body</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">,</span>
+                  <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">expires_in</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The access tokens are opaque strings, which is all a client should assume about them. Real servers usually issue JWTs, and a client that decodes them to read the expiry is depending on a format the server may change; the <code class="language-plaintext highlighter-rouge">expires_in</code> field of the token response, defined by <a href="https://www.rfc-editor.org/rfc/rfc6749#section-5.1">RFC 6749</a>, is the supported way to learn it.</p>
+
+<h2 id="the-naive-client-signs-itself-out">The naive client signs itself out</h2>
+
+<p>The naive client keeps tokens in an actor, which makes access to them data-race free, and refreshes whenever a request gets <code class="language-plaintext highlighter-rouge">401</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">NaiveTokenStore</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span>
+    <span class="k">let</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">server</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">server</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">refresh</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Tokens</span> <span class="p">{</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="n">tokens</span><span class="o">.</span><span class="n">refresh</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tokens</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">naiveRequest</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">NaiveTokenStore</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">attempt</span><span class="p">(</span><span class="n">with</span> <span class="nv">access</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer </span><span class="se">\(</span><span class="n">access</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">attempt</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">access</span><span class="p">)</span>
+    <span class="k">guard</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">401</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">status</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">fresh</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="nf">refresh</span><span class="p">()</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">attempt</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">fresh</span><span class="o">.</span><span class="n">access</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">naiveAuth</span> <span class="o">=</span> <span class="kt">AuthServer</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">naiveServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="k">await</span> <span class="n">naiveAuth</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">naiveStore</span> <span class="o">=</span> <span class="kt">NaiveTokenStore</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="s">"refresh-0"</span><span class="p">,</span> <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span><span class="p">),</span> <span class="nv">server</span><span class="p">:</span> <span class="n">naiveServer</span><span class="p">)</span>
+
+<span class="k">let</span> <span class="nv">naiveResults</span> <span class="o">=</span> <span class="k">await</span> <span class="n">withTaskGroup</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">5</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="nf">naiveRequest</span><span class="p">(</span><span class="s">"home/section-</span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">store</span><span class="p">:</span> <span class="n">naiveStore</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">naiveServer</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">collected</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">?]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">collected</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">collected</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">naiveState</span> <span class="o">=</span> <span class="n">naiveAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"naive: </span><span class="se">\(</span><span class="n">naiveResults</span><span class="se">)</span><span class="s">, refresh calls: </span><span class="se">\(</span><span class="n">naiveState</span><span class="o">.</span><span class="n">refreshCalls</span><span class="se">)</span><span class="s">, revoked: </span><span class="se">\(</span><span class="n">naiveState</span><span class="o">.</span><span class="n">revoked</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveState</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveState</span><span class="o">.</span><span class="n">refreshCallsByToken</span><span class="p">[</span><span class="s">"refresh-0"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1">// every refresh presented the same token</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveState</span><span class="o">.</span><span class="n">revoked</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">naiveResults</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">!=</span> <span class="mi">200</span> <span class="p">})</span>  <span class="c1">// every request failed in the end</span>
+</code></pre></div></div>
+
+<p>The run printed <code class="language-plaintext highlighter-rouge">[nil, nil, nil, nil, Optional(401)]</code>, five refresh calls, and a revoked session: four requests failed because their refresh was rejected, and the one whose refresh succeeded was rejected anyway when it retried. The actor did its job, there was no data race, and the result was still wrong. Each of the five tasks read <code class="language-plaintext highlighter-rouge">refresh-0</code> from the store before any refresh had finished, because the actor is <strong>reentrant</strong>: while the first <code class="language-plaintext highlighter-rouge">refresh()</code> was suspended awaiting the network, the other four entered the actor and started their own. The first refresh rotated <code class="language-plaintext highlighter-rouge">refresh-0</code> to <code class="language-plaintext highlighter-rouge">refresh-1</code>. The second presented <code class="language-plaintext highlighter-rouge">refresh-0</code> again, which the server treats as reuse, so it revoked the family, and every later request, including the first task’s retry with the brand-new token, was rejected.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    accTitle: Five concurrent requests each trigger a refresh and the server revokes the session
+    participant A as Request A
+    participant B as Request B
+    participant Store as Token store (actor)
+    participant S as Server
+    A-&gt;&gt;S: GET with access-0
+    B-&gt;&gt;S: GET with access-0
+    S--&gt;&gt;A: 401
+    S--&gt;&gt;B: 401
+    A-&gt;&gt;Store: refresh()
+    Store-&gt;&gt;S: POST refresh_token=refresh-0
+    B-&gt;&gt;Store: refresh() (actor is free while A awaits)
+    Store-&gt;&gt;S: POST refresh_token=refresh-0
+    S--&gt;&gt;Store: 200 access-1, refresh-1
+    S--&gt;&gt;Store: 400 reuse detected, session revoked
+    Note over A,S: access-1 is now invalid too, and the user is signed out
+</code></pre>
+
+<h2 id="one-refresh-shared-by-everyone">One refresh, shared by everyone</h2>
+
+<p>The fix is <strong>single-flight</strong> refresh: while a refresh is in progress, every caller that needs one waits for it instead of starting another. In Swift, an in-flight operation that several callers can await is a <code class="language-plaintext highlighter-rouge">Task</code>, and the actor stores it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">actor</span> <span class="kt">TokenCoordinator</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Phase</span> <span class="p">{</span> <span class="k">case</span> <span class="nf">active</span><span class="p">(</span><span class="kt">Tokens</span><span class="p">),</span> <span class="n">signedOut</span> <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">phase</span><span class="p">:</span> <span class="kt">Phase</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">refreshing</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Tokens</span><span class="p">,</span> <span class="kd">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">margin</span><span class="p">:</span> <span class="kt">Duration</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">refresher</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Tokens</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">refreshes</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">,</span> <span class="nv">margin</span><span class="p">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="o">.</span><span class="n">zero</span><span class="p">,</span> <span class="nv">refresher</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Tokens</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="nf">active</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">margin</span> <span class="o">=</span> <span class="n">margin</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">refresher</span> <span class="o">=</span> <span class="n">refresher</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// A token believed to be valid, refreshing first if it expires within the margin.</span>
+    <span class="kd">func</span> <span class="nf">validAccessToken</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">refreshing</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">refreshing</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">access</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="nf">active</span><span class="p">(</span><span class="k">let</span> <span class="nv">tokens</span><span class="p">)</span> <span class="o">=</span> <span class="n">phase</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">AuthError</span><span class="o">.</span><span class="n">signedOut</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="n">tokens</span><span class="o">.</span><span class="n">expires</span> <span class="o">-</span> <span class="n">margin</span> <span class="o">&lt;=</span> <span class="o">.</span><span class="n">now</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">refresh</span><span class="p">(</span><span class="nv">replacing</span><span class="p">:</span> <span class="n">tokens</span><span class="o">.</span><span class="n">access</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="n">tokens</span><span class="o">.</span><span class="n">access</span>
+    <span class="p">}</span>
+
+    <span class="c1">/// Called when the server rejected `rejected`. Refreshes at most once per token.</span>
+    <span class="kd">func</span> <span class="nf">refresh</span><span class="p">(</span><span class="n">replacing</span> <span class="nv">rejected</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">refreshing</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="n">refreshing</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">access</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="k">case</span> <span class="o">.</span><span class="nf">active</span><span class="p">(</span><span class="k">let</span> <span class="nv">tokens</span><span class="p">)</span> <span class="o">=</span> <span class="n">phase</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">AuthError</span><span class="o">.</span><span class="n">signedOut</span> <span class="p">}</span>
+        <span class="k">guard</span> <span class="n">tokens</span><span class="o">.</span><span class="n">access</span> <span class="o">==</span> <span class="n">rejected</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">tokens</span><span class="o">.</span><span class="n">access</span> <span class="p">}</span>  <span class="c1">// someone already replaced it</span>
+
+        <span class="k">let</span> <span class="nv">refresher</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">refresher</span>
+        <span class="k">let</span> <span class="nv">task</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">refresher</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">refresh</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">refreshing</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="n">refreshes</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">defer</span> <span class="p">{</span> <span class="n">refreshing</span> <span class="o">=</span> <span class="kc">nil</span> <span class="p">}</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">fresh</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="nf">active</span><span class="p">(</span><span class="n">fresh</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fresh</span><span class="o">.</span><span class="n">access</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="o">.</span><span class="n">signedOut</span>
+            <span class="k">throw</span> <span class="kt">AuthError</span><span class="o">.</span><span class="n">signedOut</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Three rules make it correct, and each one closes a specific race:</p>
+
+<ol>
+  <li><strong>Await the in-flight task if there is one.</strong> Every caller that arrives while <code class="language-plaintext highlighter-rouge">refreshing</code> is set awaits the same task, so concurrent <code class="language-plaintext highlighter-rouge">401</code>s produce one refresh. This check is the first line of both methods, and it runs again after every suspension because each method re-reads the property.</li>
+  <li><strong>Refresh only if the rejected token is still the current one.</strong> A request can fail with <code class="language-plaintext highlighter-rouge">401</code> <em>after</em> a refresh has already completed: it was sent with the old token, and its response arrived late. Its caller passes the token that was rejected; if the coordinator already holds a different one, the right answer is “retry with the new token,” not “refresh again.” Without this check, a slow response would trigger a second rotation.</li>
+  <li><strong>Update the state before clearing the task.</strong> <code class="language-plaintext highlighter-rouge">phase</code> is assigned inside the <code class="language-plaintext highlighter-rouge">do</code> block, and <code class="language-plaintext highlighter-rouge">refreshing = nil</code> runs in <code class="language-plaintext highlighter-rouge">defer</code>, after it. A caller that arrives between those two moments either sees the task and awaits it, or sees the new tokens. It never sees no task <em>and</em> old tokens, which would start a duplicate refresh.</li>
+</ol>
+
+<p>The refresh runs in an unstructured <code class="language-plaintext highlighter-rouge">Task</code> rather than directly in the actor method. That decouples it from any one caller: if the request that started the refresh is cancelled, for example because the user left the screen, the refresh continues for everyone else, and its result is still stored. A child task or a direct <code class="language-plaintext highlighter-rouge">await</code> would have been cancelled with that caller.</p>
+
+<p>The request function now asks the coordinator for a token, and on <code class="language-plaintext highlighter-rouge">401</code> reports exactly which token was rejected:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="n">_</span> <span class="nv">path</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="kt">TokenCoordinator</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">LocalServer</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">attempt</span><span class="p">(</span><span class="n">with</span> <span class="nv">access</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="n">path</span><span class="p">))</span>
+        <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer </span><span class="se">\(</span><span class="n">access</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+        <span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="nf">return</span> <span class="p">(</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">token</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">coordinator</span><span class="o">.</span><span class="nf">validAccessToken</span><span class="p">()</span>
+    <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">attempt</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">token</span><span class="p">)</span>
+    <span class="k">guard</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">401</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="n">status</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">replacement</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">coordinator</span><span class="o">.</span><span class="nf">refresh</span><span class="p">(</span><span class="nv">replacing</span><span class="p">:</span> <span class="n">token</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">attempt</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="n">replacement</span><span class="p">)</span>  <span class="c1">// retry once; a second 401 is returned to the caller</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">auth</span> <span class="o">=</span> <span class="kt">AuthServer</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">server</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="k">await</span> <span class="n">auth</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">coordinator</span> <span class="o">=</span> <span class="kt">TokenCoordinator</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="s">"refresh-0"</span><span class="p">,</span> <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">)))</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">withTaskGroup</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">20</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span> <span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="s">"home/section-</span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="n">coordinator</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">server</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">collected</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">?]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">collected</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">collected</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">serverState</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="mi">200</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">serverState</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">serverState</span><span class="o">.</span><span class="n">revoked</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">coordinatorRefreshes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">coordinator</span><span class="o">.</span><span class="n">refreshes</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">coordinatorRefreshes</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Twenty concurrent requests, twenty <code class="language-plaintext highlighter-rouge">401</code>s, one refresh, twenty successes. Note what the coordinator was told at the start: that <code class="language-plaintext highlighter-rouge">access-0</code> expires in 300 seconds, while the server had already expired it. The client’s idea of the expiry is a prediction, and the <code class="language-plaintext highlighter-rouge">401</code> path handles every case where the prediction is wrong, including server-side revocation and clock differences.</p>
+
+<p>The retry happens <strong>once</strong>. If the request fails with <code class="language-plaintext highlighter-rouge">401</code> again with a freshly refreshed token, something other than expiry is wrong, such as a token that lacks a required scope, and retrying in a loop would hammer the server. That second <code class="language-plaintext highlighter-rouge">401</code> is returned to the caller, which treats it as the <code class="language-plaintext highlighter-rouge">403</code>-like failure it is.</p>
+
+<h2 id="a-late-401-does-not-refresh-again">A late <code class="language-plaintext highlighter-rouge">401</code> does not refresh again</h2>
+
+<p>Rule 2 matters when responses arrive out of order. The test sends one request with the old token after the refresh has completed, simulating a response that was slow to arrive:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">lateStatus</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">baseURL</span><span class="o">.</span><span class="nf">appending</span><span class="p">(</span><span class="nv">path</span><span class="p">:</span> <span class="s">"slow-section"</span><span class="p">))</span>
+    <span class="n">request</span><span class="o">.</span><span class="nf">setValue</span><span class="p">(</span><span class="s">"Bearer access-0"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>  <span class="c1">// the old token</span>
+    <span class="k">let</span> <span class="p">(</span><span class="nv">_</span><span class="p">,</span> <span class="nv">response</span><span class="p">)</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">URLSession</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">response</span> <span class="k">as!</span> <span class="kt">HTTPURLResponse</span><span class="p">)</span><span class="o">.</span><span class="n">statusCode</span>
+<span class="p">}()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">lateStatus</span> <span class="o">==</span> <span class="mi">401</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">afterLate</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">coordinator</span><span class="o">.</span><span class="nf">refresh</span><span class="p">(</span><span class="nv">replacing</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">afterLate</span> <span class="o">==</span> <span class="s">"access-1"</span><span class="p">)</span>                       <span class="c1">// the current token, not a new one</span>
+<span class="k">let</span> <span class="nv">refreshCallsAfterLate</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">refreshCallsAfterLate</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                    <span class="c1">// no second rotation</span>
+</code></pre></div></div>
+
+<h2 id="cancelled-callers-do-not-cancel-the-refresh">Cancelled callers do not cancel the refresh</h2>
+
+<p>The refresh task belongs to the coordinator, not to the caller that started it. A test with a fresh session: five requests start, and the one that triggered the refresh is cancelled while the refresh is in flight:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">cancelAuth</span> <span class="o">=</span> <span class="kt">AuthServer</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">cancelServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="k">await</span> <span class="n">cancelAuth</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">cancelCoordinator</span> <span class="o">=</span> <span class="kt">TokenCoordinator</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="s">"refresh-0"</span><span class="p">,</span> <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">)))</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">cancelServer</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">first</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="s">"first"</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="n">cancelCoordinator</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">cancelServer</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">80</span><span class="p">))</span>   <span class="c1">// first has its 401 and is waiting on the refresh</span>
+<span class="k">let</span> <span class="nv">others</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">index</span> <span class="k">in</span>
+    <span class="kt">Task</span> <span class="p">{</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="s">"other-</span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="n">cancelCoordinator</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">cancelServer</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">first</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+
+<span class="k">var</span> <span class="nv">othersSucceeded</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">task</span> <span class="k">in</span> <span class="n">others</span> <span class="nf">where</span> <span class="p">(</span><span class="k">try</span><span class="p">?</span> <span class="k">await</span> <span class="n">task</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">200</span> <span class="p">{</span> <span class="n">othersSucceeded</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">othersSucceeded</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cancelAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">firstOutcome</span> <span class="o">=</span> <span class="k">await</span> <span class="n">first</span><span class="o">.</span><span class="n">result</span>
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="nf">failure</span><span class="p">(</span><span class="k">let</span> <span class="nv">error</span><span class="p">)</span> <span class="o">=</span> <span class="n">firstOutcome</span> <span class="p">{</span> <span class="nf">assert</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">isCancellation</span><span class="p">)</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>The four other requests succeeded, and the server saw one refresh. The cancelled caller itself ends with <code class="language-plaintext highlighter-rouge">URLError.cancelled</code> from its retry request, or with a <code class="language-plaintext highlighter-rouge">200</code> if its retry had already been sent when the cancellation arrived. Either is correct; what must not happen is the shared refresh dying with it.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">isCancellation</code> helper from <a href="/swift-urlsession-async-await/">Requests and Responses with <code class="language-plaintext highlighter-rouge">async</code> and <code class="language-plaintext highlighter-rouge">await</code></a> is redefined here so the example stands alone:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">Error</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">isCancellation</span><span class="p">:</span> <span class="kt">Bool</span> <span class="p">{</span>
+        <span class="k">self</span> <span class="k">is</span> <span class="kt">CancellationError</span> <span class="o">||</span> <span class="p">(</span><span class="k">self</span> <span class="k">as?</span> <span class="kt">URLError</span><span class="p">)?</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="o">.</span><span class="n">cancelled</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>One limitation remains. A caller waiting on <code class="language-plaintext highlighter-rouge">refreshing.value</code> is not woken by its own cancellation, because awaiting a <code class="language-plaintext highlighter-rouge">Task</code>’s value does not respond to the awaiting task’s cancellation. The caller leaves once the refresh finishes, at most a request timeout later. For a refresh that takes a few hundred milliseconds that is acceptable; for one that can take a minute, wrap the wait in a race with cancellation using <code class="language-plaintext highlighter-rouge">withTaskCancellationHandler</code>, as <a href="/swift-cancellation-handlers-cleanup/">Cancellation Handlers and Reliable Resource Cleanup</a> describes.</p>
+
+<h2 id="failure-signs-out-everyone-once">Failure signs out everyone, once</h2>
+
+<p>When the refresh itself fails, every waiter must learn that the session has ended, and the coordinator must stop trying. The <code class="language-plaintext highlighter-rouge">catch</code> in <code class="language-plaintext highlighter-rouge">refresh(replacing:)</code> moves the phase to <code class="language-plaintext highlighter-rouge">.signedOut</code>, and both methods check the phase before doing anything:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">revokedAuth</span> <span class="o">=</span> <span class="kt">AuthServer</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<span class="n">revokedAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">revoked</span> <span class="o">=</span> <span class="kc">true</span> <span class="p">}</span>  <span class="c1">// e.g. the password was changed on another device</span>
+<span class="k">let</span> <span class="nv">revokedServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="k">await</span> <span class="n">revokedAuth</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">revokedCoordinator</span> <span class="o">=</span> <span class="kt">TokenCoordinator</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="s">"refresh-0"</span><span class="p">,</span> <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">300</span><span class="p">)))</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">revokedServer</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">revokedResults</span> <span class="o">=</span> <span class="k">await</span> <span class="n">withTaskGroup</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">10</span> <span class="p">{</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+            <span class="k">do</span> <span class="p">{</span> <span class="k">return</span> <span class="k">try</span> <span class="k">await</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="s">"r-</span><span class="se">\(</span><span class="n">index</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="n">revokedCoordinator</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">revokedServer</span><span class="p">)</span> <span class="p">}</span>
+            <span class="k">catch</span> <span class="p">{</span> <span class="nf">return</span> <span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">AuthError</span><span class="p">)</span> <span class="o">==</span> <span class="o">.</span><span class="n">signedOut</span> <span class="p">?</span> <span class="o">-</span><span class="mi">1</span> <span class="p">:</span> <span class="o">-</span><span class="mi">2</span> <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">collected</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="k">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">group</span> <span class="p">{</span> <span class="n">collected</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">return</span> <span class="n">collected</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">revokedResults</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">revokedAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="p">}</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="n">revokedCoordinator</span><span class="o">.</span><span class="nf">validAccessToken</span><span class="p">()</span>
+    <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"a signed-out coordinator must not hand out tokens"</span><span class="p">)</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">error</span> <span class="k">as?</span> <span class="kt">AuthError</span> <span class="o">==</span> <span class="o">.</span><span class="n">signedOut</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>All ten requests ended with <code class="language-plaintext highlighter-rouge">AuthError.signedOut</code>, after a single failed refresh. The app’s response is to show the sign-in screen once, not ten error alerts, and to clean up the user’s data, which <a href="/swift-logout-in-flight-requests/">Handling Logout During an In-Flight Request</a> covers.</p>
+
+<h2 id="refreshing-before-the-token-expires">Refreshing before the token expires</h2>
+
+<p>Reacting to <code class="language-plaintext highlighter-rouge">401</code> is necessary, but it costs every request that hits it one extra round trip, plus the refresh. Most of those can be avoided by refreshing <strong>proactively</strong>: the coordinator’s <code class="language-plaintext highlighter-rouge">validAccessToken()</code> refreshes when the token expires within a margin.</p>
+
+<p>How large should the margin be? A request that starts with a token that has \(r\) seconds of life left fails if the server checks the token after it expires. The server sees it after about the request’s upload latency \(d\), and the client’s clock may disagree with the server’s by up to \(s\) seconds of skew. The request is safe when:</p>
+
+\[r \;&gt;\; d + s
+\qquad\Longrightarrow\qquad
+\text{margin} \;\ge\; d_{p99} + s_{\max}\]
+
+<p>Without a margin, if requests start at uniformly random moments during a token’s lifetime \(T\), the fraction that arrive after expiry is about \((d + s)/T\). For a five-minute token, a two-second slow request, and a second of skew, that is \(3/300 = 1\%\) of requests paying for a <code class="language-plaintext highlighter-rouge">401</code>, a refresh, and a retry. A margin of 30 to 60 seconds removes nearly all of them, at the cost of refreshing a little earlier than strictly necessary.</p>
+
+<p>The test uses a token that is valid for two seconds and a margin of one second, so the coordinator refreshes before the server would have rejected anything:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">proactiveAuth</span> <span class="o">=</span> <span class="kt">AuthServer</span><span class="p">(</span><span class="nv">lifetime</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">proactiveAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">accessTokens</span><span class="p">[</span><span class="s">"access-0"</span><span class="p">]</span> <span class="o">=</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">proactiveServer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">await</span> <span class="kt">LocalServer</span><span class="o">.</span><span class="n">start</span> <span class="p">{</span> <span class="k">await</span> <span class="n">proactiveAuth</span><span class="o">.</span><span class="nf">handle</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">proactive</span> <span class="o">=</span> <span class="kt">TokenCoordinator</span><span class="p">(</span><span class="nv">tokens</span><span class="p">:</span> <span class="kt">Tokens</span><span class="p">(</span><span class="nv">access</span><span class="p">:</span> <span class="s">"access-0"</span><span class="p">,</span> <span class="nv">refresh</span><span class="p">:</span> <span class="s">"refresh-0"</span><span class="p">,</span> <span class="nv">expires</span><span class="p">:</span> <span class="o">.</span><span class="n">now</span> <span class="o">+</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">)),</span>
+                                 <span class="nv">margin</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="nf">refreshTokens</span><span class="p">(</span><span class="nv">at</span><span class="p">:</span> <span class="n">proactiveServer</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">proactiveStatuses</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">12</span> <span class="p">{</span>
+    <span class="n">proactiveStatuses</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="k">try</span> <span class="k">await</span> <span class="nf">authorizedRequest</span><span class="p">(</span><span class="s">"tick"</span><span class="p">,</span> <span class="nv">coordinator</span><span class="p">:</span> <span class="n">proactive</span><span class="p">,</span> <span class="nv">server</span><span class="p">:</span> <span class="n">proactiveServer</span><span class="p">))</span>
+    <span class="k">try</span> <span class="k">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">milliseconds</span><span class="p">(</span><span class="mi">250</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">rejected</span> <span class="o">=</span> <span class="n">proactiveServer</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s">"/tick"</span> <span class="p">}</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">12</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">proactiveStatuses</span><span class="o">.</span><span class="n">allSatisfy</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">==</span> <span class="mi">200</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">rejected</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>                                    <span class="c1">// no request ever got a 401</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">proactiveAuth</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">withLock</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">refreshCalls</span> <span class="p">}</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Over three seconds of traffic with two-second tokens, the coordinator refreshed several times and the server never rejected a request: the number of <code class="language-plaintext highlighter-rouge">/tick</code> requests it received equals the number the client made, so no request needed a retry. The <code class="language-plaintext highlighter-rouge">401</code> path is still there for the cases a margin cannot predict, such as revocation.</p>
+
+<h2 id="putting-it-in-the-transport">Putting it in the transport</h2>
+
+<p>The coordinator fits the transport layer from <a href="/swift-api-client-design/">Designing an API Client Around Consumer Needs</a> as one decorator. Every request through it gets a valid token, retries once after a <code class="language-plaintext highlighter-rouge">401</code>, and the rest of the app never sees authentication at all. Combined with the origin check from <a href="/swift-authentication-headers-credential-scope/">Authentication Headers and Credential Scope</a>, the decorator attaches the token only to the API’s origin, and the refresh request goes to the token endpoint with the refresh token in its body, never in a header that could follow a redirect.</p>
+
+<p>The order of decorators matters here too. A retry decorator for transient failures should sit <em>outside</em> the authentication decorator, so that each retry asks the coordinator for a token again and benefits from any refresh that happened in between. <a href="/swift-retry-backoff-idempotency/">Retry Policies, Backoff, and Idempotency</a> builds that decorator.</p>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>When a token expires, many requests discover it at once. Refreshing once per <code class="language-plaintext highlighter-rouge">401</code> sends many refreshes.</li>
+  <li>Servers that rotate refresh tokens treat reuse as theft and revoke the session. Measured: five concurrent <code class="language-plaintext highlighter-rouge">401</code>s with a naive client produced five refreshes and a revoked session.</li>
+  <li>An actor alone does not prevent duplicate refreshes, because it is reentrant across <code class="language-plaintext highlighter-rouge">await</code>. Store the in-flight refresh as a <code class="language-plaintext highlighter-rouge">Task</code> and have every caller await it.</li>
+  <li>Refresh only if the rejected token is still current, so a late <code class="language-plaintext highlighter-rouge">401</code> does not rotate again. Update the tokens before clearing the in-flight task.</li>
+  <li>Run the refresh in an unstructured task owned by the coordinator, so a cancelled caller does not cancel it for everyone.</li>
+  <li>On refresh failure, move to a signed-out state once and fail every waiter with the same error.</li>
+  <li>Refresh proactively with a margin of at least \(d_{p99} + s_{\max}\); without one, about \((d+s)/T\) of requests pay for a <code class="language-plaintext highlighter-rouge">401</code>.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Make <code class="language-plaintext highlighter-rouge">TokenCoordinator</code> survive an app restart: persist <code class="language-plaintext highlighter-rouge">Tokens</code> to the Keychain after every successful refresh, and load them at startup. Then handle a process being killed <em>during</em> a refresh: on the next launch, the stored refresh token may already have been rotated on the server. Write a test against <code class="language-plaintext highlighter-rouge">AuthServer</code> that refreshes, discards the response before saving it, and restarts the coordinator, and decide what the user should see. Compare your answer with the reuse-detection rule, and explain why some servers keep the previous refresh token valid for a short grace period.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc9700">RFC 9700: Best Current Practice for OAuth 2.0 Security</a>, §4.14 on refresh token protection and rotation.</li>
+  <li><a href="https://www.rfc-editor.org/rfc/rfc6749">RFC 6749: The OAuth 2.0 Authorization Framework</a>, §6 on refreshing an access token.</li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10133/">Protect mutable state with Swift actors</a>, WWDC21, which introduces actor reentrancy with a similar cache example.</li>
+</ul>
+
+<p>Previous: <a href="/swift-authentication-headers-credential-scope/">Authentication Headers and Credential Scope</a>. Next: <a href="/swift-ats-tls-trust/">App Transport Security and TLS Trust</a>.</p>
+
+<p>Return to the <a href="/swift-networking/">Networking roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/swift-token-refresh/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Refreshing+Credentials+Without+Duplicate+Requests%20https%3A%2F%2Fswiftbydeya.com%2Fswift-token-refresh%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/swift-token-refresh/&title=Refreshing+Credentials+Without+Duplicate+Requests%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/swift-token-refresh/&title=Refreshing+Credentials+Without+Duplicate+Requests%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/swift-token-refresh/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Refreshing Credentials Without Duplicate Requests%20%7C%20Swift By Deya&body=https://swiftbydeya.com/swift-token-refresh/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Actors">Actors</a></li>
+    
+    <li><a href="/tag/#Authentication">Authentication</a></li>
+    
+    <li><a href="/tag/#Networking">Networking</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="App Transport Security and TLS Trust" href="/swift-ats-tls-trust/"> <p>Previous post</p> App Transport Security and TLS Trust </a> </div> <div id="next-post"> <a alt="Authentication Headers and Credential Scope" href="/swift-authentication-headers-credential-scope/"> <p>Next post</p> Authentication Headers and Credential Scope </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->

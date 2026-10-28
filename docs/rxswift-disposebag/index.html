@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<!--
+    Type on Strap jekyll theme v2.4.9
+    Theme free for personal and commercial use under the MIT license
+    https://github.com/sylhare/Type-on-Strap/blob/master/LICENSE
+-->
+<html lang="en">
+  
+  <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <script> (() => { const preference = "light"; let theme = preference === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : preference; try { const savedTheme = localStorage.getItem('theme'); if (savedTheme === 'dark' || savedTheme === 'light') theme = savedTheme; } catch (_) { /* Use the configured theme when storage is disabled. */ } document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; })(); </script> <script defer src="/assets/js/site.js"></script> <script defer src="/assets/js/partials/cookie_consent_init.js"></script> <link rel="stylesheet" href="/assets/css/main.css"> <!--Favicon--> <link rel="icon" href="/assets/img/favicon/deya-face.ico" type="image/x-icon"> <link rel="icon" href="/assets/img/favicon/deya-face-32.png" type="image/png" sizes="32x32"> <link rel="icon" href="/assets/img/favicon/deya-face-16.png" type="image/png" sizes="16x16"> <link rel="apple-touch-icon" href="/assets/img/favicon/deya-face-180.png" sizes="180x180"> <!-- KaTeX 0.16.9 --> <!-- Mermaid 10.8.0 --> <script defer src="/assets/js/vendor/mermaid.min.js"></script> <script defer src="/assets/js/mermaid.js" data-theme="default"></script> <link rel="alternate" hreflang="x-default" href="https://swiftbydeya.com" /> <!-- Simple Jekyll Search 1.10.0 --> <script src="/assets/js/vendor/simple-jekyll-search.min.js" type="text/javascript"></script> <!-- Google Analytics / Cookie Consent --> <script> const cookieName = 'cookie-notice-dismissed-https://swiftbydeya.com'; const isCookieConsent = 'true'; const analyticsName = 'G-KHK84G94HW'; const analyticsNameGA4 = ''; </script> <!-- Global site tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-KHK84G94HW"></script> <!-- seo tags --> <meta property="og:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta property="og:type" content="website" /> <!-- Begin Jekyll SEO tag v2.8.0 --> <title>Disposing and DisposeBag | Swift By Deya</title> <meta name="generator" content="Jekyll v4.3.3" /> <meta property="og:title" content="Disposing and DisposeBag" /> <meta name="author" content="Deya Elkhawaldeh" /> <meta property="og:locale" content="en_US" /> <meta name="description" content="Every subscription has a lifetime, and RxSwift asks you to decide what it is. A subscription to a network request should end when the response arrives or when the screen that asked for it goes away. A subscription to a text field should last as long as the view controller. A subscription to the logged-in user might last as long as the app. The handle that ends a subscription is a Disposable, and the type that gives a group of them a lifetime is DisposeBag. Getting this wrong produces two opposite bugs. End a subscription too early and a screen stops updating. End it too late, or never, and you get the RxSwift memory leak everyone has written once: a view model that is never deallocated because its own subscription holds it. This article measures both, along with the details that decide them: what disposal actually releases, in what order a bag disposes, why a long-lived bag grows, why a synchronous create cannot be cancelled halfway through, and the disposable types that handle the cases a bag cannot." /> <meta property="og:description" content="Every subscription has a lifetime, and RxSwift asks you to decide what it is. A subscription to a network request should end when the response arrives or when the screen that asked for it goes away. A subscription to a text field should last as long as the view controller. A subscription to the logged-in user might last as long as the app. The handle that ends a subscription is a Disposable, and the type that gives a group of them a lifetime is DisposeBag. Getting this wrong produces two opposite bugs. End a subscription too early and a screen stops updating. End it too late, or never, and you get the RxSwift memory leak everyone has written once: a view model that is never deallocated because its own subscription holds it. This article measures both, along with the details that decide them: what disposal actually releases, in what order a bag disposes, why a long-lived bag grows, why a synchronous create cannot be cancelled halfway through, and the disposable types that handle the cases a bag cannot." /> <link rel="canonical" href="https://swiftbydeya.com/rxswift-disposebag/" /> <meta property="og:url" content="https://swiftbydeya.com/rxswift-disposebag/" /> <meta property="og:site_name" content="Swift By Deya" /> <meta property="og:type" content="article" /> <meta property="article:published_time" content="2026-04-20T00:00:00+03:00" /> <meta name="twitter:card" content="summary" /> <meta property="twitter:title" content="Disposing and DisposeBag" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Deya Elkhawaldeh"},"dateModified":"2026-04-20T00:00:00+03:00","datePublished":"2026-04-20T00:00:00+03:00","description":"Every subscription has a lifetime, and RxSwift asks you to decide what it is. A subscription to a network request should end when the response arrives or when the screen that asked for it goes away. A subscription to a text field should last as long as the view controller. A subscription to the logged-in user might last as long as the app. The handle that ends a subscription is a Disposable, and the type that gives a group of them a lifetime is DisposeBag. Getting this wrong produces two opposite bugs. End a subscription too early and a screen stops updating. End it too late, or never, and you get the RxSwift memory leak everyone has written once: a view model that is never deallocated because its own subscription holds it. This article measures both, along with the details that decide them: what disposal actually releases, in what order a bag disposes, why a long-lived bag grows, why a synchronous create cannot be cancelled halfway through, and the disposable types that handle the cases a bag cannot.","headline":"Disposing and DisposeBag","mainEntityOfPage":{"@type":"WebPage","@id":"https://swiftbydeya.com/rxswift-disposebag/"},"url":"https://swiftbydeya.com/rxswift-disposebag/"}</script> <!-- End Jekyll SEO tag --> <!-- RSS --> <link rel="alternate" type="application/atom+xml" title="Swift By Deya" href="https://swiftbydeya.com/feed.xml"/> <link type="application/atom+xml" rel="alternate" href="https://swiftbydeya.com/feed.xml" title="Swift By Deya" /> <!-- Twitter Cards --> <meta name="twitter:title" content="Disposing and DisposeBag"> <meta name="twitter:description" content="Every subscription has a lifetime, and RxSwift asks you to decide what it is. A subscription to a network request should end when the response arrives or whe..."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://swiftbydeya.com/assets/img/article-placeholder.svg"> <meta name="twitter:image:alt" content="Disposing and DisposeBag"> </head>
+  <body class="layout-post">
+    
+    <div id="cookie-notice" role="region" aria-label="Cookie preferences">
+      <span>We would like to use third party cookies and scripts to improve the functionality of this website.</span>
+      <button id="cookie-notice-accept" type="button">Approve</button>
+    </div>
+    
+    <a class="skip-link" href="#content">Skip to content</a>
+    
+    <header class="site-header"> <div class="header-inner"> <a class="branding" href="/" aria-label="Swift By Deya home"> <span class="site-title">Swift By Deya</span> </a> <nav class="primary-nav" id="primary-nav" aria-label="Main navigation"> <a href="/" >Home</a> <a href="/books/" >Books</a> <a href="/portfolio/" >Portfolio</a> <a href="/ios-road-map/" >Roadmaps</a> <a href="/about-me/" >About</a> </nav> <div class="header-actions"> <a class="header-search" href="/search/" aria-label="Search articles"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/> </svg> <span>Search articles…</span><kbd>⌘ K</kbd> </a> <button class="icon-button theme-toggle" id="theme-toggle" data-theme-toggle type="button" aria-label="Switch to dark theme" aria-pressed="false"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/> </svg> </button> <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav"> <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"> <path d="M5 6h14M5 12h14M5 18h14"/> </svg> </button> </div> </div> </header>
+    <main id="content" class="content" tabindex="-1">
+      <article class="document post-document">
+  <header class="document-header">
+    <p class="eyebrow"><a href="/archive/">Articles</a> · Development</p>
+    <h1>Disposing and DisposeBag</h1>
+    
+<div class="post-info">
+  <img alt="" src="/assets/img/author/deya-avatar.webp" width="30" height="30" loading="lazy">
+  <p>Deya Elkhawaldeh <span aria-hidden="true">·</span> <time datetime="2026-04-20T00:00:00+03:00">April 20, 2026</time></p>
+</div>
+
+  </header>
+  <div class="post-content">
+    
+    <p>Every subscription has a lifetime, and RxSwift asks you to decide what it is. A subscription to a network request should end when the response arrives or when the screen that asked for it goes away. A subscription to a text field should last as long as the view controller. A subscription to the logged-in user might last as long as the app. The handle that ends a subscription is a <code class="language-plaintext highlighter-rouge">Disposable</code>, and the type that gives a group of them a lifetime is <code class="language-plaintext highlighter-rouge">DisposeBag</code>.</p>
+
+<p>Getting this wrong produces two opposite bugs. End a subscription too early and a screen stops updating. End it too late, or never, and you get the RxSwift memory leak everyone has written once: a view model that is never deallocated because its own subscription holds it. This article measures both, along with the details that decide them: what disposal actually releases, in what order a bag disposes, why a long-lived bag grows, why a synchronous <code class="language-plaintext highlighter-rouge">create</code> cannot be cancelled halfway through, and the disposable types that handle the cases a bag cannot.</p>
+
+<!--more-->
+
+<p>The examples use RxSwift 6.10.2 in Swift 6 language mode and were compiled and run with the Swift 6.4 toolchain from Xcode 27.1 on macOS 26. Paste the blocks in order into one <code class="language-plaintext highlighter-rouge">main.swift</code> of an executable target that depends on <code class="language-plaintext highlighter-rouge">RxSwift</code> and <code class="language-plaintext highlighter-rouge">RxCocoa</code>.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">RxSwift</span>
+<span class="kd">import</span> <span class="kt">RxCocoa</span>
+<span class="kd">import</span> <span class="kt">Foundation</span>
+<span class="kd">import</span> <span class="kt">Synchronization</span>
+</code></pre></div></div>
+
+<h2 id="disposable"><code class="language-plaintext highlighter-rouge">Disposable</code></h2>
+
+<p>The protocol is one method:</p>
+
+<!-- skip-check -->
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">Disposable</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">dispose</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Disposing a subscription tells every operator in the chain, all the way up to the source, to stop and release what it holds: the closures you passed, the sinks the operators created, and whatever the source started, such as a network request or a timer. Disposing twice is harmless. The cleanup runs once:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">cleanups</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">cleanup</span> <span class="o">=</span> <span class="kt">Disposables</span><span class="o">.</span><span class="n">create</span> <span class="p">{</span> <span class="n">cleanups</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="n">cleanup</span><span class="o">.</span><span class="nf">dispose</span><span class="p">()</span>
+<span class="n">cleanup</span><span class="o">.</span><span class="nf">dispose</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">cleanups</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="a-disposable-does-not-dispose-itself">A <code class="language-plaintext highlighter-rouge">Disposable</code> does not dispose itself</h3>
+
+<p>Here is the difference from Combine that matters most. A Combine <code class="language-plaintext highlighter-rouge">AnyCancellable</code> cancels its subscription when it is deallocated, so forgetting to store it ends the subscription immediately. An RxSwift <code class="language-plaintext highlighter-rouge">Disposable</code> does nothing when it is deallocated. A subscription whose disposable is dropped keeps running:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">messages</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">received</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">subscription</span> <span class="o">=</span> <span class="n">messages</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">received</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">})</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subscription</span>                                     <span class="c1">// dropped at the end of this scope</span>
+<span class="p">}</span>
+
+<span class="n">messages</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="s">"still subscribed"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">received</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>                                    <span class="c1">// the subscription outlived its handle</span>
+</code></pre></div></div>
+
+<p>For a source that finishes by itself, this is harmless: after a terminal event, a subscription disposes itself, as <a href="/rxswift-observables-observers/#what-rxswift-does-when-a-producer-breaks-it">Observables and Observers</a> measured. For a source that never finishes, like this subject, there is now no way to stop it.</p>
+
+<h2 id="disposebag-a-lifetime-for-a-group-of-subscriptions"><code class="language-plaintext highlighter-rouge">DisposeBag</code>: a lifetime for a group of subscriptions</h2>
+
+<p>A <code class="language-plaintext highlighter-rouge">DisposeBag</code> collects disposables and disposes all of them when the bag is deallocated. It brings back the “ends when its owner goes away” rule that Combine builds into <code class="language-plaintext highlighter-rouge">AnyCancellable</code>. The usual pattern is one bag per object, stored in a property, with every subscription the object makes added to it with <code class="language-plaintext highlighter-rouge">disposed(by:)</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">prices</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">Double</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">shownPrices</span><span class="p">:</span> <span class="p">[</span><span class="kt">Double</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">var</span> <span class="nv">priceScreenBag</span><span class="p">:</span> <span class="kt">DisposeBag</span><span class="p">?</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+<span class="n">prices</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">shownPrices</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">priceScreenBag</span><span class="o">!</span><span class="p">)</span>
+
+<span class="n">prices</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mf">9.99</span><span class="p">)</span>
+<span class="n">priceScreenBag</span> <span class="o">=</span> <span class="kc">nil</span>                                     <span class="c1">// the owner goes away, and so does the bag</span>
+<span class="n">prices</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mf">19.99</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">shownPrices</span> <span class="o">==</span> <span class="p">[</span><span class="mf">9.99</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The bag has no public <code class="language-plaintext highlighter-rouge">dispose()</code> method. To end its subscriptions early, replace it, and the old bag’s deallocation disposes them:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">screenBag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">refreshes</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">prices</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">refreshes</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">screenBag</span><span class="p">)</span>
+<span class="n">prices</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">screenBag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>                                 <span class="c1">// disposes everything in the old bag</span>
+<span class="n">prices</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">refreshes</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>A bag disposes its contents in the order they were added, and adding to a bag that has already been disposed, which can happen when a subscription is set up from a callback that arrives after the owner went away, disposes the new disposable immediately rather than leaking it:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">disposalOrder</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">bag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">4</span> <span class="p">{</span>
+        <span class="kt">Disposables</span><span class="o">.</span><span class="n">create</span> <span class="p">{</span> <span class="n">disposalOrder</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">bag</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">disposalOrder</span> <span class="o">==</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">DisposeBag</code> is thread-safe: <code class="language-plaintext highlighter-rouge">insert</code> and the disposal on <code class="language-plaintext highlighter-rouge">deinit</code> are guarded by a lock, so subscriptions can be added from any thread.</p>
+
+<h2 id="the-retain-cycle">The retain cycle</h2>
+
+<p>The leak happens when the closures in a subscription capture the object that owns the bag. The ownership then forms a loop:</p>
+
+<pre><code class="language-mermaid">flowchart LR
+    VM[View model] --&gt;|owns| B[DisposeBag]
+    B --&gt;|owns| D[Disposable]
+    D --&gt;|owns| S[Operator sinks]
+    S --&gt;|owns| C["onNext closure"]
+    C --&gt;|captures self| VM
+</code></pre>
+
+<p>Nothing in the loop can be deallocated first, so none of it ever is. To measure it, each view model below counts its live instances with a small thread-safe counter:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">InstanceCounter</span><span class="p">:</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">live</span> <span class="o">=</span> <span class="kt">Atomic</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">count</span><span class="p">:</span> <span class="kt">Int</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">increment</span><span class="p">()</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">decrement</span><span class="p">()</span> <span class="p">{</span> <span class="n">live</span><span class="o">.</span><span class="nf">subtract</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nv">ordering</span><span class="p">:</span> <span class="o">.</span><span class="n">relaxed</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">ticks</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><strong>A strong capture.</strong> The compiler requires an explicit <code class="language-plaintext highlighter-rouge">self.</code> in an escaping closure, which makes this version easy to spot in review:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">StrongCaptureModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">bag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">StrongCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="k">self</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="nv">$0</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">bag</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">StrongCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="kt">StrongCaptureModel</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="n">ticks</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">StrongCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>          <span class="c1">// leaked</span>
+</code></pre></div></div>
+
+<p><strong>A method reference.</strong> This one has no <code class="language-plaintext highlighter-rouge">self</code> in it at all, and leaks just the same, because <code class="language-plaintext highlighter-rouge">handle</code> is shorthand for a closure that captures <code class="language-plaintext highlighter-rouge">self</code> strongly:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MethodReferenceModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">bag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">MethodReferenceModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="n">handle</span><span class="p">)</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">bag</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">handle</span><span class="p">(</span><span class="n">_</span> <span class="nv">tick</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span> <span class="n">total</span> <span class="o">+=</span> <span class="n">tick</span> <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">MethodReferenceModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="kt">MethodReferenceModel</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="n">ticks</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">MethodReferenceModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>        <span class="c1">// leaked, with no `self` in sight</span>
+</code></pre></div></div>
+
+<p><strong>A weak capture</strong> breaks the loop. So does <code class="language-plaintext highlighter-rouge">subscribe(with:)</code>, which holds its object weakly and passes it to the closure:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">WeakCaptureModel</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">bag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">WeakCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="nv">$0</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">bag</span><span class="p">)</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="k">self</span><span class="p">,</span> <span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">model</span><span class="p">,</span> <span class="n">tick</span> <span class="k">in</span> <span class="n">model</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="n">tick</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">bag</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">WeakCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">do</span> <span class="p">{</span> <span class="n">_</span> <span class="o">=</span> <span class="kt">WeakCaptureModel</span><span class="p">(</span><span class="nv">ticks</span><span class="p">:</span> <span class="n">ticks</span><span class="p">)</span> <span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">WeakCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>            <span class="c1">// deallocated, and its bag disposed</span>
+</code></pre></div></div>
+
+<p>When the weak model is deallocated, its bag is deallocated with it, and the bag disposes both subscriptions. That is the reason to keep subscriptions in a bag the object owns. <a href="/rxswift-subscribing/#subscribewith-a-weak-object-not-a-weak-subscription">Subscribing</a> measured the alternative: with <code class="language-plaintext highlighter-rouge">subscribe(with:)</code> and a bag owned by something longer-lived, the object is freed but the subscription keeps running.</p>
+
+<p><code class="language-plaintext highlighter-rouge">[unowned self]</code> also breaks the loop, and is safe exactly when no event can reach the closure after the object starts deallocating. A bag owned by the object guarantees that for events delivered on the object’s own thread. With events delivered on another thread it does not: <code class="language-plaintext highlighter-rouge">observe(on:)</code> checks for disposal before delivering a queued event, but an event that is already being delivered on a background thread when the object is released on the main thread reaches an unowned reference to a deallocated object, and crashes. <code class="language-plaintext highlighter-rouge">[weak self]</code> is the safer default.</p>
+
+<p>The leaked models are still subscribed, and still updating their totals:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ticks</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">StrongCaptureModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="kt">MethodReferenceModel</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In an app, the equivalent is a view controller that was popped, still reacting to notifications, and still holding its views in memory, once for each time the user opened the screen.</p>
+
+<h2 id="tying-a-subscription-to-an-objects-lifetime">Tying a subscription to an object’s lifetime</h2>
+
+<p>A bag is one way to say “this subscription lives as long as that object”. Another is the <code class="language-plaintext highlighter-rouge">take(until:)</code> operator, which completes the chain when a second observable emits. RxCocoa adds <code class="language-plaintext highlighter-rouge">rx.deallocated</code> to every <code class="language-plaintext highlighter-rouge">NSObject</code>, an observable that emits when the object is deallocated, and the combination ends a subscription at exactly the right moment without any bag:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SettingsScreen</span><span class="p">:</span> <span class="kt">NSObject</span> <span class="p">{}</span>
+
+<span class="k">let</span> <span class="nv">settingsChanges</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">var</span> <span class="nv">appliedSettings</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">var</span> <span class="nv">settingsScreen</span><span class="p">:</span> <span class="kt">SettingsScreen</span><span class="p">?</span> <span class="o">=</span> <span class="kt">SettingsScreen</span><span class="p">()</span>
+
+<span class="k">let</span> <span class="nv">settingsSubscription</span> <span class="o">=</span> <span class="n">settingsChanges</span>
+    <span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="nv">until</span><span class="p">:</span> <span class="n">settingsScreen</span><span class="o">!.</span><span class="n">rx</span><span class="o">.</span><span class="n">deallocated</span><span class="p">)</span>
+    <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">appliedSettings</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+
+<span class="n">settingsChanges</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="s">"dark mode"</span><span class="p">)</span>
+<span class="n">settingsScreen</span> <span class="o">=</span> <span class="kc">nil</span>                                     <span class="c1">// deallocation completes the chain</span>
+<span class="n">settingsChanges</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="s">"large text"</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">appliedSettings</span> <span class="o">==</span> <span class="p">[</span><span class="s">"dark mode"</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>It is most useful for subscriptions that one object creates <em>on behalf of</em> another, such as a coordinator observing a view controller it presented, where neither object’s bag is the right owner. The closures must still avoid capturing the object strongly, or it will never be deallocated and the signal will never fire.</p>
+
+<h2 id="what-a-bag-keeps-after-a-subscription-finishes">What a bag keeps after a subscription finishes</h2>
+
+<p>When a subscription in a bag completes, it disposes itself and releases its closures right away. The bag does not wait until its own deallocation for that. Measured with an object captured by each closure:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Payload</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">instances</span> <span class="o">=</span> <span class="kt">InstanceCounter</span><span class="p">()</span>
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span> <span class="kt">Payload</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">increment</span><span class="p">()</span> <span class="p">}</span>
+    <span class="kd">deinit</span> <span class="p">{</span> <span class="kt">Payload</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="nf">decrement</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">requestBag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">responses</span> <span class="o">=</span> <span class="kt">PublishSubject</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">1_000</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="kt">Payload</span><span class="p">()</span>
+    <span class="n">responses</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="nf">withExtendedLifetime</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="p">{}</span> <span class="p">})</span>
+        <span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">requestBag</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Payload</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1_000</span><span class="p">)</span>                 <span class="c1">// all waiting for a response</span>
+<span class="n">responses</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="kt">Payload</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>                     <span class="c1">// finished subscriptions released their closures</span>
+</code></pre></div></div>
+
+<p>The bag <em>does</em> keep the finished disposables themselves. <code class="language-plaintext highlighter-rouge">DisposeBag</code> is an array that only grows; it never removes an entry until the bag is deallocated. A long-lived object that adds a subscription for each user action, such as one request per tap of a refresh button, accumulates one entry per action:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">liveHeapBytes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">statistics</span> <span class="o">=</span> <span class="nf">malloc_statistics_t</span><span class="p">()</span>
+    <span class="nf">malloc_zone_statistics</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">statistics</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kt">Int</span><span class="p">(</span><span class="n">statistics</span><span class="o">.</span><span class="n">size_in_use</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">let</span> <span class="nv">beforeRefreshes</span> <span class="o">=</span> <span class="nf">liveHeapBytes</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">longLivedBag</span> <span class="o">=</span> <span class="kt">DisposeBag</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..&lt;</span><span class="mi">100_000</span> <span class="p">{</span>
+    <span class="kt">Observable</span><span class="o">.</span><span class="nf">just</span><span class="p">(</span><span class="s">"refreshed"</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span><span class="o">.</span><span class="nf">disposed</span><span class="p">(</span><span class="nv">by</span><span class="p">:</span> <span class="n">longLivedBag</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="k">let</span> <span class="nv">bytesPerRefresh</span> <span class="o">=</span> <span class="kt">Double</span><span class="p">(</span><span class="nf">liveHeapBytes</span><span class="p">()</span> <span class="o">-</span> <span class="n">beforeRefreshes</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100_000</span>
+<span class="nf">print</span><span class="p">(</span><span class="s">"bytes retained per finished subscription:"</span><span class="p">,</span> <span class="n">bytesPerRefresh</span><span class="p">)</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">bytesPerRefresh</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In a debug build on macOS, the 100,000 finished subscriptions kept about 27 MB of heap allocated, about 270 bytes each, counted with <code class="language-plaintext highlighter-rouge">malloc</code> statistics so that only live allocations are included. That is not much for a screen that lives a few minutes, but a real leak for an object that lives as long as the app. Three fixes, in order of preference:</p>
+
+<ol>
+  <li>Make the chain long-lived instead of the subscriptions: model the taps as an observable and use <code class="language-plaintext highlighter-rouge">flatMapLatest</code> to start a request per tap inside one subscription, as <a href="/rxswift-subscribing/#do-not-subscribe-inside-subscribe">Subscribing</a> did.</li>
+  <li>Keep the per-action subscription in a <code class="language-plaintext highlighter-rouge">SerialDisposable</code>, below, which holds only the latest one.</li>
+  <li>Give each batch of work its own bag and replace it when the batch is done.</li>
+</ol>
+
+<h2 id="disposables-for-the-cases-a-bag-does-not-fit">Disposables for the cases a bag does not fit</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Disposables.create</code> has several forms. <code class="language-plaintext highlighter-rouge">Disposables.create()</code> is a disposable that does nothing, useful as a return value from <code class="language-plaintext highlighter-rouge">create</code> when there is nothing to clean up. <code class="language-plaintext highlighter-rouge">Disposables.create(with:)</code> and the trailing-closure form run a closure once. <code class="language-plaintext highlighter-rouge">Disposables.create(first, second)</code> combines several into one that disposes them all. RxSwift also ships disposable types for patterns that a bag cannot express.</p>
+
+<p>The examples below use a source that counts how many of its subscriptions are running, standing in for a live database query or a long-poll:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">runningQueries</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">liveQuery</span><span class="p">(</span><span class="n">_</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Observable</span><span class="o">.</span><span class="n">create</span> <span class="p">{</span> <span class="n">observer</span> <span class="k">in</span>
+        <span class="n">runningQueries</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">observer</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">Disposables</span><span class="o">.</span><span class="n">create</span> <span class="p">{</span> <span class="n">runningQueries</span> <span class="o">-=</span> <span class="mi">1</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="serialdisposable-only-the-latest"><code class="language-plaintext highlighter-rouge">SerialDisposable</code>: only the latest</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">SerialDisposable</code> holds one disposable at a time. Assigning a new one disposes the previous one, and assigning after the serial disposable itself has been disposed disposes the new one immediately. It is the tool for “the current request”, where starting a new one should cancel the old:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">currentQuery</span> <span class="o">=</span> <span class="kt">SerialDisposable</span><span class="p">()</span>
+<span class="n">currentQuery</span><span class="o">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="nf">liveQuery</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span>
+<span class="n">currentQuery</span><span class="o">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="nf">liveQuery</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span>      <span class="c1">// disposes query 1</span>
+<span class="n">currentQuery</span><span class="o">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="nf">liveQuery</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span>      <span class="c1">// disposes query 2</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">currentQuery</span><span class="o">.</span><span class="nf">dispose</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">currentQuery</span><span class="o">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="nf">liveQuery</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span>      <span class="c1">// disposed on assignment</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="compositedisposable-a-bag-you-can-remove-from"><code class="language-plaintext highlighter-rouge">CompositeDisposable</code>: a bag you can remove from</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">CompositeDisposable</code> is like a bag with two extra abilities: it can be disposed explicitly, and individual entries can be removed (and disposed) by the key returned when they were inserted. That fits a set of subscriptions keyed by something, such as one per visible table cell:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="nv">visibleRows</span> <span class="o">=</span> <span class="kt">CompositeDisposable</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">rowSeven</span> <span class="o">=</span> <span class="n">visibleRows</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="nf">liveQuery</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">())</span>
+<span class="k">let</span> <span class="nv">rowEight</span> <span class="o">=</span> <span class="n">visibleRows</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="nf">liveQuery</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">())</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">visibleRows</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="k">let</span> <span class="nv">rowSeven</span> <span class="p">{</span> <span class="n">visibleRows</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">rowSeven</span><span class="p">)</span> <span class="p">}</span>   <span class="c1">// row 7 scrolled off screen</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">visibleRows</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">visibleRows</span><span class="o">.</span><span class="nf">dispose</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">runningQueries</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">rowEight</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">insert</code> returns <code class="language-plaintext highlighter-rouge">nil</code> when the composite has already been disposed, after disposing the new entry.</p>
+
+<h3 id="booleandisposable-and-why-a-synchronous-create-cannot-be-stopped"><code class="language-plaintext highlighter-rouge">BooleanDisposable</code>, and why a synchronous <code class="language-plaintext highlighter-rouge">create</code> cannot be stopped</h3>
+
+<p>A <code class="language-plaintext highlighter-rouge">BooleanDisposable</code> does nothing except remember that it was disposed, through its <code class="language-plaintext highlighter-rouge">isDisposed</code> property. It is meant for producers that loop, so they can check the flag between elements and stop early. There is a trap in using it with a <em>synchronous</em> producer, though. Here is a <code class="language-plaintext highlighter-rouge">create</code> that emits 1,000 elements in a loop and checks the flag, consumed with <code class="language-plaintext highlighter-rouge">take(3)</code>:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="nv">emitted</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">countToAThousand</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">&lt;</span><span class="kt">Int</span><span class="o">&gt;.</span><span class="n">create</span> <span class="p">{</span> <span class="n">observer</span> <span class="k">in</span>
+    <span class="k">let</span> <span class="nv">cancellation</span> <span class="o">=</span> <span class="kt">BooleanDisposable</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="k">in</span> <span class="mi">1</span><span class="o">...</span><span class="mi">1_000</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">cancellation</span><span class="o">.</span><span class="n">isDisposed</span> <span class="p">{</span> <span class="k">break</span> <span class="p">}</span>
+        <span class="n">emitted</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">observer</span><span class="o">.</span><span class="nf">onNext</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">observer</span><span class="o">.</span><span class="nf">onCompleted</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cancellation</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="nv">firstThree</span><span class="p">:</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">let</span> <span class="nv">firstThreeSubscription</span> <span class="o">=</span> <span class="n">countToAThousand</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">firstThree</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">firstThree</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">emitted</span> <span class="o">==</span> <span class="mi">1_000</span><span class="p">)</span>                                 <span class="c1">// the loop ran to the end anyway</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">take(3)</code> was satisfied after three elements and disposed its subscription, but the producer’s <code class="language-plaintext highlighter-rouge">BooleanDisposable</code> had not been returned yet: the closure was still inside the loop. RxSwift had nothing to dispose, so it disposed the flag only after the closure returned, and the loop emitted 997 elements into a subscription that had already ended. They were dropped, but they were computed.</p>
+
+<p>The fix is to let a scheduler drive the loop, so that the subscription is set up before the first element and each element is a separate step that can see the disposal. That is what <code class="language-plaintext highlighter-rouge">from</code>, <code class="language-plaintext highlighter-rouge">range</code>, and <code class="language-plaintext highlighter-rouge">generate</code> do with their trampoline scheduler, which is why <a href="/rxswift-observables-observers/#no-backpressure">Observables and Observers</a> could stop a million-element <code class="language-plaintext highlighter-rouge">range</code> after three:</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">emitted</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">let</span> <span class="nv">scheduledCount</span> <span class="o">=</span> <span class="kt">Observable</span><span class="o">.</span><span class="nf">range</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">count</span><span class="p">:</span> <span class="mi">1_000</span><span class="p">)</span><span class="o">.</span><span class="nf">do</span><span class="p">(</span><span class="nv">onNext</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="n">emitted</span> <span class="o">+=</span> <span class="mi">1</span> <span class="p">})</span>
+<span class="k">let</span> <span class="nv">scheduledThree</span> <span class="o">=</span> <span class="n">scheduledCount</span><span class="o">.</span><span class="nf">take</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="nf">subscribe</span><span class="p">()</span>
+<span class="nf">assert</span><span class="p">(</span><span class="n">emitted</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>For a <code class="language-plaintext highlighter-rouge">create</code> whose loop is asynchronous, for example one that reads chunks from a file on a background queue, the <code class="language-plaintext highlighter-rouge">BooleanDisposable</code> works as intended: the closure returns it before the first chunk is read, and the loop sees the flag as soon as the subscriber disposes.</p>
+
+<h2 id="choosing-an-owner">Choosing an owner</h2>
+
+<pre><code class="language-mermaid">flowchart TD
+    A{How long should the subscription live?} --&gt;|As long as an object| B["disposed(by: object's bag), no strong self"]
+    A --&gt;|Until another object is deallocated| C["take(until: object.rx.deallocated)"]
+    A --&gt;|Until the next one replaces it| D[SerialDisposable, or flatMapLatest in the chain]
+    A --&gt;|Until removed individually| E[CompositeDisposable with keys]
+    A --&gt;|Until it finishes by itself| F[Finite source; still store it if it may outlive the caller]
+</code></pre>
+
+<p>And the Combine equivalents, for readers coming from the <a href="/combine/">Combine roadmap</a>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>RxSwift</th>
+      <th>Combine</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Disposable</code> (does nothing on deinit)</td>
+      <td><code class="language-plaintext highlighter-rouge">AnyCancellable</code> (cancels on deinit)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DisposeBag</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Set&lt;AnyCancellable&gt;</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">disposed(by: bag)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">store(in: &amp;cancellables)</code></td>
+    </tr>
+    <tr>
+      <td>replace the bag</td>
+      <td><code class="language-plaintext highlighter-rouge">cancellables.removeAll()</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">SerialDisposable</code></td>
+      <td>a single <code class="language-plaintext highlighter-rouge">AnyCancellable?</code> property</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">take(until: obj.rx.deallocated)</code></td>
+      <td>no built-in equivalent</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Combine’s <code class="language-plaintext highlighter-rouge">Set&lt;AnyCancellable&gt;</code> has the same growth problem as a long-lived bag: cancelled and finished cancellables stay in the set until removed. <a href="/combine-anycancellable-memory/"><code class="language-plaintext highlighter-rouge">AnyCancellable</code> and Memory Management</a> measures the Combine side.</p>
+
+<div class="language-swift highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">withExtendedLifetime</span><span class="p">((</span><span class="n">settingsSubscription</span><span class="p">,</span> <span class="n">firstThreeSubscription</span><span class="p">,</span> <span class="n">scheduledThree</span><span class="p">,</span>
+                      <span class="n">priceScreenBag</span><span class="p">,</span> <span class="n">screenBag</span><span class="p">))</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">dispose()</code> stops a chain up to its source and releases its closures. It is idempotent.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">Disposable</code> does not dispose itself when deallocated; a dropped handle to an infinite source runs forever.</li>
+  <li><code class="language-plaintext highlighter-rouge">DisposeBag</code> disposes its contents, in insertion order, when deallocated. Replace it to dispose early; adding to a disposed bag disposes immediately.</li>
+  <li>Strong <code class="language-plaintext highlighter-rouge">self</code> and method references such as <code class="language-plaintext highlighter-rouge">onNext: handle</code> both create a retain cycle with the owner’s bag. <code class="language-plaintext highlighter-rouge">[weak self]</code> and <code class="language-plaintext highlighter-rouge">subscribe(with:)</code> do not.</li>
+  <li><code class="language-plaintext highlighter-rouge">take(until: object.rx.deallocated)</code> ends a subscription when another object goes away.</li>
+  <li>Finished subscriptions release their closures immediately, but a bag keeps every entry until it is deallocated: about 270 bytes each, measured over 100,000.</li>
+  <li><code class="language-plaintext highlighter-rouge">SerialDisposable</code> keeps only the latest subscription; <code class="language-plaintext highlighter-rouge">CompositeDisposable</code> allows removal by key.</li>
+  <li>A synchronous <code class="language-plaintext highlighter-rouge">create</code> loop cannot be stopped by its own <code class="language-plaintext highlighter-rouge">BooleanDisposable</code>; measured, <code class="language-plaintext highlighter-rouge">take(3)</code> still let all 1,000 elements be produced.</li>
+</ul>
+
+<h2 id="exercise">Exercise</h2>
+
+<p>Write a <code class="language-plaintext highlighter-rouge">LifetimeBag</code> class with the same API as <code class="language-plaintext highlighter-rouge">DisposeBag</code> that removes finished subscriptions from its storage. One approach: wrap each inserted disposable so that it reports back to the bag when disposed, and keep entries in a dictionary keyed by an incrementing integer. Measure the resident memory after 100,000 finished subscriptions with your bag and with <code class="language-plaintext highlighter-rouge">DisposeBag</code>, and test that your bag still disposes the unfinished entries, in insertion order, when it is deallocated. Then explain why <code class="language-plaintext highlighter-rouge">DisposeBag</code> itself does not do this.</p>
+
+<h2 id="further-reading">Further reading</h2>
+
+<ul>
+  <li><a href="https://github.com/ReactiveX/RxSwift/blob/main/Documentation/GettingStarted.md#disposing">Disposing</a> and <a href="https://github.com/ReactiveX/RxSwift/blob/main/Documentation/GettingStarted.md#dispose-bags">Dispose bags</a> in RxSwift’s Getting Started guide.</li>
+  <li>The <a href="https://github.com/ReactiveX/RxSwift/tree/main/RxSwift/Disposables"><code class="language-plaintext highlighter-rouge">Disposables</code> folder</a> of the RxSwift source, which contains every disposable type used here.</li>
+  <li><a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/">Automatic Reference Counting</a> in The Swift Programming Language, on strong reference cycles for closures.</li>
+  <li><a href="/combine-anycancellable-memory/"><code class="language-plaintext highlighter-rouge">AnyCancellable</code> and Memory Management</a> for the Combine side.</li>
+</ul>
+
+<p>Previous: <a href="/rxswift-subscribing/">Subscribing</a>. Next: <a href="/rxswift-publishsubject/"><code class="language-plaintext highlighter-rouge">PublishSubject</code></a>.</p>
+
+<p>Return to the <a href="/rxswift/">RxSwift roadmap</a>.</p>
+
+    
+  </div>
+  
+
+<div class="share-buttons">
+    <ul class="share-buttons">
+        <li class="meta">Share</li>
+        
+        <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://swiftbydeya.com/rxswift-disposebag/" target="_blank"
+               title=" Facebook">
+                <i class="fab fa-facebook-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Facebook</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://twitter.com/intent/tweet?text=Disposing+and+DisposeBag%20https%3A%2F%2Fswiftbydeya.com%2Frxswift-disposebag%2F"
+               target="_blank" title="">
+                <i class="fab fa-twitter-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Tweet</span>
+            </a>
+        </li>
+            
+        <li>
+            <a href="https://www.reddit.com/submit?url=https://swiftbydeya.com/rxswift-disposebag/&title=Disposing+and+DisposeBag%20%7C%20Swift+By+Deya"
+               target="_blank" title=" Reddit">
+                <i class="fab fa-reddit-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on Reddit</span>
+            </a>
+        </li>
+         
+        <li>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=https://swiftbydeya.com/rxswift-disposebag/&title=Disposing+and+DisposeBag%20%7C%20Swift+By+Deya&summary=&source=https://swiftbydeya.com/rxswift-disposebag/"
+               target="_blank" title=" LinkedIn">
+                <i class="fab fa-linkedin fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Share on LinkedIn</span>
+            </a>
+        </li>
+          
+        <li>
+            <a href="mailto:?subject=Disposing and DisposeBag%20%7C%20Swift By Deya&body=https://swiftbydeya.com/rxswift-disposebag/"
+               target="_blank" title="">
+                <i class="fas fa-envelope-square fa-2x" aria-hidden="true"></i>
+                <span class="sr-only">Email</span></a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+  
+  
+
+<div class="tag-list">
+  <ul>
+    <li class="meta">Topics</li>
+    
+    <li><a href="/tag/#Memory+Management">Memory Management</a></li>
+    
+    <li><a href="/tag/#Reactive+Programming">Reactive Programming</a></li>
+    
+    <li><a href="/tag/#RxSwift">RxSwift</a></li>
+    
+    <li><a href="/tag/#Swift">Swift</a></li>
+    
+  </ul>
+</div>
+
+
+</article>
+
+
+
+<!-- To change color of links in the page --> <style> header#main { background-size: cover; background-repeat: no-repeat; background-position: center; } </style> <!-- Post navigation --> <div id="post-nav"> <div id="previous-post"> <a alt="PublishSubject" href="/rxswift-publishsubject/"> <p>Previous post</p> PublishSubject </a> </div> <div id="next-post"> <a alt="Subscribing" href="/rxswift-subscribing/"> <p>Next post</p> Subscribing </a> </div> </div> <!--Utterances--> <!-- Cusdis --> <!-- Disqus -->
+
+
+    </main>
+    
+    <footer class="site-footer"> <div class="footer-inner"> <div><a class="footer-brand" href="/">Swift By Deya</a><p>Stay curious. Keep building.</p></div> <nav aria-label="Footer navigation"> <a href="/archive/">Archive</a> <a href="/tag/">Tags</a> <a href="/category/">Categories</a> <a href="/feed.xml">RSS</a> </nav> <p class="copyright">© 2026 Deya Elkhawaldeh</p> </div> </footer>
+  </body>
+</html>
+
+<!-- MailerLite Universal -->
+<!-- <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+    .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+    n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+    (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '1131888');
+</script> -->
+<!-- End MailerLite Universal -->
