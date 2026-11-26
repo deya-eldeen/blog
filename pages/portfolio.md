@@ -70,6 +70,53 @@ hide_tags: true
       <a class="portfolio-link-button" href="https://apps.apple.com/jo/app/reactive-playground/id6784823079?l=ar">View on the App Store</a>
       <p class="portfolio-note">The App Store listing shows that the app does not collect user data.</p>
     </article>
+
+    <article class="portfolio-card portfolio-app-card">
+      <div class="portfolio-app-header">
+        <img
+          class="portfolio-app-icon"
+          src="/images/apps/bitwise-playground-icon.jpg"
+          alt="Bitwise Playground app icon"
+          loading="lazy"
+        >
+        <div class="portfolio-app-copy">
+          <h3 class="portfolio-app-title">Bitwise Playground</h3>
+          <p class="portfolio-app-summary">An interactive way to learn bitwise operations.</p>
+        </div>
+      </div>
+
+      <div class="portfolio-tags">
+        <span>Education</span>
+        <span>iPhone and iPad</span>
+        <span>iOS 17.0+</span>
+        <span>Version 1.0</span>
+      </div>
+
+      <div class="portfolio-description">
+        <p>
+          Bitwise Playground makes AND, OR, XOR, NOT, and bit shifts visible. Move a slider and watch every bit flip in
+          real time, shown in binary, hex, and decimal at once.
+        </p>
+
+        <p>More than 70 interactive lessons are grouped into five tracks:</p>
+
+        <ul>
+          <li>Basics</li>
+          <li>Practical Uses</li>
+          <li>Advanced Uses</li>
+          <li>Efficient Bitwise</li>
+          <li>Bitwise In Math</li>
+        </ul>
+
+        <p>
+          Each lesson pairs a hands-on playground with the Swift expression behind it, and progress is tracked per track.
+          No ads, no account, and no network access. Everything runs on the device.
+        </p>
+      </div>
+
+      <a class="portfolio-link-button" href="https://apps.apple.com/hr/app/bitwise-playground/id6787210244">View on the App Store</a>
+      <p class="portfolio-note">The App Store listing shows that the app does not collect user data.</p>
+    </article>
   </section>
 
   <section class="portfolio-section">
